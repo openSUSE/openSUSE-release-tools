@@ -12,6 +12,7 @@ logger = logging.getLogger()
 
 FACTORY = "openSUSE:Factory"
 
+
 class BiArchTool(ToolBase.ToolBase):
 
     def __init__(self, project):
@@ -298,6 +299,7 @@ class BiArchTool(ToolBase.ToolBase):
                         'package': pkg }))
             except HTTPError as e:
                 logger.error('failed to update %s: %s', pkg, e)
+
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
 

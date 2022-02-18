@@ -23,6 +23,7 @@ http_GET = osc.core.http_GET
 http_POST = osc.core.http_POST
 http_PUT = osc.core.http_PUT
 
+
 class StagingHelper(object):
     def __init__(self, project):
         self.project = project
@@ -155,6 +156,7 @@ class StagingHelper(object):
             logging.info('Updating support pkg list...')
             self.api.pseudometa_file_save(
                 'support_pkg_rebuild', rebuild_data_updated, 'support package rebuild')
+
 
 def main(args):
     # Configure OSC

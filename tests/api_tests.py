@@ -10,6 +10,7 @@ from lxml import etree as ET
 from mock import MagicMock
 from . import OBSLocal
 
+
 class TestApiCalls(OBSLocal.TestCase):
     """
     Tests for various api calls to ensure we return expected content

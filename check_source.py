@@ -26,6 +26,7 @@ from urllib.error import HTTPError
 import ReviewBot
 from osclib.conf import str2bool
 
+
 class CheckSource(ReviewBot.ReviewBot):
 
     SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -498,6 +499,7 @@ class CheckSource(ReviewBot.ReviewBot):
 
         self.review_messages['accepted'] = 'unhandled: removing repository'
         return True
+
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 

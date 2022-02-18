@@ -1,6 +1,7 @@
 import unittest
 from . import OBSLocal
 
+
 class TestBuildFailReminder(OBSLocal.TestCase):
     script = './build-fail-reminder.py'
 

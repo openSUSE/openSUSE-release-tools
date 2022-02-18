@@ -10,6 +10,7 @@ from osc.core import http_POST
 
 from urllib.error import HTTPError
 
+
 class OBSLock(object):
     """Implement a distributed lock using a shared OBS resource."""
 

@@ -13,6 +13,7 @@ from lxml import etree as ET
 
 from ttm.manager import ToTestManager, NotFoundException, QAResult
 
+
 class ToTestReleaser(ToTestManager):
 
     def __init__(self, tool):

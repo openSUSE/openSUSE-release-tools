@@ -6,6 +6,7 @@ from osclib.core import builddepinfo
 
 from urllib.error import HTTPError
 
+
 class CleanupRings(object):
     def __init__(self, api):
         self.bin2src = {}

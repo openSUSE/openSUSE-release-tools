@@ -7,6 +7,7 @@ from osclib.memoize import memoize_session_reset
 from osclib.stagingapi import StagingAPI
 from . import OBSLocal
 
+
 class TestConfig(unittest.TestCase):
     def setup_vcr(self):
         return OBSLocal.FactoryWorkflow()

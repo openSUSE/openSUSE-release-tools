@@ -2,6 +2,7 @@ import unittest
 
 from container_cleaner import ContainerCleaner
 
+
 class MockedContainerCleaner(ContainerCleaner):
     def __init__(self, container_arch_map):
         self.container_arch_map = container_arch_map

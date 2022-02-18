@@ -25,6 +25,7 @@ from osclib.util import mail_send
 BOT_NAME = 'devel-project'
 REMINDER = 'review reminder'
 
+
 def search(apiurl, queries=None, **kwargs):
     if 'request' in kwargs:
         # get_review_list() does not support withfullhistory, but search() does.
@@ -40,10 +41,12 @@ def search(apiurl, queries=None, **kwargs):
 osc.core._search = osc.core.search
 osc.core.search = search
 
+
 def staging_api(args):
     apiurl = osc.conf.config['apiurl']
     Config(apiurl, args.project)
     return StagingAPI(apiurl, args.project)
+
 
 def devel_projects_get(apiurl, project):
     """
@@ -64,6 +67,7 @@ def devel_projects_get(apiurl, project):
 
     return sorted(devel_projects)
 
+
 def list(args):
     devel_projects = devel_projects_get(osc.conf.config['apiurl'], args.project)
     if len(devel_projects) == 0:
@@ -76,6 +80,7 @@ def list(args):
             api = staging_api(args)
             api.pseudometa_file_ensure('devel_projects', out, 'devel_projects write')
 
+
 def devel_projects_load(args):
     api = staging_api(args)
     devel_projects = api.pseudometa_file_load('devel_projects')
@@ -84,6 +89,7 @@ def devel_projects_load(args):
         return devel_projects.splitlines()
 
     raise Exception('no devel projects found')
+
 
 def maintainer(args):
     if args.group is None:
@@ -99,6 +105,7 @@ def maintainer(args):
         intersection = set(groups).intersection(desired)
         if len(intersection) != len(desired):
             print('{} missing {}'.format(devel_project, ', '.join(desired - intersection)))
+
 
 def notify(args):
     import smtplib
@@ -149,6 +156,7 @@ in charge of the following packages:
         except smtplib.SMTPException as e:
             print('[FAILED SMTP] {} ({})'.format(log, e))
 
+
 def requests(args):
     apiurl = osc.conf.config['apiurl']
     devel_projects = devel_projects_load(args)
@@ -175,6 +183,7 @@ def requests(args):
 
             if args.remind:
                 remind_comment(apiurl, args.repeat_age, request.reqid, action.tgt_project, action.tgt_package)
+
 
 def reviews(args):
     apiurl = osc.conf.config['apiurl']
@@ -205,6 +214,7 @@ def reviews(args):
             if args.remind:
                 remind_comment(apiurl, args.repeat_age, request.reqid, review.by_project, review.by_package)
 
+
 def maintainers_get(apiurl, project, package=None):
     if package:
         try:
@@ -226,6 +236,7 @@ def maintainers_get(apiurl, project, package=None):
         return maintainers_get(apiurl, project)
 
     return userids
+
 
 def remind_comment(apiurl, repeat_age, request_id, project, package=None):
     comment_api = CommentAPI(apiurl)
@@ -258,10 +269,12 @@ def remind_comment(apiurl, repeat_age, request_id, project, package=None):
     message = comment_api.add_marker(message, BOT_NAME)
     comment_api.add_comment(request_id=request_id, comment=message)
 
+
 def common_args_add(parser):
     parser.add_argument('--min-age', type=int, default=0, metavar='DAYS', help='min age of requests')
     parser.add_argument('--repeat-age', type=int, default=7, metavar='DAYS', help='age after which a new reminder will be sent')
     parser.add_argument('--remind', action='store_true', help='remind maintainers to review')
+
 
 def main():
     parser = argparse.ArgumentParser(description='Operate on devel projects for a given project.')

@@ -26,6 +26,7 @@ from osclib.core import (http_GET, http_POST, makeurl,
                          target_archs, source_file_load, source_file_ensure)
 from osclib.repochecks import mirror, parsed_installcheck, CorruptRepos
 
+
 class RepoChecker():
     def __init__(self):
         self.logger = logging.getLogger('RepoChecker')

@@ -15,6 +15,7 @@ import email.utils
 # for maintainer search
 FACTORY = 'openSUSE:Factory'
 
+
 class RemindedPackage(object):
     def __init__(self, firstfail, reminded, remindCount, bug):
         self.firstfail = firstfail
@@ -24,6 +25,7 @@ class RemindedPackage(object):
 
     def __str__(self):
         return '{} {} {} {}'.format(self.firstfail, self.reminded, self.bug, self.remindCount)
+
 
 def jdefault(o):
     return o.__dict__
@@ -73,6 +75,7 @@ Kind regards,
 %(sender)s
 """)
 
+
 def SendMail(logger, project, sender, to, fullname, subject, text):
     try:
         xmailer = '{} - Failure Notification'.format(project)
@@ -83,6 +86,7 @@ def SendMail(logger, project, sender, to, fullname, subject, text):
     except Exception as e:
         print(e)
         logger.error("Failed to send an email to %s (%s)" % (fullname, to))
+
 
 def main(args):
 

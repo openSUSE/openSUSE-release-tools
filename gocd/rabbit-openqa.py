@@ -22,6 +22,7 @@ from urllib.parse import quote_plus
 import requests
 from osclib.PubSubConsumer import PubSubConsumer
 
+
 class Project(object):
     def __init__(self, name):
         self.name = name

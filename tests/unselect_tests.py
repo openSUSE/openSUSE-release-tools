@@ -4,6 +4,7 @@ from osclib.stagingapi import StagingAPI
 from osclib.unselect_command import UnselectCommand
 from . import OBSLocal
 
+
 class TestUnselect(OBSLocal.TestCase):
 
     def test_cleanup_filter(self):

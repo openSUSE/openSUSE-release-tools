@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 
 from flask import Flask, render_template
 
+
 class Fetcher(object):
     def __init__(self, apiurl, opts):
         self.projects = []
@@ -104,6 +105,7 @@ class Fetcher(object):
 
     def fetch_product_version(self, project):
         return attribute_value_load(self.apiurl, project, 'ProductVersion')
+
 
 class Project(object):
     def __init__(self, fetcher, name, kwargs):

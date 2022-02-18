@@ -16,6 +16,7 @@ makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
 http_POST = osc.core.http_POST
 
+
 class CompareList(object):
     def __init__(self, old_prj, new_prj, verbose, newonly, removedonly, existin, submit, submitfrom, submitto, submit_limit):
         self.new_prj = new_prj
@@ -193,6 +194,7 @@ class CompareList(object):
         for pkg in removed_packages:
             if pkg in target:
                 print("Deleted package in {:<8} - {}".format(self.old_prj, pkg))
+
 
 def main(args):
     # Configure OSC

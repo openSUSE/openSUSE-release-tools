@@ -30,6 +30,7 @@ STAGING_PROJECT_NAME = 'SUSE:SLE-15-SP3:GA:Staging:A'
 HUMAN_REVIEWER = 'release-manager'
 FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures')
 
+
 class TestSLESubmitRequest(OBSLocal.TestCase):
     """Tests for the whole lifecycle of submit requests in SLE
 

@@ -9,6 +9,7 @@ COMMENT = 'short comment'
 COMMENT_INFO = {'foo': 'bar', 'distro': 'openSUSE'}
 PROJECT = 'openSUSE:Factory:Staging'
 
+
 class TestComment(unittest.TestCase):
     def setUp(self):
         self.api = CommentAPI('bogus')

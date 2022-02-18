@@ -7,6 +7,7 @@ from osclib.supersede_command import SupersedeCommand
 from osclib.request_finder import RequestFinder
 from osclib.request_splitter import RequestSplitter
 
+
 class AdiCommand:
     def __init__(self, api):
         self.api = api

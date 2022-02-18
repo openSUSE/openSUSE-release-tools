@@ -68,11 +68,13 @@ OriginInfo = namedtuple('OriginInfo', ['project', 'pending'])
 PendingRequestInfo = namedtuple('PendingRequestInfo', ['identifier', 'reviews_remaining'])
 PolicyResult = namedtuple('PolicyResult', ['wait', 'accept', 'reviews', 'comments'])
 
+
 def origin_info_str(self):
     return self.project + ('+' if self.pending else '')
 
 
 OriginInfo.__str__ = origin_info_str
+
 
 @memoize(session=True)
 def config_load(apiurl, project):
@@ -81,6 +83,7 @@ def config_load(apiurl, project):
         return {}
 
     return config_resolve(apiurl, project, yaml.safe_load(config))
+
 
 def config_origin_generator(origins, apiurl=None, project=None, package=None, skip_workarounds=False):
     for origin_item in origins:
@@ -99,6 +102,7 @@ def config_origin_generator(origins, apiurl=None, project=None, package=None, sk
 
             yield origin, values
             break  # Only support single value inside list item.
+
 
 def config_resolve(apiurl, project, config):
     defaults = POLICY_DEFAULTS.copy()
@@ -142,6 +146,7 @@ def config_resolve(apiurl, project, config):
 
     return config
 
+
 def config_resolve_variables(config, config_project):
     defaults_merged = DEFAULTS.copy()
     defaults_merged.update(config)
@@ -158,6 +163,7 @@ def config_resolve_variables(config, config_project):
             values['additional_reviews'] = [
                 config_resolve_variable(v, config_project) for v in values['additional_reviews']]
 
+
 def config_resolve_variable(value, config_project, key='config'):
     prefix = '<{}:'.format(key)
     end = value.rfind('>')
@@ -169,12 +175,14 @@ def config_resolve_variable(value, config_project, key='config'):
         return config_project[key] + value[end + 1:]
     return ''
 
+
 def config_origin_list(config, apiurl=None, project=None, package=None, skip_workarounds=False):
     origin_list = []
     for origin, values in config_origin_generator(
             config['origins'], apiurl, project, package, skip_workarounds):
         origin_list.append(origin)
     return origin_list
+
 
 def config_resolve_create_workarounds(config, values_workaround, origins_skip):
     origins = config['origins']
@@ -192,10 +200,12 @@ def config_resolve_create_workarounds(config, values_workaround, origins_skip):
         values_new.update(values_workaround)
         origins.insert(i, { origin_new: values_new })
 
+
 def config_resolve_create_family(apiurl, project, config, position, origin, values):
     projects = project_list_family_prior_pattern(apiurl, origin, project)
     for origin_expanded in reversed(projects):
         config['origins'].insert(position, { str(origin_expanded): values })
+
 
 def config_resolve_apply(config, values_apply, key=None, workaround=False, until=None):
     for origin, values in config_origin_generator(config['origins']):
@@ -212,18 +222,22 @@ def config_resolve_apply(config, values_apply, key=None, workaround=False, until
 
         values.update(values_apply)
 
+
 def origin_workaround_check(origin):
     return origin.endswith('~')
+
 
 def origin_workaround_ensure(origin):
     if not origin_workaround_check(origin):
         return origin + '~'
     return origin
 
+
 def origin_workaround_strip(origin):
     if origin_workaround_check(origin):
         return origin[:-1]
     return origin
+
 
 @memoize(session=True)
 def origin_find(apiurl, target_project, package, source_hash=None, current=False,
@@ -266,6 +280,7 @@ def origin_find(apiurl, target_project, package, source_hash=None, current=False
 
     return None
 
+
 def project_source_contain(apiurl, project, package, source_hash):
     for source_hash_consider in package_source_hash_history(
             apiurl, project, package, include_project_link=True):
@@ -274,6 +289,7 @@ def project_source_contain(apiurl, project, package, source_hash):
             return True
 
     return False
+
 
 def project_source_pending(apiurl, project, package, source_hash):
     apiurl_remote, project_remote = project_remote_apiurl(apiurl, project)
@@ -291,10 +307,12 @@ def project_source_pending(apiurl, project, package, source_hash):
 
     return False
 
+
 def project_source_log(key, project, source_hash_consider, source_hash):
     logging.debug('source_{}: {:<40} {} == {}{}'.format(
         key, project, source_hash_consider, source_hash,
         ' (match)' if source_hash_consider == source_hash else ''))
+
 
 def origin_find_fallback(apiurl, target_project, package, source_hash, user):
     # Search accepted requests (newest to oldest), find the last review made by
@@ -328,6 +346,7 @@ def origin_find_fallback(apiurl, target_project, package, source_hash, user):
 
     return None
 
+
 def origin_annotation_dump(origin_info_new, origin_info_old, override=False, raw=False):
     data = {}
     if origin_info_new is None:
@@ -348,6 +367,7 @@ def origin_annotation_dump(origin_info_new, origin_info_old, override=False, raw
         return data
 
     return yaml.dump(data, default_flow_style=False)
+
 
 def origin_annotation_load(request, action, user):
     # Find last accepted review which means it was reviewed and annotated.
@@ -378,6 +398,7 @@ def origin_annotation_load(request, action, user):
 
     return annotation
 
+
 def origin_find_highest(apiurl, project, package):
     config = config_load(apiurl, project)
     for origin, values in config_origin_generator(config['origins'], apiurl, project, package, True):
@@ -385,6 +406,7 @@ def origin_find_highest(apiurl, project, package):
             return origin
 
     return None
+
 
 def policy_evaluate(apiurl, project, package,
                     origin_info_new, origin_info_old,
@@ -408,6 +430,7 @@ def policy_evaluate(apiurl, project, package,
         str(result)])))
     return result
 
+
 @memoize(session=True)
 def policy_get(apiurl, project, package, origin):
     config = config_load(apiurl, project)
@@ -416,6 +439,7 @@ def policy_get(apiurl, project, package, origin):
             return policy_get_preprocess(apiurl, origin, values)
 
     return None
+
 
 def policy_get_preprocess(apiurl, origin, policy):
     project = origin.rstrip('~')
@@ -427,6 +451,7 @@ def policy_get_preprocess(apiurl, origin, policy):
             for v in policy[key]]))
 
     return policy
+
 
 def policy_input_calculate(apiurl, project, package,
                            origin_info_new, origin_info_old,
@@ -485,6 +510,7 @@ def policy_input_calculate(apiurl, project, package,
 
     return inputs
 
+
 def policy_input_evaluate(policy, inputs):
     result = PolicyResult(False, True, {}, [])
 
@@ -537,9 +563,11 @@ def policy_input_evaluate(policy, inputs):
 
     return result
 
+
 def policy_input_evaluate_reviews_not_allowed(policy, inputs):
     return reviews_filter_allowed(inputs['pending_submission'].reviews_remaining,
                                   policy['pending_submission_allowed_reviews'])
+
 
 def reviews_filter_allowed(reviews_remaining, allowed_reviews):
     reviews_not_allowed = []
@@ -567,6 +595,7 @@ def reviews_filter_allowed(reviews_remaining, allowed_reviews):
             reviews_not_allowed.append(review_remaining)
 
     return reviews_not_allowed
+
 
 def origin_revision_state(apiurl, target_project, package, origin_info=False, limit=10):
     if origin_info is False:
@@ -599,6 +628,7 @@ def origin_revision_state(apiurl, target_project, package, origin_info=False, li
     # To simplify usage which is left-right (oldest-newest) place oldest first.
     return list(reversed(revisions))
 
+
 def origin_potential(apiurl, target_project, package, require_update_initial=False):
     config = config_load(apiurl, target_project)
     for origin, _ in config_origin_generator(config['origins'], apiurl, target_project, package, True):
@@ -614,6 +644,7 @@ def origin_potential(apiurl, target_project, package, require_update_initial=Fal
 
     return None, None
 
+
 def origin_potentials(apiurl, target_project, package):
     potentials = {}
 
@@ -625,6 +656,7 @@ def origin_potentials(apiurl, target_project, package):
             potentials[origin] = version
 
     return potentials
+
 
 def origin_history(apiurl, target_project, package, user):
     history = []
@@ -644,6 +676,7 @@ def origin_history(apiurl, target_project, package, user):
         })
 
     return history
+
 
 def origin_update(apiurl, target_project, package):
     origin_info = origin_find(apiurl, target_project, package)
@@ -734,6 +767,7 @@ def origin_update(apiurl, target_project, package):
     return request_create_submit(apiurl, origin_info.project, package, target_project, message=message,
                                  supersede=supersede, frequency=frequency)
 
+
 def origin_update_pending(apiurl, origin_project, package, target_project, policy, supersede, frequency):
     apiurl_remote, project_remote = project_remote_apiurl(apiurl, origin_project)
     request_actions = request_action_list_source(
@@ -752,6 +786,7 @@ def origin_update_pending(apiurl, origin_project, package, target_project, polic
                                      supersede=supersede, frequency=frequency)
 
     return False
+
 
 def origin_update_mode(apiurl, target_project, package, policy, origin_project):
     values = {}
@@ -777,6 +812,7 @@ def origin_update_mode(apiurl, target_project, package, policy, origin_project):
 
     return values
 
+
 def origin_update_initial_blacklisted(apiurl, target_project, package):
     patterns = origin_update_initial_blacklisted_patterns(apiurl, target_project)
     for pattern in patterns:
@@ -784,6 +820,7 @@ def origin_update_initial_blacklisted(apiurl, target_project, package):
             return True
 
     return False
+
 
 @memoize(session=True)
 def origin_update_initial_blacklisted_patterns(apiurl, target_project):
@@ -798,6 +835,7 @@ def origin_update_initial_blacklisted_patterns(apiurl, target_project):
             patterns.append(re.compile(entry, re.IGNORECASE))
 
     return patterns
+
 
 @memoize(session=True)
 def origin_updatable(apiurl):
@@ -824,6 +862,7 @@ def origin_updatable(apiurl):
 
     return projects
 
+
 @memoize(session=True)
 def origin_updatable_map(apiurl, pending=None, include_self=False):
     origins = {}
@@ -847,6 +886,7 @@ def origin_updatable_map(apiurl, pending=None, include_self=False):
 
     return origins
 
+
 def origin_updatable_initial(apiurl, target_project):
     origins = []
 
@@ -857,8 +897,10 @@ def origin_updatable_initial(apiurl, target_project):
 
     return origins
 
+
 class devel_project_simulate_exception(Exception):
     pass
+
 
 class devel_project_simulate:
     lock = None
@@ -895,6 +937,7 @@ class devel_project_simulate:
         # Ensure devel lookups are forgotten.
         memoize_session_reset()
 
+
 @memoize(session=True)
 def origin_devel_project(apiurl, project, package):
     if devel_project_simulate.lock:
@@ -907,6 +950,7 @@ def origin_devel_project(apiurl, project, package):
 
     return devel_project_get(apiurl, project, package)
 
+
 @memoize(session=True)
 def origin_devel_projects(apiurl, project):
     projects = set(devel_projects(apiurl, project))
@@ -918,6 +962,7 @@ def origin_devel_projects(apiurl, project):
     projects.update(devel_whitelist)
 
     return sorted(projects)
+
 
 def origin_devel_project_requests(apiurl, project, package=None):
     config = config_load(apiurl, project)

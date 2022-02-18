@@ -25,6 +25,7 @@ from osclib.stagingapi import StagingAPI
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 CheckResult = namedtuple('CheckResult', ('success', 'comment'))
 
+
 class InstallChecker(object):
     def __init__(self, api, config):
         self.api = api

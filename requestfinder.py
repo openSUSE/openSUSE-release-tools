@@ -11,6 +11,7 @@ import os
 import osc.core
 import ToolBase
 
+
 class Requestfinder(ToolBase.ToolBase):
 
     def __init__(self):

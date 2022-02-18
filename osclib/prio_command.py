@@ -4,6 +4,7 @@ import osc
 from lxml import etree as ET
 from urllib.error import HTTPError
 
+
 class PrioCommand(object):
     def __init__(self, api):
         self.api = api

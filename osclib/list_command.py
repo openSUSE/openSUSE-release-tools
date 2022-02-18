@@ -5,6 +5,7 @@ from osc import oscerr
 from osclib.request_splitter import RequestSplitter
 from osclib.supersede_command import SupersedeCommand
 
+
 class ListCommand:
     SOURCE_PROJECT_STRIP = [
         'SUSE:SLE-12:',

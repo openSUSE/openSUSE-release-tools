@@ -34,6 +34,8 @@ osclib.conf.DEFAULT[
 # capture the generated query, paginate over and yield each request to avoid
 # loading all requests at the same time. Additionally, use lxml ET to avoid
 # having to re-parse to perform complex xpaths.
+
+
 def get_request_list(*args, **kwargs):
     osc.core._search = osc.core.search
     osc.core.search = search_capture
@@ -52,12 +54,15 @@ def get_request_list(*args, **kwargs):
 
     osc.core.ET = osc.core._ET
 
+
 def search_capture(apiurl, queries=None, **kwargs):
     search_capture.query = (apiurl, queries, kwargs)
     return {'request': ET.fromstring('<collection matches="0"></collection>')}
 
 # Provides a osc.core.search() implementation for use with get_request_list()
 # that paginates in sets of 1000 and yields each request.
+
+
 def search_paginated_generator(apiurl, queries=None, **kwargs):
     if "action/target/@project='openSUSE:Factory'" in kwargs['request']:
         # Idealy this would be 250000, but poo#48437 and lack of OBS sort.
@@ -86,12 +91,15 @@ def search_paginated_generator(apiurl, queries=None, **kwargs):
 
 points = []
 
+
 def point(measurement, fields, datetime, tags={}, delta=False):
     global points
     points.append(Point(measurement, tags, fields, timestamp(datetime), delta))
 
+
 def timestamp(datetime):
     return int(datetime.strftime('%s'))
+
 
 def ingest_requests(api, project):
     requests = get_request_list(api.apiurl, project,
@@ -241,6 +249,7 @@ def ingest_requests(api, project):
     print('finalizing {:,} points'.format(len(points)))
     return walk_points(points, project)
 
+
 def who_workaround(request, review, relax=False):
     # Super ugly workaround for incorrect and missing data:
     # - openSUSE/open-build-service#3857
@@ -270,6 +279,8 @@ def who_workaround(request, review, relax=False):
 # the same time. Data is converted to dict() and written to influx batches to
 # avoid extra memory usage required for all data in dict() and avoid influxdb
 # allocating memory for entire incoming data set at once.
+
+
 def walk_points(points, target):
     global client
 
@@ -323,6 +334,7 @@ def walk_points(points, target):
     client.write_points(final, 's')
     return wrote + len(final)
 
+
 def ingest_release_schedule(project):
     points = []
     release_schedule = {}
@@ -353,6 +365,7 @@ def ingest_release_schedule(project):
     client.write_points(points, 's')
     return len(points)
 
+
 def revision_index(api):
     if not hasattr(revision_index, 'index'):
         revision_index.index = {}
@@ -370,6 +383,7 @@ def revision_index(api):
 
     return revision_index.index
 
+
 def revision_at(api, datetime):
     index = revision_index(api)
     for made, revision in sorted(index.items(), reverse=True):
@@ -377,6 +391,7 @@ def revision_at(api, datetime):
             return revision
 
     return None
+
 
 def dashboard_at(api, filename, datetime=None, revision=None):
     if datetime:
@@ -403,6 +418,7 @@ def dashboard_at(api, filename, datetime=None, revision=None):
 
     return content
 
+
 def dashboard_at_changed(api, filename, revision=None):
     if not hasattr(dashboard_at_changed, 'previous'):
         dashboard_at_changed.previous = {}
@@ -418,6 +434,7 @@ def dashboard_at_changed(api, filename, revision=None):
         return content
 
     return None
+
 
 def ingest_dashboard_config(content):
     if not hasattr(ingest_dashboard_config, 'previous'):
@@ -449,10 +466,12 @@ def ingest_dashboard_config(content):
 
     return fields
 
+
 def ingest_dashboard_devel_projects(content):
     return {
         'count': len(content.strip().split()),
     }
+
 
 def ingest_dashboard_repo_checker(content):
     return {
@@ -461,10 +480,12 @@ def ingest_dashboard_repo_checker(content):
         'line_count': content.count('\n'),
     }
 
+
 def ingest_dashboard_version_snapshot(content):
     return {
         'version': content.strip(),
     }
+
 
 def ingest_dashboard_revision_get():
     result = client.query('SELECT revision FROM dashboard_revision ORDER BY time DESC LIMIT 1')
@@ -472,6 +493,7 @@ def ingest_dashboard_revision_get():
         return next(result.get_points())['revision']
 
     return None
+
 
 def ingest_dashboard(api):
     index = revision_index(api)
@@ -528,6 +550,7 @@ def ingest_dashboard(api):
     print('last revision processed: {}'.format(revision if len(index) else 'none'))
 
     return count
+
 
 def main(args):
     global client

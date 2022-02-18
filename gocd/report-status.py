@@ -34,6 +34,7 @@ makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
 http_POST = osc.core.http_POST
 
+
 def report_pipeline(args, architecture, is_last):
     url = makeurl(args.apiurl, [
                   'build', args.project, args.repository, architecture], {'view': 'status'})
@@ -61,6 +62,7 @@ def report_pipeline(args, architecture, is_last):
     except HTTPError:
         print('failed to post status to ' + url)
         sys.exit(1)
+
 
 def check_xml(url, state, name):
     check = ET.Element('check')

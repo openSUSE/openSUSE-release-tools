@@ -2,6 +2,7 @@
 
 import struct
 
+
 class Cpio(object):
     def __init__(self, buf):
         self.buf = buf
@@ -16,6 +17,7 @@ class Cpio(object):
             raise StopIteration
         self.off = self.off + f.length()
         return f
+
 
 class CpioFile(object):
     def __init__(self, off, buf):

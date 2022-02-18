@@ -18,6 +18,7 @@ from lxml import etree as ET
 from urllib.error import HTTPError
 from osclib.PubSubConsumer import PubSubConsumer
 
+
 class Listener(PubSubConsumer):
     def __init__(self, apiurl, amqp_prefix, namespaces):
         super(Listener, self).__init__(amqp_prefix, logging.getLogger(__name__))

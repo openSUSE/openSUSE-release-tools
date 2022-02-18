@@ -15,6 +15,7 @@ from osclib.stagingapi import StagingAPI
 from pkglistgen.tool import PkgListGen
 from pkglistgen.update_repo_handler import update_project, merge_susetags
 
+
 class CommandLineInterface(ToolBase.CommandLineInterface):
     SCOPES = ['all', 'target', 'rings', 'staging']
 

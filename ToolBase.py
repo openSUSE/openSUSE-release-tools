@@ -21,12 +21,14 @@ http_GET = osc.core.http_GET
 http_DELETE = osc.core.http_DELETE
 http_POST = osc.core.http_POST
 
-# http://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks-in-python
+
 def chunks(line, n):
     """ Yield successive n-sized chunks from l.
     """
+    # http://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks-in-python
     for i in range(0, len(line), n):
         yield line[i:i + n]
+
 
 class ToolBase(object):
     def __init__(self):
@@ -115,6 +117,7 @@ class ToolBase(object):
     def process(self, packages):
         """ reimplement this """
         True
+
 
 class CommandLineInterface(cmdln.Cmdln):
     def __init__(self, *args, **kwargs):

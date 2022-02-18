@@ -18,6 +18,7 @@ from ttm.publisher import ToTestPublisher
 
 logger = logging.getLogger()
 
+
 class CommandLineInterface(ToolBase.CommandLineInterface):
 
     def __init__(self, *args, **kwargs):

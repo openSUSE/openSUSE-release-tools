@@ -52,6 +52,7 @@ def bug_create(bugzilla_api, meta, assigned_to, cc, summary, description):
 
     return newbug.id
 
+
 def bug_owner(apiurl, package, entity='person'):
     query = {
         'binary': package,
@@ -70,6 +71,7 @@ def bug_owner(apiurl, package, entity='person'):
 
     return None
 
+
 def bug_meta_get(bugzilla_api, bug_id):
     try:
         bug = bugzilla_api.getbug(bug_id)
@@ -77,6 +79,7 @@ def bug_meta_get(bugzilla_api, bug_id):
         print('bug_meta_get(): ' + str(e))
         return None
     return bug.component
+
 
 def bug_meta(bugzilla_api, defaults, trackers, issues):
     # Extract meta from the first bug from bnc tracker or fallback to defaults.
@@ -89,12 +92,14 @@ def bug_meta(bugzilla_api, defaults, trackers, issues):
 
     return defaults
 
+
 def bugzilla_init(apiurl):
     bugzilla_api = bugzilla.Bugzilla(apiurl)
     if not bugzilla_api.logged_in:
         print('Bugzilla credentials required to create bugs.')
         bugzilla_api.interactive_login()
     return bugzilla_api
+
 
 def prompt_continue(change_count):
     allowed = ['y', 'b', 's', 'n', '']
@@ -115,6 +120,7 @@ def prompt_continue(change_count):
 
     return prompt_continue(change_count)
 
+
 def prompt_interactive(changes, project, package):
     with tempfile.NamedTemporaryFile(mode='w', suffix='.yml') as temp:
         temp.write(yaml.safe_dump(changes, default_flow_style=False, default_style="'") + '\n')
@@ -133,8 +139,10 @@ def prompt_interactive(changes, project, package):
 
         return changes_after
 
+
 def issue_found(package, label, db):
     return not(package not in db or db[package] is None or label not in db[package])
+
 
 def issue_trackers(apiurl):
     url = osc.core.makeurl(apiurl, ['issue_trackers'])
@@ -144,12 +152,14 @@ def issue_trackers(apiurl):
         trackers[tracker.find('name').text] = tracker.find('label').text
     return trackers
 
+
 def issue_normalize(trackers, tracker, name):
     if tracker in trackers:
         return trackers[tracker].replace('@@@', name)
 
     print('WARNING: ignoring unknown tracker {} for {}'.format(tracker, name))
     return None
+
 
 def issues_get(apiurl, project, package, trackers, db):
     issues = {}
@@ -199,6 +209,7 @@ def issues_get(apiurl, project, package, trackers, db):
 
     return issues
 
+
 def print_stats(db):
     bug_ids = []
     reported = 0
@@ -216,6 +227,7 @@ def print_stats(db):
     print('Bugs: {}'.format(len(set(bug_ids))))
     print('Reported: {}'.format(reported))
     print('Whitelisted: {}'.format(whitelisted))
+
 
 def main(args):
     # Store the default apiurl in addition to the overriden url if the

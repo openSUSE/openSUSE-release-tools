@@ -10,6 +10,7 @@ from osclib.core import package_list
 from mock import MagicMock
 from . import OBSLocal
 
+
 class TestAccept(unittest.TestCase):
 
     def setup_wf(self):

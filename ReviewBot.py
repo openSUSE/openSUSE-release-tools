@@ -35,6 +35,7 @@ from itertools import count
 # In-case not properly initialized via the CommandLineInterface.
 sentry_sdk = sentry_init()
 
+
 class PackageLookup(object):
     """ helper class to manage 00Meta/lookup.yml
     """

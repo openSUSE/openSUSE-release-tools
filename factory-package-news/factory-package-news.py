@@ -17,6 +17,7 @@ data_version = 3
 
 changelog_max_lines = 100  # maximum number of changelog lines per package
 
+
 class ChangeLogger(cmdln.Cmdln):
     def __init__(self, *args, **kwargs):
         cmdln.Cmdln.__init__(self, args, kwargs)

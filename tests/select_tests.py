@@ -11,6 +11,7 @@ from lxml import etree as ET
 from mock import MagicMock
 from . import OBSLocal
 
+
 class TestSelect(OBSLocal.TestCase):
 
     def setUp(self):

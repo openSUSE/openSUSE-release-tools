@@ -19,6 +19,8 @@ FACTORY_MAINTAINERS = 'group:factory-maintainers'
 
 # Inherit from OBSLocal.Testcase since it provides many commodity methods for testing against
 # a local testing instance of OBS
+
+
 class TestCheckSource(OBSLocal.TestCase):
     def setUp(self):
         super(TestCheckSource, self).setUp()

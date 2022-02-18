@@ -138,6 +138,7 @@ class OriginSourceChangeListener(PubSubConsumer):
             else:
                 self.logger.info(f'skipped submitting new non-source package {project}/{package}')
 
+
 class OriginSourceChangeListenerRemote(OriginSourceChangeListener):
     def __init__(self, apiurl, parent, prefix):
         self.parent = parent

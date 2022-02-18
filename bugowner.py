@@ -37,6 +37,7 @@ FACTORY = "openSUSE:Factory"
 Owner = namedtuple('Owner', ('kind', 'name'))
 Person = namedtuple('Person', ('login', 'email', 'realname'))
 
+
 class BugownerTool(ToolBase.ToolBase):
 
     def __init__(self):

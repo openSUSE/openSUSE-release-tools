@@ -1,4 +1,4 @@
 [flake8]
 exclude = abichecker
 max-line-length = 100
-ignore = W503,W504,E501,F401,E128,E251,E201,E202,E302
+ignore = W503,W504,E501,F401,E128,E251,E201,E202

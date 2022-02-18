@@ -38,6 +38,7 @@ PRODUCT_SERVICE = '/usr/lib/obs/service/create_single_product'
 # share header cache with repochecker
 CACHEDIR = CacheManager.directory('repository-meta')
 
+
 class PkgListGen(ToolBase.ToolBase):
 
     def __init__(self):

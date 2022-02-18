@@ -13,6 +13,7 @@ from check_source_in_factory import FactorySourceChecker
 APIURL = 'http://testhost.example.com'
 FIXTURES = os.path.join(os.getcwd(), 'tests/fixtures')
 
+
 class TestFactorySourceAccept(OBSLocal.TestCase):
 
     def tearDown(self):

@@ -30,6 +30,7 @@ from urllib.parse import urljoin, urlparse
 
 logger = logging.getLogger()
 
+
 def dump_solv_build(baseurl):
     """Determine repo format and build string from remote repository."""
 
@@ -67,6 +68,7 @@ def dump_solv_build(baseurl):
 
     raise Exception(baseurl + 'includes no build number')
 
+
 def parse_repomd(repo, baseurl):
     url = urljoin(baseurl, 'repodata/repomd.xml')
     repomd = requests.get(url)
@@ -101,6 +103,7 @@ def parse_repomd(repo, baseurl):
         return True
 
     return False
+
 
 def parse_susetags(repo, baseurl):
     url = urljoin(baseurl, 'content')
@@ -137,6 +140,7 @@ def parse_susetags(repo, baseurl):
         return True
     return False
 
+
 def dump_solv(name, baseurl):
     pool = solv.Pool()
     pool.setarch()
@@ -152,6 +156,7 @@ def dump_solv(name, baseurl):
     ofh.flush()
 
     return name
+
 
 def print_repo_delta(pool, repo2, packages_file):
     print('=Ver: 2.0', file=packages_file)
@@ -176,6 +181,7 @@ def print_repo_delta(pool, repo2, packages_file):
         for dep in s.lookup_deparray(solv.SOLVABLE_PROVIDES):
             print(dep, file=packages_file)
         print('-Prv:', file=packages_file)
+
 
 def merge_susetags(output, files):
     pool = solv.Pool()

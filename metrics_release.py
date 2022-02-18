@@ -7,13 +7,16 @@ import yaml
 
 BASEURL = 'http://review.tumbleweed.boombatower.com/data/'
 
+
 def data_load(name):
     response = requests.get(urljoin(BASEURL, '{}.yaml'.format(name)))
     return yaml.safe_load(response.text)
 
+
 def data_write(client, measurement, points):
     client.drop_measurement(measurement)
     client.write_points(points, 's')
+
 
 def ingest_data(client, name):
     data = data_load(name)
@@ -31,10 +34,12 @@ def ingest_data(client, name):
     data_write(client, measurement, points)
     print('wrote {} for {}'.format(len(points), name))
 
+
 def map_bug(bugs):
     return {
         'bug_count': len(bugs),
     }
+
 
 def map_mail(details):
     return {
@@ -42,14 +47,17 @@ def map_mail(details):
         'thread_count': details['thread_count'],
     }
 
+
 def map_score(details):
     return details
+
 
 def map_snapshot(details):
     return {
         'binary_count': details['binary_count'],
         'binary_unique_count': details['binary_unique_count'],
     }
+
 
 def ingest(client):
     if client._database != 'openSUSE:Factory':

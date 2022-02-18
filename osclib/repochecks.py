@@ -85,11 +85,13 @@ def _fileconflicts(pfile, target_packages, whitelist):
         if len(output):
             return output
 
+
 def filter_release(line):
     line = re.sub(r'(package [^ ]*\-[^-]*)\-[^-]*(\.\w+) ', r'\1\2 ', line)
     line = re.sub(r'(needed by [^ ]*\-[^-]*)\-[^-]*(\.\w+)$', r'\1\2', line)
     line = re.sub(r'(provided by [^ ]*\-[^-]*)\-[^-]*(\.\w+)$', r'\1\2', line)
     return line
+
 
 def parsed_installcheck(repos, arch, target_packages, whitelist):
     reported_problems = dict()
@@ -169,6 +171,7 @@ def installcheck(directories, arch, whitelist, ignore_conflicts):
 
         return parts
 
+
 def mirrorRepomd(cachedir, url):
     # Use repomd.xml to get the location of primary.xml.gz
     repoindex = ET.fromstring(requests.get('{}/repodata/repomd.xml'.format(url)).content)
@@ -187,6 +190,7 @@ def mirrorRepomd(cachedir, url):
             primarytemp.write(requests.get(url + '/' + primarypath).content)
             os.link(primarytemp.name, primarydest)
     return primarydest
+
 
 def mirror(apiurl, project, repository, arch):
     """Call bs_mirrorfull script to mirror packages."""

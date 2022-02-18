@@ -8,6 +8,7 @@ from osclib.memoize import memoize
 
 logger = logging.getLogger()
 
+
 @memoize(session=True)
 def project_list_family(apiurl, project, include_update=False):
     """
@@ -55,6 +56,7 @@ def project_list_family(apiurl, project, include_update=False):
 
     return projects
 
+
 def project_list_family_prior(apiurl, project, include_self=False, last=None, include_update=False):
     """
     Determine the available projects within the same product family released
@@ -77,6 +79,7 @@ def project_list_family_prior(apiurl, project, include_self=False, last=None, in
 
     return prior
 
+
 def project_list_family_prior_pattern(apiurl, project_pattern, project=None, include_update=True):
     project_prefix, project_suffix = project_pattern.split('*', 2)
     if project:
@@ -96,6 +99,7 @@ def project_list_family_prior_pattern(apiurl, project_pattern, project=None, inc
 
     return [p for p in projects if p.startswith(project_prefix)]
 
+
 def project_list_family_sorter(project):
     """Extract key to be used as sorter (oldest to newest)."""
     version = project_version(project)
@@ -107,6 +111,7 @@ def project_list_family_sorter(project):
         version += 0.01
 
     return version
+
 
 def project_version(project):
     """
@@ -132,6 +137,7 @@ def project_version(project):
 
     return 0
 
+
 def mail_send_with_details(relay, sender, subject, to, text, xmailer=None, followup_to=None, dry=True):
     import smtplib
     from email.mime.text import MIMEText
@@ -155,6 +161,7 @@ def mail_send_with_details(relay, sender, subject, to, text, xmailer=None, follo
     s.sendmail(msg['From'], {msg['To'], sender }, msg.as_string())
     s.quit()
 
+
 def mail_send(apiurl, project, to, subject, body, from_key='maintainer',
               followup_to_key='release-list', dry=False):
 
@@ -173,6 +180,7 @@ def mail_send(apiurl, project, to, subject, body, from_key='maintainer',
     mail_send_with_details(text=body, subject=subject, relay=relay, sender=sender,
                            followup_to=followup_to, to=to, dry=dry)
 
+
 def sha1_short(data):
     import hashlib
 
@@ -183,6 +191,7 @@ def sha1_short(data):
         data = data.encode('utf-8')
 
     return hashlib.sha1(data).hexdigest()[:7]
+
 
 def rmtree_nfs_safe(path, attempts=5):
     import shutil

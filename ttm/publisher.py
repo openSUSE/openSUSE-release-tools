@@ -21,6 +21,7 @@ from osc.core import makeurl
 from ttm.manager import ToTestManager, NotFoundException, QAResult
 from openqa_client.client import OpenQA_Client
 
+
 class ToTestPublisher(ToTestManager):
 
     def __init__(self, tool):

@@ -6,6 +6,7 @@ import sys
 import time
 from datetime import datetime
 
+
 class PubSubConsumer(object):
     """
     Based on https://github.com/pika/pika/blob/master/examples/asynchronous_consumer_example.py
@@ -382,6 +383,7 @@ class PubSubConsumer(object):
             else:
                 self._connection.ioloop.stop()
             self.logger.debug('Stopped')
+
 
 def main():
     LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '

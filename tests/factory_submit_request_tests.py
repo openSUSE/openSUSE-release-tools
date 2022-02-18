@@ -22,6 +22,7 @@ STAGING_PROJECT_NAME = 'openSUSE:Factory:Staging:A'
 HUMAN_REVIEWER = 'factory-cop'
 FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures')
 
+
 class TestFactorySubmitRequest(OBSLocal.TestCase):
     """Tests for the whole lifecycle of submit requests in Factory
 

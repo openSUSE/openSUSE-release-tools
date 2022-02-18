@@ -6,6 +6,7 @@ from lxml import etree as ET
 
 import solv
 
+
 class Group(object):
 
     def __init__(self, name, pkglist):

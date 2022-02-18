@@ -8,6 +8,7 @@ from osclib.core import request_age
 from osclib.util import sha1_short
 import re
 
+
 class RequestSplitter(object):
     def __init__(self, api, requests, in_ring, stageable=True):
         self.api = api
@@ -372,6 +373,7 @@ class RequestSplitter(object):
         for staging in sorted(stagings):
             self.merge_staging(staging)
 
+
 class Strategy(object):
     def __init__(self, **kwargs):
         self.kwargs = kwargs
@@ -389,6 +391,7 @@ class Strategy(object):
     def desirable(self, splitter):
         return splitter.grouped.keys()
 
+
 class StrategyNone(Strategy):
     def apply(self, splitter):
         # All other strategies that inherit this are not restricted by age as
@@ -398,9 +401,11 @@ class StrategyNone(Strategy):
         splitter.filter_add('@ignored="False"')
         splitter.filter_add('@postponed="False"')
 
+
 class StrategyRequests(Strategy):
     def apply(self, splitter):
         splitter.filter_add_requests(self.kwargs['requests'])
+
 
 class StrategyCustom(StrategyNone):
     def apply(self, splitter):
@@ -413,6 +418,7 @@ class StrategyCustom(StrategyNone):
         if 'groups' in self.kwargs:
             for group in self.kwargs['groups']:
                 splitter.group_by(group)
+
 
 class StrategyDevel(StrategyNone):
     GROUP_MIN = 7
@@ -430,6 +436,7 @@ class StrategyDevel(StrategyNone):
             if len(info['requests']) >= self.GROUP_MIN_MAP.get(group, self.GROUP_MIN):
                 groups.append(group)
         return groups
+
 
 class StrategySuper(StrategyDevel):
     # Regex pattern prefix representing super devel projects that should be
@@ -467,6 +474,7 @@ class StrategySuper(StrategyDevel):
         splitter.groups = []
         splitter.group_by('./action/target/@devel_project_super', True)
 
+
 class StrategyQuick(StrategyNone):
     def apply(self, splitter):
         super(StrategyQuick, self).apply(splitter)
@@ -496,6 +504,7 @@ class StrategyQuick(StrategyNone):
             'not(./review[@{attribute} and '
             'not(contains("{allowed}", concat(" ", @{attribute}, " "))) and '
             '@state!="accepted"])'.format(attribute=attribute, allowed=allowed))
+
 
 class StrategySpecial(StrategyNone):
     # Configurable via splitter-special-packages.

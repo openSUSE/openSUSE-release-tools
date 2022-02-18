@@ -9,6 +9,7 @@ from osclib.freeze_command import FreezeCommand
 from osclib.stagingapi import StagingAPI
 from . import OBSLocal
 
+
 class TestFreeze(OBSLocal.TestCase):
 
     def _get_fixture_path(self, filename):

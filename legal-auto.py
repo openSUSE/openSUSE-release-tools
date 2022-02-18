@@ -28,6 +28,7 @@ from osclib.comments import CommentAPI
 
 http_GET = osc.core.http_GET
 
+
 class LegalAuto(ReviewBot.ReviewBot):
 
     def __init__(self, *args, **kwargs):

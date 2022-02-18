@@ -39,6 +39,7 @@ PROJECT = 'openSUSE:Factory'
 OSCRC = '/tmp/.oscrc-test'
 OSCCOOKIEJAR = '/tmp/.osc_cookiejar-test'
 
+
 class TestCase(unittest.TestCase):
     script = None
     script_apiurl = True
@@ -272,6 +273,7 @@ class TestCase(unittest.TestCase):
         review = self.assertReview(request_id, by_user=(user, after))
         if comment:
             self.assertEqual(review.comment, comment)
+
 
 class StagingWorkflow(ABC):
     """This abstract base class is intended to setup and manipulate the environment (projects,
@@ -657,6 +659,7 @@ class StagingWorkflow(ABC):
         data = f"<workflow managers='{group}'/>"
         osc.core.http_POST(url, data=data)
 
+
 class FactoryWorkflow(StagingWorkflow):
     """A class that makes easy to setup scenarios similar to the one used during the real
     openSUSE Factory development, with staging projects, rings, etc.
@@ -719,6 +722,7 @@ class FactoryWorkflow(StagingWorkflow):
             FreezeCommand(self.api).perform(staging.name)
 
         return staging
+
 
 class SLEWorkflow(StagingWorkflow):
     """A class that makes easy to setup scenarios similar to the one used during the real
@@ -785,6 +789,7 @@ class SLEWorkflow(StagingWorkflow):
             return f'{basename}-SP{number}'
         else:
             return basename
+
 
 class Project(object):
     """This class represents a project in the testing environment of the release tools. It usually
@@ -952,6 +957,7 @@ class Project(object):
     def __del__(self):
         self.remove()
 
+
 class Package(object):
     """This class represents a package in the local OBS instance used to test the release tools and
     offers methods to create and modify such packages in order to simulate the different testing
@@ -1031,6 +1037,7 @@ class Package(object):
             # Opening as binary is needed e.g. for compressed tarball sources
             with open(os.path.join(path, filename), 'rb') as f:
                 self.create_commit(filename=filename, text=f.read())
+
 
 class Request(object):
     """This class represents a request in the local OBS instance used to test the release tools and

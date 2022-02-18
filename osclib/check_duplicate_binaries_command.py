@@ -2,6 +2,7 @@ from __future__ import print_function
 from osclib.core import duplicated_binaries_in_repo
 import yaml
 
+
 class CheckDuplicateBinariesCommand(object):
     def __init__(self, api):
         self.api = api

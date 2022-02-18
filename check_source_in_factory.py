@@ -133,6 +133,7 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
                     self.logger.info("%s to %s has different sources", srref(req.reqid), project)
         return False
 
+
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 
     def __init__(self, *args, **kwargs):

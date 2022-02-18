@@ -3,6 +3,7 @@ from osc.core import get_request
 from osclib.comments import CommentAPI
 from osclib.request_finder import RequestFinder
 
+
 class UnselectCommand(object):
     CLEANUP_WHITELIST = 'origin-manager'
 

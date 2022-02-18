@@ -3,6 +3,7 @@ from lxml import etree as ET
 
 MAX_FROZEN_AGE = 6.5
 
+
 class FreezeCommand(object):
 
     def __init__(self, api):

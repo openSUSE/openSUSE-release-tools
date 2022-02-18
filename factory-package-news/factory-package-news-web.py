@@ -15,8 +15,10 @@ BASE_DIR = '/var/lib'
 
 app = Flask(__name__)
 
+
 def get_dir(url):
     return os.path.join(BASE_DIR, urlparse(url).path.lstrip('/'))
+
 
 @app.route('/')
 def list():
@@ -35,6 +37,7 @@ def list():
             ret = ret + " &lt;--"
         ret = ret + '<br/>'
     return ret
+
 
 @app.route('/current', methods=['GET', 'POST'])
 def current():
@@ -59,6 +62,7 @@ def current():
         if not os.path.exists(fn):
             return "", 404
         return os.readlink(fn)
+
 
 @app.route('/diff/<version>')
 def diff(version):

@@ -24,6 +24,7 @@ DEFAULT_REPOSITORY = 'standard'
 
 META_PACKAGE = '000package-groups'
 
+
 class SkippkgFinder(object):
     def __init__(self, opensuse_project, sle_project, alternative_project, print_only, verbose):
         self.upload_project = opensuse_project

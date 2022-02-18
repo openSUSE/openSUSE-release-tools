@@ -35,6 +35,7 @@ RPM_REGEX = BINARY_REGEX + r'\.rpm'
 BinaryParsed = namedtuple('BinaryParsed', ('package', 'filename', 'name', 'arch'))
 REQUEST_STATES_MINUS_ACCEPTED = ['new', 'review', 'declined', 'revoked', 'superseded']
 
+
 @memoize(session=True)
 def group_members(apiurl, group, maintainers=False):
     url = makeurl(apiurl, ['group', group])
@@ -45,6 +46,7 @@ def group_members(apiurl, group, maintainers=False):
 
     return root.xpath('person/person/@userid')
 
+
 def groups_members(apiurl, groups):
     members = []
 
@@ -54,9 +56,12 @@ def groups_members(apiurl, groups):
     return members
 
 # osc uses xml.etree while we rely on lxml
+
+
 def convert_from_osc_et(xml):
     from xml.etree import ElementTree as oscET
     return ET.fromstring(oscET.tostring(xml))
+
 
 @memoize(session=True)
 def owner_fallback(apiurl, project, package):
@@ -66,6 +71,7 @@ def owner_fallback(apiurl, project, package):
         # Fallback to global (ex Factory) maintainer.
         root = owner(apiurl, package)
     return convert_from_osc_et(root)
+
 
 @memoize(session=True)
 def maintainers_get(apiurl, project, package=None):
@@ -86,6 +92,7 @@ def maintainers_get(apiurl, project, package=None):
 
     return maintainers
 
+
 @memoize(session=True)
 def package_role_expand(apiurl, project, package, role='maintainer', inherit=True):
     """
@@ -100,6 +107,7 @@ def package_role_expand(apiurl, project, package, role='maintainer', inherit=Tru
 
     return users
 
+
 @memoize(session=True)
 def project_role_expand(apiurl, project, role='maintainer'):
     """
@@ -109,6 +117,7 @@ def project_role_expand(apiurl, project, role='maintainer'):
     meta = ET.fromstringlist(show_project_meta(apiurl, project))
     return meta_role_expand(apiurl, meta, role)
 
+
 def meta_role_expand(apiurl, meta, role='maintainer'):
     users = meta.xpath('//person[@role="{}"]/@userid'.format(role))
 
@@ -116,6 +125,7 @@ def meta_role_expand(apiurl, meta, role='maintainer'):
     users.extend(groups_members(apiurl, groups))
 
     return users
+
 
 def package_list(apiurl, project):
     url = makeurl(apiurl, ['source', project], {'expand': 1})
@@ -127,10 +137,12 @@ def package_list(apiurl, project):
 
     return sorted(packages)
 
+
 @memoize(session=True)
 def target_archs(apiurl, project, repository='standard'):
     meta = ET.fromstringlist(show_project_meta(apiurl, project))
     return meta.xpath('repository[@name="{}"]/arch/text()'.format(repository))
+
 
 @memoize(session=True)
 def depends_on(apiurl, project, repository, packages=None, reverse=None):
@@ -141,6 +153,7 @@ def depends_on(apiurl, project, repository, packages=None, reverse=None):
 
     return dependencies
 
+
 def request_when_staged(request, project, first=False):
     when = None
     for history in request.statehistory:
@@ -148,6 +161,7 @@ def request_when_staged(request, project, first=False):
             when = history.when
 
     return date_parse(when)
+
 
 def binary_list(apiurl, project, repository, arch, package=None):
     parsed = []
@@ -167,6 +181,7 @@ def binary_list(apiurl, project, repository, arch, package=None):
         parsed.append(BinaryParsed(package, result.group('filename'), name, result.group('arch')))
 
     return parsed
+
 
 @memoize(session=True)
 def package_binary_list(apiurl, project, repository, arch, package=None, strip_multibuild=True, exclude_src_debug=False):
@@ -199,6 +214,7 @@ def package_binary_list(apiurl, project, repository, arch, package=None, strip_m
 
     return package_binaries, binary_map
 
+
 def binary_src_debug(binary):
     return (
         binary.arch == 'src' or
@@ -206,6 +222,7 @@ def binary_src_debug(binary):
         binary.name.endswith('-debuginfo') or
         binary.name.endswith('-debugsource')
     )
+
 
 @memoize(session=True)
 def devel_project_get(apiurl, target_project, target_package):
@@ -219,6 +236,7 @@ def devel_project_get(apiurl, target_project, target_package):
             raise e
 
     return None, None
+
 
 @memoize(session=True)
 def devel_project_fallback(apiurl, target_project, target_package):
@@ -235,6 +253,7 @@ def devel_project_fallback(apiurl, target_project, target_package):
 
     return project, package
 
+
 @memoize(session=True)
 def devel_projects(apiurl, project):
     devel_projects = set()
@@ -246,6 +265,7 @@ def devel_projects(apiurl, project):
 
     return sorted(devel_projects)
 
+
 def request_created(request):
     if isinstance(request, Request):
         created = request.statehistory[0].when
@@ -253,8 +273,10 @@ def request_created(request):
         created = request.find('history').get('when')
     return date_parse(created)
 
+
 def request_age(request):
     return datetime.utcnow() - request_created(request)
+
 
 def project_list_prefix(apiurl, prefix):
     """Get a list of project with the same prefix."""
@@ -263,6 +285,7 @@ def project_list_prefix(apiurl, prefix):
     root = ET.parse(http_GET(url)).getroot()
     return root.xpath('project/@name')
 
+
 def project_locked(apiurl, project):
     meta = ET.fromstringlist(show_project_meta(apiurl, project))
     return meta.find('lock/enable') is not None
@@ -270,6 +293,8 @@ def project_locked(apiurl, project):
 #
 # Depdendency helpers
 #
+
+
 def fileinfo_ext_all(apiurl, project, repo, arch, package):
     url = makeurl(apiurl, ['build', project, repo, arch, package])
     binaries = ET.parse(http_GET(url)).getroot()
@@ -280,11 +305,13 @@ def fileinfo_ext_all(apiurl, project, repo, arch, package):
 
         yield fileinfo_ext(apiurl, project, repo, arch, package, filename)
 
+
 def fileinfo_ext(apiurl, project, repo, arch, package, filename):
     url = makeurl(apiurl,
                   ['build', project, repo, arch, package, filename],
                   {'view': 'fileinfo_ext'})
     return ET.parse(http_GET(url)).getroot()
+
 
 def builddepinfo(apiurl, project, repo, arch, order = False):
     query = {}
@@ -292,6 +319,7 @@ def builddepinfo(apiurl, project, repo, arch, order = False):
         query['view'] = 'order'
     url = makeurl(apiurl, ['build', project, repo, arch, '_builddepinfo'], query)
     return ET.parse(http_GET(url)).getroot()
+
 
 def entity_email(apiurl, key, entity_type='person', include_name=False):
     url = makeurl(apiurl, [entity_type, key])
@@ -308,6 +336,7 @@ def entity_email(apiurl, key, entity_type='person', include_name=False):
 
     return email
 
+
 def source_file_load(apiurl, project, package, filename, revision=None):
     query = {'expand': 1}
     if revision:
@@ -318,14 +347,17 @@ def source_file_load(apiurl, project, package, filename, revision=None):
     except HTTPError:
         return None
 
+
 def source_file_save(apiurl, project, package, filename, content, comment=None):
     comment = message_suffix('updated', comment)
     url = makeurl(apiurl, ['source', project, package, filename], {'comment': comment})
     http_PUT(url, data=content)
 
+
 def source_file_ensure(apiurl, project, package, filename, content, comment=None):
     if content != source_file_load(apiurl, project, package, filename):
         source_file_save(apiurl, project, package, filename, content, comment)
+
 
 def project_pseudometa_package(apiurl, project):
     package = Config.get(apiurl, project).get('pseudometa_package', '00Meta')
@@ -334,6 +366,7 @@ def project_pseudometa_package(apiurl, project):
 
     return project, package
 
+
 def project_pseudometa_file_load(apiurl, project, filename, revision=None):
     project, package = project_pseudometa_package(apiurl, project)
     source_file = source_file_load(apiurl, project, package, filename, revision)
@@ -341,9 +374,11 @@ def project_pseudometa_file_load(apiurl, project, filename, revision=None):
         source_file = source_file.rstrip()
     return source_file
 
+
 def project_pseudometa_file_save(apiurl, project, filename, content, comment=None):
     project, package = project_pseudometa_package(apiurl, project)
     source_file_save(apiurl, project, package, filename, content, comment)
+
 
 def project_pseudometa_file_ensure(apiurl, project, filename, content, comment=None):
     if content != project_pseudometa_file_load(apiurl, project, filename):
@@ -357,6 +392,8 @@ def project_pseudometa_file_ensure(apiurl, project, filename, content, comment=N
 # various different cases that can exist between products. For a more detailed
 # write-up see the opensuse-buildservice mailing list thread:
 # https://lists.opensuse.org/opensuse-buildservice/2019-05/msg00020.html.
+
+
 def package_list_kind_filtered(apiurl, project, kinds_allowed=['source']):
     query = {
         'view': 'info',
@@ -371,6 +408,7 @@ def package_list_kind_filtered(apiurl, project, kinds_allowed=['source']):
             continue
 
         yield package
+
 
 def attribute_value_load(apiurl, project, name, namespace='OSRT', package=None):
     path = list(filter(None, ['source', project, package, '_attribute', namespace + ':' + name]))
@@ -401,6 +439,8 @@ def attribute_value_load(apiurl, project, name, namespace='OSRT', package=None):
 #   `api -T $xml /attribute/OSRT/$NEWATTRIBUTE/_meta`
 #
 # Remember to create for both OBS and IBS as necessary.
+
+
 def attribute_value_save(apiurl, project, name, value, namespace='OSRT', package=None):
     root = ET.Element('attributes')
 
@@ -414,9 +454,11 @@ def attribute_value_save(apiurl, project, name, value, namespace='OSRT', package
     url = makeurl(apiurl, list(filter(None, ['source', project, package, '_attribute'])))
     http_POST(url, data=ET.tostring(root))
 
+
 def attribute_value_delete(apiurl, project, name, namespace='OSRT', package=None):
     http_DELETE(makeurl(
         apiurl, list(filter(None, ['source', project, package, '_attribute', namespace + ':' + name]))))
+
 
 @memoize(session=True)
 def repository_path_expand(apiurl, project, repo, visited_repos=None):
@@ -439,6 +481,7 @@ def repository_path_expand(apiurl, project, repo, visited_repos=None):
             visited_repos.add((p_project, p_repository))
             repos += repository_path_expand(apiurl, p_project, p_repository, visited_repos)
     return repos
+
 
 @memoize(session=True)
 def repository_path_search(apiurl, project, search_project, search_repository):
@@ -465,6 +508,7 @@ def repository_path_search(apiurl, project, search_project, search_repository):
 
     return None
 
+
 def repository_arch_state(apiurl, project, repository, arch):
     # just checking the mtimes of the repository's binaries
     url = makeurl(apiurl, ['build', project, repository, arch, '_repository'])
@@ -476,6 +520,7 @@ def repository_arch_state(apiurl, project, repository, arch):
         # but that repository does not contain the archs we want, as such it has no state
         if e.code != 404:
             raise e
+
 
 def repository_state(apiurl, project, repository, archs=[]):
     if not len(archs):
@@ -491,6 +536,7 @@ def repository_state(apiurl, project, repository, archs=[]):
     from osclib.util import sha1_short
     return sha1_short(combined_state)
 
+
 def repositories_states(apiurl, repository_pairs, archs=[]):
     states = []
 
@@ -500,6 +546,7 @@ def repositories_states(apiurl, repository_pairs, archs=[]):
             states.append(state)
 
     return states
+
 
 def repository_published(apiurl, project, repository, archs=[]):
     # In a perfect world this would check for the existence of imports from i586
@@ -519,6 +566,7 @@ def repository_published(apiurl, project, repository, archs=[]):
         apiurl, project, multibuild=True, repository=[repository], arch=archs))
     return not len(root.xpath('result[@state!="published" and @state!="unpublished"]'))
 
+
 def repositories_published(apiurl, repository_pairs, archs=[]):
     for project, repository in repository_pairs:
         if not repository_published(apiurl, project, repository, archs):
@@ -526,18 +574,22 @@ def repositories_published(apiurl, repository_pairs, archs=[]):
 
     return True
 
+
 def project_meta_revision(apiurl, project):
     root = ET.fromstringlist(get_commitlog(
         apiurl, project, '_project', None, format='xml', meta=True))
     return int(root.find('logentry').get('revision'))
+
 
 def package_source_changed(apiurl, project, package):
     url = makeurl(apiurl, ['source', project, package, '_history'], {'limit': 1})
     root = ET.parse(http_GET(url)).getroot()
     return datetime.fromtimestamp(int(root.find('revision/time').text), timezone.utc).replace(tzinfo=None)
 
+
 def package_source_age(apiurl, project, package):
     return datetime.utcnow() - package_source_changed(apiurl, project, package)
+
 
 def entity_exists(apiurl, project, package=None):
     try:
@@ -549,6 +601,7 @@ def entity_exists(apiurl, project, package=None):
         raise e
 
     return True
+
 
 def package_kind(apiurl, project, package):
     if package.startswith('00') or package.startswith('_'):
@@ -583,6 +636,7 @@ def package_kind(apiurl, project, package):
 
     return 'source'
 
+
 def entity_source_link(apiurl, project, package=None):
     try:
         if package:
@@ -598,6 +652,7 @@ def entity_source_link(apiurl, project, package=None):
         raise e
 
     return root if package else root.find('link')
+
 
 @memoize(session=True)
 def package_source_link_copy(apiurl, project, package):
@@ -619,6 +674,8 @@ def package_source_link_copy(apiurl, project, package):
 # the link must be expanded and is safe to do so. Additionally, projects that
 # inherit packages need to same treatment (ie. expanding) until they are
 # overridden within the project.
+
+
 @memoize(session=True)
 def package_source_hash(apiurl, project, package, revision=None):
     query = {}
@@ -645,6 +702,7 @@ def package_source_hash(apiurl, project, package, revision=None):
 
     from osclib.util import sha1_short
     return sha1_short(root.xpath('entry[@name!="_link"]/@md5'))
+
 
 def package_source_hash_history(apiurl, project, package, limit=5, include_project_link=False):
     try:
@@ -689,6 +747,7 @@ def package_source_hash_history(apiurl, project, package, limit=5, include_proje
                 if limit_remaining == 0:
                     break
 
+
 def package_version(apiurl, project, package):
     try:
         url = makeurl(apiurl, ['source', project, package, '_history'], {'limit': 1})
@@ -700,6 +759,7 @@ def package_version(apiurl, project, package):
         raise e
 
     return str(root.xpath('(//version)[last()]/text()')[0])
+
 
 def project_attribute_list(apiurl, attribute, locked=None):
     xpath = 'attribute/@name="{}"'.format(attribute)
@@ -713,6 +773,8 @@ def project_attribute_list(apiurl, attribute, locked=None):
 
 # OBS xpath engine does not support multiple attribute queries nor negation. As
 # such both must be done client-side.
+
+
 def project_attributes_list(apiurl, attributes, attributes_not=None, locked=None):
     projects = set()
 
@@ -723,6 +785,7 @@ def project_attributes_list(apiurl, attributes, attributes_not=None, locked=None
         projects.difference_update(project_attribute_list(apiurl, attribute, locked))
 
     return list(projects)
+
 
 @memoize(session=True)
 def project_remote_list(apiurl):
@@ -737,6 +800,7 @@ def project_remote_list(apiurl):
 
     return remotes
 
+
 def project_remote_apiurl(apiurl, project):
     remotes = project_remote_list(apiurl)
     for remote in remotes:
@@ -744,6 +808,7 @@ def project_remote_apiurl(apiurl, project):
             return remotes[remote], project[len(remote) + 1:]
 
     return apiurl, project
+
 
 def project_remote_prefixed(apiurl, apiurl_remote, project):
     if apiurl_remote == apiurl:
@@ -756,12 +821,14 @@ def project_remote_prefixed(apiurl, apiurl_remote, project):
 
     raise Exception('remote APIURL interconnect not configured for{}'.format(apiurl_remote))
 
+
 def review_find_last(request, user, states=['all']):
     for review in reversed(request.reviews):
         if review.by_user == user and ('all' in states or review.state in states):
             return review
 
     return None
+
 
 def reviews_remaining(request, incident_psuedo=False):
     reviews = []
@@ -779,6 +846,7 @@ def reviews_remaining(request, incident_psuedo=False):
 
     return reviews
 
+
 def review_short(review):
     if review.by_user:
         return review.by_user
@@ -791,6 +859,7 @@ def review_short(review):
 
     return None
 
+
 def issue_trackers(apiurl):
     url = makeurl(apiurl, ['issue_trackers'])
     root = ET.parse(http_GET(url)).getroot()
@@ -798,6 +867,7 @@ def issue_trackers(apiurl):
     for tracker in root.findall('issue-tracker'):
         trackers[tracker.find('name').text] = tracker.find('label').text
     return trackers
+
 
 def issue_tracker_by_url(apiurl, tracker_url):
     url = makeurl(apiurl, ['issue_trackers'])
@@ -807,8 +877,10 @@ def issue_tracker_by_url(apiurl, tracker_url):
         tracker_url += '/'
     return next(iter(root.xpath('issue-tracker[url[text()="{}"]]'.format(tracker_url)) or []), None)
 
+
 def issue_tracker_label_apply(tracker, identifier):
     return tracker.find('label').text.replace('@@@', identifier)
+
 
 def request_remote_identifier(apiurl, apiurl_remote, request_id):
     if apiurl_remote == apiurl:
@@ -820,6 +892,7 @@ def request_remote_identifier(apiurl, apiurl_remote, request_id):
         return issue_tracker_label_apply(tracker, request_id)
 
     return request_id
+
 
 def duplicated_binaries_in_repo(apiurl, project, repository):
     duplicates = {}
@@ -851,14 +924,18 @@ def duplicated_binaries_in_repo(apiurl, project, repository):
     return duplicates
 
 # osc.core.search() is over-complicated and does not return lxml element.
+
+
 def search(apiurl, path, xpath, query={}):
     query['match'] = xpath
     url = makeurl(apiurl, ['search', path], query)
     return ET.parse(http_GET(url)).getroot()
 
+
 def action_is_patchinfo(action):
     return (action.type == 'maintenance_incident' and (
         action.src_package == 'patchinfo' or action.src_package.startswith('patchinfo.')))
+
 
 def request_action_key(action):
     identifier = []
@@ -889,6 +966,7 @@ def request_action_key(action):
         identifier.append(action.src_package)
 
     return '::'.join(['/'.join(identifier), action.type])
+
 
 def request_action_list_maintenance_incident(apiurl, project, package, states=['new', 'review']):
     # The maintenance workflow seems to be designed to be as difficult to find
@@ -959,6 +1037,7 @@ def request_action_list_maintenance_incident(apiurl, project, package, states=['
                 yield request, action
                 break
 
+
 def request_action_list_maintenance_release(apiurl, project, package, states=['new', 'review']):
     package_repository = '{}.{}'.format(package, project.replace(':', '_'))
 
@@ -985,6 +1064,7 @@ def request_action_list_maintenance_release(apiurl, project, package, states=['n
                 yield request, action
                 break
 
+
 def request_action_simple_list(apiurl, project, package, states, request_type):
     # Disable including source project in get_request_list() query.
     before = conf.config['include_request_from_project']
@@ -998,6 +1078,7 @@ def request_action_simple_list(apiurl, project, package, states, request_type):
                 yield request, action
                 break
 
+
 def request_action_list(apiurl, project, package, states=['new', 'review'], types=['submit']):
     for request_type in types:
         if request_type == 'maintenance_incident':
@@ -1006,6 +1087,7 @@ def request_action_list(apiurl, project, package, states=['new', 'review'], type
             yield from request_action_list_maintenance_release(apiurl, project, package, states)
         else:
             yield from request_action_simple_list(apiurl, project, package, states, request_type)
+
 
 def request_action_list_source(apiurl, project, package, states=['new', 'review'], include_release=False):
     types = []
@@ -1017,6 +1099,7 @@ def request_action_list_source(apiurl, project, package, states=['new', 'review'
         types.append('submit')
 
     yield from request_action_list(apiurl, project, package, states, types)
+
 
 def request_create_submit(apiurl, source_project, source_package,
                           target_project, target_package=None, message=None, revision=None,
@@ -1059,6 +1142,7 @@ def request_create_submit(apiurl, source_project, source_package,
     return RequestFuture('submit {}/{} -> {}/{}'.format(
         source_project, source_package, target_project, target_package), create_function)
 
+
 def request_create_delete(apiurl, target_project, target_package, message=None):
     for request, action in request_action_list(
             apiurl, target_project, target_package, REQUEST_STATES_MINUS_ACCEPTED, ['delete']):
@@ -1071,6 +1155,7 @@ def request_create_delete(apiurl, target_project, target_package, message=None):
         return create_delete_request(apiurl, target_project, target_package, message)
 
     return RequestFuture('delete {}/{}'.format(target_project, target_package), create_function)
+
 
 def request_create_change_devel(apiurl, source_project, source_package,
                                 target_project, target_package=None, message=None):
@@ -1090,11 +1175,13 @@ def request_create_change_devel(apiurl, source_project, source_package,
     return RequestFuture('change_devel {}/{} -> {}/{}'.format(
         source_project, source_package, target_project, target_package), create_function)
 
+
 def create_delete_request(apiurl, target_project, target_package=None, message=None):
     """Create a delete request"""
 
     action = Action('delete', tgt_project=target_project, tgt_package=target_package)
     return create_request(apiurl, action, message)
+
 
 def create_change_devel_request(apiurl, source_project, source_package,
                                 target_project, target_package=None, message=None):
@@ -1103,6 +1190,7 @@ def create_change_devel_request(apiurl, source_project, source_package,
     action = Action('change_devel', src_project=source_project, src_package=source_package,
             tgt_project=target_project, tgt_package=target_package)
     return create_request(apiurl, action, message)
+
 
 def create_add_role_request(apiurl, target_project, user, role, target_package=None, message=None):
     """Create an add_role request
@@ -1119,6 +1207,7 @@ def create_add_role_request(apiurl, target_project, user, role, target_package=N
     action = Action('add_role', tgt_project=target_project, tgt_package=target_package, **kargs)
     return create_request(apiurl, action, message)
 
+
 def create_request(apiurl, action, message=None):
     """Create a request for the given action
 
@@ -1131,6 +1220,7 @@ def create_request(apiurl, action, message=None):
 
     r.create(apiurl)
     return r.reqid
+
 
 class RequestFuture:
     def __init__(self, description, create_function):
@@ -1160,6 +1250,7 @@ class RequestFuture:
     def __str__(self):
         return self.description
 
+
 def add_description(request, text=None):
     """Add a description to the given request.
 
@@ -1170,12 +1261,14 @@ def add_description(request, text=None):
         text = message_suffix('created')
     request.description = text
 
+
 def message_suffix(action, message=None):
     if not message:
         message = '{} by OSRT tools'.format(action)
 
     message += ' (host {})'.format(socket.gethostname())
     return message
+
 
 def request_state_change(apiurl, request_id, state):
     query = { 'newstate': state, 'cmd': 'changestate' }

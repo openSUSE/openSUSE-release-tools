@@ -30,10 +30,13 @@ http.cookies._is_legal_key = lambda _: True
 sentry_sdk = sentry_init()
 
 # Available in python 3.7.
+
+
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     def handle_error(self, request, client_address):
         super().handle_error(request, client_address)
         sentry_sdk.capture_exception()
+
 
 class RequestHandler(BaseHTTPRequestHandler):
     COOKIE_NAME = 'openSUSE_session'  # Both OBS and IBS.
@@ -312,6 +315,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             command.extend(requests)
             yield command
 
+
 class OSCRequestEnvironment(object):
     def __init__(self, handler, user=None, require_session=True):
         self.handler = handler
@@ -360,8 +364,10 @@ class OSCRequestEnvironment(object):
         self.cookiejar_file.__exit__(exc_type, exc_val, exc_tb)
         self.oscrc_file.__exit__(exc_type, exc_val, exc_tb)
 
+
 class OSCRequestEnvironmentException(Exception):
     pass
+
 
 def main(args):
     conf.get_config()  # Allow sentry DSN to be available.

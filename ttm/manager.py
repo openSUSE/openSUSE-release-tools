@@ -18,8 +18,10 @@ from osclib.stagingapi import StagingAPI
 from urllib.error import HTTPError
 from ttm.totest import ToTest
 
+
 class NotFoundException(Exception):
     pass
+
 
 class QAResult(IntEnum):
     inprogress = 1
@@ -33,6 +35,7 @@ class QAResult(IntEnum):
             return 'failed'
         else:
             return 'passed'
+
 
 class ToTestManager(ToolBase.ToolBase):
 

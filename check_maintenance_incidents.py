@@ -14,6 +14,7 @@ from osclib.core import maintainers_get
 
 import ReviewBot
 
+
 class MaintenanceChecker(ReviewBot.ReviewBot):
     """ simple bot that adds other reviewers depending on target project
     """

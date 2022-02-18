@@ -4,6 +4,7 @@ from osclib.conf import Config
 from osclib.obslock import OBSLock
 from . import OBSLocal
 
+
 class TestOBSLock(unittest.TestCase):
 
     def obs_lock(self, wf, reason='list'):

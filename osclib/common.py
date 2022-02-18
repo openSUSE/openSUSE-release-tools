@@ -1,5 +1,6 @@
 NAME = 'openSUSE-release-tools'
 
+
 def version_calculate():
     from os import path
     if path.exists('.git'):

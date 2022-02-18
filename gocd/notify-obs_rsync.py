@@ -9,11 +9,14 @@ import glob
 from openqa_client.client import OpenQA_Client
 from openqa_client.exceptions import ConnectionError, RequestError
 
+
 def old_filename(state):
     return f'{args.repos}/{state}.yaml'
 
+
 def new_filename(state):
     return f'{args.to}/{state}.yaml'
+
 
 def file_changed(state):
     with open(old_filename(state), 'r') as old_file:
@@ -24,6 +27,7 @@ def file_changed(state):
     except FileNotFoundError:
         return True
     return old_content != new_content
+
 
 def notify_project(openqa, state):
     project, repository = state.split('_-_')

@@ -49,6 +49,7 @@ def _print_version(self):
     print(VERSION)
     quit(0)
 
+
 def _full_project_name(self, project):
     """Deduce the full project name."""
     if project.startswith(('openSUSE', 'SUSE')):
@@ -64,11 +65,13 @@ def _full_project_name(self, project):
     warnings.warn('%s project not recognized.' % project)
     return project
 
+
 def lock_needed(cmd, opts):
     return not(
         cmd in ('check', 'check_duplicate_binaries', 'check_local_links', 'frozenage', 'rebuild', 'unlock', 'setprio') or
         (cmd == 'list' and not opts.supersede)
     )
+
 
 def clean_args(args):
     out = []

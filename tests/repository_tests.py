@@ -7,6 +7,7 @@ from . import OBSLocal
 
 FIXTURES = os.path.join(os.getcwd(), 'tests/fixtures/repository')
 
+
 class TestRepository(unittest.TestCase):
 
     def setUp(self):

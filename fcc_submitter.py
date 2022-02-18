@@ -26,6 +26,7 @@ http_GET = osc.core.http_GET
 http_POST = osc.core.http_POST
 http_PUT = osc.core.http_PUT
 
+
 class FccFreezer(object):
     def __init__(self):
         self.factory = 'openSUSE:Factory'
@@ -118,6 +119,7 @@ class FccFreezer(object):
             http_PUT(url, data=link)
         except HTTPError as e:
             raise e
+
 
 class FccSubmitter(object):
     def __init__(self, from_prj, to_prj, submit_limit):
