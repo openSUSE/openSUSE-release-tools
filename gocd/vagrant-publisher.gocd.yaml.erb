@@ -33,4 +33,4 @@ pipelines:
             - staging-bot
             tasks:
               - script: |
-                  ruby.ruby3.0 obs-to-vagrantcloud.rb --url <%= url %> --organization opensuse --new-box-name <%= box_name %><% end -%>
+                  ruby obs-to-vagrantcloud.rb --url <%= url %> --organization opensuse --new-box-name <%= box_name %><% end -%>
