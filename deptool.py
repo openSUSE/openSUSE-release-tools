@@ -80,7 +80,7 @@ class DepTool(cmdln.Cmdln):
                         name = r
                         r += '.repo'
                     parser.read('/'.join((repodir, r)))
-                    if onlyenabled == False or parser.get(name, 'enabled') == '1':
+                    if onlyenabled is False or parser.get(name, 'enabled') == '1':
                         repo = self.pool.add_repo(name)
                         repo.add_solv(solvfile % name)
                         if parser.has_option(name, 'priority'):

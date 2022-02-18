@@ -272,18 +272,18 @@ class BiArchTool(ToolBase.ToolBase):
                 else:
                     must_disable = True
 
-            if must_disable == False:
+            if not must_disable:
                 if is_disabled:
                     logger.info('enabling %s for %s', pkg, self.arch)
                     for build in pkgmeta.findall("./build"):
                         for n in build.findall("./disable[@arch='{}']".format(self.arch)):
                             build.remove(n)
                             changed = True
-                    if changed == False:
+                    if not changed:
                         logger.error('build tag not found in %s/%s!?', pkg, self.arch)
                 else:
                     logger.debug('%s already enabled for %s', pkg, self.arch)
-            elif must_disable == True:
+            elif must_disable:
                 if not is_disabled:
                     logger.info('disabling %s for %s', pkg, self.arch)
                     bn = pkgmeta.find('build')
@@ -300,7 +300,7 @@ class BiArchTool(ToolBase.ToolBase):
                     for n in build.findall("./enable[@arch='{}']".format(self.arch)):
                         build.remove(n)
                         changed = True
-                if changed == False:
+                if not changed:
                     logger.error('build tag not found in %s/%s!?', pkg, self.arch)
 
             if changed:

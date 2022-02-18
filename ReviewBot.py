@@ -295,7 +295,7 @@ class ReviewBot(object):
         elif self.review_mode == 'fallback-always':
             self.add_review(req, by_group=by_group, by_user=by_user, msg='Adding fallback reviewer')
 
-        if doit == True:
+        if doit:
             self.logger.debug("setting %s to %s" % (req.reqid, state))
             if not self.dryrun:
                 try:
