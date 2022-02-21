@@ -18,7 +18,6 @@ from osclib.core import request_action_key
 from osclib.core import request_age
 from osclib.memoize import memoize
 from osclib.memoize import memoize_session_reset
-from osclib.sentry import sentry_init
 from osclib.stagingapi import StagingAPI
 import signal
 import datetime
@@ -31,9 +30,6 @@ import osc.core
 from urllib.error import HTTPError, URLError
 
 from itertools import count
-
-# In-case not properly initialized via the CommandLineInterface.
-sentry_sdk = sentry_init()
 
 
 class PackageLookup(object):
@@ -186,8 +182,6 @@ class ReviewBot(object):
         for req in self.requests:
             self.logger.info("checking %s" % req.reqid)
             self.request = req
-            with sentry_sdk.configure_scope() as scope:
-                scope.set_extra('request.id', self.request.reqid)
 
             # XXX: this is a hack. Annotating the request with staging_project.
             # OBS itself should provide an API for that but that's currently not the case
@@ -202,14 +196,12 @@ class ReviewBot(object):
 
             try:
                 good = self.check_one_request(req)
-            except Exception as e:
+            except Exception:
                 good = None
 
                 import traceback
                 traceback.print_exc()
                 return_value = 1
-
-                sentry_sdk.capture_exception(e)
 
             if self.review_mode == 'no':
                 good = None
@@ -439,8 +431,6 @@ class ReviewBot(object):
             # Store in-case sub-classes need direct access to original values.
             self.action = a
             key = request_action_key(a)
-            with sentry_sdk.configure_scope() as scope:
-                scope.set_extra('action.key', key)
 
             override = self.request_override_check()
             if override is not None:
@@ -897,11 +887,6 @@ class CommandLineInterface(cmdln.Cmdln):
         if self.options.fallback_group:
             self.checker.fallback_group = self.options.fallback_group
 
-        sentry_init(conf.config['apiurl'], {
-            'review_bot': self.clazz.__name__,
-            'review_user': self.checker.review_user,
-        })
-
     def setup_checker(self):
         """ reimplement this """
         apiurl = conf.config['apiurl']
@@ -990,8 +975,6 @@ class CommandLineInterface(cmdln.Cmdln):
             else:
                 self.logger.info("sleeping %d minutes." % interval)
                 time.sleep(interval * 60)
-
-            sentry_sdk.flush()
 
             # Reset all memoize session caches which are designed for single
             # tool run and not extended usage.

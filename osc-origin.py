@@ -25,7 +25,6 @@ from osclib.origin import origin_revision_state
 from osclib.origin import origin_updatable
 from osclib.origin import origin_updatable_initial
 from osclib.origin import origin_update
-from osclib.sentry import sentry_init
 from osclib.util import mail_send
 from shutil import copyfile
 import sys
@@ -101,14 +100,8 @@ def do_origin(self, subcmd, opts, *args):
         if not config:
             raise oscerr.WrongArgs('OSRT:OriginConfig attribute missing from {}'.format(opts.project))
 
-    sentry_sdk = sentry_init(apiurl, {'osc_plugin': subcmd})
-    try:
-        function = 'osrt_origin_{}'.format(command)
-        globals()[function](apiurl, opts, *args[1:])
-    except Exception as e:
-        # Capture exception as osc.babysitter will consume any plugin exception.
-        sentry_sdk.capture_exception(e)
-        raise e
+    function = 'osrt_origin_{}'.format(command)
+    globals()[function](apiurl, opts, *args[1:])
 
 
 def osrt_origin_config(apiurl, opts, *args):
