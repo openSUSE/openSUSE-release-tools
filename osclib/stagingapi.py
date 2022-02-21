@@ -766,9 +766,9 @@ class StagingAPI(object):
         if review.get('by_user'):
             return review.get('by_user')
         if review.get('by_package'):
-            return '{}/{}'.format(review.get('by_project'), review.get('by_package'))
+            return 'package:{}'.format(review.get('by_package'))
         if review.get('by_project'):
-            return review.get('by_project')
+            return 'project:{}'.format(review.get('by_project'))
         raise oscerr.WrongArgs('Invalid review')
 
     def job_history_fail_count(self, history):
