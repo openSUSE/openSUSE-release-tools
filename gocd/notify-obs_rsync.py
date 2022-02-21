@@ -7,13 +7,16 @@ import subprocess
 from os.path import basename
 import glob
 from openqa_client.client import OpenQA_Client
-from openqa_client.exceptions import ConnectionError, RequestError
+from openqa_client.exceptions import RequestError
+
 
 def old_filename(state):
     return f'{args.repos}/{state}.yaml'
 
+
 def new_filename(state):
     return f'{args.to}/{state}.yaml'
+
 
 def file_changed(state):
     with open(old_filename(state), 'r') as old_file:
@@ -24,6 +27,7 @@ def file_changed(state):
     except FileNotFoundError:
         return True
     return old_content != new_content
+
 
 def notify_project(openqa, state):
     project, repository = state.split('_-_')
@@ -37,6 +41,7 @@ def notify_project(openqa, state):
         return
     copyfile(old_filename(state), new_filename(state))
     subprocess.run(f'cd {args.to} && git add . && git commit -m "Update of {project}/{repository}" && git push', shell=True, check=True)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

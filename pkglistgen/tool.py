@@ -7,7 +7,6 @@ import solv
 import shutil
 import subprocess
 import yaml
-import sys
 import tempfile
 
 from lxml import etree as ET
@@ -15,7 +14,6 @@ from lxml import etree as ET
 from osc.core import checkout_package
 
 from osc.core import http_GET
-from osc.core import HTTPError
 from osc.core import show_results_meta
 from osc.core import Package
 from osc.core import undelete_package
@@ -37,6 +35,7 @@ PRODUCT_SERVICE = '/usr/lib/obs/service/create_single_product'
 
 # share header cache with repochecker
 CACHEDIR = CacheManager.directory('repository-meta')
+
 
 class PkgListGen(ToolBase.ToolBase):
 
@@ -403,7 +402,6 @@ class PkgListGen(ToolBase.ToolBase):
         root = yaml.safe_load(open(os.path.join(directory, 'config.yml')))
         for item in root:
             key = list(item)[0]
-            opts = item[key]
             # cast 15.1 to string :)
             key = str(key)
 
@@ -419,9 +417,10 @@ class PkgListGen(ToolBase.ToolBase):
                 defvendorid = oldsysrepo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
                 f = tempfile.TemporaryFile()
                 # FIXME: port to lzma module with python3
-                st = subprocess.call(['xz', '-cd', oldrepo], stdout=f.fileno())
+                subprocess.call(['xz', '-cd', oldrepo], stdout=f.fileno())
                 os.lseek(f.fileno(), 0, os.SEEK_SET)
-                oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
+                oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None,
+                                        solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
 
                 for arch in self.all_architectures:
                     for project, repo in self.repos:
@@ -664,9 +663,9 @@ class PkgListGen(ToolBase.ToolBase):
         if not only_release_packages:
             file_utils.unlink_all_except(product_dir)
         file_utils.copy_directory_contents(group_dir, product_dir,
-                                     ['supportstatus.txt', 'groups.yml',
-                                      'reference-unsorted.yml', 'reference-summary.yml',
-                                      'package-groups.changes'])
+                                           ['supportstatus.txt', 'groups.yml',
+                                            'reference-unsorted.yml', 'reference-summary.yml',
+                                            'package-groups.changes'])
         file_utils.change_extension(product_dir, '.spec.in', '.spec')
         file_utils.change_extension(product_dir, '.product.in', '.product')
 
@@ -683,9 +682,10 @@ class PkgListGen(ToolBase.ToolBase):
             self.write_group_stubs()
         else:
             summary = self.solve_project(ignore_unresolvable=str2bool(target_config.get('pkglistgen-ignore-unresolvable')),
-                                         ignore_recommended=str2bool(target_config.get('pkglistgen-ignore-recommended')),
-                                         locale = target_config.get('pkglistgen-locale'),
-                                         locales_from = target_config.get('pkglistgen-locales-from'))
+                                         ignore_recommended=str2bool(
+                                             target_config.get('pkglistgen-ignore-recommended')),
+                                         locale=target_config.get('pkglistgen-locale'),
+                                         locales_from=target_config.get('pkglistgen-locales-from'))
 
         if stop_after_solve:
             return

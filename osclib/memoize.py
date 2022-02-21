@@ -167,6 +167,7 @@ def memoize(ttl=None, session=False, add_invalidate=False):
     ttl = ttl if ttl else TIMEOUT
     return _memoize
 
+
 def memoize_session_reset():
     """Reset all session caches."""
     for i, _ in enumerate(memoize.session_functions):

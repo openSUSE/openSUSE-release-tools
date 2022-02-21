@@ -7,12 +7,13 @@ from datetime import datetime
 import asyncore
 from smtpd import SMTPServer
 
+
 class EmlServer(SMTPServer):
     no = 0
 
     def process_message(self, peer, mailfrom, rcpttos, data):
         filename = '%s-%d.eml' % (datetime.now().strftime('%Y%m%d%H%M%S'),
-                self.no)
+                                  self.no)
         f = open(filename, 'w')
         f.write(data)
         f.close
@@ -21,7 +22,7 @@ class EmlServer(SMTPServer):
 
 
 def run():
-    foo = EmlServer(('0.0.0.0', 25), None)
+    EmlServer(('0.0.0.0', 25), None)
     try:
         asyncore.loop()
     except KeyboardInterrupt:

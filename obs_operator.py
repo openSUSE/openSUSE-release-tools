@@ -30,13 +30,16 @@ http.cookies._is_legal_key = lambda _: True
 sentry_sdk = sentry_init()
 
 # Available in python 3.7.
+
+
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     def handle_error(self, request, client_address):
         super().handle_error(request, client_address)
         sentry_sdk.capture_exception()
 
+
 class RequestHandler(BaseHTTPRequestHandler):
-    COOKIE_NAME = 'openSUSE_session' # Both OBS and IBS.
+    COOKIE_NAME = 'openSUSE_session'  # Both OBS and IBS.
     GET_PATHS = [
         'origin/config',
         'origin/history',
@@ -54,10 +57,11 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def do_OPTIONS(self):
         try:
-            with OSCRequestEnvironment(self, require_session=False) as oscrc_file:
+            with OSCRequestEnvironment(self, require_session=False):
                 self.send_header('Access-Control-Allow-Methods', 'GET, POST')
-                self.send_header('Access-Control-Allow-Headers', 'Access-Control-Allow-Origin, Content-Type, X-Requested-With')
-        except OSCRequestEnvironmentException as e:
+                self.send_header('Access-Control-Allow-Headers',
+                                 'Access-Control-Allow-Origin, Content-Type, X-Requested-With')
+        except OSCRequestEnvironmentException:
             self.send_header('Allow', 'OPTIONS, GET, POST')
         self.end_headers()
 
@@ -202,11 +206,11 @@ class RequestHandler(BaseHTTPRequestHandler):
     def cookiejar_create(self, cookiejar_file, session):
         cookie_jar = LWPCookieJar(cookiejar_file.name)
         cookie_jar.set_cookie(Cookie(0, self.COOKIE_NAME, session,
-            None, False,
-            '', False, True,
-            '/', True,
-            True,
-            None, None, None, None, {}))
+                                     None, False,
+                                     '', False, True,
+                                     '/', True,
+                                     True,
+                                     None, None, None, None, {}))
         cookie_jar.save()
         cookiejar_file.flush()
 
@@ -282,9 +286,9 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def handle_package_diff(self, args, query):
         # source_project source_package target_project [target_package] [source_revision] [target_revision]
-        command = ['osc', 'rdiff', args[0], args[1], args[2]] # len(args) == 3
+        command = ['osc', 'rdiff', args[0], args[1], args[2]]  # len(args) == 3
         if len(args) >= 4:
-            command.append(args[3]) # target_package
+            command.append(args[3])  # target_package
         if len(args) >= 5:
             command.append('--revision')
             command.append(':'.join(args[4:6]))
@@ -311,6 +315,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             command.append(staging)
             command.extend(requests)
             yield command
+
 
 class OSCRequestEnvironment(object):
     def __init__(self, handler, user=None, require_session=True):
@@ -360,12 +365,14 @@ class OSCRequestEnvironment(object):
         self.cookiejar_file.__exit__(exc_type, exc_val, exc_tb)
         self.oscrc_file.__exit__(exc_type, exc_val, exc_tb)
 
+
 class OSCRequestEnvironmentException(Exception):
     pass
 
+
 def main(args):
-    conf.get_config() # Allow sentry DSN to be available.
-    sentry_sdk = sentry_init()
+    conf.get_config()  # Allow sentry DSN to be available.
+    sentry_init()
 
     RequestHandler.apiurl = args.apiurl
     RequestHandler.session = args.session
@@ -375,6 +382,7 @@ def main(args):
         print('listening on {}:{}'.format(args.host, args.port))
         httpd.serve_forever()
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='OBS Operator server used to perform staging operations.')
     parser.set_defaults(func=main)
@@ -382,11 +390,11 @@ if __name__ == '__main__':
     parser.add_argument('--host', default='', help='host name to which to bind')
     parser.add_argument('--port', type=int, default=8080, help='port number to which to bind')
     parser.add_argument('-A', '--apiurl',
-        help='OBS instance API URL to use instead of basing from request origin')
+                        help='OBS instance API URL to use instead of basing from request origin')
     parser.add_argument('--session',
-        help='session cookie value to use instead of any passed cookie')
+                        help='session cookie value to use instead of any passed cookie')
     parser.add_argument('-d', '--debug', action='store_true',
-        help='print debugging information')
+                        help='print debugging information')
 
     args = parser.parse_args()
     sys.exit(args.func(args))

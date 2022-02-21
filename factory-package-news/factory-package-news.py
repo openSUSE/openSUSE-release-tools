@@ -17,6 +17,7 @@ data_version = 3
 
 changelog_max_lines = 100  # maximum number of changelog lines per package
 
+
 class ChangeLogger(cmdln.Cmdln):
     def __init__(self, *args, **kwargs):
         cmdln.Cmdln.__init__(self, args, kwargs)
@@ -76,7 +77,7 @@ class ChangeLogger(cmdln.Cmdln):
                 'kernel-syms',
                 'kernel-vanilla',
                 'kernel-xen',
-                ):
+            ):
                 srpm = '%s-%s-%s.src.rpm' % ('kernel-source', m.group('version'), m.group('release'))
                 pkgdata[binrpm]['sourcerpm'] = srpm
                 print("%s -> %s" % (str(h['sourcerpm'], 'utf-8'), srpm))
@@ -84,7 +85,7 @@ class ChangeLogger(cmdln.Cmdln):
             if srpm in changelogs:
                 changelogs[srpm]['packages'].append(binrpm)
             else:
-                data = { 'packages': [ binrpm ] }
+                data = {'packages': [binrpm]}
                 data['changelogtime'] = h['changelogtime']
                 data['changelogtext'] = h['changelogtext']
                 for (t, txt) in enumerate(data['changelogtext']):
@@ -103,7 +104,7 @@ class ChangeLogger(cmdln.Cmdln):
 
                 # On Tumbleweed, there is no '/suse' prefix
                 for path in ['/suse/x86_64', '/suse/noarch', '/suse/aarch64',
-                             '/suse/s390x', '/x86_64', '/noarch', '/aarch64', '/s390x' ]:
+                             '/suse/s390x', '/x86_64', '/noarch', '/aarch64', '/s390x']:
                     file_stats = iso.readdir(path)
                     if file_stats is None:
                         continue
@@ -111,11 +112,6 @@ class ChangeLogger(cmdln.Cmdln):
                     for stat in file_stats:
                         filename = stat[0]
                         LSN = stat[1]
-                        size = stat[2]
-                        sec_size = stat[3]
-                        is_dir = stat[4] == 2
-#                       print("%s [LSN %6d] %8d %s%s" % (dir_tr[is_dir], LSN, size, path,
-#                           iso9660.name_translate(filename)))
 
                         if (filename.endswith('.rpm')):
                             os.lseek(fd, LSN * pycdio.ISO_BLOCKSIZE, io.SEEK_SET)
@@ -126,10 +122,10 @@ class ChangeLogger(cmdln.Cmdln):
 
             elif os.path.isdir(arg):
                 for root, dirs, files in os.walk(arg):
-                    for pkg in [ os.path.join(root, file) for file in files]:
+                    for pkg in [os.path.join(root, file) for file in files]:
                         if not pkg.endswith('.rpm'):
                             continue
-                        h = self.readRpmHeader( pkg )
+                        h = self.readRpmHeader(pkg)
                         _getdata(h)
             else:
                 raise Exception("don't know what to do with %s" % arg)
@@ -198,12 +194,12 @@ class ChangeLogger(cmdln.Cmdln):
 
         f = open(os.path.join(opts.dir, version1), 'rb')
         (v, (v1pkgs, v1changelogs)) = pickle.load(f,
-            encoding='utf-8', errors='backslashreplace')
+                                                  encoding='utf-8', errors='backslashreplace')
         if v != data_version:
             raise Exception("not matching version %s in %s" % (v, version1))
         f = open(os.path.join(opts.dir, version2), 'rb')
         (v, (v2pkgs, v2changelogs)) = pickle.load(f,
-            encoding='utf-8', errors='backslashreplace')
+                                                  encoding='utf-8', errors='backslashreplace')
         if v != data_version:
             raise Exception("not matching version %s in %s" % (v, version2))
 
@@ -220,7 +216,7 @@ class ChangeLogger(cmdln.Cmdln):
             srpm1 = v1pkgs[group[srpm][0]]['sourcerpm']
             # print group[srpm], srpm, srpm1
             if srpm1 == srpm:
-                continue # source package unchanged
+                continue  # source package unchanged
             try:
                 t1 = v1changelogs[srpm1]['changelogtime'][0]
             except IndexError:
@@ -235,7 +231,7 @@ class ChangeLogger(cmdln.Cmdln):
                 print('  {} ERROR: no changelog'.format(name))
                 continue
             if t1 == v2changelogs[srpm]['changelogtime'][0]:
-                continue # no new changelog entry, probably just rebuilt
+                continue  # no new changelog entry, probably just rebuilt
             pkgs = sorted(group[srpm])
             details += "\n==== %s ====\n" % name
             if v1pkgs[pkgs[0]]['version'] != v2pkgs[pkgs[0]]['version']:
@@ -256,11 +252,14 @@ class ChangeLogger(cmdln.Cmdln):
 
             # if a changelog is too long, cut it off after changelog_max_lines lines
             changedetails_lines = changedetails.splitlines()
-            if len(changedetails_lines) > changelog_max_lines + 5:  # apply 5 lines tolerance to avoid silly-looking "skipping 2 lines"
+            # apply 5 lines tolerance to avoid silly-looking "skipping 2 lines"
+            if len(changedetails_lines) > changelog_max_lines + 5:
                 changedetails = '\n'.join(changedetails_lines[0:changelog_max_lines])
-                changedetails += '\n    ... changelog too long, skipping %s lines ...\n' % (len(changedetails_lines) - changelog_max_lines - 1)
-                changedetails += changedetails_lines[-1]  # add last line of changelog diff so that it's possible to find out the end of the changelog section
-
+                left = len(changedetails_lines) - changelog_max_lines - 1
+                changedetails += '\n    ... changelog too long, skipping {} lines ...\n'.format(left)
+                # add last line of changelog diff so that it's possible to
+                # find out the end of the changelog section
+                changedetails += changedetails_lines[-1]
             details += changedetails
             details += '\n'
 
@@ -282,6 +281,7 @@ class ChangeLogger(cmdln.Cmdln):
         elif (self.options.verbose):
             self.logger.setLevel(logging.INFO)
 
+
 if __name__ == "__main__":
     app = ChangeLogger()
-    sys.exit( app.main() )
+    sys.exit(app.main())

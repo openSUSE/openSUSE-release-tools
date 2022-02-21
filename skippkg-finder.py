@@ -4,17 +4,14 @@ import argparse
 import logging
 import sys
 
-from urllib.error import HTTPError
 
 import re
 from lxml import etree as ET
-from collections import namedtuple
 
 import osc.conf
 import osc.core
 from osc.core import http_GET
 from osc.core import makeurl
-from osc import oscerr
 import osclib
 from osclib.core import source_file_ensure
 from osclib.conf import Config
@@ -23,6 +20,7 @@ SUPPORTED_ARCHS = ['x86_64', 'i586', 'aarch64', 'ppc64le', 's390x']
 DEFAULT_REPOSITORY = 'standard'
 
 META_PACKAGE = '000package-groups'
+
 
 class SkippkgFinder(object):
     def __init__(self, opensuse_project, sle_project, alternative_project, print_only, verbose):
@@ -55,62 +53,60 @@ class SkippkgFinder(object):
         """
         pkg = package.lower()
         prefixes = (
-                'desktop-data',
-                'libyui-bindings',
-                'libyui-doc',
-                'libyui-ncurses',
-                'libyui-qt',
-                'libyui-rest',
-                'lifecycle-data-sle',
-                'kernel-livepatch',
-                'kiwi-template',
-                'mgr-',
-                'migrate',
-                'patterns',
-                'release-notes',
-                'sap',
-                'sca-',
-                'skelcd',
-                'sle-',
-                'sle_',
-                'sle15',
-                'sles15',
-                'spacewalk',
-                'supportutils-plugin',
-                'suse-migration',
-                'susemanager-',
-                'yast2-hana'
-                )
-        suffixes = (
-                '-caasp',
-                '-sle',
-                'bootstrap'
-                )
+            'desktop-data',
+            'libyui-bindings',
+            'libyui-doc',
+            'libyui-ncurses',
+            'libyui-qt',
+            'libyui-rest',
+            'lifecycle-data-sle',
+            'kernel-livepatch',
+            'kiwi-template',
+            'mgr-',
+            'migrate',
+            'patterns',
+            'release-notes',
+            'sap',
+            'sca-',
+            'skelcd',
+            'sle-',
+            'sle_',
+            'sle15',
+            'sles15',
+            'spacewalk',
+            'supportutils-plugin',
+            'suse-migration',
+            'susemanager-',
+            'yast2-hana',
+        )
+        suffixes = ('-caasp', '-sle', 'bootstrap')
         matches = (
-                'gtk-vnc2',
-                'ibus-googlepinyin',
-                'infiniband-diags',
-                'llvm',
-                'lua51-luajit',
-                'lvm2-clvm',
-                'osad',
-                'rhncfg',
-                'python-ibus',
-                'python-pymemcache',
-                'suse-build-key',
-                'suse-hpc',
-                'txt2tags',
-                'zypp-plugin-spacewalk',
-                'zypper-search-packages-plugin'
-                )
+            'gtk-vnc2',
+            'ibus-googlepinyin',
+            'infiniband-diags',
+            'llvm',
+            'lua51-luajit',
+            'lvm2-clvm',
+            'osad',
+            'rhncfg',
+            'python-ibus',
+            'python-pymemcache',
+            'suse-build-key',
+            'suse-hpc',
+            'txt2tags',
+            'zypp-plugin-spacewalk',
+            'zypper-search-packages-plugin',
+        )
         if pkg.startswith(prefixes) or pkg.endswith(suffixes) or pkg in matches:
             return True
-        if 'sles' in pkg or\
-                'sled' in pkg or\
-                'sap-' in pkg or\
-                '-sap' in pkg or\
-                'eula' in pkg or\
-                'branding' in pkg:
+        if (
+            'sles' in pkg
+            or 'sled' in pkg
+            or 'sap-' in pkg
+            or '-sap' in pkg
+            or 'eula' in pkg
+            or 'branding' in pkg
+        ):
             return True
         return False
 

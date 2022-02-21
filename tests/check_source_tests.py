@@ -3,7 +3,6 @@ from . import OBSLocal
 from check_source import CheckSource
 import random
 import os
-from osclib.core import request_action_list
 from osc.core import get_request_list
 
 PROJECT = 'openSUSE:Factory'
@@ -19,6 +18,8 @@ FACTORY_MAINTAINERS = 'group:factory-maintainers'
 
 # Inherit from OBSLocal.Testcase since it provides many commodity methods for testing against
 # a local testing instance of OBS
+
+
 class TestCheckSource(OBSLocal.TestCase):
     def setUp(self):
         super(TestCheckSource, self).setUp()
@@ -31,13 +32,13 @@ class TestCheckSource(OBSLocal.TestCase):
         self.wf.create_group(REVIEW_TEAM)
 
         self.wf.remote_config_set(
-            { 'required-source-maintainer': 'Admin', 'review-team': REVIEW_TEAM }
+            {'required-source-maintainer': 'Admin', 'review-team': REVIEW_TEAM}
         )
 
         self.bot_user = 'factory-auto'
         self.wf.create_user(self.bot_user)
         # When creating a review, set the by_user to bot_user
-        self.project.add_reviewers(users = [self.bot_user])
+        self.project.add_reviewers(users=[self.bot_user])
 
         # Ensure different test runs operate in unique namespace.
         self.bot_name = '::'.join([type(self).__name__, str(random.getrandbits(8))])
@@ -69,7 +70,7 @@ class TestCheckSource(OBSLocal.TestCase):
         """Accepts a request coming from a devel project"""
         self._setup_devel_project()
 
-        req_id = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit = False).reqid
+        req_id = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit=False).reqid
 
         self.assertReview(req_id, by_user=(self.bot_user, 'new'))
 
@@ -85,7 +86,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self._setup_devel_project(devel_files='blowfish-with-patch')
 
         req_id = self.wf.create_submit_request(self.devel_package.project,
-            self.devel_package.name, add_commit = False).reqid
+                                               self.devel_package.name, add_commit=False).reqid
 
         self.assertReview(req_id, by_user=(self.bot_user, 'new'))
 
@@ -103,7 +104,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self._setup_devel_project()
 
         req_id = self.wf.create_submit_request(self.devel_package.project,
-            self.devel_package.name, add_commit = False).reqid
+                                               self.devel_package.name, add_commit=False).reqid
 
         self.assertReview(req_id, by_user=(self.bot_user, 'new'))
 
@@ -118,10 +119,10 @@ class TestCheckSource(OBSLocal.TestCase):
         # switch target and devel, so basically do revert of changes done
         # with patch and changes
         self._setup_devel_project(devel_files='blowfish',
-            target_files='blowfish-with-patch-changes')
+                                  target_files='blowfish-with-patch-changes')
 
         req_id = self.wf.create_submit_request(self.devel_package.project,
-            self.devel_package.name, add_commit = False).reqid
+                                               self.devel_package.name, add_commit=False).reqid
 
         self.assertReview(req_id, by_user=(self.bot_user, 'new'))
 
@@ -140,9 +141,9 @@ class TestCheckSource(OBSLocal.TestCase):
 
         # Change the required maintainer
         self.wf.create_group(FACTORY_MAINTAINERS.replace('group:', ''))
-        self.wf.remote_config_set({ 'required-source-maintainer': FACTORY_MAINTAINERS })
+        self.wf.remote_config_set({'required-source-maintainer': FACTORY_MAINTAINERS})
 
-        req = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit = False)
+        req = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit=False)
 
         self.assertReview(req.reqid, by_user=(self.bot_user, 'new'))
 
@@ -170,11 +171,11 @@ class TestCheckSource(OBSLocal.TestCase):
         """Accepts the request when the 'required_maintainer' is a group and is a maintainer for the project"""
         group_name = FACTORY_MAINTAINERS.replace('group:', '')
         self.wf.create_group(group_name)
-        self.wf.remote_config_set({ 'required-source-maintainer': FACTORY_MAINTAINERS })
+        self.wf.remote_config_set({'required-source-maintainer': FACTORY_MAINTAINERS})
 
         self._setup_devel_project(maintainer={'groups': [group_name]})
 
-        req_id = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit = False).reqid
+        req_id = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit=False).reqid
 
         self.assertReview(req_id, by_user=(self.bot_user, 'new'))
 
@@ -189,14 +190,13 @@ class TestCheckSource(OBSLocal.TestCase):
         # Change the required maintainer
         group_name = FACTORY_MAINTAINERS.replace('group:', '')
         self.wf.create_group(group_name)
-        self.wf.remote_config_set({ 'required-source-maintainer': FACTORY_MAINTAINERS })
+        self.wf.remote_config_set({'required-source-maintainer': FACTORY_MAINTAINERS})
 
-        root_project = self.wf.create_project(SRC_PROJECT.rsplit(':', 1)[0],
-            maintainer={'groups': [group_name]})
+        self.wf.create_project(SRC_PROJECT.rsplit(':', 1)[0], maintainer={'groups': [group_name]})
 
         self._setup_devel_project()
 
-        req = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit = False)
+        req = self.wf.create_submit_request(SRC_PROJECT, 'blowfish', add_commit=False)
 
         self.assertReview(req.reqid, by_user=(self.bot_user, 'new'))
 
@@ -213,7 +213,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self.assertEqual('Created automatically from request %s' % req.reqid, add_role_req.description)
 
     def _setup_devel_project(self, maintainer={}, devel_files='blowfish-with-patch-changes',
-            target_files='blowfish'):
+                             target_files='blowfish'):
         devel_project = self.wf.create_project(SRC_PROJECT, maintainer=maintainer)
         self.devel_package = OBSLocal.Package('blowfish', project=devel_project)
 

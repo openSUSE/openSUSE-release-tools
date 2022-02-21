@@ -11,7 +11,6 @@ from . import OBSLocal
 from urllib.parse import urlparse, parse_qs
 
 import sys
-import re
 from osclib.cache import Cache
 from check_tags_in_requests import TagChecker
 
@@ -44,7 +43,7 @@ class TestTagChecker(OBSLocal.TestCase):
         self.checker = TagChecker(apiurl=APIURL,
                                   user='maintbot',
                                   logger=self.logger)
-        self.checker.override_allow = False # Test setup cannot handle.
+        self.checker.override_allow = False  # Test setup cannot handle.
 
         self._request_data = """
                 <request id="293129" creator="darix">
@@ -150,7 +149,9 @@ Pico text editor while also offering a few enhancements.</description>
         # exists_in_factory: whether the package is exists in factory
         httpretty.register_uri(httpretty.POST, APIURL + '/source/editors/nano', body=issues_data)
         httpretty.register_uri(httpretty.GET, APIURL + '/source/editors/nano',
-                               body="""<sourceinfo package="nano" rev="25" vrev="35" srcmd5="aa7cce4956a86aee36c3f38aa37eee2b" lsrcmd5="c26618f949f5869cabcd6f989fb040ca" verifymd5="fc6b5b47f112848a1eb6fb8660b7800b"><filename>nano.spec</filename><linked project="openSUSE:Factory" package="nano" /></sourceinfo>""")
+                               body="""<sourceinfo package="nano" rev="25" vrev="35" srcmd5="aa7cce4956a86aee36c3f38aa37eee2b"
+                               lsrcmd5="c26618f949f5869cabcd6f989fb040ca" verifymd5="fc6b5b47f112848a1eb6fb8660b7800b">
+                               <filename>nano.spec</filename><linked project="openSUSE:Factory" package="nano" /></sourceinfo>""")
 
         if exists_in_factory is True:
             httpretty.register_uri(httpretty.GET,
@@ -160,7 +161,10 @@ Pico text editor while also offering a few enhancements.</description>
             httpretty.register_uri(httpretty.GET,
                                    osc.core.makeurl(APIURL, ['source', "openSUSE:Factory", "nano"], {'view': 'info'}),
                                    match_querystring=True,
-                                   body="""<sourceinfo package="nano" rev="25" vrev="35" srcmd5="aa7cce4956a86aee36c3f38aa37eee2b" lsrcmd5="c26618f949f5869cabcd6f989fb040ca" verifymd5="fc6b5b47f112848a1eb6fb8660b7800b"><filename>nano.spec</filename><linked project="openSUSE:Factory" package="nano" /></sourceinfo>""")
+                                   body="""<sourceinfo package="nano" rev="25" vrev="35"
+                                   srcmd5="aa7cce4956a86aee36c3f38aa37eee2b" lsrcmd5="c26618f949f5869cabcd6f989fb040ca"
+                                   verifymd5="fc6b5b47f112848a1eb6fb8660b7800b"><filename>nano.spec</filename>
+                                   <linked project="openSUSE:Factory" package="nano" /></sourceinfo>""")
         else:
             httpretty.register_uri(httpretty.GET,
                                    osc.core.makeurl(APIURL, ['source', "openSUSE:Factory", "nano", '_meta'], {}),
@@ -186,17 +190,17 @@ Pico text editor while also offering a few enhancements.</description>
                                body='<collection matches="0"></collection>')
 
         httpretty.register_uri(httpretty.GET,
-            APIURL + "/source/openSUSE:Factory/00Meta/lookup.yml",
-            status = 404)
+                               APIURL + "/source/openSUSE:Factory/00Meta/lookup.yml",
+                               status=404)
 
         result = {'state_accepted': None}
 
         def change_request(result, method, uri, headers):
             query = parse_qs(urlparse(uri).query)
 
-            if query == { 'by_user': ['maintbot'], 'cmd': ['changereviewstate'], 'newstate': ['accepted']}:
+            if query == {'by_user': ['maintbot'], 'cmd': ['changereviewstate'], 'newstate': ['accepted']}:
                 result['state_accepted'] = True
-            elif query == { 'by_user': ['maintbot'], 'cmd': ['changereviewstate'], 'newstate': ['declined']}:
+            elif query == {'by_user': ['maintbot'], 'cmd': ['changereviewstate'], 'newstate': ['declined']}:
                 result['state_accepted'] = False
             return (200, headers, '<status code="ok"/>')
 
@@ -216,7 +220,8 @@ Pico text editor while also offering a few enhancements.</description>
   <new project="SUSE:SLE-12-SP1:GA" package="perl-Bootloader" rev="23" srcmd5="231d457675a9fca041b22d84df9d4464" />
   <files />
   <issues>
-    <issue state="changed" tracker="bnc" name="151877" label="boo#151877" url="https://bugzilla.suse.com/show_bug.cgi?id=151877" />
+    <issue state="changed" tracker="bnc" name="151877" label="boo#151877"
+           url="https://bugzilla.suse.com/show_bug.cgi?id=151877" />
   </issues>
 </sourcediff>""")
 

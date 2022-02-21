@@ -1,12 +1,9 @@
 #!/usr/bin/python3
 
 import argparse
-import datetime
 import glob
 import json
 import logging
-import os.path
-import time
 import subprocess
 
 import osc
@@ -17,6 +14,7 @@ from lxml import etree as ET
 
 from urllib.error import HTTPError
 from osclib.PubSubConsumer import PubSubConsumer
+
 
 class Listener(PubSubConsumer):
     def __init__(self, apiurl, amqp_prefix, namespaces):
@@ -120,6 +118,7 @@ class Listener(PubSubConsumer):
         else:
             self.logger.warning(
                 'unknown rabbitmq message {}'.format(method.routing_key))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

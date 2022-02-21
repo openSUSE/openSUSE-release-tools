@@ -1,14 +1,9 @@
-import sys
-import unittest
-import re
 
 import osc.core
 
-from osclib.conf import Config
-from osclib.stagingapi import StagingAPI
-from lxml import etree as ET
 from mock import MagicMock
 from . import OBSLocal
+
 
 class TestApiCalls(OBSLocal.TestCase):
     """
@@ -43,9 +38,9 @@ class TestApiCalls(OBSLocal.TestCase):
         curl = self.wf.create_package('target', 'curl')
         curl.create_file('curl.spec')
         curl.create_file('curl-mini.spec')
-        cmini = self.wf.create_link(curl, target_project=self.wf.projects['target'], target_package='curl-mini')
+        self.wf.create_link(curl, target_project=self.wf.projects['target'], target_package='curl-mini')
         cring1 = self.wf.create_link(curl, target_project=self.wf.projects['ring1'], target_package='curl')
-        cring0 = self.wf.create_link(cring1, target_project=self.wf.projects['ring0'], target_package='curl-mini')
+        self.wf.create_link(cring1, target_project=self.wf.projects['ring0'], target_package='curl-mini')
 
         # test content for listonly ie. list command
         ring_packages = {
@@ -127,8 +122,6 @@ class TestApiCalls(OBSLocal.TestCase):
 
     def test_add_sr(self):
         # setup is already adding the request, we just verify
-        prj = self.staging_b.name
-        pkg = 'wine'
         num = self.winerq.reqid
 
         # Verify that review is there
@@ -136,7 +129,7 @@ class TestApiCalls(OBSLocal.TestCase):
                    {'by_project': 'openSUSE:Factory:Staging:B', 'state': 'new'}]
         self.assertEqual(self.winerq.reviews(), reviews)
         self.assertEqual(self.wf.api.packages_staged,
-                {'wine': {'prj': 'openSUSE:Factory:Staging:B', 'rq_id': num}})
+                         {'wine': {'prj': 'openSUSE:Factory:Staging:B', 'rq_id': num}})
 
     def test_create_package_container(self):
         """Test if the uploaded _meta is correct."""
@@ -145,10 +138,12 @@ class TestApiCalls(OBSLocal.TestCase):
         self.wf.api.create_package_container('openSUSE:Factory:Staging:B', 'wine')
 
         url = self.wf.api.makeurl(['source', 'openSUSE:Factory:Staging:B', 'wine', '_meta'])
-        self.assertEqual(osc.core.http_GET(url).read().decode('utf-8'), '<package name="wine" project="openSUSE:Factory:Staging:B">\n  <title/>\n  <description/>\n</package>\n')
+        self.assertEqual(osc.core.http_GET(url).read().decode(
+            'utf-8'), '<package name="wine" project="openSUSE:Factory:Staging:B">\n  <title/>\n  <description/>\n</package>\n')
 
         self.wf.api.create_package_container('openSUSE:Factory:Staging:B', 'wine', disable_build=True)
-        m = '<package name="wine" project="openSUSE:Factory:Staging:B">\n  <title/>\n  <description/>\n  <build>\n    <disable/>\n  </build>\n</package>\n'
+        m = '<package name="wine" project="openSUSE:Factory:Staging:B">\n  <title/>\n  <description/>\n  <build>'
+        m += '\n    <disable/>\n  </build>\n</package>\n'
         self.assertEqual(osc.core.http_GET(url).read().decode('utf-8'), m)
 
     def test_review_handling(self):
@@ -217,7 +212,7 @@ class TestApiCalls(OBSLocal.TestCase):
     def test_move(self):
         """Test package movement."""
 
-        staging_a = self.wf.create_staging('A')
+        self.wf.create_staging('A')
 
         self.assertTrue(self.wf.api.item_exists('openSUSE:Factory:Staging:B', 'wine'))
         self.assertFalse(self.wf.api.item_exists('openSUSE:Factory:Staging:A', 'wine'))

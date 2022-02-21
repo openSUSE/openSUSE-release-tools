@@ -12,6 +12,7 @@ logger = logging.getLogger()
 
 FACTORY = "openSUSE:Factory"
 
+
 class BiArchTool(ToolBase.ToolBase):
 
     def __init__(self, project):
@@ -24,37 +25,35 @@ class BiArchTool(ToolBase.ToolBase):
         self.rdeps = None
         self.package_metas = dict()
         self.whitelist = {
-                'i586': set([
-                    'bzr',
-                    'git',
-                    # _link to baselibs package
-                    'libjpeg62-turbo',
-                    'mercurial',
-                    'subversion',
-                    'ovmf'
-                    ]),
-                }
+            'i586': set([
+                'bzr',
+                'git',
+                # _link to baselibs package
+                'libjpeg62-turbo',
+                'mercurial',
+                'subversion',
+                'ovmf'])
+        }
         self.blacklist = {
-                'i586': set([
-                    'belle-sip',
-                    'release-notes-openSUSE',
-                    'openSUSE-EULAs', # translate-toolkit
-                    'skelcd-openSUSE',
-                    'plasma5-workspace',
-                    'patterns-base',
-                    'patterns-fonts',
-                    'patterns-rpm-macros',
-                    'patterns-yast',
-                    '000release-packages',
-                    ]),
-                }
+            'i586': set([
+                'belle-sip',
+                'release-notes-openSUSE',
+                'openSUSE-EULAs',  # translate-toolkit
+                'skelcd-openSUSE',
+                'plasma5-workspace',
+                'patterns-base',
+                'patterns-fonts',
+                'patterns-rpm-macros',
+                'patterns-yast',
+                '000release-packages'])
+        }
 
-    def get_filelist(self, project, package, expand = False):
+    def get_filelist(self, project, package, expand=False):
         query = {}
         if expand:
             query['expand'] = 1
         root = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, package], query)))
-        return [ node.get('name') for node in root.findall('entry') ]
+        return [node.get('name') for node in root.findall('entry')]
 
     def has_baselibs(self, package):
         if package in self._has_baselibs:
@@ -75,7 +74,7 @@ class BiArchTool(ToolBase.ToolBase):
             else:
                 ret = True
         elif '_link' in files:
-            files = self.get_filelist(self.project, srcpkgname, expand = True)
+            files = self.get_filelist(self.project, srcpkgname, expand=True)
             if 'baselibs.conf' in files:
                 logger.warning('%s is linked to a baselibs package', package)
         elif is_multibuild:
@@ -126,7 +125,7 @@ class BiArchTool(ToolBase.ToolBase):
         if self.rdeps is not None:
             return
         self.rdeps = dict()
-        url = self.makeurl(['build', self.project, 'standard', self.arch, '_builddepinfo' ], {'view': 'revpkgnames'})
+        url = self.makeurl(['build', self.project, 'standard', self.arch, '_builddepinfo'], {'view': 'revpkgnames'})
         x = ET.fromstring(self.cached_GET(url))
         for pnode in x.findall('package'):
             name = pnode.get('name')
@@ -141,31 +140,9 @@ class BiArchTool(ToolBase.ToolBase):
         if packages == '__all__':
             self.packages = self.meta_get_packagelist(self.project)
         elif packages == '__latest__':
-            # only works when called in packagelists loop
-            # self.packages = self._filter_packages_by_time(self.latest_packages(self.project))
             self.packages = self.latest_packages(self.project)
         else:
             self.packages = packages
-
-    # check when 000product was last changed, eg by packagelist
-    # generator. Yield only packges that got checked in after that
-    # point in time.
-    def _filter_packages_by_time(self, packages):
-        x = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, '000product', '_history'], {'limit': '1'})))
-        producttime = int(x.find('./revision/time').text)
-        for pkg in packages:
-            try:
-                x = ET.fromstring(self.cached_GET(self.makeurl(['source', self.project, pkg, '_history'], {'rev': '1'})))
-            # catch deleted packages
-            except HTTPError as e:
-                if e.code == 404:
-                    continue
-                raise e
-
-            packagetime = int(x.find('./revision/time').text)
-#            if producttime > packagetime:
-#                continue
-            yield pkg
 
     def remove_explicit_enable(self):
 
@@ -208,9 +185,6 @@ class BiArchTool(ToolBase.ToolBase):
 
         self._init_biarch_packages()
 
-        resulturl = self.makeurl(['source', self.project])
-        result = ET.fromstring(self.cached_GET(resulturl))
-
         for pkg in self.packages:
 
             changed = False
@@ -227,7 +201,7 @@ class BiArchTool(ToolBase.ToolBase):
                 bn = pkgmeta.find('build')
                 if bn is None:
                     bn = ET.SubElement(pkgmeta, 'build')
-                ET.SubElement(bn, 'disable', { 'arch': self.arch })
+                ET.SubElement(bn, 'disable', {'arch': self.arch})
                 changed = True
 
             if changed:
@@ -240,7 +214,7 @@ class BiArchTool(ToolBase.ToolBase):
                         self.http_POST(self.makeurl(['build', self.project], {
                             'cmd': 'wipe',
                             'arch': self.arch,
-                            'package': pkg }))
+                            'package': pkg}))
                 except HTTPError as e:
                     logger.error('failed to update %s: %s', pkg, e)
 
@@ -256,7 +230,6 @@ class BiArchTool(ToolBase.ToolBase):
 
             is_enabled = None
             is_disabled = None
-            has_baselibs = None
             must_disable = None
             changed = None
 
@@ -274,24 +247,24 @@ class BiArchTool(ToolBase.ToolBase):
                 else:
                     must_disable = True
 
-            if must_disable == False:
+            if not must_disable:
                 if is_disabled:
                     logger.info('enabling %s for %s', pkg, self.arch)
                     for build in pkgmeta.findall("./build"):
                         for n in build.findall("./disable[@arch='{}']".format(self.arch)):
                             build.remove(n)
                             changed = True
-                    if changed == False:
+                    if not changed:
                         logger.error('build tag not found in %s/%s!?', pkg, self.arch)
                 else:
                     logger.debug('%s already enabled for %s', pkg, self.arch)
-            elif must_disable == True:
+            elif must_disable:
                 if not is_disabled:
                     logger.info('disabling %s for %s', pkg, self.arch)
                     bn = pkgmeta.find('build')
                     if bn is None:
                         bn = ET.SubElement(pkgmeta, 'build')
-                    ET.SubElement(bn, 'disable', { 'arch': self.arch })
+                    ET.SubElement(bn, 'disable', {'arch': self.arch})
                     changed = True
                 else:
                     logger.debug('%s already disabled for %s', pkg, self.arch)
@@ -302,7 +275,7 @@ class BiArchTool(ToolBase.ToolBase):
                     for n in build.findall("./enable[@arch='{}']".format(self.arch)):
                         build.remove(n)
                         changed = True
-                if changed == False:
+                if not changed:
                     logger.error('build tag not found in %s/%s!?', pkg, self.arch)
 
             if changed:
@@ -323,9 +296,10 @@ class BiArchTool(ToolBase.ToolBase):
                     self.http_POST(self.makeurl(['build', self.project], {
                         'cmd': 'wipe',
                         'arch': self.arch,
-                        'package': pkg }))
+                        'package': pkg}))
             except HTTPError as e:
                 logger.error('failed to update %s: %s', pkg, e)
+
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
 
@@ -335,8 +309,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     def get_optparser(self):
         parser = ToolBase.CommandLineInterface.get_optparser(self)
         parser.add_option('-p', '--project', dest='project', metavar='PROJECT',
-                        help='project to process (default: %s)' % FACTORY,
-                        default = FACTORY)
+                          help='project to process (default: %s)' % FACTORY,
+                          default=FACTORY)
         return parser
 
     def setup_tool(self):
@@ -394,6 +368,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         self.runner(work, opts.interval)
 
+
 if __name__ == "__main__":
     app = CommandLineInterface()
-    sys.exit( app.main() )
+    sys.exit(app.main())

@@ -1,8 +1,8 @@
 from datetime import datetime
 import unittest
-from osclib.conf import Config
 from osclib.obslock import OBSLock
 from . import OBSLocal
+
 
 class TestOBSLock(unittest.TestCase):
 

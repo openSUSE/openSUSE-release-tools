@@ -35,11 +35,12 @@ from itertools import count
 # In-case not properly initialized via the CommandLineInterface.
 sentry_sdk = sentry_init()
 
+
 class PackageLookup(object):
     """ helper class to manage 00Meta/lookup.yml
     """
 
-    def __init__(self, apiurl = None):
+    def __init__(self, apiurl=None):
         self.apiurl = apiurl
         # dict[project][package]
         self.lookup = {}
@@ -60,7 +61,7 @@ class PackageLookup(object):
     def _load_lookup_file(self, prj):
         try:
             return osc.core.http_GET(osc.core.makeurl(self.apiurl,
-                                ['source', prj, '00Meta', 'lookup.yml']))
+                                                      ['source', prj, '00Meta', 'lookup.yml']))
         except HTTPError as e:
             # in case the project doesn't exist yet (like sle update)
             if e.code != 404:
@@ -77,22 +78,21 @@ class ReviewBot(object):
         return (None|True|False)
     """
 
-    DEFAULT_REVIEW_MESSAGES = { 'accepted': 'ok', 'declined': 'review failed' }
+    DEFAULT_REVIEW_MESSAGES = {'accepted': 'ok', 'declined': 'review failed'}
     REVIEW_CHOICES = ('normal', 'no', 'accept', 'accept-onpass', 'fallback-onfail', 'fallback-always')
 
     COMMENT_MARKER_REGEX = re.compile(r'<!-- (?P<bot>[^ ]+) state=(?P<state>[^ ]+)(?: result=(?P<result>[^ ]+))? -->')
 
     # map of default config entries
     config_defaults = {
-            # list of tuples (prefix, apiurl, submitrequestprefix)
-            # set this if the obs instance maps another instance into it's
-            # namespace
-            'project_namespace_api_map': [
-                ('openSUSE.org:', 'https://api.opensuse.org', 'obsrq'),
-                ],
-            }
+        # list of tuples (prefix, apiurl, submitrequestprefix)
+        # set this if the obs instance maps another instance into it's
+        # namespace
+        'project_namespace_api_map': [
+            ('openSUSE.org:', 'https://api.opensuse.org', 'obsrq'),
+        ]}
 
-    def __init__(self, apiurl = None, dryrun = False, logger = None, user = None, group = None):
+    def __init__(self, apiurl=None, dryrun=False, logger=None, user=None, group=None):
         self.apiurl = apiurl
         self.ibs = apiurl.startswith('https://api.suse.de')
         self.dryrun = dryrun
@@ -117,12 +117,12 @@ class ReviewBot(object):
 
         self.load_config()
 
-    def _load_config(self, handle = None):
+    def _load_config(self, handle=None):
         d = self.__class__.config_defaults
         y = yaml.safe_load(handle) if handle is not None else {}
-        return namedtuple('BotConfig', sorted(d.keys()))(*[ y.get(p, d[p]) for p in sorted(d.keys()) ])
+        return namedtuple('BotConfig', sorted(d.keys()))(*[y.get(p, d[p]) for p in sorted(d.keys())])
 
-    def load_config(self, filename = None):
+    def load_config(self, filename=None):
         if filename:
             with open(filename, 'r') as fh:
                 self.config = self._load_config(fh)
@@ -138,7 +138,6 @@ class ReviewBot(object):
             if e.code != 404:
                 self.logger.error('ERROR in URL %s [%s]' % (url, e))
                 raise
-            pass
         return False
 
     def staging_api(self, project):
@@ -166,7 +165,7 @@ class ReviewBot(object):
 
     def set_request_ids(self, ids):
         for rqid in ids:
-            u = osc.core.makeurl(self.apiurl, [ 'request', rqid ], { 'withfullhistory': '1' })
+            u = osc.core.makeurl(self.apiurl, ['request', rqid], {'withfullhistory': '1'})
             r = osc.core.http_GET(u)
             root = ET.parse(r).getroot()
             req = osc.core.Request()
@@ -291,25 +290,38 @@ class ReviewBot(object):
         if state == 'declined':
             if self.review_mode == 'fallback-onfail':
                 self.logger.info("%s needs fallback reviewer" % req.reqid)
-                self.add_review(req, by_group=by_group, by_user=by_user, msg="Automated review failed. Needs fallback reviewer.")
+                self.add_review(req, by_group=by_group, by_user=by_user,
+                                msg="Automated review failed. Needs fallback reviewer.")
                 newstate = 'accepted'
         elif self.review_mode == 'fallback-always':
             self.add_review(req, by_group=by_group, by_user=by_user, msg='Adding fallback reviewer')
 
-        if doit == True:
+        if doit:
             self.logger.debug("setting %s to %s" % (req.reqid, state))
             if not self.dryrun:
                 try:
                     osc.core.change_review_state(apiurl=self.apiurl,
-                        reqid = req.reqid, newstate = newstate,
-                        by_group=self.review_group,
-                        by_user=self.review_user, message=msg)
+                                                 reqid=req.reqid, newstate=newstate,
+                                                 by_group=self.review_group,
+                                                 by_user=self.review_user, message=msg)
                 except HTTPError as e:
                     if e.code != 403:
                         raise e
                     self.logger.info('unable to change review state (likely superseded or revoked)')
         else:
             self.logger.debug("%s review not changed" % (req.reqid))
+
+    def _is_duplicate_review(self, review, query, allow_duplicate):
+        if review.by_group != query.get('by_group'):
+            return False
+        if review.by_project != query.get('by_project'):
+            return False
+        if review.by_package != query.get('by_package'):
+            return False
+        if review.by_user != query.get('by_user'):
+            return False
+        # Only duplicate when allow_duplicate and state != new.
+        return (not allow_duplicate or review.state == 'new')
 
     # allow_duplicate=True should only be used if it makes sense to force a
     # re-review in a scenario where the bot adding the review will rerun.
@@ -332,13 +344,8 @@ class ReviewBot(object):
         else:
             raise osc.oscerr.WrongArgs("missing by_*")
 
-        for r in req.reviews:
-            if (r.by_group == by_group and
-                r.by_project == by_project and
-                r.by_package == by_package and
-                r.by_user == by_user and
-                # Only duplicate when allow_duplicate and state != new.
-                (not allow_duplicate or r.state == 'new')):
+        for review in req.reviews:
+            if self._is_duplicate_review(review, query, allow_duplicate):
                 del query['cmd']
                 self.logger.debug('skipped adding duplicate review for {}'.format(
                     '/'.join(query.values())))
@@ -446,7 +453,7 @@ class ReviewBot(object):
             # order from lowest to highest is: False, None, True.
             if overall is not False:
                 if ((overall is True and ret is not True) or
-                    (overall is None and ret is False)):
+                        (overall is None and ret is False)):
                     overall = ret
 
             if self.multiple_actions and ret is not None:
@@ -552,7 +559,7 @@ class ReviewBot(object):
     @staticmethod
     @memoize(session=True)
     def _get_sourceinfo(apiurl, project, package, rev=None):
-        query = { 'view': 'info' }
+        query = {'view': 'info'}
         if rev is not None:
             query['rev'] = rev
         url = osc.core.makeurl(apiurl, ('source', project, package), query=query)
@@ -578,7 +585,7 @@ class ReviewBot(object):
             return None
 
         props = ('package', 'rev', 'vrev', 'srcmd5', 'lsrcmd5', 'verifymd5')
-        return namedtuple('SourceInfo', props)(*[ root.get(p) for p in props ])
+        return namedtuple('SourceInfo', props)(*[root.get(p) for p in props])
 
     # TODO: what if there is more than _link?
     def _get_linktarget_self(self, src_project, src_package):
@@ -613,7 +620,6 @@ class ReviewBot(object):
 
     def can_accept_review(self, request_id):
         """return True if there is a new review for the specified reviewer"""
-        states = set()
         url = osc.core.makeurl(self.apiurl, ('request', str(request_id)))
         try:
             root = ET.parse(osc.core.http_GET(url)).getroot()
@@ -631,7 +637,8 @@ class ReviewBot(object):
             review = "@by_user='%s' and @state='new'" % self.review_user
         if self.review_group:
             review = osc.core.xpath_join(review, "@by_group='%s' and @state='new'" % self.review_group)
-        url = osc.core.makeurl(self.apiurl, ('search', 'request'), { 'match': "state/@name='review' and review[%s]" % review, 'withfullhistory': 1 } )
+        url = osc.core.makeurl(self.apiurl, ('search', 'request'), {
+                               'match': "state/@name='review' and review[%s]" % review, 'withfullhistory': 1})
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
         self.requests = []
@@ -643,9 +650,10 @@ class ReviewBot(object):
 
     # also used by openqabot
     def ids_project(self, project, typename):
+        xpath = "(state/@name='review' or state/@name='new') and (action/target/@project='%s' and action/@type='%s')" % (project, typename)
         url = osc.core.makeurl(self.apiurl, ('search', 'request'),
-                               { 'match': "(state/@name='review' or state/@name='new') and (action/target/@project='%s' and action/@type='%s')" % (project, typename),
-                                 'withfullhistory': 1 })
+                               {'match': xpath,
+                                'withfullhistory': 1})
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
         ret = []
@@ -737,13 +745,7 @@ class ReviewBot(object):
         message = self.comment_api.add_marker(message, bot_name, info)
         message = self.comment_api.truncate(message.strip())
 
-        if (comment is not None and
-            ((identical and
-              # Remove marker from comments since handled during comment_find().
-              self.comment_api.remove_marker(comment['comment']) ==
-              self.comment_api.remove_marker(message)) or
-             (not identical and comment['comment'].count('\n') == message.count('\n')))
-        ):
+        if self._is_comment_identical(comment, message, identical):
             # Assume same state/result and number of lines in message is duplicate.
             self.logger.debug('previous comment too similar on {}'.format(debug_key))
             return
@@ -765,7 +767,16 @@ class ReviewBot(object):
 
         self.comment_handler_remove()
 
-    def _check_matching_srcmd5(self, project, package, rev, history_limit = 5):
+    def _is_comment_identical(self, comment, message, identical):
+        if comment is None:
+            return False
+        if identical:
+            # Remove marker from comments since handled during comment_find().
+            return self.comment_api.remove_marker(comment['comment']) == self.comment_api.remove_marker(message)
+        else:
+            return comment['comment'].count('\n') == message.count('\n')
+
+    def _check_matching_srcmd5(self, project, package, rev, history_limit=5):
         """check if factory sources contain the package and revision. check head and history"""
         self.logger.debug("checking %s in %s" % (package, project))
         try:
@@ -781,10 +792,10 @@ class ReviewBot(object):
 
         if history_limit:
             self.logger.debug("%s not the latest version, checking history", rev)
-            u = osc.core.makeurl(self.apiurl, [ 'source', project, package, '_history' ], { 'limit': history_limit })
+            u = osc.core.makeurl(self.apiurl, ['source', project, package, '_history'], {'limit': history_limit})
             try:
                 r = osc.core.http_GET(u)
-            except HTTPError as e:
+            except HTTPError:
                 self.logger.debug("package has no history!?")
                 return None
 
@@ -868,7 +879,7 @@ class CommandLineInterface(cmdln.Cmdln):
         logging.basicConfig(level=level, format='[%(levelname).1s] %(message)s')
         self.logger = logging.getLogger(self.optparser.prog)
 
-        conf.get_config(override_apiurl = self.options.apiurl)
+        conf.get_config(override_apiurl=self.options.apiurl)
 
         if (self.options.osc_debug):
             conf.config['debug'] = 1
@@ -886,7 +897,7 @@ class CommandLineInterface(cmdln.Cmdln):
         if self.options.fallback_group:
             self.checker.fallback_group = self.options.fallback_group
 
-        sentry_sdk = sentry_init(conf.config['apiurl'], {
+        sentry_init(conf.config['apiurl'], {
             'review_bot': self.clazz.__name__,
             'review_user': self.checker.review_user,
         })
@@ -902,11 +913,11 @@ class CommandLineInterface(cmdln.Cmdln):
         if user is None and group is None:
             user = conf.get_apiurl_usr(apiurl)
 
-        return self.clazz(apiurl = apiurl,
-                dryrun = self.options.dry,
-                user = user,
-                group = group,
-                logger = self.logger)
+        return self.clazz(apiurl=apiurl,
+                          dryrun=self.options.dry,
+                          user=user,
+                          group=group,
+                          logger=self.logger)
 
     def do_id(self, subcmd, opts, *args):
         """${cmd_name}: check the specified request ids
@@ -993,4 +1004,4 @@ class CommandLineInterface(cmdln.Cmdln):
 
 if __name__ == "__main__":
     app = CommandLineInterface()
-    sys.exit( app.main() )
+    sys.exit(app.main())

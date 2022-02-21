@@ -9,15 +9,12 @@ import re
 import random
 import string
 import subprocess
-import sys
 import shutil
 import tempfile
 
 from lxml import etree as ET
 
-from osc import conf
 import osc.core
-from urllib.error import HTTPError
 from osclib.cache_manager import CacheManager
 
 import requests
@@ -29,6 +26,7 @@ import yaml
 from urllib.parse import urljoin, urlparse
 
 logger = logging.getLogger()
+
 
 def dump_solv_build(baseurl):
     """Determine repo format and build string from remote repository."""
@@ -67,6 +65,7 @@ def dump_solv_build(baseurl):
 
     raise Exception(baseurl + 'includes no build number')
 
+
 def parse_repomd(repo, baseurl):
     url = urljoin(baseurl, 'repodata/repomd.xml')
     repomd = requests.get(url)
@@ -101,6 +100,7 @@ def parse_repomd(repo, baseurl):
         return True
 
     return False
+
 
 def parse_susetags(repo, baseurl):
     url = urljoin(baseurl, 'content')
@@ -137,6 +137,7 @@ def parse_susetags(repo, baseurl):
         return True
     return False
 
+
 def dump_solv(name, baseurl):
     pool = solv.Pool()
     pool.setarch()
@@ -152,6 +153,7 @@ def dump_solv(name, baseurl):
     ofh.flush()
 
     return name
+
 
 def print_repo_delta(pool, repo2, packages_file):
     print('=Ver: 2.0', file=packages_file)
@@ -177,6 +179,7 @@ def print_repo_delta(pool, repo2, packages_file):
             print(dep, file=packages_file)
         print('-Prv:', file=packages_file)
 
+
 def merge_susetags(output, files):
     pool = solv.Pool()
     pool.setarch()
@@ -185,9 +188,10 @@ def merge_susetags(output, files):
         oldsysrepo = pool.add_repo(file)
         defvendorid = oldsysrepo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
         f = tempfile.TemporaryFile()
-        st = subprocess.call(['xz', '-cd', file], stdout=f.fileno())
+        subprocess.call(['xz', '-cd', file], stdout=f.fileno())
         os.lseek(f.fileno(), 0, os.SEEK_SET)
-        oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
+        oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None,
+                                solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
 
     packages = dict()
     for s in pool.solvables_iter():
@@ -195,9 +199,9 @@ def merge_susetags(output, files):
         release = evr.pop()
         version = '-'.join(evr)
         key = s.name + "-" + version + "." + s.arch
-        if re.search('-release', s.name): # just take one version of it
+        if re.search('-release', s.name):  # just take one version of it
             key = s.name + "." + s.arch
-        packages[key] = { 'name': s.name, 'version': version, 'arch': s.arch, 'release': release, 'provides': set()}
+        packages[key] = {'name': s.name, 'version': version, 'arch': s.arch, 'release': release, 'provides': set()}
         for dep in s.lookup_deparray(solv.SOLVABLE_PROVIDES):
             packages[key]['provides'].add(str(dep))
     output_file = open(output, 'w')
@@ -274,9 +278,10 @@ def update_project(apiurl, project):
                 defvendorid = repo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
                 f = tempfile.TemporaryFile()
                 # FIXME: port to lzma module with python3
-                st = subprocess.call(['xz', '-cd', file], stdout=f.fileno())
+                subprocess.call(['xz', '-cd', file], stdout=f.fileno())
                 os.lseek(f.fileno(), 0, os.SEEK_SET)
-                repo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
+                repo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None,
+                                  solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
 
         repo1 = pool.add_repo(''.join(random.choice(string.ascii_letters) for _ in range(5)))
         repo1.add_solv(solv_file)

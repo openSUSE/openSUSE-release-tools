@@ -3,6 +3,7 @@ from lxml import etree as ET
 from osc import cmdln
 from urllib.error import HTTPError
 
+
 @cmdln.option('-p', '--project', metavar='PROJECT', dest='project', default='openSUSE:Factory')
 @cmdln.option('-r', '--repository', metavar='REPOSITORY', dest='repository', default='standard')
 @cmdln.option('-a', '--arch', metavar='ARCH', dest='arch', default='x86_64')

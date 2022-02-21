@@ -21,6 +21,7 @@ from osc.core import makeurl
 from ttm.manager import ToTestManager, NotFoundException, QAResult
 from openqa_client.client import OpenQA_Client
 
+
 class ToTestPublisher(ToTestManager):
 
     def __init__(self, tool):
@@ -49,7 +50,8 @@ class ToTestPublisher(ToTestManager):
         in_progress = False
         for job in jobs:
             # print json.dumps(job, sort_keys=True, indent=4)
-            if job['result'] in ('failed', 'incomplete', 'timeout_exceeded', 'skipped', 'user_cancelled', 'obsoleted', 'parallel_failed'):
+            if job['result'] in ('failed', 'incomplete', 'timeout_exceeded', 'skipped',
+                                 'user_cancelled', 'obsoleted', 'parallel_failed'):
                 # print json.dumps(job, sort_keys=True, indent=4), jobname
                 url = makeurl(self.project.openqa_server,
                               ['api', 'v1', 'jobs', str(job['id']), 'comments'])
@@ -171,8 +173,6 @@ class ToTestPublisher(ToTestManager):
 
         current_snapshot = self.get_status('testing')
 
-        group_id = self.openqa_group_id()
-
         if self.get_status('publishing') == current_snapshot:
             self.logger.info('{} is already publishing'.format(current_snapshot))
             # migrating - if there is no published entry, the last publish call
@@ -217,9 +217,11 @@ class ToTestPublisher(ToTestManager):
             wait_time = 20
             while not self.all_repos_done(self.project.test_project):
                 if self.dryrun:
-                    self.logger.info('{} is still not published, do not wait as dryrun.'.format(self.project.test_project))
+                    self.logger.info('{} is still not published, do not wait as dryrun.'.format(
+                        self.project.test_project))
                     return
-                self.logger.info('{} is still not published, waiting {} seconds'.format(self.project.test_project, wait_time))
+                self.logger.info('{} is still not published, waiting {} seconds'.format(
+                    self.project.test_project, wait_time))
                 time.sleep(wait_time)
 
         current_snapshot = self.get_status('publishing')
@@ -255,11 +257,8 @@ class ToTestPublisher(ToTestManager):
         if self.dryrun:
             return
 
-        url = makeurl(self.project.openqa_server,
-                      ['api', 'v1', 'groups', str(group_id), 'comments'])
-
         status_flag = 'published'
-        data = {'text': 'tag:{}:{}:{}'.format(snapshot, status_flag, status_flag) }
+        data = {'text': 'tag:{}:{}:{}'.format(snapshot, status_flag, status_flag)}
         self.openqa.openqa_request('POST', 'groups/%s/comments' % group_id, data=data)
 
     def openqa_group_id(self):
@@ -304,4 +303,4 @@ class ToTestPublisher(ToTestManager):
         if self.project.totest_images_repo != self.project.product_repo:
             self.logger.info('Publish test project content (image_products)')
             self.api.switch_flag_in_prj(self.project.test_project, flag='publish', state='enable',
-            repository=self.project.totest_images_repo)
+                                        repository=self.project.totest_images_repo)

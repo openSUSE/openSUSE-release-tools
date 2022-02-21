@@ -6,7 +6,6 @@ import hashlib
 import logging
 import os
 import os.path
-import re
 import subprocess
 import sys
 import tempfile
@@ -20,11 +19,11 @@ from osc.core import http_request
 
 import ToolBase
 from osclib.conf import Config
-from osclib.core import (http_GET, http_POST, makeurl,
-                         project_pseudometa_file_ensure,
+from osclib.core import (http_GET, makeurl,
                          repository_path_expand, repository_path_search,
                          target_archs, source_file_load, source_file_ensure)
 from osclib.repochecks import mirror, parsed_installcheck, CorruptRepos
+
 
 class RepoChecker():
     def __init__(self):
@@ -43,8 +42,6 @@ class RepoChecker():
         if not repository:
             self.logger.error('a repository must be specified via OSRT:Config main-repo for {}'.format(project))
             return
-
-        config = Config.get(self.apiurl, project)
 
         archs = target_archs(self.apiurl, project, repository)
         if not len(archs):
@@ -112,7 +109,7 @@ class RepoChecker():
         self.store_filename = 'rebuildpacs.{}-{}.yaml'.format(project, repository)
         if self.store_project and self.store_package:
             state_yaml = source_file_load(self.apiurl, self.store_project, self.store_package,
-                                        self.store_filename)
+                                          self.store_filename)
             if state_yaml:
                 oldstate = yaml.safe_load(state_yaml)
 
@@ -212,7 +209,7 @@ class RepoChecker():
                 del oldstate['check'][source]
 
         packages = config.get('rebuildpacs-leafs', '').split()
-        if not self.rebuild: # ignore in this case
+        if not self.rebuild:  # ignore in this case
             packages = []
 
         # first round: collect all infos from obs
@@ -264,7 +261,7 @@ class RepoChecker():
 
         query = {'cmd': 'rebuild', 'repository': repository, 'arch': arch, 'package': rebuilds}
         url = makeurl(self.apiurl, ['build', project])
-        headers = { 'Content-Type': 'application/x-www-form-urlencoded' }
+        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
         http_request('POST', url, headers, data=urlencode(query, doseq=True))
 
         self.store_yaml(oldstate, project, repository, arch)
@@ -304,6 +301,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         self.tool.parse_store(opts.store)
         self.tool.apiurl = conf.config['apiurl']
         self.tool.check(project, opts.repo)
+
 
 if __name__ == '__main__':
     app = CommandLineInterface()

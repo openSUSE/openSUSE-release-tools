@@ -20,6 +20,7 @@ import time
 import yaml
 from . import OBSLocal
 
+
 class TestOrigin(OBSLocal.TestCase):
     script = './origin-manager.py'
     script_debug_osc = False
@@ -292,7 +293,7 @@ class TestOrigin(OBSLocal.TestCase):
         devel_project = self.randomString('devel')
         package = self.randomString('package')
 
-        target_package = self.wf.create_package(self.target_project, package)
+        self.wf.create_package(self.target_project, package)
         upstream1_package = self.wf.create_package(upstream1_project, package)
         upstream2_package = self.wf.create_package(upstream2_project, package)
         devel_package = self.wf.create_package(devel_project, package)
@@ -308,7 +309,7 @@ class TestOrigin(OBSLocal.TestCase):
         self.origin_config_write([
             {'<devel>': {}},
             {upstream1_project: {}},
-            {upstream2_project: { 'pending_submission_consider': True }},
+            {upstream2_project: {'pending_submission_consider': True}},
             {'*~': {}},
         ], {'unknown_origin_wait': True})
 
@@ -365,9 +366,9 @@ class TestOrigin(OBSLocal.TestCase):
         package2 = self.randomString('package2')
         package3 = self.randomString('package3')
 
-        target_package1 = self.wf.create_package(self.target_project, package1)
+        self.wf.create_package(self.target_project, package1)
         upstream1_package1 = self.wf.create_package(upstream1_project, package1)
-        upstream2_package1 = self.wf.create_package(upstream2_project, package1)
+        self.wf.create_package(upstream2_project, package1)
 
         upstream1_package1.create_commit()
         copy_package(self.wf.apiurl, upstream1_project, package1,
@@ -384,8 +385,8 @@ class TestOrigin(OBSLocal.TestCase):
         attribute_value_save(self.wf.apiurl, upstream3_project, 'ApprovedRequestSource', '', 'OBS')
 
         self.origin_config_write([
-            {upstream1_project: { 'automatic_updates_initial': True }},
-            {upstream2_project: { 'automatic_updates_initial': True }},
+            {upstream1_project: {'automatic_updates_initial': True}},
+            {upstream2_project: {'automatic_updates_initial': True}},
             {upstream3_project: {}},
         ])
 
@@ -394,7 +395,7 @@ class TestOrigin(OBSLocal.TestCase):
         request_future = origin_update(self.wf.apiurl, self.wf.project, package1)
         self.assertNotEqual(request_future, False)
         if request_future:
-            request_id_package1 = request_future.print_and_create()
+            request_future.print_and_create()
 
         # Ensure a second request is not triggered.
         memoize_session_reset()
@@ -443,7 +444,7 @@ class TestOrigin(OBSLocal.TestCase):
         upstream1_project = self.randomString('upstream1')
         package1 = self.randomString('package1')
 
-        target_package1 = self.wf.create_package(self.target_project, package1)
+        self.wf.create_package(self.target_project, package1)
         upstream1_package1 = self.wf.create_package(upstream1_project, package1)
 
         upstream1_package1.create_commit()
@@ -492,8 +493,7 @@ class TestOrigin(OBSLocal.TestCase):
         # Accept request and ensure update since no request to supersede.
         self.assertReviewScript(request_id_package1_1, self.bot_user, 'new', 'accepted')
         request_state_change(self.wf.apiurl, request_id_package1_1, 'accepted')
-
-        request_id_package1_2 = self.assertUpdate(package1)
+        self.assertUpdate(package1)
 
         # Track time since last request created for testing frequency.
         start = datetime.now()
@@ -508,4 +508,4 @@ class TestOrigin(OBSLocal.TestCase):
         self.waitDelta(start, delay)
         upstream1_package1.create_commit()
 
-        request_id_package1_3 = self.assertUpdate(package1)
+        self.assertUpdate(package1)

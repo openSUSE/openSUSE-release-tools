@@ -21,12 +21,14 @@ http_GET = osc.core.http_GET
 http_DELETE = osc.core.http_DELETE
 http_POST = osc.core.http_POST
 
-# http://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks-in-python
+
 def chunks(line, n):
     """ Yield successive n-sized chunks from l.
     """
+    # http://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks-in-python
     for i in range(0, len(line), n):
         yield line[i:i + n]
+
 
 class ToolBase(object):
     def __init__(self):
@@ -92,7 +94,12 @@ class ToolBase(object):
 
     def meta_get_packagelist(self, prj, deleted=None, expand=False):
         root = ET.fromstring(self._meta_get_packagelist(prj, deleted, expand))
-        return [ node.get('name') for node in root.findall('entry') if not node.get('name') == '000product' and not node.get('name').startswith('patchinfo.') ]
+        res = list()
+        for node in root.findall('entry'):
+            name = node.get('name')
+            if not (name == '000product' or name.startswith('patchinfo.')):
+                res.push(name)
+        return res
 
     def latest_packages(self, project):
         data = self.cached_GET(self.makeurl(['project', 'latest_commits', project]))
@@ -116,6 +123,7 @@ class ToolBase(object):
         """ reimplement this """
         True
 
+
 class CommandLineInterface(cmdln.Cmdln):
     def __init__(self, *args, **kwargs):
         cmdln.Cmdln.__init__(self, *args, **kwargs)
@@ -131,7 +139,7 @@ class CommandLineInterface(cmdln.Cmdln):
         parser.add_option('--http-full-debug', action='store_true',
                           help='debug HTTP traffic (filters no headers)')
         parser.add_option('--cache-requests', action='store_true', default=False,
-                        help='cache GET requests. Not recommended for daily use.')
+                          help='cache GET requests. Not recommended for daily use.')
 
         return parser
 
@@ -144,16 +152,16 @@ class CommandLineInterface(cmdln.Cmdln):
 
         logging.basicConfig(level=level)
 
-        osc.conf.get_config(override_apiurl = self.options.apiurl,
-                            override_debug = self.options.osc_debug,
-                            override_http_debug = self.options.http_debug,
-                            override_http_full_debug = self.options.http_full_debug)
+        osc.conf.get_config(override_apiurl=self.options.apiurl,
+                            override_debug=self.options.osc_debug,
+                            override_http_debug=self.options.http_debug,
+                            override_http_full_debug=self.options.http_full_debug)
 
         self.tool = self.setup_tool()
         self.tool.dryrun = self.options.dry
         self.tool.caching = self.options.cache_requests
 
-    def setup_tool(self, toolclass = ToolBase):
+    def setup_tool(self, toolclass=ToolBase):
         """ reimplement this """
 
         tool = toolclass()
@@ -198,6 +206,7 @@ class CommandLineInterface(cmdln.Cmdln):
                 continue
             break
 
+
 if __name__ == "__main__":
     app = CommandLineInterface()
-    sys.exit( app.main() )
+    sys.exit(app.main())

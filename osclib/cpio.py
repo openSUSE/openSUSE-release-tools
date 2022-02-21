@@ -2,6 +2,7 @@
 
 import struct
 
+
 class Cpio(object):
     def __init__(self, buf):
         self.buf = buf
@@ -16,6 +17,7 @@ class Cpio(object):
             raise StopIteration
         self.off = self.off + f.length()
         return f
+
 
 class CpioFile(object):
     def __init__(self, off, buf):
@@ -34,9 +36,9 @@ class CpioFile(object):
             raise Exception("invalid cpio header %s" % self.c_magic)
 
         names = ("c_ino", "c_mode", "c_uid", "c_gid",
-                "c_nlink", "c_mtime", "c_filesize",
-                "c_devmajor", "c_devminor", "c_rdevmajor",
-                "c_rdevminor", "c_namesize", "c_check")
+                 "c_nlink", "c_mtime", "c_filesize",
+                 "c_devmajor", "c_devminor", "c_rdevmajor",
+                 "c_rdevminor", "c_namesize", "c_check")
         for (n, v) in zip(names, fields[1:]):
             setattr(self, n, int(v, 16))
 
@@ -61,6 +63,7 @@ class CpioFile(object):
         if (self.c_filesize & 3):
             len = len + 4 - (self.c_filesize & 3)
         return len
+
 
 if __name__ == '__main__':
     from optparse import OptionParser

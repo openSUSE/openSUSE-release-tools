@@ -19,7 +19,6 @@ class UnignoreCommand(object):
         """
 
         requests_ignored = self.api.get_ignored_requests()
-        length = len(requests_ignored)
 
         if len(requests) == 1 and requests[0] == 'all':
             requests_ignored = {}

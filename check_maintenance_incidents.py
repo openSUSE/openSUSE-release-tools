@@ -14,6 +14,7 @@ from osclib.core import maintainers_get
 
 import ReviewBot
 
+
 class MaintenanceChecker(ReviewBot.ReviewBot):
     """ simple bot that adds other reviewers depending on target project
     """
@@ -37,8 +38,8 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
             if prj.startswith('openSUSE:Leap') or prj.startswith('openSUSE:1'):
                 self.logger.debug("%s looks wrong as maintainer, skipped", prj)
                 continue
-            self.add_review(req, by_project = prj, by_package = pkg,
-                    msg = 'Submission for {} by someone who is not maintainer in the devel project ({}). Please review'.format(pkg, prj) )
+            msg = 'Submission for {} by someone who is not maintainer in the devel project ({}). Please review'.format(pkg, prj)
+            self.add_review(req, by_project=prj, by_package=pkg, msg=msg)
 
     @staticmethod
     @memoize(session=True)
@@ -81,8 +82,8 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
                 origin = mapping[pkgname]
                 self.logger.debug("{} comes from {}, submitted from {}".format(pkgname, origin, a.src_project))
                 if origin.startswith('SUSE:SLE-12') and a.src_project.startswith('SUSE:SLE-12') \
-                    or origin.startswith('SUSE:SLE-15') and a.src_project.startswith('SUSE:SLE-15') \
-                    or origin.startswith('openSUSE:Leap') and a.src_project.startswith('openSUSE:Leap'):
+                        or origin.startswith('SUSE:SLE-15') and a.src_project.startswith('SUSE:SLE-15') \
+                        or origin.startswith('openSUSE:Leap') and a.src_project.startswith('openSUSE:Leap'):
                     self.logger.info("{} submitted from {}, no maintainer review needed".format(pkgname, a.src_project))
                     return
 
@@ -112,7 +113,9 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
 
         self._check_maintainer_review_needed(req, a)
 
-        if a.tgt_releaseproject.startswith("openSUSE:Backports:") and not a.tgt_releaseproject.startswith("openSUSE:Backports:SLE-15-SP3") and not a.tgt_releaseproject.startswith("openSUSE:Backports:SLE-15-SP4"):
+        if a.tgt_releaseproject.startswith("openSUSE:Backports:") \
+            and not a.tgt_releaseproject.startswith("openSUSE:Backports:SLE-15-SP3") \
+                and not a.tgt_releaseproject.startswith("openSUSE:Backports:SLE-15-SP4"):
             self.add_factory_source = True
 
         return True
@@ -152,7 +155,8 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
 
         return ret
 
+
 if __name__ == "__main__":
     app = ReviewBot.CommandLineInterface()
     app.clazz = MaintenanceChecker
-    sys.exit( app.main() )
+    sys.exit(app.main())

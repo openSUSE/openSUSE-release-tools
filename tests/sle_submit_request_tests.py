@@ -1,6 +1,4 @@
-import logging
 from . import OBSLocal
-import random
 import os
 
 # Needed to configure OriginManager
@@ -19,9 +17,9 @@ from osclib.accept_command import AcceptCommand
 # Import the involved bots
 from check_source import CheckSource
 from check_tags_in_requests import TagChecker
-legal_auto = __import__("legal-auto") # Needed because of the dash in the filename
+legal_auto = __import__("legal-auto")  # Needed because of the dash in the filename
 LegalAuto = legal_auto.LegalAuto
-origin_manager = __import__("origin-manager") # Same than above, dash in the filename
+origin_manager = __import__("origin-manager")  # Same than above, dash in the filename
 OriginManager = origin_manager.OriginManager
 
 PROJECT = 'SUSE:SLE-15-SP3:GA'
@@ -29,6 +27,7 @@ DEVEL_PROJECT = 'devel:drinking'
 STAGING_PROJECT_NAME = 'SUSE:SLE-15-SP3:GA:Staging:A'
 HUMAN_REVIEWER = 'release-manager'
 FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures')
+
 
 class TestSLESubmitRequest(OBSLocal.TestCase):
     """Tests for the whole lifecycle of submit requests in SLE
@@ -162,7 +161,7 @@ class TestSLESubmitRequest(OBSLocal.TestCase):
         groups = ['sle-release-managers', 'origin-reviewers', 'autobuild-team']
         for group in groups:
             self.wf.create_group(group, users=[HUMAN_REVIEWER])
-            self.project().add_reviewers(groups = [group])
+            self.project().add_reviewers(groups=[group])
 
     def __config_origin_manager(self):
         """Creates the very minimal configuration needed by origin-manager to work"""
@@ -185,7 +184,7 @@ class TestSLESubmitRequest(OBSLocal.TestCase):
         for simplicity (the rest of the execution of the bot still takes place normally).
         """
         bot = self.review_bots['sle-changelog-checker']
-        bot.checkTagInRequest = MagicMock(return_value = True)
+        bot.checkTagInRequest = MagicMock(return_value=True)
 
     def __mock_licensedigger(self):
         """Mocks the execution of the LegalAuto bot, so it always succeeds and accepts the review
@@ -200,6 +199,6 @@ class TestSLESubmitRequest(OBSLocal.TestCase):
     def __accept_license(self):
         """See :func:`__mock_licensedigger`"""
         change_review_state(
-            apiurl = self.wf.apiurl, reqid = self.request.reqid,
-            newstate = 'accepted', by_user='licensedigger'
+            apiurl=self.wf.apiurl, reqid=self.request.reqid,
+            newstate='accepted', by_user='licensedigger'
         )

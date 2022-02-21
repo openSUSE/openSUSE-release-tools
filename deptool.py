@@ -1,16 +1,13 @@
 #!/usr/bin/python3
 
-from pprint import pprint
 import os
 import sys
-import re
 import logging
 import cmdln
 
 from fnmatch import fnmatch
 from configparser import SafeConfigParser
 import solv
-import rpm
 
 logger = None
 
@@ -80,7 +77,7 @@ class DepTool(cmdln.Cmdln):
                         name = r
                         r += '.repo'
                     parser.read('/'.join((repodir, r)))
-                    if onlyenabled == False or parser.get(name, 'enabled') == '1':
+                    if onlyenabled is False or parser.get(name, 'enabled') == '1':
                         repo = self.pool.add_repo(name)
                         repo.add_solv(solvfile % name)
                         if parser.has_option(name, 'priority'):
@@ -304,7 +301,8 @@ class DepTool(cmdln.Cmdln):
                             logger.error("%s doesn't provide anything")
                             continue
                         for p in prov:
-                            sel = self.pool.matchdepid(p, solv.Selection.SELECTION_REL | solv.Selection.SELECTION_FLAT, kindid)
+                            sel = self.pool.matchdepid(p, solv.Selection.SELECTION_REL |
+                                                       solv.Selection.SELECTION_FLAT, kindid)
                             if sel.isempty():
                                 logger.debug('nothing %s %s', kind.lower(), p)
                                 continue

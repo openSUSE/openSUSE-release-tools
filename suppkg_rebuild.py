@@ -23,6 +23,7 @@ http_GET = osc.core.http_GET
 http_POST = osc.core.http_POST
 http_PUT = osc.core.http_PUT
 
+
 class StagingHelper(object):
     def __init__(self, project):
         self.project = project
@@ -48,7 +49,7 @@ class StagingHelper(object):
     def get_project_binarylist(self, project, repository, arch):
         query = {'view': 'binaryversions'}
         root = ET.parse(http_GET(makeurl(self.apiurl, ['build', project, repository, arch],
-            query=query))).getroot()
+                                         query=query))).getroot()
         return root
 
     def process_project_binarylist(self, project, repository, arch):
@@ -156,6 +157,7 @@ class StagingHelper(object):
             self.api.pseudometa_file_save(
                 'support_pkg_rebuild', rebuild_data_updated, 'support package rebuild')
 
+
 def main(args):
     # Configure OSC
     osc.conf.get_config(override_apiurl=args.apiurl)
@@ -164,20 +166,21 @@ def main(args):
     uc = StagingHelper(args.project)
     uc.crawl()
 
+
 if __name__ == '__main__':
     description = 'Rebuild project if support package were staged in the staging project'
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-A', '--apiurl', metavar='URL', help='API URL')
     parser.add_argument('-d', '--debug', action='store_true',
-            help='print info useful for debuging')
+                        help='print info useful for debuging')
     parser.add_argument('-p', '--project', dest='project', metavar='PROJECT',
-            help='deafult project (default: %s)' % OPENSUSE,
-            default=OPENSUSE)
+                        help='deafult project (default: %s)' % OPENSUSE,
+                        default=OPENSUSE)
 
     args = parser.parse_args()
 
     # Set logging configuration
     logging.basicConfig(level=logging.DEBUG if args.debug
-            else logging.INFO)
+                        else logging.INFO)
 
     sys.exit(main(args))

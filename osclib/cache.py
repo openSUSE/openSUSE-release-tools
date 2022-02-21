@@ -17,6 +17,7 @@ from osclib.util import rmtree_nfs_safe
 from time import time
 from lxml import etree as ET
 
+
 def http_request(method, url, headers={}, data=None, file=None):
     """
     Wrapper for osc.core.http_request() to provide GET request caching.

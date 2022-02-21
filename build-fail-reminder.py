@@ -15,6 +15,7 @@ import email.utils
 # for maintainer search
 FACTORY = 'openSUSE:Factory'
 
+
 class RemindedPackage(object):
     def __init__(self, firstfail, reminded, remindCount, bug):
         self.firstfail = firstfail
@@ -25,10 +26,12 @@ class RemindedPackage(object):
     def __str__(self):
         return '{} {} {} {}'.format(self.firstfail, self.reminded, self.bug, self.remindCount)
 
+
 def jdefault(o):
     return o.__dict__
 
-MAIL_TEMPLATES = ( u"""Dear %(recipient)s,
+
+MAIL_TEMPLATES = (u"""Dear %(recipient)s,
 
 Please be informed that '%(package)s' in %(project)s has
 not had a successful build since %(date)s. See
@@ -50,7 +53,7 @@ maintainer if the package has no explicit maintainer assigned)
 Kind regards,
 %(sender)s
 """,
-u"""Dear %(recipient)s,
+                  u"""Dear %(recipient)s,
 
 Following-up the reminder of one week ago, we have to inform you that
 '%(package)s' is still failing in %(project)s. See
@@ -72,16 +75,18 @@ Kind regards,
 %(sender)s
 """)
 
+
 def SendMail(logger, project, sender, to, fullname, subject, text):
     try:
         xmailer = '{} - Failure Notification'.format(project)
         to = email.utils.formataddr((fullname, to))
         mail_send_with_details(sender=sender, to=to,
-                        subject=subject, text=text, xmailer=xmailer,
-                        relay=args.relay, dry=args.dry)
+                               subject=subject, text=text, xmailer=xmailer,
+                               relay=args.relay, dry=args.dry)
     except Exception as e:
         print(e)
         logger.error("Failed to send an email to %s (%s)" % (fullname, to))
+
 
 def main(args):
 
@@ -98,11 +103,11 @@ def main(args):
 
     logger.debug('loading build fails for %s' % project)
     url = osc.core.makeurl(apiurl, ['projects', project, 'status'],
-        { 'ignore_pending': True,
-          'limit_to_fails': True,
-          'include_versions': False,
-          'format': 'json'
-        })
+                           {'ignore_pending': True,
+                            'limit_to_fails': True,
+                            'include_versions': False,
+                            'format': 'json'
+                            })
     json_data = osc.core.http_GET(url)
     data = json.load(json_data)
     json_data.close()
@@ -117,7 +122,6 @@ def main(args):
         json_data.close()
     except FileNotFoundError:
         RemindedLoaded = {}
-        pass
 
     seconds_to_remember = 7 * 86400
     now = int(time.time())
@@ -161,7 +165,8 @@ def main(args):
             }
             url = osc.core.makeurl(apiurl, ('search', 'owner'), query=query)
             root = ET.parse(osc.core.http_GET(url)).getroot()
-            maintainers = set([p.get('name') for p in root.findall('.//person') if p.get('role') in ('maintainer', 'bugowner')])
+            maintainers = set([p.get('name') for p in root.findall('.//person')
+                              if p.get('role') in ('maintainer', 'bugowner')])
             # TODO: expand groups if no persons found
             for userid in maintainers:
                 if userid not in Person:
@@ -172,12 +177,12 @@ def main(args):
                     fullname = Person[userid][1]
                     subject = '%s - %s - Build fail notification' % (project, package)
                     text = MAIL_TEMPLATES[Reminded[package].remindCount - 1] % {
-                                'recipient': fullname,
-                                'sender': sender,
-                                'project': project,
-                                'package': package,
-                                'date': time.ctime(Reminded[package].firstfail),
-                                }
+                        'recipient': fullname,
+                        'sender': sender,
+                        'project': project,
+                        'package': package,
+                        'date': time.ctime(Reminded[package].firstfail)
+                    }
                     SendMail(logger, project, sender, to, fullname, subject, text)
             elif Reminded[package].remindCount == 4:
                 # Package has failed for 4 weeks - Collect packages to send a mail to openSUSE-factory@ (one mail per day max)
@@ -206,7 +211,7 @@ maintainer/bugowner did not yet find the time to look into the
 matter and he/she would certainly appreciate help to get this
 sorted.
 
-""" % { 'project': project }
+""" % {'project': project}
         for pkg in ProjectComplainList:
             text += "- %s\n" % pkg
         text += u"""
@@ -215,8 +220,9 @@ package(s) are going to be removed from %(project)s.
 
 Kind regards,
 %(sender)s
-""" % { 'project': project, 'sender': sender }
+""" % {'project': project, 'sender': sender}
         SendMail(logger, project, sender, to, fullname, subject, text)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Send e-mails about packages failing to build for a long time')
@@ -239,6 +245,6 @@ if __name__ == '__main__':
     else:
         level = None
 
-    logging.basicConfig(level = level)
+    logging.basicConfig(level=level)
 
     sys.exit(main(args))

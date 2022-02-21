@@ -1,7 +1,6 @@
 import os
 import os.path
 import subprocess
-import sys
 import tempfile
 import warnings
 import yaml
@@ -49,6 +48,7 @@ def _print_version(self):
     print(VERSION)
     quit(0)
 
+
 def _full_project_name(self, project):
     """Deduce the full project name."""
     if project.startswith(('openSUSE', 'SUSE')):
@@ -64,11 +64,13 @@ def _full_project_name(self, project):
     warnings.warn('%s project not recognized.' % project)
     return project
 
+
 def lock_needed(cmd, opts):
     return not(
         cmd in ('check', 'check_duplicate_binaries', 'check_local_links', 'frozenage', 'rebuild', 'unlock', 'setprio') or
         (cmd == 'list' and not opts.supersede)
     )
+
 
 def clean_args(args):
     out = []
@@ -381,7 +383,7 @@ def do_staging(self, subcmd, opts, *args):
     Config(opts.apiurl, opts.project)
 
     colorama.init(autoreset=True,
-        strip=(opts.no_color or not bool(int(conf.config.get('staging.color', True)))))
+                  strip=(opts.no_color or not bool(int(conf.config.get('staging.color', True)))))
     # Allow colors to be changed.
     for name in dir(Fore):
         if not name.startswith('_'):
@@ -526,7 +528,7 @@ def do_staging(self, subcmd, opts, *args):
                         editor = os.getenv('EDITOR')
                         if not editor:
                             editor = 'xdg-open'
-                        return_code = subprocess.call(editor.split(' ') + [temp.name])
+                        subprocess.call(editor.split(' ') + [temp.name])
 
                         proposal = yaml.safe_load(open(temp.name).read())
 

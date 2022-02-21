@@ -1,5 +1,4 @@
 from . import OBSLocal
-import unittest
 
 
 class TestMetrics(OBSLocal.TestCase):
@@ -8,5 +7,5 @@ class TestMetrics(OBSLocal.TestCase):
 
     def test_all(self):
         self.osc_user('staging-bot')
-        self.execute_script(['--help']) # Avoids the need to influxdb instance.
+        self.execute_script(['--help'])  # Avoids the need to influxdb instance.
         self.assertOutput('metrics.py')

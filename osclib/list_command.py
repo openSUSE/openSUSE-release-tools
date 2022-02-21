@@ -1,9 +1,9 @@
 from __future__ import print_function
 
 from colorama import Fore
-from osc import oscerr
 from osclib.request_splitter import RequestSplitter
 from osclib.supersede_command import SupersedeCommand
+
 
 class ListCommand:
     SOURCE_PROJECT_STRIP = [
@@ -49,7 +49,7 @@ class ListCommand:
                     request_id, Fore.CYAN, target_package, Fore.RESET,
                     ring_color, ring, Fore.RESET)
 
-                if not hide_source and action.find('source') != None:
+                if not hide_source and action.find('source') is not None:
                     source_project = action.find('source').get('project')
                     source_project = self.project_strip(source_project)
                     line += ' ({})'.format(Fore.YELLOW + source_project + Fore.RESET)

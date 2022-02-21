@@ -16,6 +16,7 @@ makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
 http_POST = osc.core.http_POST
 
+
 class CompareList(object):
     def __init__(self, old_prj, new_prj, verbose, newonly, removedonly, existin, submit, submitfrom, submitto, submit_limit):
         self.new_prj = new_prj
@@ -180,7 +181,8 @@ class CompareList(object):
                             if self.submit_new_package(self.submitfrom, self.submitto, pkg, msg):
                                 submit_counter += 1
                         else:
-                            msg = "Automated submission of a package from %s that is new in %s" % (self.old_prj, self.new_prj)
+                            msg = "Automated submission of a package from %s that is new in %s" % (
+                                self.old_prj, self.new_prj)
                             if self.submit_new_package(self.old_prj, self.new_prj, pkg, msg):
                                 submit_counter += 1
                 elif not self.newonly:
@@ -194,14 +196,16 @@ class CompareList(object):
             if pkg in target:
                 print("Deleted package in {:<8} - {}".format(self.old_prj, pkg))
 
+
 def main(args):
     # Configure OSC
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
 
     uc = CompareList(args.old_prj, args.new_prj, args.verbose, args.newonly,
-            args.removedonly, args.existin, args.submit, args.submitfrom, args.submitto, args.submit_limit)
+                     args.removedonly, args.existin, args.submit, args.submitfrom, args.submitto, args.submit_limit)
     uc.crawl()
+
 
 if __name__ == '__main__':
     description = 'Compare packages status between two project'

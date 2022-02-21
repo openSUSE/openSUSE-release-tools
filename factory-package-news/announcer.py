@@ -5,14 +5,11 @@ import re
 from urllib.parse import urlparse, urljoin
 import smtplib
 from email.mime.text import MIMEText
-import os
 import sys
 import email.utils
 import argparse
 import logging
 import yaml
-from xdg.BaseDirectory import save_data_path
-from collections import namedtuple
 
 logger = logging.getLogger()
 
@@ -24,13 +21,15 @@ config_defaults = {
     'changesfile': "Changes.{version}.txt",
 }
 
-def _load_config(handle = None):
+
+def _load_config(handle=None):
     d = config_defaults
     y = yaml.safe_load(handle) if handle is not None else {}
     keys = set(d.keys()) | set(y.keys())
     for key in keys:
         y[key] = y.get(key, d.get(key, None))
     return y
+
 
 parser = argparse.ArgumentParser(description="Announce new snapshots")
 parser.add_argument("--dry", action="store_true", help="dry run")

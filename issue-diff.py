@@ -29,7 +29,11 @@ from osclib.git import sync
 # unicode character in its summary.
 BUG_SUMMARY = '[patch-lost-in-sle] Missing issues in {factory}/{package}'
 BUG_TEMPLATE = u'{message_start}\n\n{issues}'
-MESSAGE_START = 'The following issues were referenced in the changelog for {project}/{package}, but where not found in {factory}/{package} after {newest} days. Review the issues and submit changes to {factory} to ensure all relevant changes end up in {factory} which is used as the basis for the next SLE version. For more information and details on how to go about submitting the changes see https://mailman.suse.de/mlarch/SuSE/research/2017/research.2017.02/msg00051.html.'
+MESSAGE_START = """The following issues were referenced in the changelog for {project}/{package},
+but where not found in {factory}/{package} after {newest} days. Review the issues and submit changes
+to {factory} to ensure all relevant changes end up in {factory} which is used as the basis for the next SLE version.
+For more information and details on how to go about submitting the changes
+see https://mailman.suse.de/mlarch/SuSE/research/2017/research.2017.02/msg00051.html."""
 ISSUE_SUMMARY = u'[{label}]({url}) owned by {owner}: {summary}'
 ISSUE_SUMMARY_BUGZILLA = u'{label} owned by {owner}: {summary}'
 ISSUE_SUMMARY_PLAIN = u'[{label}]({url})'
@@ -52,6 +56,7 @@ def bug_create(bugzilla_api, meta, assigned_to, cc, summary, description):
 
     return newbug.id
 
+
 def bug_owner(apiurl, package, entity='person'):
     query = {
         'binary': package,
@@ -70,6 +75,7 @@ def bug_owner(apiurl, package, entity='person'):
 
     return None
 
+
 def bug_meta_get(bugzilla_api, bug_id):
     try:
         bug = bugzilla_api.getbug(bug_id)
@@ -77,6 +83,7 @@ def bug_meta_get(bugzilla_api, bug_id):
         print('bug_meta_get(): ' + str(e))
         return None
     return bug.component
+
 
 def bug_meta(bugzilla_api, defaults, trackers, issues):
     # Extract meta from the first bug from bnc tracker or fallback to defaults.
@@ -89,12 +96,14 @@ def bug_meta(bugzilla_api, defaults, trackers, issues):
 
     return defaults
 
+
 def bugzilla_init(apiurl):
     bugzilla_api = bugzilla.Bugzilla(apiurl)
     if not bugzilla_api.logged_in:
         print('Bugzilla credentials required to create bugs.')
         bugzilla_api.interactive_login()
     return bugzilla_api
+
 
 def prompt_continue(change_count):
     allowed = ['y', 'b', 's', 'n', '']
@@ -115,6 +124,7 @@ def prompt_continue(change_count):
 
     return prompt_continue(change_count)
 
+
 def prompt_interactive(changes, project, package):
     with tempfile.NamedTemporaryFile(mode='w', suffix='.yml') as temp:
         temp.write(yaml.safe_dump(changes, default_flow_style=False, default_style="'") + '\n')
@@ -133,8 +143,10 @@ def prompt_interactive(changes, project, package):
 
         return changes_after
 
+
 def issue_found(package, label, db):
     return not(package not in db or db[package] is None or label not in db[package])
+
 
 def issue_trackers(apiurl):
     url = osc.core.makeurl(apiurl, ['issue_trackers'])
@@ -144,6 +156,7 @@ def issue_trackers(apiurl):
         trackers[tracker.find('name').text] = tracker.find('label').text
     return trackers
 
+
 def issue_normalize(trackers, tracker, name):
     if tracker in trackers:
         return trackers[tracker].replace('@@@', name)
@@ -151,13 +164,14 @@ def issue_normalize(trackers, tracker, name):
     print('WARNING: ignoring unknown tracker {} for {}'.format(tracker, name))
     return None
 
+
 def issues_get(apiurl, project, package, trackers, db):
     issues = {}
 
     url = osc.core.makeurl(apiurl, ['source', project, package], {'view': 'issues'})
     root = ET.parse(osc.core.http_GET(url)).getroot()
 
-    now = datetime.now(tzlocal()) # Much harder than should be.
+    now = datetime.now(tzlocal())  # Much harder than should be.
     for issue in root.findall('issue'):
         # Normalize issues to active API instance issue-tracker definitions.
         # Assumes the two servers have the name trackers, but different labels.
@@ -199,6 +213,7 @@ def issues_get(apiurl, project, package, trackers, db):
 
     return issues
 
+
 def print_stats(db):
     bug_ids = []
     reported = 0
@@ -216,6 +231,7 @@ def print_stats(db):
     print('Bugs: {}'.format(len(set(bug_ids))))
     print('Reported: {}'.format(reported))
     print('Whitelisted: {}'.format(whitelisted))
+
 
 def main(args):
     # Store the default apiurl in addition to the overriden url if the
@@ -395,14 +411,18 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-A', '--apiurl', default='https://api.suse.de', metavar='URL', help='OBS instance API URL')
     parser.add_argument('--bugzilla-apiurl', required=True, metavar='URL', help='bugzilla API URL')
-    parser.add_argument('--bugzilla-product', default='SUSE Linux Enterprise Server 15', metavar='PRODUCT', help='default bugzilla product')
+    parser.add_argument('--bugzilla-product', default='SUSE Linux Enterprise Server 15',
+                        metavar='PRODUCT', help='default bugzilla product')
     parser.add_argument('--bugzilla-component', default='Other', metavar='COMPONENT', help='default bugzilla component')
     parser.add_argument('--bugzilla-version', default='unspecified', metavar='VERSION', help='default bugzilla version')
     parser.add_argument('--bugzilla-cc', metavar='EMAIL', help='bugzilla address added to cc on all bugs created')
     parser.add_argument('-d', '--debug', action='store_true', help='print info useful for debugging')
-    parser.add_argument('-f', '--factory', default='openSUSE:Factory', metavar='PROJECT', help='factory project to use as baseline for comparison')
-    parser.add_argument('-p', '--project', default='SUSE:SLE-12-SP3:GA', metavar='PROJECT', help='project to check for issues that have are not found in factory')
-    parser.add_argument('--newest', type=int, default='30', metavar='AGE_IN_DAYS', help='newest issues to be considered')
+    parser.add_argument('-f', '--factory', default='openSUSE:Factory', metavar='PROJECT',
+                        help='factory project to use as baseline for comparison')
+    parser.add_argument('-p', '--project', default='SUSE:SLE-12-SP3:GA', metavar='PROJECT',
+                        help='project to check for issues that have are not found in factory')
+    parser.add_argument('--newest', type=int, default='30', metavar='AGE_IN_DAYS',
+                        help='newest issues to be considered')
     parser.add_argument('--limit', type=int, default='0', help='limit number of packages with new issues processed')
     parser.add_argument('--cache-dir', help='cache directory containing git-sync tool and issue db')
     parser.add_argument('--print-stats', action='store_true', help='print statistics based on database')

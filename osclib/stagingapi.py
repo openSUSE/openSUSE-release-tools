@@ -1,7 +1,6 @@
 from io import StringIO
 from datetime import datetime
 import dateutil.parser
-import json
 import logging
 import textwrap
 from urllib.error import HTTPError, URLError
@@ -10,7 +9,6 @@ import time
 import re
 from lxml import etree as ET
 
-import yaml
 
 from osc import conf
 from osc import oscerr
@@ -19,7 +17,6 @@ from osclib.core import attribute_value_save
 from osc.core import show_package_meta
 from osc.core import buildlog_strip_time
 from osc.core import change_review_state
-from osc.core import delete_package
 from osc.core import delete_project
 from osc.core import get_commitlog
 from osc.core import get_group
@@ -40,7 +37,6 @@ from osc.util.helper import decode_it
 from osclib.cache import Cache
 from osclib.core import devel_project_get
 from osclib.core import entity_exists
-from osclib.core import project_list_prefix
 from osclib.core import project_pseudometa_file_load
 from osclib.core import project_pseudometa_file_save
 from osclib.core import project_pseudometa_file_ensure
@@ -247,7 +243,7 @@ class StagingAPI(object):
         """
 
         packages_staged = {}
-        url = self.makeurl(['staging', self.project, 'staging_projects'], { 'requests': 1 })
+        url = self.makeurl(['staging', self.project, 'staging_projects'], {'requests': 1})
         status = ET.parse(self.retried_GET(url)).getroot()
         for prj in status.findall('staging_project'):
             for req in prj.findall('./staged_requests/request'):
@@ -366,12 +362,6 @@ class StagingAPI(object):
         return sorted(projects, key=lambda project: self.extract_adi_number(project))
 
     def find_devel_project_from_adi_frozenlinks(self, prj):
-        try:
-            url = self.makeurl(['source', prj, '_project', '_frozenlinks'], {'meta': '1'})
-            root = ET.parse(http_GET(url)).getroot()
-        except HTTPError as e:
-            if e.code == 404:
-                return None
         meta = self.get_prj_pseudometa(prj)
         # the first package's devel project is good enough
         return devel_project_get(self.apiurl, self.project, meta['requests'][0].get('package'))[0]
@@ -470,7 +460,7 @@ class StagingAPI(object):
                 replace_old = request_old.find('state').get('name') in ['revoked', 'superseded', 'declined']
 
                 if (request_new.find('action').get('type') == 'delete' and
-                    request_old.find('action').get('type') == 'delete'):
+                        request_old.find('action').get('type') == 'delete'):
                     # Both delete requests.
                     if replace_old:
                         # Pointless since identical requests, but user desires.
@@ -484,7 +474,7 @@ class StagingAPI(object):
                         return stage_info, True
 
                 if (request_new.find('action').get('type') !=
-                    request_old.find('action').get('type')):
+                        request_old.find('action').get('type')):
                     # One delete and one submit.
                     if replace_old:
                         if self.ring_packages.get(target_package):
@@ -523,7 +513,8 @@ class StagingAPI(object):
                         message = 'sr#{} has newer source and is from the same project'.format(request_new.get('id'))
 
                         self.rm_from_prj(stage_info['prj'], request_id=stage_info['rq_id'])
-                        self.do_change_review_state(stage_info['rq_id'], 'declined', by_group=self.cstaging_group, message=message)
+                        self.do_change_review_state(stage_info['rq_id'], 'declined',
+                                                    by_group=self.cstaging_group, message=message)
                         return stage_info, None
                     # Ingore the new request pending manual review.
                     IgnoreCommand(self).perform([str(request_id)], message)
@@ -572,13 +563,13 @@ class StagingAPI(object):
     def add_ignored_request(self, request_id, comment):
         url = self.makeurl(['staging', self.project, 'excluded_requests'])
         root = ET.Element('excluded_requests')
-        req = ET.SubElement(root, 'request', { 'id': str(request_id), 'description': comment })
+        ET.SubElement(root, 'request', {'id': str(request_id), 'description': comment})
         http_POST(url, data=ET.tostring(root))
 
     def del_ignored_request(self, request_id):
         url = self.makeurl(['staging', self.project, 'excluded_requests'])
         root = ET.Element('excluded_requests')
-        req = ET.SubElement(root, 'request', { 'id': str(request_id) })
+        ET.SubElement(root, 'request', {'id': str(request_id)})
         http_DELETE(url, data=ET.tostring(root))
 
     @memoize(session=True, add_invalidate=True)
@@ -598,7 +589,7 @@ class StagingAPI(object):
         where = "@by_group='{}' and @state='new'".format(self.cstaging_group)
         target = "target[@project='{}']".format(self.project)
 
-        query = {'match': f"state/@name='review' and review[{where}] and {target}" }
+        query = {'match': f"state/@name='review' and review[{where}] and {target}"}
         if query_extra is not None:
             query.update(query_extra)
         url = self.makeurl(['search', 'request'], query)
@@ -681,7 +672,6 @@ class StagingAPI(object):
             print('no package or no request_id')
             return False
 
-        orig_project = project
         if self._supersede:
             self.is_package_disabled(project, package, store=True)
 
@@ -796,7 +786,7 @@ class StagingAPI(object):
         query = {}
         if package:
             query['package'] = package
-        if limit != None and int(limit) > 0:
+        if limit is not None and int(limit) > 0:
             query['limit'] = int(limit)
         u = makeurl(self.apiurl, ['build', project, repository, architecture, '_jobhistory'], query)
         return ET.parse(http_GET(u)).getroot()
@@ -902,7 +892,6 @@ class StagingAPI(object):
         :param project: project to link into
         """
         # read info from sr
-        tar_pkg = None
         act_type = None
 
         req = get_request(self.apiurl, str(request_id))
@@ -927,7 +916,7 @@ class StagingAPI(object):
         if remove_exclusion:
             opts['remove_exclusion'] = 1
         u = makeurl(self.apiurl, ['staging', self.project, 'staging_projects', project, 'staged_requests'], opts)
-        f = http_POST(u, data=requestxml)
+        http_POST(u, data=requestxml)
 
         if act_type == 'delete':
             self.delete_to_prj(act[0], project)
@@ -965,7 +954,7 @@ class StagingAPI(object):
         if not project:
             project = self.project
 
-        url = self.makeurl(['source', project, package], { 'cmd': 'showlinked' })
+        url = self.makeurl(['source', project, package], {'cmd': 'showlinked'})
         f = http_POST(url)
         root = ET.parse(f).getroot()
         result = []
@@ -992,7 +981,7 @@ class StagingAPI(object):
         # now trigger wipebinaries to emulate a delete
         self._wipe_package(project, package)
 
-        url = self.makeurl(['source', project, package], { 'view': 'getmultibuild' })
+        url = self.makeurl(['source', project, package], {'view': 'getmultibuild'})
         f = http_GET(url)
         root = ET.parse(f).getroot()
         for entry in root.findall('entry'):
@@ -1156,7 +1145,7 @@ class StagingAPI(object):
                 return status.tag
 
     def switch_flag_in_prj(self, project, flag='build', state='disable', repository=None, arch=None):
-        query = { 'cmd': 'set_flag', 'flag': flag, 'status': state }
+        query = {'cmd': 'set_flag', 'flag': flag, 'status': state}
         if repository:
             query['repository'] = repository
         if arch:
@@ -1526,4 +1515,3 @@ class StagingAPI(object):
             delete_project(self.apiurl, project, force=True)
         except HTTPError as e:
             print(e)
-            pass

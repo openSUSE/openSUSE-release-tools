@@ -6,7 +6,6 @@ from flask import make_response
 
 import re
 import os
-import sys
 from urllib.parse import urlparse
 
 digits_re = re.compile('^[0-9.]+$')
@@ -15,8 +14,10 @@ BASE_DIR = '/var/lib'
 
 app = Flask(__name__)
 
+
 def get_dir(url):
     return os.path.join(BASE_DIR, urlparse(url).path.lstrip('/'))
+
 
 @app.route('/')
 def list():
@@ -35,6 +36,7 @@ def list():
             ret = ret + " &lt;--"
         ret = ret + '<br/>'
     return ret
+
 
 @app.route('/current', methods=['GET', 'POST'])
 def current():
@@ -60,6 +62,7 @@ def current():
             return "", 404
         return os.readlink(fn)
 
+
 @app.route('/diff/<version>')
 def diff(version):
     _dir = get_dir(request.url_root)
@@ -75,6 +78,7 @@ def diff(version):
     response = make_response(subprocess.check_output(cmd))
     response.content_type = "text/plain"
     return response
+
 
 if __name__ == '__main__':
     from optparse import OptionParser

@@ -78,13 +78,13 @@ class OriginSourceChangeListener(PubSubConsumer):
                 if not action.get('targetpackage'):
                     package = action['sourcepackage']
                 else:
-                    repository_suffix_length = len(project) + 1 # package.project
+                    repository_suffix_length = len(project) + 1  # package.project
                     package = action['targetpackage'][:-repository_suffix_length]
             elif action['type'] == 'maintenance_release':
                 if action['sourcepackage'] == 'patchinfo':
                     continue
                 project = action['targetproject']
-                repository_suffix_length = len(project) + 1 # package.project
+                repository_suffix_length = len(project) + 1  # package.project
                 package = action['sourcepackage'][:-repository_suffix_length]
             elif action['type'] == 'submit':
                 project = action['targetproject']
@@ -137,6 +137,7 @@ class OriginSourceChangeListener(PubSubConsumer):
                 self.logger.info(f'skipped updating non-source package {project}/{package}')
             else:
                 self.logger.info(f'skipped submitting new non-source package {project}/{package}')
+
 
 class OriginSourceChangeListenerRemote(OriginSourceChangeListener):
     def __init__(self, apiurl, parent, prefix):

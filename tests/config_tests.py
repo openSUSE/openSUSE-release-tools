@@ -4,8 +4,8 @@ from osclib.conf import DEFAULT
 from osclib.conf import Config
 from osclib.core import attribute_value_save
 from osclib.memoize import memoize_session_reset
-from osclib.stagingapi import StagingAPI
 from . import OBSLocal
+
 
 class TestConfig(unittest.TestCase):
     def setup_vcr(self):
@@ -33,7 +33,7 @@ class TestConfig(unittest.TestCase):
     def test_remote_none(self):
         wf = self.setup_vcr()
         wf.load_config('not_real_project')
-        self.assertTrue(True) # Did not crash!
+        self.assertTrue(True)  # Did not crash!
 
     def test_pattern_order(self):
         wf = self.setup_vcr()
@@ -65,7 +65,7 @@ class TestConfig(unittest.TestCase):
         # Ensure each pattern is match instead of catch-all pattern.
         patterns = set()
         for project in projects:
-            config = Config(wf.apiurl, project)
+            Config(wf.apiurl, project)
             patterns.add(conf.config[project]['pattern'])
 
         self.assertEqual(len(patterns), len(DEFAULT))

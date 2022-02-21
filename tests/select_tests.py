@@ -11,6 +11,7 @@ from lxml import etree as ET
 from mock import MagicMock
 from . import OBSLocal
 
+
 class TestSelect(OBSLocal.TestCase):
 
     def setUp(self):
@@ -100,7 +101,7 @@ class TestSelect(OBSLocal.TestCase):
         staging = self.wf.create_staging('A', freeze=True)
 
         rq1 = self.wf.create_submit_request('devel:wine', 'wine')
-        ret = SelectCommand(self.wf.api, staging.name).perform(['wine'])
+        SelectCommand(self.wf.api, staging.name).perform(['wine'])
         rq2 = self.wf.create_submit_request('devel:wine', 'wine', text='Something new')
         self.wf.api._packages_staged = None
 
@@ -109,9 +110,11 @@ class TestSelect(OBSLocal.TestCase):
 
         SupersedeCommand(self.wf.api).perform()
 
-        self.assertEqual(rq1.reviews(), [{'state': 'accepted', 'by_group': 'factory-staging'}, {'state': 'accepted', 'by_project': 'openSUSE:Factory:Staging:A'},
-                                    {'state': 'declined', 'by_group': 'factory-staging'}])
-        self.assertEqual(rq2.reviews(), [{'state': 'accepted', 'by_group': 'factory-staging'}, {'state': 'new', 'by_project': 'openSUSE:Factory:Staging:A'}])
+        self.assertEqual(rq1.reviews(), [{'state': 'accepted', 'by_group': 'factory-staging'},
+                                         {'state': 'accepted', 'by_project': 'openSUSE:Factory:Staging:A'},
+                                         {'state': 'declined', 'by_group': 'factory-staging'}])
+        self.assertEqual(rq2.reviews(), [{'state': 'accepted', 'by_group': 'factory-staging'},
+                         {'state': 'new', 'by_project': 'openSUSE:Factory:Staging:A'}])
 
     def test_delete_multibuild_package(self):
         self.wf.setup_rings()
@@ -120,7 +123,7 @@ class TestSelect(OBSLocal.TestCase):
         package = self.wf.create_package(self.wf.project, 'wine')
         package.create_commit('<multibuild><flavor>libs</flavor></multibuild>', filename='_multibuild')
 
-        rq = self.wf.request_package_delete(package)
+        self.wf.request_package_delete(package)
         ret = SelectCommand(self.wf.api, staging.name).perform(['wine'])
         self.assertEqual(True, ret)
 

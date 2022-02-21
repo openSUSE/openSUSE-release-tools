@@ -1,8 +1,6 @@
-import unittest
-from osclib.conf import Config
-from osclib.stagingapi import StagingAPI
 from osclib.unselect_command import UnselectCommand
 from . import OBSLocal
+
 
 class TestUnselect(OBSLocal.TestCase):
 

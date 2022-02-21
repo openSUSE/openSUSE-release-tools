@@ -3,24 +3,20 @@
 import argparse
 import logging
 
-import pika
-import sys
 import json
 import osc
 import re
-from time import sleep
 from osc.core import http_GET, http_POST, makeurl
-from M2Crypto.SSL import SSLError as SSLError
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from lxml import etree as ET
 from openqa_client.client import OpenQA_Client
-from openqa_client.exceptions import ConnectionError, RequestError
-from urllib.error import HTTPError, URLError
+from urllib.error import HTTPError
 from urllib.parse import quote_plus
 
 import requests
 from osclib.PubSubConsumer import PubSubConsumer
+
 
 class Project(object):
     def __init__(self, name):
@@ -249,10 +245,11 @@ class Listener(PubSubConsumer):
         elif re.search(r'.openqa.', method.routing_key):
             data = json.loads(body)
             if '/' in data.get('BUILD'):
-                return # Ignore PR verification runs
+                return  # Ignore PR verification runs
             self.on_openqa_job(data.get('ISO'))
         else:
             self.logger.warning("unknown rabbitmq message {}".format(method.routing_key))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -269,7 +266,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    osc.conf.get_config(override_apiurl = args.apiurl)
+    osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
 
     apiurl = osc.conf.config['apiurl']

@@ -9,6 +9,7 @@ COMMENT = 'short comment'
 COMMENT_INFO = {'foo': 'bar', 'distro': 'openSUSE'}
 PROJECT = 'openSUSE:Factory:Staging'
 
+
 class TestComment(unittest.TestCase):
     def setUp(self):
         self.api = CommentAPI('bogus')
@@ -153,7 +154,6 @@ class TestCommentOBS(OBSLocal.TestCase):
         for user in users:
             self.osc_user(user)
             print('logged in as ', user)
-            from osc import conf
             bot = '::'.join([self.bot, user])
             comment = self.api.add_marker(COMMENT, bot)
 

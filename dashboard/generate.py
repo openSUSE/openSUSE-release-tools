@@ -2,28 +2,17 @@
 
 import argparse
 import logging
-import pika
-import sys
-import json
 import osc
-import re
 import yaml
-from time import sleep
-from osc.core import http_GET, http_POST, makeurl, show_project_meta
-from M2Crypto.SSL import SSLError as SSLError
-from osclib.conf import Config
+from osc.core import http_GET, makeurl, show_project_meta
 from osclib.core import attribute_value_load
-from osclib.stagingapi import StagingAPI
 from lxml import etree as ET
 from openqa_client.client import OpenQA_Client
-from openqa_client.exceptions import ConnectionError, RequestError
-from urllib.error import HTTPError, URLError
-from urllib.parse import quote_plus
+from urllib.error import HTTPError
 from datetime import datetime, timezone
 
-import requests
-from osclib.PubSubConsumer import PubSubConsumer
 from flask import Flask, render_template
+
 
 class Fetcher(object):
     def __init__(self, apiurl, opts):
@@ -31,10 +20,8 @@ class Fetcher(object):
         self.opts = opts
         self.apiurl = apiurl
         if apiurl.endswith('suse.de'):
-            amqp_prefix = 'suse'
             openqa_url = 'https://openqa.suse.de'
         else:
-            amqp_prefix = 'opensuse'
             openqa_url = 'https://openqa.opensuse.org'
         self.openqa = OpenQA_Client(openqa_url)
 
@@ -46,7 +33,6 @@ class Fetcher(object):
         for job in result['jobs']:
             if job['clone_id'] or job['result'] == 'obsoleted':
                 continue
-            name = job['name'].replace(snapshot, '')
             key = job['result']
             if job['state'] != 'done':
                 key = job['state']
@@ -60,11 +46,11 @@ class Fetcher(object):
         self.projects.append(Project(self, name, kwargs))
 
     def build_summary(self, project, repository):
-        url = makeurl(self.apiurl, ['build', project, '_result'], { 'repository': repository, 'view': 'summary' })
+        url = makeurl(self.apiurl, ['build', project, '_result'], {'repository': repository, 'view': 'summary'})
         try:
             f = http_GET(url)
-        except HTTPError as e:
-            return { 'building': -1 }
+        except HTTPError:
+            return {'building': -1}
         root = ET.parse(f).getroot()
         failed = 0
         unresolvable = 0
@@ -75,7 +61,7 @@ class Fetcher(object):
             code = result.get('code')
             count = int(result.get('count'))
             if code == 'excluded' or code == 'disabled' or code == 'locked':
-                continue # ignore
+                continue  # ignore
             if code == 'succeeded':
                 succeeded += count
                 continue
@@ -95,10 +81,10 @@ class Fetcher(object):
             unresolvable = 0
         if building + failed + succeeded == 0:
             return {'building': -1}
-        return { 'building': 10000 - int(building * 10000 / (building + failed + succeeded + broken)),
-                 'failed': failed,
-                 'broken': broken,
-                 'unresolvable': unresolvable }
+        return {'building': 10000 - int(building * 10000 / (building + failed + succeeded + broken)),
+                'failed': failed,
+                'broken': broken,
+                'unresolvable': unresolvable}
 
     def generate_all_archs(self, project):
         meta = ET.fromstringlist(show_project_meta(self.apiurl, project))
@@ -118,6 +104,7 @@ class Fetcher(object):
 
     def fetch_product_version(self, project):
         return attribute_value_load(self.apiurl, project, 'ProductVersion')
+
 
 class Project(object):
     def __init__(self, fetcher, name, kwargs):
@@ -141,6 +128,7 @@ class Project(object):
     def openqa_summary(self):
         return self.fetcher.openqa_results(self.openqa_id, self.ttm_status.get('testing'))
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Bot to sync openQA status to OBS')
@@ -152,7 +140,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    osc.conf.get_config(override_apiurl = args.apiurl)
+    osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.debug
     apiurl = osc.conf.config['apiurl']
 
@@ -162,30 +150,48 @@ if __name__ == '__main__':
     app = Flask(__name__)
 
     if ("Factory" in args.project):
-        fetcher.add('openSUSE:Factory', nick='Factory', download_url='https://download.opensuse.org/tumbleweed/iso/', openqa_group='openSUSE Tumbleweed', openqa_version='Tumbleweed', openqa_groupid=1)
+        fetcher.add('openSUSE:Factory', nick='Factory', download_url='https://download.opensuse.org/tumbleweed/iso/',
+                    openqa_group='openSUSE Tumbleweed', openqa_version='Tumbleweed', openqa_groupid=1)
         fetcher.add('openSUSE:Factory:Live', nick='Live')
         fetcher.add('openSUSE:Factory:Rings:0-Bootstrap', nick='Ring 0')
         fetcher.add('openSUSE:Factory:Rings:1-MinimalX', nick='Ring 1')
-        fetcher.add('openSUSE:Factory:ARM', nick='ARM', download_url='http://download.opensuse.org/ports/aarch64/tumbleweed/iso/', openqa_group='openSUSE Tumbleweed AArch64', openqa_version='Tumbleweed', openqa_groupid=3)
+        fetcher.add('openSUSE:Factory:ARM', nick='ARM',
+                    download_url='http://download.opensuse.org/ports/aarch64/tumbleweed/iso/',
+                    openqa_group='openSUSE Tumbleweed AArch64', openqa_version='Tumbleweed', openqa_groupid=3)
         fetcher.add('openSUSE:Factory:ARM:Live', nick='ARM Live')
         fetcher.add('openSUSE:Factory:ARM:Rings:0-Bootstrap', nick='ARM Ring 0')
         fetcher.add('openSUSE:Factory:ARM:Rings:1-MinimalX', nick='ARM Ring 1')
-        fetcher.add('openSUSE:Factory:PowerPC', nick='Power', download_url='http://download.opensuse.org/ports/ppc/tumbleweed/iso/', openqa_group='openSUSE Tumbleweed PowerPC', openqa_version='Tumbleweed', openqa_groupid=4)
-        fetcher.add('openSUSE:Factory:zSystems', nick='System Z', download_url='http://download.opensuse.org/ports/zsystems/tumbleweed/iso/', openqa_group='openSUSE Tumbleweed s390x', openqa_version='Tumbleweed', openqa_groupid=34)
-        fetcher.add('openSUSE:Factory:RISCV', nick='Risc V', download_url='http://download.opensuse.org/ports/riscv/tumbleweed/iso/')
+        fetcher.add('openSUSE:Factory:PowerPC', nick='Power',
+                    download_url='http://download.opensuse.org/ports/ppc/tumbleweed/iso/',
+                    openqa_group='openSUSE Tumbleweed PowerPC', openqa_version='Tumbleweed', openqa_groupid=4)
+        fetcher.add('openSUSE:Factory:zSystems', nick='System Z',
+                    download_url='http://download.opensuse.org/ports/zsystems/tumbleweed/iso/',
+                    openqa_group='openSUSE Tumbleweed s390x', openqa_version='Tumbleweed', openqa_groupid=34)
+        fetcher.add('openSUSE:Factory:RISCV', nick='Risc V',
+                    download_url='http://download.opensuse.org/ports/riscv/tumbleweed/iso/')
     else:
-        fetcher.add('openSUSE:Leap:15.4', nick='Leap:15.4', download_url='https://download.opensuse.org/distribution/leap/15.4/iso', openqa_group='openSUSE Leap 15', openqa_version='15.4', openqa_groupid=50)
+        fetcher.add('openSUSE:Leap:15.4', nick='Leap:15.4',
+                    download_url='https://download.opensuse.org/distribution/leap/15.4/iso',
+                    openqa_group='openSUSE Leap 15', openqa_version='15.4', openqa_groupid=50)
         fetcher.add('openSUSE:Backports:SLE-15-SP4', nick='Backports:SLE-15-SP4')
-        fetcher.add('openSUSE:Leap:15.4:Images', nick='Leap:15.4:Images', openqa_group='openSUSE Leap 15.4 Images', openqa_version='15.4', openqa_groupid=89)
-        fetcher.add('openSUSE:Leap:15.4:ARM', nick='Leap:15.4:ARM', download_url='https://download.opensuse.org/ports/armv7hl/distribution/leap/15.4/iso', openqa_group='openSUSE Leap 15.4 ARMv7', openqa_version='15.4', openqa_groupid=92)
-        fetcher.add('openSUSE:Leap:15.4:ARM:Images', nick='Leap:15.4:ARM:Images', openqa_group='openSUSE Leap 15.4 ARMv7 Images', openqa_version='15.4', openqa_groupid=91)
-        fetcher.add('openSUSE:Leap:15.3:Images', nick='Leap:15.3:Images', openqa_group='openSUSE Leap 15.3 Images', openqa_version='15.3', openqa_groupid=77)
-        fetcher.add('openSUSE:Leap:15.3:ARM', nick='Leap:15.3:ARM', download_url='https://download.opensuse.org/ports/armv7hl/distribution/leap/15.3/iso', openqa_group='openSUSE Leap 15 ARM', openqa_version='15.3', openqa_groupid=79)
-        fetcher.add('openSUSE:Leap:15.3:ARM:Images', nick='Leap:15.3:ARM:Images', openqa_group='openSUSE Leap 15.3 ARMv7 Images', openqa_version='15.3', openqa_groupid=83)
+        fetcher.add('openSUSE:Leap:15.4:Images', nick='Leap:15.4:Images', openqa_group='openSUSE Leap 15.4 Images',
+                    openqa_version='15.4', openqa_groupid=89)
+        fetcher.add('openSUSE:Leap:15.4:ARM', nick='Leap:15.4:ARM',
+                    download_url='https://download.opensuse.org/ports/armv7hl/distribution/leap/15.4/iso',
+                    openqa_group='openSUSE Leap 15.4 ARMv7', openqa_version='15.4', openqa_groupid=92)
+        fetcher.add('openSUSE:Leap:15.4:ARM:Images', nick='Leap:15.4:ARM:Images',
+                    openqa_group='openSUSE Leap 15.4 ARMv7 Images', openqa_version='15.4', openqa_groupid=91)
+        fetcher.add('openSUSE:Leap:15.3:Images', nick='Leap:15.3:Images', openqa_group='openSUSE Leap 15.3 Images',
+                    openqa_version='15.3', openqa_groupid=77)
+        fetcher.add('openSUSE:Leap:15.3:ARM', nick='Leap:15.3:ARM',
+                    download_url='https://download.opensuse.org/ports/armv7hl/distribution/leap/15.3/iso',
+                    openqa_group='openSUSE Leap 15 ARM', openqa_version='15.3', openqa_groupid=79)
+        fetcher.add('openSUSE:Leap:15.3:ARM:Images', nick='Leap:15.3:ARM:Images',
+                    openqa_group='openSUSE Leap 15.3 ARMv7 Images', openqa_version='15.3', openqa_groupid=83)
 
     with app.app_context():
         rendered = render_template('dashboard.html',
-            projectname = args.project,
-            lastupdate = datetime.now(timezone.utc),
-            projects = fetcher.projects)
+                                   projectname=args.project,
+                                   lastupdate=datetime.now(timezone.utc),
+                                   projects=fetcher.projects)
         print(rendered)

@@ -8,6 +8,7 @@ from lxml import etree as ET
 
 Package = namedtuple('Package', ('name', 'version', 'release'))
 
+
 class openSUSEUpdate(Update):
 
     repo_prefix = 'http://download.opensuse.org/repositories'

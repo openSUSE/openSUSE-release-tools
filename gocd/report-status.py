@@ -34,6 +34,7 @@ makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
 http_POST = osc.core.http_POST
 
+
 def report_pipeline(args, architecture, is_last):
     url = makeurl(args.apiurl, [
                   'build', args.project, args.repository, architecture], {'view': 'status'})
@@ -54,13 +55,17 @@ def report_pipeline(args, architecture, is_last):
         name = name + ':' + architecture
     report_url = os.environ.get('GO_SERVER_URL').replace(':8154', '')
     report_url = report_url.replace(':8153', '')
-    report_url = report_url + '/tab/build/detail/{}/{}/{}/{}/{}#tab-console'.format(os.environ.get('GO_PIPELINE_NAME'), os.environ.get('GO_PIPELINE_COUNTER'), os.environ.get('GO_STAGE_NAME'), os.environ.get('GO_STAGE_COUNTER'), os.environ.get('GO_JOB_NAME'))
+    report_url = report_url + '/tab/build/detail/{}/{}/{}/{}/{}#tab-console'.format(
+        os.environ.get('GO_PIPELINE_NAME'), os.environ.get('GO_PIPELINE_COUNTER'),
+        os.environ.get('GO_STAGE_NAME'), os.environ.get('GO_STAGE_COUNTER'),
+        os.environ.get('GO_JOB_NAME'))
     xml = check_xml(report_url, state, name)
     try:
         http_POST(url, data=xml)
     except HTTPError:
         print('failed to post status to ' + url)
         sys.exit(1)
+
 
 def check_xml(url, state, name):
     check = ET.Element('check')
@@ -72,6 +77,7 @@ def check_xml(url, state, name):
     se = ET.SubElement(check, 'name')
     se.text = name
     return ET.tostring(check)
+
 
 if __name__ == '__main__':
     description = 'Create SR from FactoryCandidates to '\

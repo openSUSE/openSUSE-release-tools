@@ -11,6 +11,8 @@ from xdg.BaseDirectory import save_cache_path
 # cease to be useful, but never get cleaned up since it will never be accessed.
 # This manager ensures that the entire cache is pruned periodically to remove
 # files that have not been accessed recently and avoid endless growth.
+
+
 class CacheManager(object):
     PRUNE_FREQUENCY = 60 * 60 * 24 * 7
     PRUNE_TTL = 60 * 60 * 24 * 30

@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import sys
-from lxml import etree as ET
 import osc.conf
 import osc.core
 from urllib.error import HTTPError, URLError
@@ -21,12 +20,13 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
 
     def __init__(self, *args, **kwargs):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
-        self.factory = [ "openSUSE:Factory" ]
-        self.review_messages = { 'accepted': 'ok', 'declined': 'the package needs to be accepted in Factory first' }
+        self.factory = ["openSUSE:Factory"]
+        self.review_messages = {'accepted': 'ok', 'declined': 'the package needs to be accepted in Factory first'}
         self.history_limit = 5
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
-        super(FactorySourceChecker, self).check_source_submission(src_project, src_package, src_rev, target_project, target_package)
+        super(FactorySourceChecker, self).check_source_submission(
+            src_project, src_package, src_rev, target_project, target_package)
         src_srcinfo = self.get_sourceinfo(src_project, src_package, src_rev)
         if src_srcinfo is None:
             # source package does not exist?
@@ -94,7 +94,8 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
         for req in requests:
             for a in req.actions:
                 si = self.get_sourceinfo(prjprefix + a.src_project, a.src_package, a.src_rev)
-                self.logger.debug("rq %s: %s/%s@%s" % (req.reqid, prjprefix + a.src_project, a.src_package, si.verifymd5))
+                self.logger.debug("rq %s: %s/%s@%s" % (req.reqid, prjprefix +
+                                  a.src_project, a.src_package, si.verifymd5))
                 if si.verifymd5 == rev:
                     if req.state.name == 'new':
                         self.logger.info("%s ok", srref(req.reqid))
@@ -121,7 +122,8 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
                                     self.logger.info("%s waiting for review by %s", srref(req.reqid), r.by_group)
                                 elif r.by_project:
                                     if r.by_package:
-                                        self.logger.info("%s waiting for review by %s/%s", srref(req.reqid), r.by_project, r.by_package)
+                                        self.logger.info("%s waiting for review by %s/%s",
+                                                         srref(req.reqid), r.by_project, r.by_package)
                                     else:
                                         self.logger.info("%s waiting for review by %s", srref(req.reqid), r.by_project)
                                 return None
@@ -132,6 +134,7 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
                 else:
                     self.logger.info("%s to %s has different sources", srref(req.reqid), project)
         return False
+
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
 
@@ -161,6 +164,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
         return bot
 
+
 if __name__ == "__main__":
     app = CommandLineInterface()
-    sys.exit( app.main() )
+    sys.exit(app.main())

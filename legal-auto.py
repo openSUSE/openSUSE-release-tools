@@ -7,8 +7,6 @@ import os.path
 import sys
 import re
 import logging
-from optparse import OptionParser
-import cmdln
 from dateutil.parser import parse
 from datetime import timezone, timedelta
 import requests as REQ
@@ -24,9 +22,8 @@ import osc.core
 from osclib.cache_manager import CacheManager
 import ReviewBot
 
-from osclib.comments import CommentAPI
-
 http_GET = osc.core.http_GET
+
 
 class LegalAuto(ReviewBot.ReviewBot):
 
@@ -81,7 +78,7 @@ class LegalAuto(ReviewBot.ReviewBot):
         package = package['saved']
         url = osc.core.makeurl(self.legaldb, ['requests'], {'external_link': self.request_nick(),
                                                             'package': package['id']})
-        request = REQ.post(url, headers=self.legaldb_headers).json()
+        REQ.post(url, headers=self.legaldb_headers)
         return [package['id']]
 
     def valid_for_opensuse(self, target_project, report):
@@ -128,7 +125,7 @@ class LegalAuto(ReviewBot.ReviewBot):
             if state == 'obsolete':
                 url = osc.core.makeurl(self.legaldb, ['packages', 'import', str(pack)], {
                                        'result': 'reopened in obs', 'state': 'new'})
-                package = REQ.post(url, headers=self.legaldb_headers).json()
+                REQ.post(url, headers=self.legaldb_headers)
                 # reopen
                 return None
             if state == 'new' and self.valid_for_opensuse(target_project, report):
@@ -227,7 +224,7 @@ class LegalAuto(ReviewBot.ReviewBot):
         with open(yaml_path, 'w') as file:
             yaml.dump(self.pkg_cache, file)
         url = osc.core.makeurl(self.legaldb, ['products', project])
-        request = REQ.patch(url, headers=self.legaldb_headers, data={'id': self.packages}).json()
+        REQ.patch(url, headers=self.legaldb_headers, data={'id': self.packages})
 
     def _query_sources_for_product_import(self, project):
         url = osc.core.makeurl(
@@ -272,7 +269,7 @@ class LegalAuto(ReviewBot.ReviewBot):
                   'external_link': tproject}
         if revision:
             params['rev'] = revision
-        old_id = self.pkg_cache.get(package, { None: None }).get(revision, None)
+        old_id = self.pkg_cache.get(package, {None: None}).get(revision, None)
         if old_id:
             return old_id
 
@@ -287,7 +284,7 @@ class LegalAuto(ReviewBot.ReviewBot):
             return None
         legaldb_id = obj['saved']['id']
         self.logger.debug("PKG {}/{}[{}]->{} is {}".format(sproject, package, revision, tproject, legaldb_id))
-        self.pkg_cache[package] = { revision: legaldb_id }
+        self.pkg_cache[package] = {revision: legaldb_id}
         if obj['saved']['state'] == 'obsolete':
             url = osc.core.makeurl(self.legaldb, ['packages', 'import', str(legaldb_id)], {
                                    'result': f'Reopened for {tproject}', 'state': 'new',

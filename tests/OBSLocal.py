@@ -27,7 +27,7 @@ from osclib.core import request_state_change
 from osclib.core import create_delete_request
 from osclib.memoize import memoize_session_reset
 
-from urllib.error import HTTPError, URLError
+from urllib.error import HTTPError
 
 from abc import ABC, abstractmethod
 import re
@@ -38,6 +38,7 @@ PROJECT = 'openSUSE:Factory'
 
 OSCRC = '/tmp/.oscrc-test'
 OSCCOOKIEJAR = '/tmp/.osc_cookiejar-test'
+
 
 class TestCase(unittest.TestCase):
     script = None
@@ -147,7 +148,7 @@ class TestCase(unittest.TestCase):
         self.execute(args)
 
     def execute(self, args):
-        print('$ ' + ' '.join(args)) # Print command for debugging.
+        print('$ ' + ' '.join(args))  # Print command for debugging.
         try:
             env = os.environ
             env['OSC_CONFIG'] = OSCRC
@@ -155,7 +156,7 @@ class TestCase(unittest.TestCase):
         except subprocess.CalledProcessError as e:
             print(e.output)
             raise e
-        print(self.output) # For debugging assertion failures.
+        print(self.output)  # For debugging assertion failures.
 
     def assertOutput(self, text):
         self.assertTrue(text in self.output, '[MISSING] ' + text)
@@ -234,7 +235,7 @@ class TestCase(unittest.TestCase):
         """
         wf.create_user(user)
         prj = wf.projects[project]
-        prj.add_reviewers(users = [user])
+        prj.add_reviewers(users=[user])
 
         bot_name = self.generate_bot_name(user)
         bot = bot_class(wf.apiurl, user=user, logger=logging.getLogger(bot_name))
@@ -273,12 +274,14 @@ class TestCase(unittest.TestCase):
         if comment:
             self.assertEqual(review.comment, comment)
 
+
 class StagingWorkflow(ABC):
     """This abstract base class is intended to setup and manipulate the environment (projects,
     users, etc.) in the local OBS instance used to tests the release tools. Thus, the derivative
     classes make easy to setup scenarios similar to the ones used during the real (open)SUSE
     development.
     """
+
     def __init__(self, project=PROJECT):
         """Initializes the configuration
 
@@ -327,12 +330,10 @@ class StagingWorkflow(ABC):
     @abstractmethod
     def initial_config(self):
         """Values to use to initialize the 'Config' attribute at :func:`setup_remote_config`"""
-        pass
 
     @abstractmethod
     def staging_group_name(self):
         """Name of the group in charge of the staging workflow"""
-        pass
 
     def load_config(self, project=None):
         """Loads the corresponding :class:`osclib.Config` object into the attribute ``config``
@@ -428,7 +429,7 @@ class StagingWorkflow(ABC):
             root = ET.fromstring(meta)
             persons = ET.SubElement(root, 'person')
             for user in users:
-                ET.SubElement(persons, 'person', {'userid': user} )
+                ET.SubElement(persons, 'person', {'userid': user})
             meta = ET.tostring(root)
 
         if name not in self.groups:
@@ -650,16 +651,18 @@ class StagingWorkflow(ABC):
 
         self.create_user('staging-bot')
         self.create_group(group, users=['staging-bot'])
-        self.projects['target'].add_reviewers(groups = [group])
+        self.projects['target'].add_reviewers(groups=[group])
 
         url = osc.core.makeurl(APIURL, ['staging', self.project, 'workflow'])
         data = f"<workflow managers='{group}'/>"
         osc.core.http_POST(url, data=data)
 
+
 class FactoryWorkflow(StagingWorkflow):
     """A class that makes easy to setup scenarios similar to the one used during the real
     openSUSE Factory development, with staging projects, rings, etc.
     """
+
     def staging_group_name(self):
         return 'factory-staging'
 
@@ -718,10 +721,12 @@ class FactoryWorkflow(StagingWorkflow):
 
         return staging
 
+
 class SLEWorkflow(StagingWorkflow):
     """A class that makes easy to setup scenarios similar to the one used during the real
     SLE development, with projects that inherit some packages from previous service packs, etc.
     """
+
     def staging_group_name(self):
         return 'sle-staging-managers'
 
@@ -783,6 +788,7 @@ class SLEWorkflow(StagingWorkflow):
         else:
             return basename
 
+
 class Project(object):
     """This class represents a project in the testing environment of the release tools. It usually
     corresponds to a project in the local OBS instance that is used by the tests.
@@ -796,6 +802,7 @@ class Project(object):
     .. _osc.core: https://github.com/openSUSE/osc/blob/master/osc/core.py
 
     """
+
     def __init__(self, name, reviewer={}, maintainer={}, project_links=[], create=True, with_repo=False):
         """Initializes a new Project object.
 
@@ -846,20 +853,20 @@ class Project(object):
 
         root = ET.fromstring(meta)
         for group in reviewer.get('groups', []):
-            ET.SubElement(root, 'group', { 'groupid': group, 'role': 'reviewer'} )
+            ET.SubElement(root, 'group', {'groupid': group, 'role': 'reviewer'})
         for group in reviewer.get('users', []):
-            ET.SubElement(root, 'person', { 'userid': group, 'role': 'reviewer'} )
+            ET.SubElement(root, 'person', {'userid': group, 'role': 'reviewer'})
         # TODO: avoid this duplication
         for group in maintainer.get('groups', []):
-            ET.SubElement(root, 'group', { 'groupid': group, 'role': 'maintainer'} )
+            ET.SubElement(root, 'group', {'groupid': group, 'role': 'maintainer'})
         for group in maintainer.get('users', []):
-            ET.SubElement(root, 'person', { 'userid': group, 'role': 'maintainer'} )
+            ET.SubElement(root, 'person', {'userid': group, 'role': 'maintainer'})
 
         for link in project_links:
-            ET.SubElement(root, 'link', { 'project': link })
+            ET.SubElement(root, 'link', {'project': link})
 
         if with_repo:
-            repo = ET.SubElement(root, 'repository', { 'name': 'standard' })
+            repo = ET.SubElement(root, 'repository', {'name': 'standard'})
             ET.SubElement(repo, 'arch').text = 'x86_64'
 
         self.custom_meta(ET.tostring(root))
@@ -885,8 +892,8 @@ class Project(object):
         :rtype: dict[str, dict or list(str) or bool]
         """
         meta = {
-            'reviewer': { 'groups': [], 'users': [] },
-            'maintainer': { 'groups': [], 'users': [] },
+            'reviewer': {'groups': [], 'users': []},
+            'maintainer': {'groups': [], 'users': []},
             'project_links': [],
             'with_repo': False
         }
@@ -910,7 +917,7 @@ class Project(object):
 
         return meta
 
-    def add_reviewers(self, users = [], groups = []):
+    def add_reviewers(self, users=[], groups=[]):
         """Adds the given reviewers to the meta information of the project
 
         :param users: usernames to add to the current list of reviewers
@@ -948,6 +955,7 @@ class Project(object):
     def __del__(self):
         self.remove()
 
+
 class Package(object):
     """This class represents a package in the local OBS instance used to test the release tools and
     offers methods to create and modify such packages in order to simulate the different testing
@@ -958,6 +966,7 @@ class Package(object):
 
     .. _osc.core: https://github.com/openSUSE/osc/blob/master/osc/core.py
     """
+
     def __init__(self, name, project, devel_project=None):
         """Creates a package in the OBS instance and instantiates an object to represent it
 
@@ -981,7 +990,7 @@ class Package(object):
 
         if devel_project:
             root = ET.fromstring(meta)
-            ET.SubElement(root, 'devel', { 'project': devel_project })
+            ET.SubElement(root, 'devel', {'project': devel_project})
             meta = ET.tostring(root)
 
         url = osc.core.make_meta_url('pkg', (self.project.name, self.name), APIURL)
@@ -1027,6 +1036,7 @@ class Package(object):
             with open(os.path.join(path, filename), 'rb') as f:
                 self.create_commit(filename=filename, text=f.read())
 
+
 class Request(object):
     """This class represents a request in the local OBS instance used to test the release tools and
     offers methods to create and modify such requests in order to simulate the different testing
@@ -1037,16 +1047,17 @@ class Request(object):
 
     .. _osc.core: https://github.com/openSUSE/osc/blob/master/osc/core.py
     """
+
     def __init__(self, source_package=None, target_project=None, target_package=None, type='submit'):
         """Creates a request in the OBS instance and instantiates an object to represent it"""
         self.revoked = True
 
         if type == 'submit':
             self.reqid = osc.core.create_submit_request(APIURL,
-                                     src_project=source_package.project.name,
-                                     src_package=source_package.name,
-                                     dst_project=target_project,
-                                     dst_package=target_package)
+                                                        src_project=source_package.project.name,
+                                                        src_package=source_package.name,
+                                                        dst_project=target_project,
+                                                        dst_package=target_package)
             print('created submit request {}/{} -> {}'.format(
                 source_package.project.name, source_package.name, target_project))
         elif type == 'delete':

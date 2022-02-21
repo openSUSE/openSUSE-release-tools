@@ -106,6 +106,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         ReviewBot.CommandLineInterface.__init__(self, args, kwargs)
         self.clazz = MaintInstCheck
 
+
 if __name__ == '__main__':
     app = CommandLineInterface()
     sys.exit(app.main())

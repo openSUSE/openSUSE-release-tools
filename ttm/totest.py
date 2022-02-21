@@ -11,10 +11,12 @@
 import yaml
 from osclib.core import attribute_value_load
 
+
 class ImageProduct(object):
     def __init__(self, package, archs):
         self.package = package
         self.archs = archs
+
 
 class ToTest(object):
 

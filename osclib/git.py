@@ -2,6 +2,7 @@ import os
 from os import path
 import subprocess
 
+
 def describe(directory=None):
     if directory:
         cwd = os.getcwd()
@@ -17,10 +18,12 @@ def describe(directory=None):
     ret.check_returncode()
     return ret.stdout.strip().replace('-', '')
 
+
 def clone(url, directory):
     return_code = subprocess.call(['git', 'clone', url, directory])
     if return_code != 0:
         raise Exception('Failed to clone {}'.format(url))
+
 
 def sync(cache_dir, repo_url, message=None):
     cwd = os.getcwd()

@@ -1,7 +1,6 @@
 from osclib.util import project_list_family
 from osclib.util import project_list_family_prior
 from osclib.util import project_list_family_sorter
-from osclib.util import project_list_prefix
 from osclib import util
 import unittest
 

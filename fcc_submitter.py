@@ -26,6 +26,7 @@ http_GET = osc.core.http_GET
 http_POST = osc.core.http_POST
 http_PUT = osc.core.http_PUT
 
+
 class FccFreezer(object):
     def __init__(self):
         self.factory = 'openSUSE:Factory'
@@ -119,6 +120,7 @@ class FccFreezer(object):
         except HTTPError as e:
             raise e
 
+
 class FccSubmitter(object):
     def __init__(self, from_prj, to_prj, submit_limit):
         self.from_prj = from_prj
@@ -128,26 +130,24 @@ class FccSubmitter(object):
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']
         self.sle_base_prjs = [
-                'SUSE:SLE-15-SP2:GA',
-                'SUSE:SLE-15-SP1:Update',
-                'SUSE:SLE-15-SP1:GA',
-                'SUSE:SLE-15:Update',
-                'SUSE:SLE-15:GA',
-                'SUSE:SLE-12-SP4:Update',
-                'SUSE:SLE-12-SP4:GA',
-                'SUSE:SLE-12-SP3:Update',
-                'SUSE:SLE-12-SP3:GA',
-                'SUSE:SLE-12-SP2:Update',
-                'SUSE:SLE-12-SP2:GA',
-                'SUSE:SLE-12-SP1:Update',
-                'SUSE:SLE-12-SP1:GA',
-                'SUSE:SLE-12:Update',
-                'SUSE:SLE-12:GA',
-                ]
+            'SUSE:SLE-15-SP2:GA',
+            'SUSE:SLE-15-SP1:Update',
+            'SUSE:SLE-15-SP1:GA',
+            'SUSE:SLE-15:Update',
+            'SUSE:SLE-15:GA',
+            'SUSE:SLE-12-SP4:Update',
+            'SUSE:SLE-12-SP4:GA',
+            'SUSE:SLE-12-SP3:Update',
+            'SUSE:SLE-12-SP3:GA',
+            'SUSE:SLE-12-SP2:Update',
+            'SUSE:SLE-12-SP2:GA',
+            'SUSE:SLE-12-SP1:Update',
+            'SUSE:SLE-12-SP1:GA',
+            'SUSE:SLE-12:Update',
+            'SUSE:SLE-12:GA']
         # the skip list against devel project
         self.skip_devel_project_list = [
-                'mobile:synchronization:FACTORY'
-                ]
+            'mobile:synchronization:FACTORY']
         # put the except packages from skip_devel_project_list, use regex in this list, eg. "^golang-x-(\w+)", "^nodejs$"
         self.except_pkgs_list = []
 
@@ -214,7 +214,7 @@ class FccSubmitter(object):
 
     def create_submitrequest(self, package):
         """Create a submit request using the osc.commandline.Osc class."""
-        src_project = self.factory # submit from Factory only
+        src_project = self.factory  # submit from Factory only
         dst_project = self.to_prj
 
         msg = 'Automatic request from %s by F-C-C Submitter. Please review this change and decline it if Leap do not need it.' % src_project
@@ -228,7 +228,7 @@ class FccSubmitter(object):
 
     def check_multiple_specfiles(self, project, package):
         try:
-            url = makeurl(self.apiurl, ['source', project, package], { 'expand': '1' } )
+            url = makeurl(self.apiurl, ['source', project, package], {'expand': '1'})
         except HTTPError as e:
             if e.code == 404:
                 return None
@@ -241,7 +241,8 @@ class FccSubmitter(object):
         else:
             data['linkinfo'] = None
 
-        files = [ entry.get('name').replace('.spec', '') for entry in root.findall('entry') if entry.get('name').endswith('.spec') ]
+        files = [entry.get('name').replace('.spec', '')
+                 for entry in root.findall('entry') if entry.get('name').endswith('.spec')]
         data['specs'] = files
 
         if len(files) > 1:
@@ -313,7 +314,7 @@ class FccSubmitter(object):
         pseudometa_project, pseudometa_package = project_pseudometa_package(self.apiurl, 'openSUSE:Factory')
         skip_pkgs_list = self.load_skip_pkgs_list(pseudometa_project, pseudometa_package).splitlines()
 
-        ms_packages = [] # collect multi specs packages
+        ms_packages = []  # collect multi specs packages
 
         for i in range(0, min(int(self.submit_limit), len(succeeded_packages))):
             package = succeeded_packages[i]
@@ -340,7 +341,8 @@ class FccSubmitter(object):
 
             if multi_specs:
                 if multi_specs['linkinfo']:
-                    logging.info('%s in %s is sub-package of %s, skip it!' % (package, 'openSUSE:Factory', multi_specs['linkinfo']))
+                    logging.info('%s in %s is sub-package of %s, skip it!' %
+                                 (package, 'openSUSE:Factory', multi_specs['linkinfo']))
                     ms_packages.append(package)
                     submit_ok = False
 
@@ -357,7 +359,8 @@ class FccSubmitter(object):
                 # make sure there is no request against same package
                 request = self.get_request_list(package)
                 if request:
-                    logging.debug("There is a request to %s / %s already or it has been declined/revoked, skip!" % (package, self.to_prj))
+                    logging.debug("There is a request to %s / %s already or it has been declined/revoked, skip!" %
+                                  (package, self.to_prj))
                 else:
                     logging.info("%d - Preparing submit %s to %s" % (i, package, self.to_prj))
                     # get devel project
@@ -424,6 +427,7 @@ def main(args):
         else:
             uc.crawl()
 
+
 if __name__ == '__main__':
     description = 'Create SR from FactoryCandidates to '\
                   'openSUSE Leap project for new build succeded packages.'
@@ -439,7 +443,8 @@ if __name__ == '__main__':
                         default=OPENSUSE)
     parser.add_argument('-r', '--freeze', dest='freeze', action='store_true', help='rebase FCC project')
     parser.add_argument('-s', '--list', dest='list_packages', action='store_true', help='list build succeeded packages')
-    parser.add_argument('-l', '--limit', dest='submit_limit', metavar='NUMBERS', help='limit numbers packages to submit (default: 100)', default=100)
+    parser.add_argument('-l', '--limit', dest='submit_limit', metavar='NUMBERS',
+                        help='limit numbers packages to submit (default: 100)', default=100)
 
     args = parser.parse_args()
 

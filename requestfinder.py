@@ -11,6 +11,7 @@ import os
 import osc.core
 import ToolBase
 
+
 class Requestfinder(ToolBase.ToolBase):
 
     def __init__(self):
@@ -90,7 +91,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     @cmdln.option('--action', metavar='action', help='action (accept/decline)')
     @cmdln.option('--settings', metavar='settings', help='settings to load from config file')
     @cmdln.option('-m', '--message', metavar="message", help="message")
-    @cmdln.option('--devel', dest='devel', metavar='PROJECT', action='append', help='only packages with specified devel project')
+    @cmdln.option('--devel', dest='devel', metavar='PROJECT', action='append',
+                  help='only packages with specified devel project')
     def do_review(self, subcmd, opts):
         """${cmd_name}: print commands for reviews
 
@@ -143,9 +145,12 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                                 break
                     if not skip:
                         if review.by_package:
-                            print("osc review %s -m '%s' -P %s -p %s %s" % (settings['action'], settings['message'], review.by_project, review.by_package, r.reqid))
+                            print("osc review %s -m '%s' -P %s -p %s %s" %
+                                  (settings['action'], settings['message'],
+                                   review.by_project, review.by_package, r.reqid))
                         else:
-                            print("osc review %s -m '%s' -P %s %s" % (settings['action'], settings['message'], review.by_project, r.reqid))
+                            print("osc review %s -m '%s' -P %s %s" %
+                                  (settings['action'], settings['message'], review.by_project, r.reqid))
                 elif review.by_group:
                     skip = False
                     if settings['exclude-group']:
@@ -155,7 +160,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                                 skip = True
                                 break
                     if not skip:
-                        print("osc review %s -m '%s' -G %s %s" % (settings['action'], settings['message'], review.by_group, r.reqid))
+                        print("osc review %s -m '%s' -G %s %s" %
+                              (settings['action'], settings['message'], review.by_group, r.reqid))
                 elif review.by_user:
                     skip = False
                     if settings['exclude-user']:
@@ -165,7 +171,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                                 skip = True
                                 break
                     if not skip:
-                        print("osc review %s -m '%s' -U %s %s" % (settings['action'], settings['message'], review.by_user, r.reqid))
+                        print("osc review %s -m '%s' -U %s %s" %
+                              (settings['action'], settings['message'], review.by_user, r.reqid))
 
     @cmdln.option('--query', metavar='filterstr', help='filter string')
     @cmdln.option('--action', metavar='action', help='action (accept/decline)')

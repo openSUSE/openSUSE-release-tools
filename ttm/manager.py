@@ -18,8 +18,10 @@ from osclib.stagingapi import StagingAPI
 from urllib.error import HTTPError
 from ttm.totest import ToTest
 
+
 class NotFoundException(Exception):
     pass
+
 
 class QAResult(IntEnum):
     inprogress = 1
@@ -33,6 +35,7 @@ class QAResult(IntEnum):
             return 'failed'
         else:
             return 'passed'
+
 
 class ToTestManager(ToolBase.ToolBase):
 
@@ -63,7 +66,8 @@ class ToTestManager(ToolBase.ToolBase):
 
     def iso_build_version(self, project, tree, repo=None, arch=None):
         for binary in self.binaries_of_product(project, tree, repo=repo, arch=arch):
-            result = re.match(r'.*-(?:Build|Snapshot)([0-9.]+)(?:-Media.*\.iso|\.docker\.tar\.xz|\.tar\.xz|\.raw\.xz|\.appx)', binary)
+            result = re.match(
+                r'.*-(?:Build|Snapshot)([0-9.]+)(?:-Media.*\.iso|\.docker\.tar\.xz|\.tar\.xz|\.raw\.xz|\.appx)', binary)
             if result:
                 return result.group(1)
         raise NotFoundException("can't find %s iso version" % project)
@@ -172,10 +176,10 @@ class ToTestManager(ToolBase.ToolBase):
                 continue
             if repo.get('dirty') == 'true':
                 self.logger.info('%s %s %s -> %s' % (repo.get('project'),
-                                                repo.get('repository'), repo.get('arch'), 'dirty'))
+                                                     repo.get('repository'), repo.get('arch'), 'dirty'))
                 ready = False
             if repo.get('code') not in codes:
                 self.logger.info('%s %s %s -> %s' % (repo.get('project'),
-                                                repo.get('repository'), repo.get('arch'), repo.get('code')))
+                                                     repo.get('repository'), repo.get('arch'), repo.get('code')))
                 ready = False
         return ready

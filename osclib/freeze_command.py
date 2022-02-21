@@ -3,6 +3,7 @@ from lxml import etree as ET
 
 MAX_FROZEN_AGE = 6.5
 
+
 class FreezeCommand(object):
 
     def __init__(self, api):
@@ -86,7 +87,6 @@ class FreezeCommand(object):
         for f in pkgmeta.find('build'):
             if f.get('repository', None) == 'bootstrap_copy':
                 f.tag = state
-                pass
         self.api.retried_PUT(url, ET.tostring(pkgmeta))
 
     def verify_bootstrap_copy_codes(self, codes):
@@ -214,7 +214,7 @@ class FreezeCommand(object):
 
         # Ignore packages with an origing (i.e. with an origin
         # different from the current project)
-        if si.find('originproject') != None:
+        if si.find('originproject') is not None:
             return None
 
         if package in ['rpmlint-mini-AGGR']:

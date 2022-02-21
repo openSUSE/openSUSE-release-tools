@@ -2,6 +2,7 @@ from osc import conf
 from osc import core
 from osclib.common import VERSION
 
+
 def sentry_init(obs_apiurl=None, tags=None):
     try:
         import sentry_sdk
@@ -27,8 +28,10 @@ def sentry_init(obs_apiurl=None, tags=None):
 
     return sentry_sdk
 
+
 def sentry_client():
     return sentry_init.client._client
+
 
 class sentry_sdk_dummy:
     def configure_scope(*args, **kw):
@@ -36,6 +39,7 @@ class sentry_sdk_dummy:
 
     def __getattr__(self, _):
         return nop_func
+
 
 class nop_class:
     def __enter__(self):
@@ -47,8 +51,10 @@ class nop_class:
     def __getattr__(self, _):
         return nop_func
 
+
 class sentry_client_dummy(nop_class):
     options = {}
+
 
 def nop_func(*args, **kw):
     pass

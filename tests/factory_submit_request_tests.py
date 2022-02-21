@@ -1,5 +1,4 @@
 from . import OBSLocal
-import random
 import os
 
 # Needed to mock LegalAuto
@@ -13,7 +12,7 @@ from osclib.accept_command import AcceptCommand
 
 # Import the involved bots
 from check_source import CheckSource
-legal_auto = __import__("legal-auto") # Needed because of the dash in the filename
+legal_auto = __import__("legal-auto")  # Needed because of the dash in the filename
 LegalAuto = legal_auto.LegalAuto
 
 PROJECT = 'openSUSE:Factory'
@@ -21,6 +20,7 @@ DEVEL_PROJECT = 'devel:drinking'
 STAGING_PROJECT_NAME = 'openSUSE:Factory:Staging:A'
 HUMAN_REVIEWER = 'factory-cop'
 FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures')
+
 
 class TestFactorySubmitRequest(OBSLocal.TestCase):
     """Tests for the whole lifecycle of submit requests in Factory
@@ -93,8 +93,8 @@ class TestFactorySubmitRequest(OBSLocal.TestCase):
 
         # Let's first accept the manual review
         change_review_state(
-            apiurl = self.wf.apiurl, reqid = reqid,
-            newstate = 'accepted', by_group='opensuse-review-team'
+            apiurl=self.wf.apiurl, reqid=reqid,
+            newstate='accepted', by_group='opensuse-review-team'
         )
 
         # Now only the staging workflow is pending
@@ -161,6 +161,6 @@ class TestFactorySubmitRequest(OBSLocal.TestCase):
     def __accept_license(self):
         """See :func:`__mock_licensedigger`"""
         change_review_state(
-            apiurl = self.wf.apiurl, reqid = self.request.reqid,
-            newstate = 'accepted', by_user='licensedigger'
+            apiurl=self.wf.apiurl, reqid=self.request.reqid,
+            newstate='accepted', by_user='licensedigger'
         )

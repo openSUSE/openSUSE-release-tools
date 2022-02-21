@@ -34,6 +34,7 @@ import yaml
 
 OSRT_ORIGIN_LOOKUP_TTL = 60 * 60 * 24 * 7
 
+
 @cmdln.option('--debug', action='store_true', help='output debug information')
 @cmdln.option('--diff', action='store_true', help='diff against previous report')
 @cmdln.option('--dry', action='store_true', help='perform a dry-run where applicable')
@@ -109,6 +110,7 @@ def do_origin(self, subcmd, opts, *args):
         sentry_sdk.capture_exception(e)
         raise e
 
+
 def osrt_origin_config(apiurl, opts, *args):
     config = config_load(apiurl, opts.project)
 
@@ -117,6 +119,7 @@ def osrt_origin_config(apiurl, opts, *args):
     else:
         yaml.Dumper.ignore_aliases = lambda *args: True
         print(yaml.dump(config))
+
 
 def osrt_origin_cron(apiurl, opts, *args):
     projects = project_attribute_list(apiurl, 'OSRT:OriginConfig')
@@ -134,6 +137,7 @@ def osrt_origin_cron(apiurl, opts, *args):
         lookup = osrt_origin_lookup(apiurl, project, force_refresh=True, quiet=True)
         print('{} lookup updated for {} package(s)'.format(project, len(lookup)))
 
+
 def osrt_origin_dump(format, data):
     if format == 'json':
         print(json.dumps(data))
@@ -144,6 +148,7 @@ def osrt_origin_dump(format, data):
             print('unknown format: {}'.format(format), file=sys.stderr)
         return False
     return True
+
 
 def osrt_origin_history(apiurl, opts, *packages):
     config = config_load(apiurl, opts.project)
@@ -158,6 +163,7 @@ def osrt_origin_history(apiurl, opts, *packages):
     for record in history:
         print(line_format.format(record['origin'], record['state'], record['request']))
 
+
 def osrt_origin_lookup_file(project, previous=False):
     parts = [project, 'yaml']
     if previous:
@@ -165,6 +171,7 @@ def osrt_origin_lookup_file(project, previous=False):
     lookup_name = '.'.join(parts)
     cache_dir = CacheManager.directory('origin-manager')
     return os.path.join(cache_dir, lookup_name)
+
 
 def osrt_origin_lookup(apiurl, project, force_refresh=False, previous=False, quiet=False):
     locked = project_locked(apiurl, project)
@@ -212,8 +219,10 @@ def osrt_origin_lookup(apiurl, project, force_refresh=False, previous=False, qui
 
     return lookup
 
+
 def osrt_origin_max_key(dictionary, minimum):
     return max(len(max(dictionary.keys(), key=len)), minimum)
+
 
 def osrt_origin_list(apiurl, opts, *args):
     lookup = osrt_origin_lookup(apiurl, opts.project, opts.force_refresh, quiet=opts.format != 'plain')
@@ -247,9 +256,11 @@ def osrt_origin_list(apiurl, opts, *args):
     for package, details in sorted(lookup.items()):
         print(line_format.format(package, details['origin']))
 
+
 def osrt_origin_package(apiurl, opts, *packages):
     origin_info = origin_find(apiurl, opts.project, packages[0])
     print(origin_info)
+
 
 def osrt_origin_potentials(apiurl, opts, *packages):
     potentials = origin_potentials(apiurl, opts.project, packages[0])
@@ -268,6 +279,7 @@ def osrt_origin_potentials(apiurl, opts, *packages):
     for origin, version in potentials.items():
         print(line_format.format(origin, version))
 
+
 def osrt_origin_projects(apiurl, opts, *args):
     projects = list(project_attribute_list(apiurl, 'OSRT:OriginConfig'))
 
@@ -277,6 +289,7 @@ def osrt_origin_projects(apiurl, opts, *args):
     for project in sorted(projects):
         print(project)
 
+
 def osrt_origin_report_count(lookup):
     origin_count = {}
     for package, details in lookup.items():
@@ -284,6 +297,7 @@ def osrt_origin_report_count(lookup):
         origin_count[details['origin']] += 1
 
     return origin_count
+
 
 def osrt_origin_report_count_diff(origin_count, origin_count_previous):
     origin_count_change = {}
@@ -294,6 +308,7 @@ def osrt_origin_report_count_diff(origin_count, origin_count_previous):
 
     return origin_count_change
 
+
 def osrt_origin_report_diff(lookup, lookup_previous):
     diff = {}
     for package, details in lookup.items():
@@ -302,6 +317,7 @@ def osrt_origin_report_diff(lookup, lookup_previous):
             diff[package] = (details['origin'], origin_previous)
 
     return diff
+
 
 def osrt_origin_report(apiurl, opts, *args):
     lookup = osrt_origin_lookup(apiurl, opts.project, opts.force_refresh)
@@ -352,6 +368,7 @@ def osrt_origin_report(apiurl, opts, *args):
         mail_send(apiurl, opts.project, 'release-list', '{} origin report'.format(opts.project),
                   body, None, dry=opts.dry)
 
+
 def osrt_origin_update(apiurl, opts, *packages):
     if opts.listen:
         from osclib.origin_listener import OriginSourceChangeListener
@@ -383,6 +400,7 @@ def osrt_origin_update(apiurl, opts, *packages):
         request_future = origin_update(apiurl, opts.project, package)
         if request_future:
             request_future.print_and_create(opts.dry)
+
 
 def osrt_origin_update_packages(apiurl, project):
     packages = set(package_list_kind_filtered(apiurl, project))
