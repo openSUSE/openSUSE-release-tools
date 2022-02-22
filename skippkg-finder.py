@@ -313,6 +313,9 @@ class SkippkgFinder(object):
                     obsoleted.remove(pkg)
 
         for regex in self.skiplist_supplement_regex:
+            # exit if it has no regex defined
+            if not regex:
+                break
             for binary in fullbinarylist:
                 result = re.match(regex, binary)
                 if result and binary not in obsoleted and\
