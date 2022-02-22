@@ -2,4 +2,4 @@
 
 # Should never contain references to products.
 ! grep -iP 'leap|factory|sle' \
-  origin-manager.py osc-origin.py osclib/origin.py osclib/origin_listener.py
+  origin-manager.py osc-origin.py osclib/origin.py

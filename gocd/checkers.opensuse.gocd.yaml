@@ -139,30 +139,6 @@ pipelines:
           - staging-bot
         tasks:
           - script: ./origin-manager.py -A https://api.opensuse.org --debug review
-  OS.Origin.Manager.Update:
-    group: openSUSE.Checkers
-    lock_behavior: unlockWhenFinished
-    environment_variables:
-      OSC_CONFIG: /home/go/config/oscrc-origin-manager
-    materials:
-      script:
-        git: https://github.com/openSUSE/openSUSE-release-tools.git
-    timer:
-      spec: 0 0 7 ? * *
-      only_on_changes: false
-    stages:
-    - Run:
-        approval: manual
-        resources:
-          - staging-bot
-        tasks:
-          - script: |-
-              tempdir=$(mktemp -d)
-              mkdir -p $tempdir/.osc-plugins
-              ln -s $PWD/osc-origin.py $tempdir/.osc-plugins
-              ln -s $PWD/osclib $tempdir/.osc-plugins
-              HOME=$tempdir osc -A https://api.opensuse.org origin update
-              rm -rf $tempdir
   openSUSE.QA.Maint:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
