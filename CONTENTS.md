@@ -18,10 +18,7 @@ Apart from these tools, the repository includes:
   located in the [dist](dist) directory.
 * [GoCD](https://www.gocd.org) configuration files in [gocd](gocd). GoCD is an open source CI/CD
   server that is used to deploy the bots on OBS.
-* A set of [Tampermonkey](https://www.tampermonkey.net) scripts (see [userscript](userscript)
-  directory) to extend OBS features when using the web interface.
-* Several [systemd](systemd) units: the Metrics and OBS Operator tools make use of
-  them.
+* Several [systemd](systemd) units: the Metrics instance makes use of them.
 
 ## Tools
 
@@ -332,13 +329,4 @@ changes to allow whitelisting before creating Bugzilla entries.
 * Package: openSUSE-release-tools
 * Usage: ???
 
-#### obs-operator
-
-Performs staging operations as a service instead of requiring the osc staging plugin to be utilized
-directly.
-
-* Sources: [obs_operator.py](obs_operator.py)
-* Documentation: --
-* Package: openSUSE-release-tools
-* Usage: obsolete
 
