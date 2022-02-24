@@ -10,6 +10,7 @@ import random
 import string
 import subprocess
 import shutil
+import sys
 import tempfile
 
 from lxml import etree as ET
@@ -180,18 +181,27 @@ def print_repo_delta(pool, repo2, packages_file):
         print('-Prv:', file=packages_file)
 
 
+def add_susetags(pool, file):
+    oldsysrepo = pool.add_repo(file)
+    defvendorid = oldsysrepo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
+    f = tempfile.TemporaryFile()
+    if file.endswith('.xz'):
+        subprocess.call(['xz', '-cd', file], stdout=f.fileno())
+    elif file.endswith('.zst'):
+        subprocess.call(['zstd', '-cd', file], stdout=f.fileno())
+    else:
+        raise Exception("unsupported " + file)
+    os.lseek(f.fileno(), 0, os.SEEK_SET)
+    oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None,
+                            solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
+
+
 def merge_susetags(output, files):
     pool = solv.Pool()
     pool.setarch()
 
     for file in files:
-        oldsysrepo = pool.add_repo(file)
-        defvendorid = oldsysrepo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
-        f = tempfile.TemporaryFile()
-        subprocess.call(['xz', '-cd', file], stdout=f.fileno())
-        os.lseek(f.fileno(), 0, os.SEEK_SET)
-        oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None,
-                                solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
+        add_susetags(pool, file)
 
     packages = dict()
     for s in pool.solvables_iter():
@@ -215,7 +225,39 @@ def merge_susetags(output, files):
         print('-Prv:', file=output_file)
 
 
-def update_project(apiurl, project):
+def fixate_target(root, package, fixate):
+    for item in root:
+        key = list(item)[0]
+        opts = item[key]
+        key = str(key)
+        if key == fixate:
+            if not opts.get('refresh', False):
+                print(f"{fixate} is already fix. Please lookup config.yml", file=sys.stderr)
+                return False
+            del opts['refresh']
+            oldfiles = target_files(package.dir, key)
+            newfile = os.path.join(package.dir, f'{fixate}_package')
+            merge_susetags(newfile, oldfiles)
+            for file in oldfiles:
+                os.unlink(file)
+                package.delete_file(os.path.basename(file))
+            subprocess.check_call(['zstd', '-19', '--rm', newfile])
+            package.addfile(os.path.basename(newfile) + ".zst")
+    ystring = yaml.dump(root, default_flow_style=False)
+    with open(os.path.join(package.dir, 'config.yml'), 'w') as f:
+        f.write(ystring)
+    package.commit(f'Remove refresh from {fixate}')
+    return True
+
+
+def target_files(repo_dir, key):
+    files = list()
+    for suffix in ['xz', 'zst']:
+        files += glob.glob(os.path.join(repo_dir, f'{key}_*.packages.{suffix}'))
+    return files
+
+
+def update_project(apiurl, project, fixate=None):
     # Cache dir specific to hostname and project.
     host = urlparse(apiurl).hostname
     cache_dir = CacheManager.directory('update_repo_handler', host, project)
@@ -233,6 +275,9 @@ def update_project(apiurl, project):
     package = osc.core.Package(repo_dir)
 
     root = yaml.safe_load(open(os.path.join(repo_dir, 'config.yml')))
+    if fixate:
+        return fixate_target(root, package, fixate)
+
     for item in root:
         key = list(item)[0]
         opts = item[key]
@@ -249,20 +294,21 @@ def update_project(apiurl, project):
         packages_file = os.path.join(repo_dir, path)
 
         if opts.get('refresh', False):
-            oldfiles = glob.glob(os.path.join(repo_dir, '{}_*.packages.xz'.format(key)))
+            oldfiles = target_files(repo_dir, key)
             if len(oldfiles) > 10:
                 oldest = oldfiles[-1]
                 if oldest.count('and_before') > 1:
                     raise Exception('The oldest is already a compated file')
                 oldest = oldest.replace('.packages.xz', '_and_before.packages')
+                oldest = oldest.replace('.packages.zst', '_and_before.packages')
                 merge_susetags(oldest, oldfiles)
                 for file in oldfiles:
                     os.unlink(file)
                     package.delete_file(os.path.basename(file))
-                subprocess.check_call(['xz', oldest])
-                package.addfile(os.path.basename(oldest) + ".xz")
+                subprocess.check_call(['zstd', '-19', '--rm', oldest])
+                package.addfile(os.path.basename(oldest) + ".zst")
 
-        if os.path.exists(packages_file + '.xz'):
+        if os.path.exists(packages_file + '.zst') or os.path.exists(packages_file + '.xz'):
             print(path, 'already exists')
             continue
 
@@ -273,24 +319,17 @@ def update_project(apiurl, project):
         pool.setarch()
 
         if opts.get('refresh', False):
-            for file in glob.glob(os.path.join(repo_dir, '{}_*.packages.xz'.format(key))):
-                repo = pool.add_repo(file)
-                defvendorid = repo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
-                f = tempfile.TemporaryFile()
-                # FIXME: port to lzma module with python3
-                subprocess.call(['xz', '-cd', file], stdout=f.fileno())
-                os.lseek(f.fileno(), 0, os.SEEK_SET)
-                repo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None,
-                                  solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
+            for file in target_files(repo_dir, key):
+                add_susetags(pool, file)
 
         repo1 = pool.add_repo(''.join(random.choice(string.ascii_letters) for _ in range(5)))
         repo1.add_solv(solv_file)
 
         print_repo_delta(pool, repo1, open(packages_file, 'w'))
-        subprocess.call(['xz', '-9', packages_file])
+        subprocess.call(['zstd', '-19', '--rm', packages_file])
         os.unlink(solv_file)
 
-        package.addfile(os.path.basename(path + '.xz'))
+        package.addfile(os.path.basename(path + '.zst'))
         del pool
 
     package.commit('Automatic update')

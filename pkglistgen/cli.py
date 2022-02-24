@@ -13,7 +13,7 @@ from osc import conf
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from pkglistgen.tool import PkgListGen
-from pkglistgen.update_repo_handler import update_project, merge_susetags
+from pkglistgen.update_repo_handler import update_project
 
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
@@ -31,6 +31,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         return tool
 
+    @cmdln.option('--fixate', help='Set category to fixed and merge remaining files')
     def do_handle_update_repos(self, subcmd, opts, project):
         """${cmd_name}: Update 00update-repos
 
@@ -39,15 +40,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_usage}
         ${cmd_option_list}
         """
-        return update_project(conf.config['apiurl'], project)
-
-    def do_merge_susetags(self, subcmd, opts, output, *files):
-        """${cmd_name}: Merge susetags files and output into a new
-
-        ${cmd_usage}
-        ${cmd_option_list}
-        """
-        return merge_susetags(output, files)
+        return update_project(conf.config['apiurl'], project, opts.fixate)
 
     @cmdln.option('-f', '--force', action='store_true', help='continue even if build is in progress')
     @cmdln.option('-p', '--project', help='target project')
