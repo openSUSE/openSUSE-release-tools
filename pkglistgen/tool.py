@@ -7,7 +7,6 @@ import solv
 import shutil
 import subprocess
 import yaml
-import tempfile
 
 from lxml import etree as ET
 
@@ -405,22 +404,17 @@ class PkgListGen(ToolBase.ToolBase):
             # cast 15.1 to string :)
             key = str(key)
 
-            oldrepos = set(glob.glob(os.path.join(directory, '{}_*.packages.xz'.format(key))))
-            oldrepos |= set(glob.glob(os.path.join(directory, '{}.packages.xz'.format(key))))
+            oldrepos = set()
+            for suffix in ['xz', 'zst']:
+                oldrepos |= set(glob.glob(os.path.join(directory, f"{key}_*.packages.{suffix}")))
+                oldrepos |= set(glob.glob(os.path.join(directory, f"{key}.packages.{suffix}")))
             for oldrepo in sorted(oldrepos):
                 pool = solv.Pool()
                 pool.setarch()
 
                 # we need some progress in the debug output - or gocd gets nervous
                 self.logger.debug('checking {}'.format(oldrepo))
-                oldsysrepo = pool.add_repo(oldrepo)
-                defvendorid = oldsysrepo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
-                f = tempfile.TemporaryFile()
-                # FIXME: port to lzma module with python3
-                subprocess.call(['xz', '-cd', oldrepo], stdout=f.fileno())
-                os.lseek(f.fileno(), 0, os.SEEK_SET)
-                oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None,
-                                        solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
+                oldsysrepo = file_utils.add_susetags(pool, oldrepo)
 
                 for arch in self.all_architectures:
                     for project, repo in self.repos:
