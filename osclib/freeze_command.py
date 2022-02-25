@@ -1,5 +1,7 @@
 import time
+from urllib.error import HTTPError
 from lxml import etree as ET
+import osc.core
 
 MAX_FROZEN_AGE = 6.5
 
@@ -114,8 +116,9 @@ class FreezeCommand(object):
             return
 
         self.set_links()
-
         self.freeze_prjlinks()
+
+        self.copy_weakremovers()
 
         build_status = self.api.get_flag_in_prj(prj, flag='build')
 
@@ -221,6 +224,19 @@ class FreezeCommand(object):
             return package  # we should not freeze aggregates
         ET.SubElement(flink, 'package', {'name': package, 'srcmd5': si.get('srcmd5'), 'vrev': si.get('vrev')})
         return package
+
+    def copy_weakremovers(self):
+        try:
+            targeturl = self.api.makeurl(['source', self.prj, '000release-packages', 'weakremovers.inc'],
+                                         {'comment': 'Update weakremovers.inc'})
+            oldinc = osc.core.http_GET(targeturl).read()
+        except HTTPError:
+            # if it doesn't exist, don't update
+            return
+        sourceurl = self.api.makeurl(['source', self.api.project, '000release-packages', 'weakremovers.inc'])
+        inc = osc.core.http_GET(sourceurl).read()
+        if inc != oldinc:
+            osc.core.http_PUT(targeturl, data=inc)
 
     def is_bootstrap(self):
         """Check if there is a bootstrap copy repository."""
