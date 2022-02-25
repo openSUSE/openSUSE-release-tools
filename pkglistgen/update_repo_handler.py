@@ -12,17 +12,14 @@ import subprocess
 import shutil
 import sys
 import tempfile
-
+import requests
+import solv
+import yaml
 from lxml import etree as ET
 
 import osc.core
 from osclib.cache_manager import CacheManager
-
-import requests
-
-import solv
-
-import yaml
+from pkglistgen import file_utils
 
 from urllib.parse import urljoin, urlparse
 
@@ -181,27 +178,12 @@ def print_repo_delta(pool, repo2, packages_file):
         print('-Prv:', file=packages_file)
 
 
-def add_susetags(pool, file):
-    oldsysrepo = pool.add_repo(file)
-    defvendorid = oldsysrepo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
-    f = tempfile.TemporaryFile()
-    if file.endswith('.xz'):
-        subprocess.call(['xz', '-cd', file], stdout=f.fileno())
-    elif file.endswith('.zst'):
-        subprocess.call(['zstd', '-cd', file], stdout=f.fileno())
-    else:
-        raise Exception("unsupported " + file)
-    os.lseek(f.fileno(), 0, os.SEEK_SET)
-    oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None,
-                            solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
-
-
 def merge_susetags(output, files):
     pool = solv.Pool()
     pool.setarch()
 
     for file in files:
-        add_susetags(pool, file)
+        file_utils.add_susetags(pool, file)
 
     packages = dict()
     for s in pool.solvables_iter():
@@ -236,7 +218,7 @@ def fixate_target(root, package, fixate):
                 return False
             del opts['refresh']
             oldfiles = target_files(package.dir, key)
-            newfile = os.path.join(package.dir, f'{fixate}_package')
+            newfile = os.path.join(package.dir, f'{fixate}_packages')
             merge_susetags(newfile, oldfiles)
             for file in oldfiles:
                 os.unlink(file)
@@ -320,7 +302,7 @@ def update_project(apiurl, project, fixate=None):
 
         if opts.get('refresh', False):
             for file in target_files(repo_dir, key):
-                add_susetags(pool, file)
+                file_utils.add_susetags(pool, file)
 
         repo1 = pool.add_repo(''.join(random.choice(string.ascii_letters) for _ in range(5)))
         repo1.add_solv(solv_file)

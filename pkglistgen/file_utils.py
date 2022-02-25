@@ -2,6 +2,9 @@ import glob
 import os
 import os.path
 import shutil
+import solv
+import tempfile
+import subprocess
 
 from lxml import etree as ET
 
@@ -60,3 +63,19 @@ def unlink_list(path, names):
 
         if os.path.isfile(name_path):
             os.unlink(name_path)
+
+
+def add_susetags(pool, file):
+    oldsysrepo = pool.add_repo(file)
+    defvendorid = oldsysrepo.meta.lookup_id(solv.SUSETAGS_DEFAULTVENDOR)
+    f = tempfile.TemporaryFile()
+    if file.endswith('.xz'):
+        subprocess.call(['xz', '-cd', file], stdout=f.fileno())
+    elif file.endswith('.zst'):
+        subprocess.call(['zstd', '-cd', file], stdout=f.fileno())
+    else:
+        raise Exception("unsupported " + file)
+    os.lseek(f.fileno(), 0, os.SEEK_SET)
+    oldsysrepo.add_susetags(solv.xfopen_fd(None, f.fileno()), defvendorid, None,
+                            solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
+    return oldsysrepo
