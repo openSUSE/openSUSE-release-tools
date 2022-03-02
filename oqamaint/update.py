@@ -30,7 +30,7 @@ class Update(object):
                 self.logger.info("{} skipped .. need wait".format(crepo))
                 # if one fails, we skip it and wait
                 return False
-            root = ET.fromstring(xml.text)
+            root = ET.fromstring(bytes(xml.text, encoding='utf-8'))
             rev = root.find('.//{http://linux.duke.edu/metadata/repo}revision')
             rev = int(rev.text)
             if rev > max_revision:
@@ -76,7 +76,7 @@ class Update(object):
         repomd = requests.get(url)
         if not repomd.ok:
             return None
-        root = ET.fromstring(repomd.text)
+        root = ET.fromstring(bytes(repomd.text, encoding='utf-8'))
 
         cs = root.find(
             './/{http://linux.duke.edu/metadata/repo}data[@type="updateinfo"]/{http://linux.duke.edu/metadata/repo}location')
