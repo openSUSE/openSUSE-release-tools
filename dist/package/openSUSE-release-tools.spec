@@ -211,6 +211,7 @@ Requires:       obs-service-product_converter
 Requires:       osclib = %{version}
 Requires:       python3-requests
 Requires:       python3-solv
+Requires:       zstd
 # we use the same user as repo-checker
 PreReq:         openSUSE-release-tools-repo-checker
 BuildArch:      noarch
