@@ -110,7 +110,7 @@ class SkippkgFinder(object):
             return True
         return False
 
-    def get_packagelist(self, project, by_project=True):
+    def get_packagelist(self, project, sle_pkglist=[], by_project=True):
         """
         Return the list of package's info of a project.
         If the latest package is from an incident then returns incident
@@ -127,7 +127,7 @@ class SkippkgFinder(object):
             orig_project = i.get('originproject')
             is_incidentpkg = False
             # Metapackage should not be selected
-            if pkgname.startswith('000') or\
+            if pkgname.startswith('00') or\
                     pkgname.startswith('_') or\
                     pkgname.startswith('patchinfo.') or\
                     pkgname.startswith('skelcd-') or\
@@ -162,6 +162,9 @@ class SkippkgFinder(object):
                         pkglist[orig_name]['Package'] = pkgname
             else:
                 pkglist[pkgname] = {'Project': orig_project, 'Package': pkgname}
+
+            if sle_pkglist and pkgname in sle_pkglist and not orig_project.startswith('openSUSE'):
+                pkglist[pkgname] = {'Project': sle_pkglist[pkgname]['Project'], 'Package': sle_pkglist[pkgname]['Package']}
 
         if by_project:
             for pkg in pkglist.keys():
@@ -247,8 +250,11 @@ class SkippkgFinder(object):
     def crawl(self):
         """Main method"""
 
-        leap_pkglist = self.get_packagelist(self.opensuse_project)
         sle_pkglist = self.get_packagelist(self.sle_project, by_project=False)
+        if self.sle_project.endswith(':Update'):
+            leap_pkglist = self.get_packagelist(self.opensuse_project, sle_pkglist)
+        else:
+            leap_pkglist = self.get_packagelist(self.opensuse_project)
         # The selected_binarylist[] includes the latest sourcepackage list
         # binary RPMs from the latest sources need to be presented in ftp eventually
         selected_binarylist = []
