@@ -441,44 +441,7 @@ The same request would consider the origin for review purposes as if the devel o
 @origin-manager change_devel projectFoo
 ```
 
-## Automatic updates
-
-For projects with at least one origin having `automatic_updates` enabled source changes from enabled origins will be automatically submitted to the target project. There is both a cron job that runs once daily and an event listener that will make submissions immediately. The listener considers the same control options as the cron job so if something like `automatic_updates_delay` is configured the listener will not make updates for that project and instead they will fallback to the cron job. The cron job also handles configuration changes and backfilling newly managed projects.
-
 ### Automatic change_devel
 
 If a source submission is accepted, but during update an origin cannot be matched the annotation on the most recent request will be checked to see if it was considered as devel project. If such an annotation exists a `change_devel` request will automatically be created to match the annotation. After the request is accept future updates will be submitted as appropriate.
 
-## Web interface
-
-A _web interface_ is provided using the _OBS operator_ server which wraps the _origin CLI plugin_. The web interface is backed by a cache which is updated trice-weekly and allows for quickly retrieving the full list of origins for all packages within a project.
-
-In conjunction to the primary web interface a [userscript](../userscript/README.md) is provided to automatically display origin information on the OBS web interface. Both the package view and request views are supplemented and provide links to the web interface. **Note that one must have an active OBS session for either to work.**
-
-### Layout
-
-The interface condenses a rather large amount of information into one screen and can be overwhelming at first glance. The following is a description of the columns from left the right.
-
-#### Package list
-
-A list of all _source_ packages within a target project are shown with their respective origin. The _revisions_ column denotes the type of the last 10 commits: green matches origin in target, red only in origin, and gray for target revisions that do not match origin. The _request_ column shows the highest open request for that package in the target project.
-
-#### Potentials and history
-
-The middle column shows the potential origins for the selected package along with the version within that origin. The two icons are external diff (via OBS) and submit to target from origin.
-
-The origin history shows source change requests for the selected package against the target project. If an annotation is present the origin from the annotation is extracted otherwise the source project is shown.
-
-#### Diff
-
-The last column shows a diff between the selected potential origin and the target project. When a request from the history is also selected it shows the diff between the potential origin and the request source.
-
-### Filtering and sorting
-
-One of the most useful features of the web interface is _filtering and sorting_ which allows for a number different package states to be identified.
-
-The _origin_ column can be sorted to see packages grouped by origin or filtered to show workarounds by entering `~`. Additionally, specific origins can be filtered or even the `None` origin.
-
-The _revisions_ column can be sorted to show the most _behind_ (most red revisions) packages first with the most _worked around_ (most gray revisions) packages next. This is useful for seeing if updates are behind and determining the reason (usually due to bot or human decline).
-
-The _request_ column can be sorted to place packages with requests at the top of the list which is useful when doing lots of reviews against open requests and thus flipping between requests and the origin manager web interface.
