@@ -1,0 +1,5 @@
+<definition name="FreezeTime" namespace="OSRT">
+  <description>Date and time of the last call of freeze (updating _frozenlinks)</description>
+  <count>1</count>
+  <modifiable_by role="maintainer"/>
+</definition>
