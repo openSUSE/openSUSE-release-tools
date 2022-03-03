@@ -32,7 +32,7 @@ def unlink_all_except(path, ignore_list=['_service'], ignore_hidden=True):
 def copy_directory_contents(source, destination, ignore_list=[]):
     for name in os.listdir(source):
         name_path = os.path.join(source, name)
-        if name in ignore_list or not os.path.isfile(name_path):
+        if name in ignore_list or name_path in ignore_list or not os.path.isfile(name_path):
             continue
 
         shutil.copy(name_path, os.path.join(destination, name))
