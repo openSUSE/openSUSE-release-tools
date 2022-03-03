@@ -96,8 +96,11 @@ class PkgListGen(ToolBase.ToolBase):
                 g.parse_yml(group)
         return output, unwanted
 
+    def group_input_files(self):
+        return glob.glob(os.path.join(self.input_dir, 'group*.yml'))
+
     def load_all_groups(self):
-        for fn in glob.glob(os.path.join(self.input_dir, 'group*.yml')):
+        for fn in self.group_input_files():
             o, u = self._load_group_file(fn)
             if o:
                 if self.output is not None:
@@ -646,6 +649,9 @@ class PkgListGen(ToolBase.ToolBase):
         release_dir = os.path.join(cache_dir, release)
         oldrepos_dir = os.path.join(cache_dir, oldrepos)
 
+        self.input_dir = group_dir
+        self.output_dir = product_dir
+
         for package in checkout_list:
             if no_checkout:
                 print('Skipping checkout of {}/{}'.format(project, package))
@@ -656,15 +662,11 @@ class PkgListGen(ToolBase.ToolBase):
         file_utils.unlink_all_except(release_dir, ['weakremovers.inc'])
         if not only_release_packages:
             file_utils.unlink_all_except(product_dir)
-        file_utils.copy_directory_contents(group_dir, product_dir,
-                                           ['supportstatus.txt', 'groups.yml',
-                                            'reference-unsorted.yml', 'reference-summary.yml',
-                                            'package-groups.changes'])
+        ignore_list = ['supportstatus.txt', 'reference-unsorted.yml', 'reference-summary.yml', 'package-groups.changes']
+        ignore_list += self.group_input_files()
+        file_utils.copy_directory_contents(group_dir, product_dir, ignore_list)
         file_utils.change_extension(product_dir, '.spec.in', '.spec')
         file_utils.change_extension(product_dir, '.product.in', '.product')
-
-        self.input_dir = group_dir
-        self.output_dir = product_dir
 
         print('-> do_update')
         # make sure we only calculcate existant architectures
