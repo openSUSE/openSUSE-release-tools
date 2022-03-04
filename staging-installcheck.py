@@ -379,4 +379,4 @@ if __name__ == '__main__':
                 result = staging_report.staging(staging) and result
 
     if not result:
-        sys.exit(1)
+        logging.error("Found problem")
