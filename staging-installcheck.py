@@ -70,17 +70,23 @@ class InstallChecker(object):
         comments.append('Error: missing alternative provides for {}'.format(provide))
         return False
 
-    def check_delete_request(self, req, to_ignore, comments):
+    def check_delete_request(self, req, to_ignore, to_delete, comments):
         package = req.get('package')
         if package in to_ignore or self.ignore_deletes:
             self.logger.info('Delete request for package {} ignored'.format(package))
             return True
 
-        built_binaries = set([])
+        built_binaries = set()
         file_infos = []
         for fileinfo in fileinfo_ext_all(self.api.apiurl, self.api.project, self.api.cmain_repo, 'x86_64', package):
             built_binaries.add(fileinfo.find('name').text)
             file_infos.append(fileinfo)
+        # extend the others - this asks for a refactoring, but we don't handle tons of delete requests often
+        for ptd in to_delete:
+            if package == ptd:
+                continue
+            for fileinfo in fileinfo_ext_all(self.api.apiurl, self.api.project, self.api.cmain_repo, 'x86_64', ptd):
+                built_binaries.add(fileinfo.find('name').text)
 
         result = True
         for fileinfo in file_infos:
@@ -90,10 +96,10 @@ class InstallChecker(object):
 
         what_depends_on = depends_on(api.apiurl, api.project, api.cmain_repo, [package], True)
 
-        # filter out dependency on package itself (happens with eg
-        # java bootstrapping itself with previous build)
-        if package in what_depends_on:
-            what_depends_on.remove(package)
+        # filter out packages to be deleted
+        for package in to_delete:
+            if package in what_depends_on:
+                what_depends_on.remove(package)
 
         if len(what_depends_on):
             comments.append('{} is still a build requirement of:\n\n- {}'.format(
@@ -165,9 +171,15 @@ class InstallChecker(object):
             self.logger.error('no project status for {}'.format(project))
             return False
 
+        # collect packages to be deleted
+        to_delete = set()
         for req in status.findall('staged_requests/request'):
             if req.get('type') == 'delete':
-                result = result and self.check_delete_request(req, to_ignore, result_comment)
+                to_delete.add(req.get('package'))
+
+        for req in status.findall('staged_requests/request'):
+            if req.get('type') == 'delete':
+                result = result and self.check_delete_request(req, to_ignore, to_delete, result_comment)
 
         for arch in architectures:
             # hit the first repository in the target project (if existant)
