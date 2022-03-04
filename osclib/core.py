@@ -1,9 +1,9 @@
 from collections import namedtuple
-from datetime import datetime
-from datetime import timezone
+from datetime import datetime, timezone
 from dateutil.parser import parse as date_parse
 import re
 import socket
+import logging
 from lxml import etree as ET
 from urllib.error import HTTPError
 
@@ -452,7 +452,12 @@ def attribute_value_save(apiurl, project, name, value, namespace='OSRT', package
 
     # The OBS API of attributes is super strange, POST to update.
     url = makeurl(apiurl, list(filter(None, ['source', project, package, '_attribute'])))
-    http_POST(url, data=ET.tostring(root))
+    try:
+        http_POST(url, data=ET.tostring(root))
+    except HTTPError as e:
+        if e.code == 404:
+            logging.error(f"Saving attribute {namespace}:{name} to {project} failed. You may need to create the type on your instance.")
+        raise e
 
 
 def attribute_value_delete(apiurl, project, name, namespace='OSRT', package=None):

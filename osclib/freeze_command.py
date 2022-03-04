@@ -1,7 +1,9 @@
 import time
+from datetime import datetime, timezone
 from urllib.error import HTTPError
 from lxml import etree as ET
 import osc.core
+from osclib.core import attribute_value_save
 
 MAX_FROZEN_AGE = 6.5
 
@@ -197,6 +199,7 @@ class FreezeCommand(object):
 
         url = self.api.makeurl(['source', self.prj, '_project', '_frozenlinks'], {'meta': '1'})
         self.api.retried_PUT(url, ET.tostring(flink))
+        attribute_value_save(self.api.apiurl, self.prj, 'FreezeTime', datetime.now(timezone.utc).isoformat())
 
     def receive_sources(self, prj, sources, flink):
         url = self.api.makeurl(['source', prj], {'view': 'info', 'nofilename': '1'})

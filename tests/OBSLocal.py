@@ -382,6 +382,7 @@ class StagingWorkflow(ABC):
         # First ensure the existence of both the target project and the 'Config' attribute type
         self.create_target()
         self.create_attribute_type('OSRT', 'Config', 1)
+        self.create_attribute_type('OSRT', 'FreezeTime', 1)
 
         self.remote_config_set(self.initial_config(), replace_all=True)
 

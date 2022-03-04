@@ -879,7 +879,14 @@ class StagingAPI(object):
         :param project: project to check
         :return age in days(float) of the last update
         """
-        root = ET.fromstring(self._fetch_project_meta(project))
+        freezetime = attribute_value_load(self.apiurl, project, 'FreezeTime')
+        if freezetime:
+            freezetime = datetime.fromisoformat(freezetime)
+            tz_info = freezetime.tzinfo
+            return (datetime.now(tz_info) - freezetime).total_seconds() / 3600 / 24
+        # fallback: old method
+        url = self.makeurl(['source', project, '_project'], {'meta': '1'})
+        root = ET.parse(http_GET(url))
         for entry in root.findall('entry'):
             if entry.get('name') == '_frozenlinks':
                 return (time.time() - float(entry.get('mtime'))) / 3600 / 24
