@@ -5,6 +5,8 @@
 import cmdln
 import os
 import re
+
+from outcome import Value
 import ToolBase
 import traceback
 import logging
@@ -17,7 +19,7 @@ from pkglistgen.update_repo_handler import update_project
 
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
-    SCOPES = ['all', 'target', 'rings', 'staging']
+    SCOPES = ['target', 'rings', 'staging']
 
     def __init__(self, *args, **kwargs):
         ToolBase.CommandLineInterface.__init__(self, args, kwargs)
@@ -64,8 +66,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             opts.project = match.group(1)
         elif not opts.project:
             raise ValueError('project is required')
-        elif not opts.scope:
-            opts.scope = ['all']
+
+        if not opts.scope:
+            raise Value('--scope or --staging required')
 
         apiurl = conf.config['apiurl']
         Config(apiurl, opts.project)
@@ -84,10 +87,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             os.environ['OBS_NAME'] = 'build.suse.de'
         if apiurl.find('opensuse.org') > 0:
             os.environ['OBS_NAME'] = 'build.opensuse.org'
-
-        # special case for all
-        if opts.scope == ['all']:
-            opts.scope = target_config.get('pkglistgen-scopes', 'target').split(' ')
 
         self.error_occured = False
 
