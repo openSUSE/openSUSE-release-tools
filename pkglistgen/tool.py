@@ -36,6 +36,10 @@ PRODUCT_SERVICE = '/usr/lib/obs/service/create_single_product'
 CACHEDIR = CacheManager.directory('repository-meta')
 
 
+class MismatchedRepoException(Exception):
+    """raised on repos that restarted building"""
+
+
 class PkgListGen(ToolBase.ToolBase):
 
     def __init__(self):
@@ -225,7 +229,7 @@ class PkgListGen(ToolBase.ToolBase):
                 continue
             s = f'repo-{project}-{reponame}-{arch}-{state}.solv'
             if not repo.add_solv(s):
-                raise Exception('failed to add repo {}/{}/{}'.format(project, reponame, arch))
+                raise MismatchedRepoException('failed to add repo {}/{}/{}'.format(project, reponame, arch))
             for solvable in repo.solvables_iter():
                 if ignore_conflicts:
                     solvable.unset(solv.SOLVABLE_CONFLICTS)
@@ -428,7 +432,7 @@ class PkgListGen(ToolBase.ToolBase):
                         fn = f'repo-{project}-{repo}-{arch}-{state}.solv'
                         r = pool.add_repo('/'.join([project, repo]))
                         if not r.add_solv(fn):
-                            raise Exception('failed to add repo {}/{}/{}.'.format(project, repo, arch))
+                            raise MismatchedRepoException('failed to add repo {}/{}/{}.'.format(project, repo, arch))
 
                 pool.createwhatprovides()
 
@@ -580,10 +584,10 @@ class PkgListGen(ToolBase.ToolBase):
         if self.dry_run:
             package = Package(path)
             for i in package.get_diff():
-                print(''.join(i))
+                logging.info(''.join(i))
         else:
             # No proper API function to perform the same operation.
-            print(subprocess.check_output(
+            logging.debug(subprocess.check_output(
                 ' '.join(['cd', path, '&&', 'osc', 'addremove']), shell=True, encoding='utf-8'))
             package = Package(path)
             package.commit(msg='Automatic update', skip_local_service_run=True)
@@ -602,7 +606,7 @@ class PkgListGen(ToolBase.ToolBase):
         self.all_architectures = target_config.get('pkglistgen-archs').split(' ')
         self.use_newest_version = str2bool(target_config.get('pkglistgen-use-newest-version', 'False'))
         self.repos = self.expand_repos(project, main_repo)
-        print('[{}] {}/{}: update and solve'.format(scope, project, main_repo))
+        logging.debug('[{}] {}/{}: update and solve'.format(scope, project, main_repo))
 
         group = target_config.get('pkglistgen-group', '000package-groups')
         product = target_config.get('pkglistgen-product', '000product')
@@ -615,13 +619,13 @@ class PkgListGen(ToolBase.ToolBase):
             if not self.dry_run:
                 undelete_package(api.apiurl, project, product, 'revive')
             # TODO disable build.
-            print('{} undeleted, skip dvd until next cycle'.format(product))
+            logging.info('{} undeleted, skip dvd until next cycle'.format(product))
             return
         elif not force:
             root = ET.fromstringlist(show_results_meta(api.apiurl, project, product,
                                                        repository=[main_repo], multibuild=True))
             if len(root.xpath('result[@state="building"]')) or len(root.xpath('result[@state="dirty"]')):
-                print('{}/{} build in progress'.format(project, product))
+                logging.info('{}/{} build in progress'.format(project, product))
                 return
 
         drop_list = api.item_exists(project, oldrepos)
@@ -632,7 +636,7 @@ class PkgListGen(ToolBase.ToolBase):
         if packages.find('entry[@name="{}"]'.format(release)) is None:
             if not self.dry_run:
                 undelete_package(api.apiurl, project, release, 'revive')
-            print('{} undeleted, skip dvd until next cycle'.format(release))
+            logging.info('{} undeleted, skip dvd until next cycle'.format(release))
             return
 
         # Cache dir specific to hostname and project.
@@ -654,7 +658,7 @@ class PkgListGen(ToolBase.ToolBase):
 
         for package in checkout_list:
             if no_checkout:
-                print('Skipping checkout of {}/{}'.format(project, package))
+                logging.debug('Skipping checkout of {}/{}'.format(project, package))
                 continue
             checkout_package(api.apiurl, project, package, expand_link=True,
                              prj_dir=cache_dir, outdir=os.path.join(cache_dir, package))
@@ -668,7 +672,7 @@ class PkgListGen(ToolBase.ToolBase):
         file_utils.change_extension(product_dir, '.spec.in', '.spec')
         file_utils.change_extension(product_dir, '.product.in', '.product')
 
-        print('-> do_update')
+        logging.debug('-> do_update')
         # make sure we only calculcate existant architectures
         self.filter_architectures(target_archs(api.apiurl, project, main_repo))
         self.update_repos(self.filtered_architectures)
@@ -688,19 +692,23 @@ class PkgListGen(ToolBase.ToolBase):
 
         if drop_list and not only_release_packages:
             weakremovers_file = os.path.join(release_dir, 'weakremovers.inc')
-            self.create_weakremovers(project, target_config, oldrepos_dir, output=open(weakremovers_file, 'w'))
+            try:
+                self.create_weakremovers(project, target_config, oldrepos_dir, output=open(weakremovers_file, 'w'))
+            except MismatchedRepoException:
+                logging.error("Failed to create weakremovers.inc due to mismatch in repos - project most likey started building again.")
+                return
 
         delete_products = target_config.get('pkglistgen-delete-products', '').split(' ')
         file_utils.unlink_list(product_dir, delete_products)
 
-        print('-> product service')
+        logging.debug('-> product service')
         product_version = attribute_value_load(api.apiurl, project, 'ProductVersion')
         if not product_version:
             # for stagings the product version doesn't matter (I hope)
             product_version = '1'
         for product_file in glob.glob(os.path.join(product_dir, '*.product')):
             self.replace_product_version(product_file, product_version)
-            print(subprocess.check_output(
+            logging.debug(subprocess.check_output(
                 [PRODUCT_SERVICE, product_file, product_dir, project], encoding='utf-8'))
 
         for delete_kiwi in target_config.get('pkglistgen-delete-kiwis-{}'.format(scope), '').split(' '):
