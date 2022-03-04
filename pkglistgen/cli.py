@@ -6,7 +6,6 @@ import cmdln
 import os
 import re
 
-from outcome import Value
 import ToolBase
 import traceback
 import logging
@@ -68,7 +67,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             raise ValueError('project is required')
 
         if not opts.scope:
-            raise Value('--scope or --staging required')
+            raise ValueError('--scope or --staging required')
 
         apiurl = conf.config['apiurl']
         Config(apiurl, opts.project)
