@@ -49,22 +49,22 @@ pipelines:
             - repo-checker
             tasks:
               - script: |
-                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:PowerPC --only-release-packages
-                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:PowerPC
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:PowerPC -s target --only-release-packages
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:PowerPC -s target
           openSUSE_Factory_zSystems:
             resources:
             - repo-checker
             tasks:
               - script: |
-                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:zSystems --only-release-packages
-                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:zSystems
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:zSystems -s target --only-release-packages
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:zSystems -s target
           openSUSE_Factory_RISCV:
             resources:
             - repo-checker
             tasks:
               - script: |
-                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:RISCV --only-release-packages
-                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:RISCV
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:RISCV -s target --only-release-packages
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:RISCV -s target
   Update.Repos.Factory:
     group: Factory.pkglistgen
     lock_behavior: unlockWhenFinished

@@ -22,6 +22,8 @@ pipelines:
   if project.size > 1
     options=" -s #{project[1]}"
     name = name + "_#{project[1]}"
+  else
+    options=" -s target"
   end
   -%>
           <%= name %>:
