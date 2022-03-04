@@ -885,7 +885,8 @@ class StagingAPI(object):
             tz_info = freezetime.tzinfo
             return (datetime.now(tz_info) - freezetime).total_seconds() / 3600 / 24
         # fallback: old method
-        root = ET.fromstring(self._fetch_project_meta(project))
+        url = self.makeurl(['source', project, '_project'], {'meta': '1'})
+        root = ET.parse(http_GET(url))
         for entry in root.findall('entry'):
             if entry.get('name') == '_frozenlinks':
                 return (time.time() - float(entry.get('mtime'))) / 3600 / 24

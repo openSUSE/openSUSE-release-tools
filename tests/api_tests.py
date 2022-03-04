@@ -1,7 +1,5 @@
-
 import osc.core
-
-from mock import MagicMock
+from osclib.core import attribute_value_delete, attribute_value_save
 from . import OBSLocal
 
 
@@ -181,7 +179,7 @@ class TestApiCalls(OBSLocal.TestCase):
         self.wf.create_staging('B', freeze=True, rings=1)
         self.assertLess(self.wf.api.days_since_last_freeze('openSUSE:Factory:Staging:B'), 1)
 
-        self.mock_project_meta()
+        attribute_value_save(self.wf.apiurl, 'openSUSE:Factory:Staging:B', 'FreezeTime', "2021-03-04T10:23:55.127903")
         self.assertGreater(self.wf.api.days_since_last_freeze('openSUSE:Factory:Staging:B'), 8)
 
     def test_frozen_enough(self):
@@ -198,16 +196,13 @@ class TestApiCalls(OBSLocal.TestCase):
         self.wf.create_staging('C', freeze=True, rings=1)
         self.assertEqual(self.wf.api.prj_frozen_enough('openSUSE:Factory:Staging:C'), True)
 
-        self.mock_project_meta()
+        # pretend it's old
+        attribute_value_save(self.wf.apiurl, 'openSUSE:Factory:Staging:C', 'FreezeTime', "2021-03-04T10:23:55.127903")
         self.assertEqual(self.wf.api.prj_frozen_enough('openSUSE:Factory:Staging:C'), False)
 
-    def mock_project_meta(self):
-        body = """<directory name="_project" rev="3" vrev="" srcmd5="9dd1ec5b77a9e953662eb32955e9066a">
-              <entry name="_frozenlinks" md5="64127b7a5dabbca0ec2bf04cd04c9195" size="16" mtime="1555000000"/>
-              <entry name="_meta" md5="cf6fb1eac1a676d6c3707303ae2571ad" size="162" mtime="1555945413"/>
-            </directory>"""
-
-        self.wf.api._fetch_project_meta = MagicMock(return_value=body)
+        # test old method (which still shows it's recent)
+        attribute_value_delete(self.wf.apiurl, 'openSUSE:Factory:Staging:C', 'FreezeTime')
+        self.assertEqual(self.wf.api.prj_frozen_enough('openSUSE:Factory:Staging:C'), True)
 
     def test_move(self):
         """Test package movement."""
