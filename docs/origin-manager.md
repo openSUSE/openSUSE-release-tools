@@ -1,5 +1,7 @@
 # Origin Manager
 
+<span style="color:red">Note that the Origin Manager is unmaintained and considered mostly obsolete in its current form by https://www.suse.com/c/closing-the-leap-gap-src/</span>
+
 The primary function of origin manager is, as the name implies, to _manage_ the _origin_ of packages. In other words to keep track of from what project a package originates, submit updates, review requests to detect origin changes, and enforce origin specific policies like adding appropriate reviews.
 
 The primary configuration for all parts of the tool is the `OSRT:OriginConfig` attribute to be placed on the target project. Once the config is created all relevant caches, listeners, and cron jobs will automatically include the project. The only exception is the `origin-manager` user should be added as a project _reviewer_ in order to activate the review portion of the tool. Conversely either removing the config or locking the project will disable all services. Locking the project will preserve the caches used by the web interface, but not update them which allows for archived viewing.
