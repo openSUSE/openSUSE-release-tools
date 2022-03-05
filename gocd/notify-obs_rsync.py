@@ -61,7 +61,7 @@ if __name__ == '__main__':
     # make sure we avoid a race between gocd polling the notifications repo and
     # scheduling a notify job because of other changes. In that case gocd schedules
     # a new job on outdated notifications repo and we can't push
-    subprocess.run(f'cd {args.to} && git pull')
+    subprocess.run(f'cd {args.to} && git pull', shell=True, check=True)
 
     interesting_repos = dict()
     list = openqa.openqa_request('GET', 'obs_rsync')
