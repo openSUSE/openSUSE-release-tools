@@ -7,18 +7,17 @@ import os
 import re
 
 import ToolBase
-import traceback
 import logging
 
 from osc import conf
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
-from pkglistgen.tool import PkgListGen
+from pkglistgen.tool import PkgListGen, MismatchedRepoException
 from pkglistgen.update_repo_handler import update_project
 
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
-    SCOPES = ['target', 'rings', 'staging']
+    SCOPES = ['target', 'ring1']
 
     def __init__(self, *args, **kwargs):
         ToolBase.CommandLineInterface.__init__(self, args, kwargs)
@@ -45,7 +44,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
     @cmdln.option('-f', '--force', action='store_true', help='continue even if build is in progress')
     @cmdln.option('-p', '--project', help='target project')
-    @cmdln.option('-s', '--scope', action='append', help='scope on which to operate ({}, staging:$letter)'.format(', '.join(SCOPES)))
+    @cmdln.option('-s', '--scope', help='scope on which to operate ({}, staging:$letter)'.format(', '.join(SCOPES)))
     @cmdln.option('--no-checkout', action='store_true', help='reuse checkout in cache')
     @cmdln.option('--stop-after-solve', action='store_true', help='only create group files')
     @cmdln.option('--staging', help='Only solve that one staging')
@@ -57,9 +56,10 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_option_list}
         """
 
+        print(opts.scope)
         if opts.staging:
             match = re.match('(.*):Staging:(.*)', opts.staging)
-            opts.scope = ['staging:' + match.group(2)]
+            opts.scope = 'staging:' + match.group(2)
             if opts.project:
                 raise ValueError('--staging and --project conflict')
             opts.project = match.group(1)
@@ -93,34 +93,22 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
             try:
                 self.tool.reset()
                 self.tool.dry_run = self.options.dry
-                if self.tool.update_and_solve_target(api, target_project, target_config, main_repo,
-                                                     project=project, scope=scope, force=opts.force,
-                                                     no_checkout=opts.no_checkout,
-                                                     only_release_packages=opts.only_release_packages,
-                                                     stop_after_solve=opts.stop_after_solve):
-                    self.error_occured = True
-            except Exception:
-                # Print exception, but continue to prevent problems effecting one
-                # project from killing the whole process. Downside being a common
-                # error will be duplicated for each project. Common exceptions could
-                # be excluded if a set list is determined, but that is likely not
-                # practical.
-                traceback.print_exc()
-                self.error_occured = True
+                return self.tool.update_and_solve_target(api, target_project, target_config, main_repo,
+                                                         project=project, scope=scope, force=opts.force,
+                                                         no_checkout=opts.no_checkout,
+                                                         only_release_packages=opts.only_release_packages,
+                                                         stop_after_solve=opts.stop_after_solve)
+            except MismatchedRepoException:
+                logging.error("Failed to create weakremovers.inc due to mismatch in repos - project most likey started building again.")
+                return True
 
-        for scope in opts.scope:
-            if scope.startswith('staging:'):
-                letter = re.match('staging:(.*)', scope).group(1)
-                solve_project(api.prj_from_short(letter), 'staging')
-            elif scope == 'target':
-                solve_project(target_project, scope)
-            elif scope == 'rings':
-                solve_project(api.rings[1], scope)
-            elif scope == 'staging':
-                letters = api.get_staging_projects_short()
-                for letter in letters:
-                    solve_project(api.prj_from_short(letter), scope)
-            else:
-                raise ValueError('scope "{}" must be one of: {}'.format(scope, ', '.join(self.SCOPES)))
-
-        return self.error_occured
+        scope = opts.scope
+        if scope.startswith('staging:'):
+            letter = re.match('staging:(.*)', scope).group(1)
+            return solve_project(api.prj_from_short(letter), 'staging')
+        elif scope == 'target':
+            return solve_project(target_project, scope)
+        elif scope == 'ring1':
+            return solve_project(api.rings[1], scope)
+        else:
+            raise ValueError('scope "{}" must be one of: {}'.format(scope, ', '.join(self.SCOPES)))
