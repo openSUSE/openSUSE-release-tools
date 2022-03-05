@@ -770,4 +770,4 @@ class PkgListGen(ToolBase.ToolBase):
 
         if len(error_output) > 0:
             self.logger.error('Difference in yml:\n' + error_output.decode('utf-8'))
-            return True
+            return 1

@@ -56,7 +56,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_option_list}
         """
 
-        print(opts.scope)
         if opts.staging:
             match = re.match('(.*):Staging:(.*)', opts.staging)
             opts.scope = 'staging:' + match.group(2)
@@ -87,8 +86,6 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if apiurl.find('opensuse.org') > 0:
             os.environ['OBS_NAME'] = 'build.opensuse.org'
 
-        self.error_occured = False
-
         def solve_project(project, scope):
             try:
                 self.tool.reset()
@@ -100,7 +97,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                                                          stop_after_solve=opts.stop_after_solve)
             except MismatchedRepoException:
                 logging.error("Failed to create weakremovers.inc due to mismatch in repos - project most likey started building again.")
-                return True
+                return 0
 
         scope = opts.scope
         if scope.startswith('staging:'):
