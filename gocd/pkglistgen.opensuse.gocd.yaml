@@ -23,13 +23,13 @@ pipelines:
               - script: |
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s target --only-release-packages
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s target
-          openSUSE_Factory_rings:
+          openSUSE_Factory_ring1:
             resources:
             - repo-checker
             tasks:
               - script: |
-                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s rings --only-release-packages
-                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s rings
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s ring1 --only-release-packages
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s ring1
           openSUSE_Factory_ARM_target:
             resources:
             - repo-checker
@@ -37,13 +37,13 @@ pipelines:
               - script: |
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM -s target --only-release-packages
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM -s target
-          openSUSE_Factory_ARM_rings:
+          openSUSE_Factory_ARM_ring1:
             resources:
             - repo-checker
             tasks:
               - script: |
-                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM -s rings --only-release-packages
-                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM -s rings
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM -s ring1 --only-release-packages
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM -s ring1
           openSUSE_Factory_PowerPC:
             resources:
             - repo-checker
