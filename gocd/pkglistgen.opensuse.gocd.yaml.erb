@@ -31,7 +31,7 @@ pipelines:
             - repo-checker
             tasks:
               - script: |
-                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %> --only-release-packages
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %> --only-release-packages --force
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %>
 <% end -%>
   Update.Repos.Factory:
