@@ -78,9 +78,9 @@ Then you can use the new `local` alias to access this new instance.
 
     osc -A local api /about
 
-Some tests will attempt to run against the local OBS, but not all.
+Some tests will attempt to run against the local OBS, but not all. It's still recommended to run this through docker-compose (see below)
 
-    nosetests
+    pytest tests/*.py
 
 ## Running Continuous Integration
 
