@@ -179,7 +179,7 @@ class InstallChecker(object):
 
         for req in status.findall('staged_requests/request'):
             if req.get('type') == 'delete':
-                result = result and self.check_delete_request(req, to_ignore, to_delete, result_comment)
+                result = self.check_delete_request(req, to_ignore, to_delete, result_comment) and result
 
         for arch in architectures:
             # hit the first repository in the target project (if existant)
