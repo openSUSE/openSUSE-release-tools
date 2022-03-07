@@ -1,0 +1,39 @@
+format_version: 3
+pipelines:
+  LeapMicro.RelPkgs:
+    group: LeapMicro.Target
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 10 * ? * *
+      only_on_changes: false
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    stages:
+    - Create.Release.Packages:
+        approval: manual
+        resources:
+        - repo-checker
+        tasks:
+          - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:Micro:5.2 -s target --only-release-packages
+
+  LeapMicro.Package.Lists:
+    group: LeapMicro.Target
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    timer:
+      spec: 0 40 * ? * *
+      only_on_changes: false
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Update.000product:
+        resources:
+        - repo-checker
+        tasks:
+          - script: ./pkglistgen.py -A https://api.opensuse.org --debug update_and_solve -p openSUSE:Leap:Micro:5.2 -s target
+
