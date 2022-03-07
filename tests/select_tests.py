@@ -11,6 +11,8 @@ from lxml import etree as ET
 from mock import MagicMock
 from . import OBSLocal
 
+# CI-Node: Long1
+
 
 class TestSelect(OBSLocal.TestCase):
 

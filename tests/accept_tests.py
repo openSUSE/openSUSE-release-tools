@@ -8,6 +8,8 @@ from osclib.core import package_list
 from mock import MagicMock
 from . import OBSLocal
 
+# CI-Node: Long2
+
 
 class TestAccept(unittest.TestCase):
 
