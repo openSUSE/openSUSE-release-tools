@@ -18,6 +18,7 @@ FACTORY_MAINTAINERS = 'group:factory-maintainers'
 
 # Inherit from OBSLocal.Testcase since it provides many commodity methods for testing against
 # a local testing instance of OBS
+# CI-Node: Long1
 
 
 class TestCheckSource(OBSLocal.TestCase):

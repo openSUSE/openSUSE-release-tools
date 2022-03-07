@@ -48,7 +48,7 @@ services:
     depends_on:
       - api
       - smtp
-    command: /code/dist/ci/docker-compose-test.sh
+    command: /code/dist/ci/docker-compose-test.sh ${CI_NODE_INDEX}
     cap_add:
       - SYS_PTRACE
   flaker:

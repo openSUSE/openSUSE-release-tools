@@ -2,6 +2,8 @@ import osc.core
 from osclib.core import attribute_value_delete, attribute_value_save
 from . import OBSLocal
 
+# CI-Node: Long1
+
 
 class TestApiCalls(OBSLocal.TestCase):
     """

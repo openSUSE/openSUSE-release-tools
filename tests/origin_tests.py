@@ -20,6 +20,8 @@ import time
 import yaml
 from . import OBSLocal
 
+# CI-Node: Long2
+
 
 class TestOrigin(OBSLocal.TestCase):
     script = './origin-manager.py'

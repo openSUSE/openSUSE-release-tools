@@ -13,7 +13,22 @@ until curl http://api:3000/about 2>/dev/null ; do
 done
 
 cd /code
+
+ci_node=$1
+
 for file in tests/*_tests.py; do
+  if test -n "$ci_node"; then
+	  if test "$ci_node" == "Rest"; then
+      if grep -q '# CI-Node' $file; then
+        echo "Skipping $file in 'Rest'"
+        continue
+      fi
+    else
+      if ! grep -q "# CI-Node: $ci_node" $file; then
+        continue
+      fi
+	  fi
+  fi
   if ! test -f /code/.without-coverage; then
     COVER_ARGS="--cov=. --cov-append --cov-report=xml"
   else
