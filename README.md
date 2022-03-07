@@ -78,9 +78,9 @@ Then you can use the new `local` alias to access this new instance.
 
     osc -A local api /about
 
-Some tests will attempt to run against the local OBS, but not all.
+Some tests will attempt to run against the local OBS, but not all. It's still recommended to run this through docker-compose (see below)
 
-    nosetests
+    pytest tests/*.py
 
 ## Running Continuous Integration
 
@@ -130,3 +130,60 @@ To debug problems in the test suite or in the code, place a `breakpoint()` call 
 You can access your testing OBS instance at `http://0.0.0.0:3000` and log in using "Admin" as username and "opensuse" as password. To prevent the data being removed while you are inspecting the OBS instance, you can put a call to the `breakpoint()` function.
 
 Finally, if you miss anything for debugging, you can use `zypper` to install it.
+
+### Adding tests
+
+Testing the release tools isn't quite trivial as a lot of these tools rely on running openSUSE infrastructure. Some of the workflows we replay (not mock) in above described docker-compose setup. So each test will setup the required projects and e.g. staging workflows in a local containerized OBS installation and then do its assertions. If you want to add coverage, best check existing unit tests in tests/*.py. A generic test case looks similiar to this:
+
+``` {.python title="Basic Test Example" }
+class TestExample(unittest.TestCase):
+
+def test_basic(self):
+    # Keep the workflow in local scope so that ending the test case will destroy it.
+    # Destroying the workflow will also delete all created projects and packages. The
+    # created workflow has a target project, but most of the test assets need to be created
+    # as needed 
+    wf = OBSLocal.FactoryWorkflow()
+    staging = wf.create_staging('A', freeze=True)
+    wf.create_submit_request('devel:wine', 'wine')
+
+    ret = SelectCommand(wf.api, staging.name).perform(['wine'])
+    self.assertEqual(True, ret)
+```
+
+To ease having many such tests, we also have the `OBSLocal` class, which moves the creation of the workflow into `setUp` and the destruction in `tearDwon` functions of pytest. The principle stays the same though.
+
+``` {.python title="OBSLocal Usage"}
+class TestExampleWithOBS(OBSLocal.TestCase):
+    """
+    Tests for various api calls to ensure we return expected content
+    """
+
+    def setUp(self):
+        super(TestExampleWithOBS, self).setUp()
+        self.wf = OBSLocal.FactoryWorkflow()
+        self.wf.setup_rings()
+        self.staging_b = self.wf.create_staging('B')
+
+    def tearDown(self):
+        del self.wf
+        super(TestExampleWithOBS, self).tearDown()
+
+    def test_list_projects(self):
+        """
+        List projects and their content
+        """
+        staging_a = self.wf.create_staging('A')
+
+        # Prepare expected results
+        data = [staging_a.name, self.staging_b.name]
+
+        # Compare the results
+        self.assertEqual(data, self.wf.api.get_staging_projects())
+```
+
+Note that we have some (older) test cases using httpretty, but those are very special cases and require you a lot of extra mocking as you can't mix httpretty and testing against the minimal OBS. So every extra
+call that osc libraries or our code do, will require changes in your test case. It can still be a viable option, especially if more than OBS is involved.
+
+The method that you can combine with `OBSLocal` though is using MagicMock. This class is used to mock individual functions. So splitting the code to use helper functions to retrieve information and then
+mocking this inside the test case can be a good alternative to mocking the complete HTTP traffic.
