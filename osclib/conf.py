@@ -95,7 +95,7 @@ DEFAULT = {
         'splitter-special-packages': '',
         'pkglistgen-archs': 'x86_64',
         'pkglistgen-locales-from': 'openSUSE.product',
-        'pkglistgen-delete-kiwis-rings': 'openSUSE-ftp-ftp-x86_64.kiwi openSUSE-cd-mini-x86_64.kiwi',
+        'pkglistgen-delete-kiwis-ring1': 'openSUSE-ftp-ftp-x86_64.kiwi openSUSE-cd-mini-x86_64.kiwi',
         'pkglistgen-delete-kiwis-staging': 'openSUSE-ftp-ftp-x86_64.kiwi openSUSE-cd-mini-x86_64.kiwi',
         'mail-list': 'factory@lists.opensuse.org',
         'mail-maintainer': 'Ludwig Nussel <ludwig.nussel@suse.de>',
