@@ -1,11 +1,11 @@
 import logging
 from . import OBSLocal
 from check_source import CheckSource
-import random
 import os
 from osc.core import get_request_list
+import pytest
 
-PROJECT = 'openSUSE:Factory'
+PROJECT = 'Testing:Project'
 SRC_PROJECT = 'devel:Fishing'
 FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures')
 REVIEW_TEAM = 'reviewers-team'
@@ -21,40 +21,54 @@ FACTORY_MAINTAINERS = 'group:factory-maintainers'
 # CI-Node: Long1
 
 
+def _common_workflow(request):
+    # Using OBSLocal.FactoryWorkflow makes it easier to setup testing scenarios
+    wf = OBSLocal.FactoryWorkflow(PROJECT)
+    project = wf.projects[PROJECT]
+
+    # Set up the reviewers team
+    wf.create_group(REVIEW_TEAM)
+
+    request.cls.bot_user = 'factory-auto'
+
+    wf.create_user(request.cls.bot_user)
+    # When creating a review, set the by_user to bot_user
+    project.add_reviewers(users=[request.cls.bot_user])
+
+    request.cls.wf = wf
+
+
+def _add_review_bot(request):
+    # StagingWorkflow creates reviews with the reviewer set to bot_user, so it's necessary to
+    # configure our review bot to act upon such reviews
+    request.cls.review_bot = CheckSource(request.cls.wf.apiurl, user=request.cls.bot_user, logger=logging.getLogger())
+
+
+@pytest.fixture
+def required_source_maintainer(request):
+    _common_workflow(request)
+    request.cls.wf.remote_config_set(
+        {'required-source-maintainer': 'Admin', 'review-team': REVIEW_TEAM, 'devel-project-enforce': 'True'}
+    )
+    _add_review_bot(request)
+    yield "workflow"
+    del request.cls.wf
+
+
+@pytest.fixture
+def default_config(request):
+    _common_workflow(request)
+    request.cls.wf.remote_config_set(
+        {'review-team': REVIEW_TEAM, 'devel-project-enforce': 'True'}
+    )
+    _add_review_bot(request)
+    yield "workflow"
+    del request.cls.wf
+
+
 class TestCheckSource(OBSLocal.TestCase):
-    def setUp(self):
-        super(TestCheckSource, self).setUp()
 
-        # Using OBSLocal.FactoryWorkflow makes it easier to setup testing scenarios
-        self.wf = OBSLocal.FactoryWorkflow(PROJECT)
-        self.project = self.wf.projects[PROJECT]
-
-        # Set up the reviewers team
-        self.wf.create_group(REVIEW_TEAM)
-
-        self.wf.remote_config_set(
-            {'required-source-maintainer': 'Admin', 'review-team': REVIEW_TEAM}
-        )
-
-        self.bot_user = 'factory-auto'
-        self.wf.create_user(self.bot_user)
-        # When creating a review, set the by_user to bot_user
-        self.project.add_reviewers(users=[self.bot_user])
-
-        # Ensure different test runs operate in unique namespace.
-        self.bot_name = '::'.join([type(self).__name__, str(random.getrandbits(8))])
-
-        # StagingWorkflow creates reviews with the reviewer set to bot_user, so it's necessary to
-        # configure our review bot to act upon such reviews
-        self.review_bot = CheckSource(
-            self.wf.apiurl, user=self.bot_user, logger=logging.getLogger(self.bot_name)
-        )
-        self.review_bot.bot_name = self.bot_name
-
-    def tearDown(self):
-        super().tearDown()
-        del self.wf
-
+    @pytest.mark.usefixtures("default_config")
     def test_no_devel_project(self):
         """Declines the request when it does not come from a devel project"""
         req_id = self.wf.create_submit_request(SRC_PROJECT, self.randomString('package')).reqid
@@ -67,6 +81,7 @@ class TestCheckSource(OBSLocal.TestCase):
         review = self.assertReview(req_id, by_user=(self.bot_user, 'declined'))
         self.assertIn('%s is not a devel project of %s' % (SRC_PROJECT, PROJECT), review.comment)
 
+    @pytest.mark.usefixtures("required_source_maintainer")
     def test_devel_project(self):
         """Accepts a request coming from a devel project"""
         self._setup_devel_project()
@@ -81,6 +96,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self.assertReview(req_id, by_user=(self.bot_user, 'accepted'))
         self.assertReview(req_id, by_group=(REVIEW_TEAM, 'new'))
 
+    @pytest.mark.usefixtures("default_config")
     def test_missing_patch_in_changelog(self):
         """Reject a request if it adds patch and it is not mentioned in changelog"""
         # devel files contain patch but not changes
@@ -100,6 +116,7 @@ class TestCheckSource(OBSLocal.TestCase):
             review.comment
         )
 
+    @pytest.mark.usefixtures("default_config")
     def test_patch_in_changelog(self):
         """Accepts a request if it adds patch and it is mentioned in changelog"""
         self._setup_devel_project()
@@ -115,6 +132,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self.assertReview(req_id, by_user=(self.bot_user, 'accepted'))
         self.assertReview(req_id, by_group=(REVIEW_TEAM, 'new'))
 
+    @pytest.mark.usefixtures("default_config")
     def test_revert_of_patch(self):
         """Accepts a request if it reverts addition of patch"""
         # switch target and devel, so basically do revert of changes done
@@ -133,6 +151,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self.assertReview(req_id, by_user=(self.bot_user, 'accepted'))
         self.assertReview(req_id, by_group=(REVIEW_TEAM, 'new'))
 
+    @pytest.mark.usefixtures("required_source_maintainer")
     def test_no_source_maintainer(self):
         """Declines the request when the 'required_maintainer' is not maintainer of the source project
 
@@ -168,6 +187,7 @@ class TestCheckSource(OBSLocal.TestCase):
 
         self.assertEqual(len(add_role_reqs), 1)
 
+    @pytest.mark.usefixtures("required_source_maintainer")
     def test_source_maintainer(self):
         """Accepts the request when the 'required_maintainer' is a group and is a maintainer for the project"""
         group_name = FACTORY_MAINTAINERS.replace('group:', '')
@@ -186,6 +206,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self.assertReview(req_id, by_user=(self.bot_user, 'accepted'))
         self.assertReview(req_id, by_group=(REVIEW_TEAM, 'new'))
 
+    @pytest.mark.usefixtures("required_source_maintainer")
     def test_source_inherited_maintainer(self):
         """Declines the request when the 'required_maintainer' is only inherited maintainer of the source project"""
         # Change the required maintainer
@@ -222,5 +243,5 @@ class TestCheckSource(OBSLocal.TestCase):
         self.devel_package.commit_files(fixtures_path)
 
         fixtures_path = os.path.join(FIXTURES, 'packages', target_files)
-        self.target_package = OBSLocal.Package('blowfish', self.project, devel_project=SRC_PROJECT)
+        self.target_package = OBSLocal.Package('blowfish', self.wf.projects[PROJECT], devel_project=SRC_PROJECT)
         self.target_package.commit_files(fixtures_path)
