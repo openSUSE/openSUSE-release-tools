@@ -22,7 +22,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         self.logger.info("%s/%s@%s -> %s/%s" % (src_project,
                                                 src_package, src_rev, target_project, target_package))
-        if src_package == 'patchinfo':
+        if src_package.startswith('patchinfo'):
             return True
         if self.exists_in(target_project, target_package):
             return True
