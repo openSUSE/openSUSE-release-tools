@@ -322,11 +322,20 @@ packagers and creating SR from FactoryCandidates to the Leap project on successf
 #### issue-diff.py
 
 Compares packages from a project against factory for differences in referenced issues and presents
-changes to allow whitelisting before creating Bugzilla entries.
+changes to allow whitelisting before creating Bugzilla entries. It's used to check Factory packages
+have all the bug references fixed in SLE (i.e. if 'Factory First' policy was correctly applied).
 
 * Sources: [issue-diff.py](issue-diff.py)
 * Documentation: --
 * Package: openSUSE-release-tools
-* Usage: ???
+* Usage: manually
 
+### check_bugowner.py
 
+Verifies requests for new packages have a bugowner line in the request description (used in SLE where we don't have
+devel projects).
+
+ * Sources: [check_bugowner.py](check_bugowner.py)
+ * Documentation: --
+ * Package: openSUSE-release-tools
+ * Usage: gocd
