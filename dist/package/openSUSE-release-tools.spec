@@ -345,6 +345,7 @@ exit 0
 %{_bindir}/osrt-bugowner
 %{_bindir}/osrt-build-fail-reminder
 %{_bindir}/osrt-checknewer
+%{_bindir}/osrt-check_bugowner
 %{_bindir}/osrt-check_source_in_factory
 %{_bindir}/osrt-check_tags_in_requests
 %{_bindir}/osrt-compare_pkglist
