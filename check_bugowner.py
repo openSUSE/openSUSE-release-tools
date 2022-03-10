@@ -41,11 +41,11 @@ class CheckerBugowner(ReviewBot.ReviewBot):
             if matched_package and matched_package != target_package:
                 continue
             if not self.valid_maintainer(matched_maintainer):
-                self.review_messages['declined'] += f"\n{matched_maintainer} could not be found on this instance."
+                self.review_messages['declined'] = f"\n{matched_maintainer} could not be found on this instance."
                 return False
             return True
         self.review_messages['declined'] += f"\n{target_package } appears to be a new package and " + \
-            "no 'bugowner' line could be found in the request description."
+            "no matching 'bugowner:' line could be found in the request description."
         return False
 
     def existing_url(self, url):
