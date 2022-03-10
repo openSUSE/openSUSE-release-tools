@@ -273,3 +273,24 @@ pipelines:
         - script: |-
             install -D /home/go/config/openqa-client.conf /home/go/.config/openqa/client.conf
             scripts/totest-manager.py -A https://api.opensuse.org --debug run openSUSE:Leap:15.4:ARM:Images
+  TTM.Leap_Micro_5.2:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-totest-manager
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        destination: scripts
+    timer:
+      spec: 0 */15 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+        - staging-bot
+        tasks:
+        - script: |-
+            install -D /home/go/config/openqa-client.conf /home/go/.config/openqa/client.conf
+            scripts/totest-manager.py -A https://api.opensuse.org --debug run openSUSE:Leap:Micro:5.2
