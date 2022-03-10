@@ -20,6 +20,26 @@ pipelines:
             - staging-bot
             tasks:
             - script: ./check_tags_in_requests.py -A https://api.suse.de --verbose --user=sle-changelog-checker --review=accept-onpass --factory=openSUSE.org:openSUSE:Factory review
+  Run.Bugowner.Checker:
+    group: SLE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 */5 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-bugowner-checker
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            resources:
+            - staging-bot
+            tasks:
+            - script: ./check_bugowner.py -A https://api.suse.de --verbose --user=bugowner-checker --review=accept-onpass review
   SLE15SP4.Project:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished

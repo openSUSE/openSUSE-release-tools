@@ -525,7 +525,7 @@ class StagingWorkflow(ABC):
                                       project_links=project_links)
         return self.projects[name]
 
-    def submit_package(self, package, project=None):
+    def submit_package(self, package, project=None, request_description=""):
         """Creates submit request from package to target project.
 
         Both have to exist (Use :func:`create_submit_request` otherwise).
@@ -534,12 +534,14 @@ class StagingWorkflow(ABC):
         :type package: Package
         :param project: project where to send submit request, None means use the default.
         :type project: Project or str or None
+        :param request_description what the request description should be
+        :type request_description str or None
         :return: created request.
         :rtype: Request
         """
         if not project:
             project = self.project
-        request = Request(source_package=package, target_project=project)
+        request = Request(source_package=package, target_project=project, description=request_description)
         self.requests.append(request)
         return request
 
@@ -550,7 +552,7 @@ class StagingWorkflow(ABC):
         self.requests.append(request)
         return request
 
-    def create_submit_request(self, project, package, text=None, add_commit=True):
+    def create_submit_request(self, project, package, text=None, add_commit=True, description=""):
         """Creates submit request from package in specified project to default project.
 
         It creates project if not exist and also package.
@@ -573,7 +575,7 @@ class StagingWorkflow(ABC):
         package = Package(name=package, project=project)
         if add_commit:
             package.create_commit(text=text)
-        return self.submit_package(package)
+        return self.submit_package(package, request_description=description)
 
     def __del__(self):
         if not self.api:
@@ -1049,7 +1051,7 @@ class Request(object):
     .. _osc.core: https://github.com/openSUSE/osc/blob/master/osc/core.py
     """
 
-    def __init__(self, source_package=None, target_project=None, target_package=None, type='submit'):
+    def __init__(self, source_package=None, target_project=None, target_package=None, type='submit', description=""):
         """Creates a request in the OBS instance and instantiates an object to represent it"""
         self.revoked = True
 
@@ -1058,7 +1060,8 @@ class Request(object):
                                                         src_project=source_package.project.name,
                                                         src_package=source_package.name,
                                                         dst_project=target_project,
-                                                        dst_package=target_package)
+                                                        dst_package=target_package,
+                                                        message=description)
             print('created submit request {}/{} -> {}'.format(
                 source_package.project.name, source_package.name, target_project))
         elif type == 'delete':

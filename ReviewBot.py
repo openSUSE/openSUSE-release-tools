@@ -289,8 +289,10 @@ class ReviewBot(object):
             self.add_review(req, by_group=by_group, by_user=by_user, msg='Adding fallback reviewer')
 
         if doit:
-            self.logger.debug("setting %s to %s" % (req.reqid, state))
-            if not self.dryrun:
+            if self.dryrun:
+                self.logger.info("(dryrun) would set %s to %s with message %s" % (req.reqid, state, msg))
+            else:
+                self.logger.debug("setting %s to %s" % (req.reqid, state))
                 try:
                     osc.core.change_review_state(apiurl=self.apiurl,
                                                  reqid=req.reqid, newstate=newstate,
