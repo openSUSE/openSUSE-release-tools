@@ -263,8 +263,8 @@ class PkgListGen(ToolBase.ToolBase):
     # the FTP tree. We filter it with unneeded though to create a
     # unsorted.yml file for release manager review
     def _collect_unsorted_packages(self, modules, unsorted):
-        uneeded_regexps = [re.compile(r)
-                           for r in self._parse_unneeded('unneeded.yml')]
+        unneeded_regexps = [re.compile(r'\A' + r + r'\Z')
+                            for r in self._parse_unneeded('unneeded.yml')]
 
         packages = dict()
         if unsorted:
@@ -278,7 +278,7 @@ class PkgListGen(ToolBase.ToolBase):
 
             # copy
             filtered = list(archpacks)
-            for r in uneeded_regexps:
+            for r in unneeded_regexps:
                 filtered = [p for p in filtered if not r.match(p)]
 
             # convert to set
