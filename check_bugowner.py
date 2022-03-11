@@ -18,6 +18,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
     def __init__(self, *args, **kwargs):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
+        self.request_default_return = True
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         self.logger.info("%s/%s@%s -> %s/%s" % (src_project,
