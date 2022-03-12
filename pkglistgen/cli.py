@@ -97,6 +97,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                                                          stop_after_solve=opts.stop_after_solve)
             except MismatchedRepoException:
                 logging.error("Failed to create weakremovers.inc due to mismatch in repos - project most likey started building again.")
+                # for stagings we have to be strict on the exit value
+                if scope == 'staging':
+                    return 1
                 return 0
 
         scope = opts.scope
