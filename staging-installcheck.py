@@ -97,9 +97,9 @@ class InstallChecker(object):
         what_depends_on = depends_on(api.apiurl, api.project, api.cmain_repo, [package], True)
 
         # filter out packages to be deleted
-        for package in to_delete:
-            if package in what_depends_on:
-                what_depends_on.remove(package)
+        for ptd in to_delete:
+            if ptd in what_depends_on:
+                what_depends_on.remove(ptd)
 
         if len(what_depends_on):
             comments.append('{} is still a build requirement of:\n\n- {}'.format(
