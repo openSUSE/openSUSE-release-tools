@@ -225,7 +225,6 @@ class PkgListGen(ToolBase.ToolBase):
             # check back the repo state to avoid suprises
             state = repository_arch_state(self.apiurl, project, reponame, arch)
             if state is None:
-                self.logger.debug(f'Skipping {project}/{reponame}/{arch}')
                 continue
             s = f'repo-{project}-{reponame}-{arch}-{state}.solv'
             if not repo.add_solv(s):
