@@ -741,6 +741,23 @@ class PkgListGen(ToolBase.ToolBase):
         self.build_stub(product_dir, 'kiwi')
         self.commit_package(product_dir)
 
+        # new way
+        reference_summary = os.path.join(group_dir, f'summary-{scope}.txt')
+        if os.path.isfile(reference_summary):
+            summary_file = os.path.join(product_dir, f'summary-{scope}.txt')
+            output = []
+            for group in summary:
+                for package in sorted(summary[group]):
+                    output.append(f'{package}:{group}')
+
+            with open(summary_file, 'w') as f:
+                for line in sorted(output):
+                    f.write(line + '\n')
+
+            done = subprocess.run(['diff', '-u', reference_summary, summary_file])
+            return done.returncode
+
+        # old way
         error_output = b''
         reference_summary = os.path.join(group_dir, 'reference-summary.yml')
         if os.path.isfile(reference_summary):
