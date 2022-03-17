@@ -531,15 +531,32 @@ class PkgListGen(ToolBase.ToolBase):
         if not old_file and not new_file:
             return None
 
+        removed = dict()
+        for pkg in old_file:
+            old_groups = old_file[pkg]
+            if new_file.get(pkg):
+                continue
+            removekey = ','.join(old_groups)
+            removed.setdefault(removekey, [])
+            removed[removekey].append(pkg)
+
+        report = ''
+        for rm in sorted(removed.keys()):
+            report += f"**Remove from {rm}**\n\n```\n"
+            paragraph = ', '.join(removed[rm])
+            report += "\n".join(textwrap.wrap(paragraph, width=90, break_long_words=False, break_on_hyphens=False))
+            report += "\n```\n\n"
+
         moved = dict()
         for pkg in old_file:
             old_groups = old_file[pkg]
-            new_groups = new_file.get(pkg, [])
+            new_groups = new_file.get(pkg)
+            if not new_groups:
+                continue
             movekey = ','.join(old_groups) + ' to ' + ','.join(new_groups)
             moved.setdefault(movekey, [])
             moved[movekey].append(pkg)
 
-        report = ''
         for move in sorted(moved.keys()):
             report += f"**Move from {move}**\n\n```\n"
             paragraph = ', '.join(moved[move])
@@ -736,8 +753,6 @@ class PkgListGen(ToolBase.ToolBase):
         release_dir = os.path.join(cache_dir, release)
         oldrepos_dir = os.path.join(cache_dir, oldrepos)
 
-        # FOR DEBUG ret = self.handle_package_diff(project, f"{group_dir}/summary-staging.txt", f"{product_dir}/summary-staging.txt")
-
         self.input_dir = group_dir
         self.output_dir = product_dir
 
@@ -748,10 +763,12 @@ class PkgListGen(ToolBase.ToolBase):
             checkout_package(api.apiurl, project, package, expand_link=True,
                              prj_dir=cache_dir, outdir=os.path.join(cache_dir, package))
 
+        # print('RET', self.handle_package_diff(project, f"{group_dir}/summary-staging.txt", f"{product_dir}/summary-staging.txt"))
+
         file_utils.unlink_all_except(release_dir, ['weakremovers.inc'])
         if not only_release_packages:
             file_utils.unlink_all_except(product_dir)
-        ignore_list = ['supportstatus.txt', 'reference-unsorted.yml', 'reference-summary.yml', 'package-groups.changes']
+        ignore_list = ['supportstatus.txt', 'summary-staging.txt', 'package-groups.changes']
         ignore_list += self.group_input_files()
         file_utils.copy_directory_contents(group_dir, product_dir, ignore_list)
         file_utils.change_extension(product_dir, '.spec.in', '.spec')
@@ -825,7 +842,6 @@ class PkgListGen(ToolBase.ToolBase):
         file_utils.multibuild_from_glob(product_dir, '*.kiwi')
         self.build_stub(product_dir, 'kiwi')
 
-        # new way
         reference_summary = os.path.join(group_dir, f'summary-{scope}.txt')
         if os.path.isfile(reference_summary):
             summary_file = os.path.join(product_dir, f'summary-{scope}.txt')
