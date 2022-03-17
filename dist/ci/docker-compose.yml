@@ -20,9 +20,9 @@ services:
     <<: *obs
     command: >
       chroot --userspec=wwwrun / /bin/bash -c "cd /srv/www/obs/api &&
-         RAILS_ENV=production rake ts:rebuild &&
+         RAILS_ENV=production ./bin/rake ts:rebuild &&
          RAILS_ENV=production ./script/delayed_job.api.rb --queues=staging,quick start &&
-         /usr/bin/bundle exec rails s -e production"
+         ./bin/bundle exec rails s -e production"
     depends_on:
       - db
       - cache
