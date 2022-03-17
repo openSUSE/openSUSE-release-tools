@@ -7,6 +7,7 @@ import solv
 import shutil
 import subprocess
 import yaml
+import textwrap
 
 from lxml import etree as ET
 
@@ -22,6 +23,7 @@ from osclib.conf import str2bool
 from osclib.core import repository_path_expand
 from osclib.core import repository_arch_state
 from osclib.cache_manager import CacheManager
+from osclib.comments import CommentAPI
 
 from urllib.parse import urlparse
 
@@ -31,6 +33,7 @@ from pkglistgen.group import Group
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 PRODUCT_SERVICE = '/usr/lib/obs/service/create_single_product'
+MARKER = 'PackageListDiff'
 
 # share header cache with repochecker
 CACHEDIR = CacheManager.directory('repository-meta')
@@ -45,6 +48,7 @@ class PkgListGen(ToolBase.ToolBase):
     def __init__(self):
         ToolBase.ToolBase.__init__(self)
         self.logger = logging.getLogger(__name__)
+        self.comment = CommentAPI(self.apiurl)
         self.reset()
 
     def reset(self):
@@ -504,6 +508,86 @@ class PkgListGen(ToolBase.ToolBase):
                 print('%endif', file=output)
         output.flush()
 
+    def read_summary_file(self, file):
+        ret = dict()
+        with open(file, 'r') as f:
+            for line in f:
+                pkg, group = line.strip().split(':')
+                ret.setdefault(pkg, [])
+                ret[pkg].append(group)
+        return ret
+
+    def calculcate_package_diff(self, old_file, new_file):
+        old_file = self.read_summary_file(old_file)
+        new_file = self.read_summary_file(new_file)
+
+        # remove common part
+        keys = list(old_file.keys())
+        for key in keys:
+            if new_file.get(key, []) == old_file[key]:
+                del new_file[key]
+                del old_file[key]
+
+        if not old_file and not new_file:
+            return None
+
+        moved = dict()
+        for pkg in old_file:
+            old_groups = old_file[pkg]
+            new_groups = new_file.get(pkg, [])
+            movekey = ','.join(old_groups) + ' to ' + ','.join(new_groups)
+            moved.setdefault(movekey, [])
+            moved[movekey].append(pkg)
+
+        report = ''
+        for move in sorted(moved.keys()):
+            report += f"**Move from {move}**\n\n```\n"
+            paragraph = ', '.join(moved[move])
+            report += "\n".join(textwrap.wrap(paragraph, width=90, break_long_words=False, break_on_hyphens=False))
+            report += "\n```\n\n"
+
+        added = dict()
+        for pkg in new_file:
+            if pkg in old_file:
+                continue
+            addkey = ','.join(new_file[pkg])
+            added.setdefault(addkey, [])
+            added[addkey].append(pkg)
+
+        for group in sorted(added):
+            report += f"**Add to {group}**\n\n```\n"
+            paragraph = ', '.join(added[group])
+            report += "\n".join(textwrap.wrap(paragraph, width=90, break_long_words=False, break_on_hyphens=False))
+            report += "\n```\n\n"
+
+        return report.strip()
+
+    def handle_package_diff(self, project, old_file, new_file):
+        comments = self.comment.get_comments(project_name=project)
+        comment, _ = self.comment.comment_find(comments, MARKER)
+
+        report = self.calculcate_package_diff(old_file, new_file)
+        if not report:
+            if comment:
+                self.comment.delete(comment['id'])
+            return 0
+        report = self.comment.add_marker(report, MARKER)
+
+        if comment:
+            write_comment = report != comment['comment']
+        else:
+            write_comment = True
+        if write_comment:
+            if comment:
+                self.comment.delete(comment['id'])
+            self.comment.add_comment(project_name=project, comment=report)
+        else:
+            for c in comments.values():
+                if c['parent'] == comment['id']:
+                    print(c)
+
+        return 1
+
     def solve_project(self, ignore_unresolvable=False, ignore_recommended=False, locale=None, locales_from=None):
         self.load_all_groups()
         if not self.output:
@@ -652,6 +736,8 @@ class PkgListGen(ToolBase.ToolBase):
         release_dir = os.path.join(cache_dir, release)
         oldrepos_dir = os.path.join(cache_dir, oldrepos)
 
+        # FOR DEBUG ret = self.handle_package_diff(project, f"{group_dir}/summary-staging.txt", f"{product_dir}/summary-staging.txt")
+
         self.input_dir = group_dir
         self.output_dir = product_dir
 
@@ -738,7 +824,6 @@ class PkgListGen(ToolBase.ToolBase):
 
         file_utils.multibuild_from_glob(product_dir, '*.kiwi')
         self.build_stub(product_dir, 'kiwi')
-        self.commit_package(product_dir)
 
         # new way
         reference_summary = os.path.join(group_dir, f'summary-{scope}.txt')
@@ -753,37 +838,7 @@ class PkgListGen(ToolBase.ToolBase):
                 for line in sorted(output):
                     f.write(line + '\n')
 
-            done = subprocess.run(['diff', '-u', reference_summary, summary_file])
-            return done.returncode
+        self.commit_package(product_dir)
 
-        # old way
-        error_output = b''
-        reference_summary = os.path.join(group_dir, 'reference-summary.yml')
         if os.path.isfile(reference_summary):
-            summary_file = os.path.join(product_dir, 'summary.yml')
-            with open(summary_file, 'w') as f:
-                f.write('# Summary of packages in groups')
-                for group in sorted(summary):
-                    # the unsorted group should appear filtered by
-                    # unneeded.yml - so we need the content of unsorted.yml
-                    # not unsorted.group (this grew a little unnaturally)
-                    if group == 'unsorted':
-                        continue
-                    f.write('\n' + group + ':\n')
-                    for package in sorted(summary[group]):
-                        f.write('  - ' + package + '\n')
-
-            try:
-                error_output += subprocess.check_output(['diff', '-u', reference_summary, summary_file])
-            except subprocess.CalledProcessError as e:
-                error_output += e.output
-            reference_unsorted = os.path.join(group_dir, 'reference-unsorted.yml')
-            unsorted_file = os.path.join(product_dir, 'unsorted.yml')
-            try:
-                error_output += subprocess.check_output(['diff', '-u', reference_unsorted, unsorted_file])
-            except subprocess.CalledProcessError as e:
-                error_output += e.output
-
-        if len(error_output) > 0:
-            self.logger.error('Difference in yml:\n' + error_output.decode('utf-8'))
-            return 1
+            return self.handle_package_diff(project, reference_summary, summary_file)
