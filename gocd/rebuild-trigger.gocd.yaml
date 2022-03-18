@@ -164,17 +164,12 @@ pipelines:
         tasks:
           - script: |-
               echo "Step 15-SP4"
-              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15-SP4:Update
               ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15-SP4
               echo "Step 15-SP3"
-              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15-SP3:Update
               ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15-SP3
               echo "Step 15-SP2"
-              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15-SP2:Update
               ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15-SP2
               echo "Step 15-SP1"
-              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15-SP1:Update
               ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15-SP1
               echo "Step 15"
-              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15:Update
               ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15
