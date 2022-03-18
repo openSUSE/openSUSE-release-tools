@@ -40,10 +40,16 @@ if __name__ == '__main__':
     url = makeurl(apiurl, ['build', args.project, '_result'],
                   {'view': 'summary', 'repository': args.repository})
     root = ET.parse(http_GET(url)).getroot()
+    counts = {'succeeded': 0, 'disabled': 0, 'excluded': 0}
     for count in root.findall('.//statuscount'):
         if int(count.get('count', 0)) == 0:
             continue
         if count.get('code') in ['succeeded', 'excluded', 'disabled']:
+            counts[count.get('code')] = int(count.get('count'))
             continue
         logger.error('Repository {}/{} has {} packages'.format(args.project, args.repository, count.get('code')))
+        sys.exit(1)
+
+    if counts['disabled'] > counts['succeeded']:
+        logger.error('Repository {}/{} has more disabled packages than succeeded'.format(args.project, args.repository))
         sys.exit(1)
