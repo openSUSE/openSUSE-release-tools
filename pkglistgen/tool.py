@@ -601,7 +601,10 @@ class PkgListGen(ToolBase.ToolBase):
         else:
             for c in comments.values():
                 if c['parent'] == comment['id']:
-                    print(c)
+                    ct = c['comment']
+                    if ct.startswith('ignore ') or ct == 'ignore':
+                        print(c)
+                        return 0
 
         return 1
 
