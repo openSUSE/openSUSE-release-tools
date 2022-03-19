@@ -89,4 +89,9 @@ pipelines:
        tasks:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+             export PYTHONPATH=$PWD/scripts
+             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+               sleep 60
+             done
+             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 <% end -%>
