@@ -156,6 +156,11 @@ pipelines:
        tasks:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+             export PYTHONPATH=$PWD/scripts
+             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+               sleep 60
+             done
+             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   SLE15.SP4.Staging.B:
     environment_variables:
@@ -219,6 +224,11 @@ pipelines:
        tasks:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+             export PYTHONPATH=$PWD/scripts
+             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+               sleep 60
+             done
+             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   SLE15.SP4.Staging.C:
     environment_variables:
@@ -282,6 +292,11 @@ pipelines:
        tasks:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+             export PYTHONPATH=$PWD/scripts
+             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+               sleep 60
+             done
+             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   SLE15.SP4.Staging.D:
     environment_variables:
@@ -345,6 +360,11 @@ pipelines:
        tasks:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+             export PYTHONPATH=$PWD/scripts
+             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+               sleep 60
+             done
+             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   SLE15.SP4.Staging.E:
     environment_variables:
@@ -408,6 +428,11 @@ pipelines:
        tasks:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+             export PYTHONPATH=$PWD/scripts
+             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+               sleep 60
+             done
+             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   SLE15.SP4.Staging.F:
     environment_variables:
@@ -471,6 +496,11 @@ pipelines:
        tasks:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+             export PYTHONPATH=$PWD/scripts
+             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+               sleep 60
+             done
+             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   SLE15.SP4.Staging.G:
     environment_variables:
@@ -534,6 +564,11 @@ pipelines:
        tasks:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+             export PYTHONPATH=$PWD/scripts
+             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+               sleep 60
+             done
+             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   SLE15.SP4.Staging.H:
     environment_variables:
@@ -597,6 +632,11 @@ pipelines:
        tasks:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+             export PYTHONPATH=$PWD/scripts
+             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+               sleep 60
+             done
+             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   SLE15.SP4.Staging.S:
     environment_variables:
@@ -660,6 +700,11 @@ pipelines:
        tasks:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+             export PYTHONPATH=$PWD/scripts
+             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+               sleep 60
+             done
+             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   SLE15.SP4.Staging.V:
     environment_variables:
@@ -723,6 +768,11 @@ pipelines:
        tasks:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+             export PYTHONPATH=$PWD/scripts
+             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+               sleep 60
+             done
+             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   SLE15.SP4.Staging.Y:
     environment_variables:
@@ -786,3 +836,8 @@ pipelines:
        tasks:
          - script: |-
              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+             export PYTHONPATH=$PWD/scripts
+             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+               sleep 60
+             done
+             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
