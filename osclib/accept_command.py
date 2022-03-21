@@ -12,6 +12,7 @@ from osclib.core import attribute_value_save
 from osclib.core import attribute_value_load
 from osclib.core import source_file_load
 from osclib.core import source_file_save
+from osclib.pkglistgen_comments import PkglistComments
 from datetime import date
 
 
@@ -19,6 +20,7 @@ class AcceptCommand(object):
     def __init__(self, api):
         self.api = api
         self.config = conf.config[self.api.project]
+        self.pkglist_comments = PkglistComments(self.api.apiurl)
 
     def find_new_requests(self, project):
         match = f"state/@name='new' and action/target/@project='{project}'"
@@ -133,6 +135,7 @@ class AcceptCommand(object):
 
             self.api.staging_deactivate(project)
 
+            self.pkglist_comments.check_staging_accept(project, self.api.project)
             self.reset_rebuild_data(project)
 
             if cleanup:
