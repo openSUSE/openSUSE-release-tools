@@ -286,6 +286,12 @@ Helps with OBS build cycles visualization. See the [openSUSE:Factory/standard ex
 * Package: --
 * Usage: used to debug problems. See https://github.com/openSUSE/openSUSE-release-tools/pull/992 as an example.
 
+#### osc-pcheck.py
+* Sources: [osc-pcheck.py](osc-pcheck.py)
+* Documentation: --
+* Package: --
+* Usage: Overview for devel project maintainers: unsubmitted packages with diff, submitted packages, and unlinked packages (things to monitor)
+
 #### compare_pkglist.py
 
 Compares packages status between two projects. It determines which project has the newer version of a package,
