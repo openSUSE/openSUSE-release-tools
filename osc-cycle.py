@@ -13,6 +13,7 @@ def do_cycle(self, subcmd, opts, *args):
     Examples:
     osc cycle <pkg1> <pkg2> <pkg3>    # outputs a dot file showing the relation between the listed packages
 
+    ${cmd_option_list}
     """
 
     if len(args) == 0:
