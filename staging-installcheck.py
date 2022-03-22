@@ -383,13 +383,11 @@ if __name__ == '__main__':
     else:
         logging.basicConfig(level=logging.INFO)
 
-    result = True
     if args.staging:
-        result = staging_report.staging(api.prj_from_short(args.staging), force=True)
+        if not staging_report.staging(api.prj_from_short(args.staging), force=True):
+            sys.exit(1)
     else:
         for staging in api.get_staging_projects():
             if api.is_adi_project(staging):
-                result = staging_report.staging(staging) and result
-
-    if not result:
-        logging.error("Found problem")
+                staging_report.staging(staging)
+    sys.exit(0)
