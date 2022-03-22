@@ -1,10 +1,15 @@
+import datetime
 import textwrap
 import re
 import tempfile
 import logging
+import os
 import sys
+from lxml import etree as ET
+
 from osclib.comments import CommentAPI
-from osc.core import checkout_package
+from osc.core import checkout_package, http_GET, makeurl
+from osc.core import Package
 
 MARKER = 'PackageListDiff'
 
@@ -127,12 +132,15 @@ class PkglistComments(object):
         return 1
 
     def is_approved(self, comment, comments):
+        if not comment:
+            return None
+
         for c in comments.values():
             if c['parent'] == comment['id']:
                 ct = c['comment']
                 if ct.startswith('approve ') or ct == 'approve':
-                    return True
-        return False
+                    return c['who']
+        return None
 
     def parse_title(self, line):
         m = re.match(r'\*\*Add to (.*)\*\*', line)
@@ -208,13 +216,59 @@ class PkglistComments(object):
                 self.apply_remove(content, section)
         self.write_summary_file(filename, content)
 
+    def format_pkgs(self, pkgs):
+        text = ', '.join(pkgs)
+        return "  " + "\n  ".join(textwrap.wrap(text, width=68, break_long_words=False, break_on_hyphens=False)) + "\n\n"
+
+    def format_move(self, section):
+        gfrom = ','.join(section['from'])
+        gto = ','.join(section['to'])
+        text = f"  * Move from {gfrom} to {gto}:\n"
+        return text + self.format_pkgs(section['pkgs'])
+
+    def format_add(self, section):
+        gto = ','.join(section['to'])
+        text = f"  * Add to {gto}:\n"
+        return text + self.format_pkgs(section['pkgs'])
+
+    def format_remove(self, section):
+        gfrom = ','.join(section['from'])
+        text = f"  * Remove from {gfrom}:\n"
+        return text + self.format_pkgs(section['pkgs'])
+
+    def apply_changes(self, filename, sections, approver):
+        text = "-------------------------------------------------------------------\n"
+        now = datetime.datetime.utcnow()
+        date = now.strftime("%a %b %d %H:%M:%S UTC %Y")
+        url = makeurl(self.apiurl, ['person', approver])
+        root = ET.parse(http_GET(url))
+        realname = root.find('realname').text
+        email = root.find('email').text
+        text += f"{date} - {realname} <{email}>\n\n- Approved changes to summary-staging.txt\n"
+        for section in sections:
+            if section['cmd'] == 'move':
+                text += self.format_move(section)
+            elif section['cmd'] == 'add':
+                text += self.format_add(section)
+            elif section['cmd'] == 'remove':
+                text += self.format_remove(section)
+        with open(filename + '.new', 'w') as writer:
+            writer.write(text)
+            with open(filename, 'r') as reader:
+                for line in reader:
+                    writer.write(line)
+        os.rename(filename + '.new', filename)
+
     def check_staging_accept(self, project, target):
         comments = self.comment.get_comments(project_name=project)
         comment, _ = self.comment.comment_find(comments, MARKER)
-        if not comment or not self.is_approved(comment, comments):
+        approver = self.is_approved(comment, comments)
+        if not approver:
             return
         sections = self.parse_sections(comment['comment'])
         with tempfile.TemporaryDirectory() as tmpdirname:
             checkout_package(self.apiurl, target, '000package-groups', expand_link=True, outdir=tmpdirname)
             self.apply_commands(tmpdirname + '/summary-staging.txt', sections)
-            raise RuntimeError("Not implemented commit")
+            self.apply_changes(tmpdirname + '/package-groups.changes', sections, approver)
+            package = Package(tmpdirname)
+            package.commit(msg='Approved packagelist changes', skip_local_service_run=True)
