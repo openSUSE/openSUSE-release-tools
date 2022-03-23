@@ -11,7 +11,6 @@ from urllib.error import HTTPError
 import osc.core
 import yaml
 from lxml import etree as ET
-from osc import conf
 
 from osclib.comments import CommentAPI
 from osclib.conf import Config
@@ -19,6 +18,7 @@ from osclib.conf import str2bool
 from osclib.core import (builddepinfo, depends_on, duplicated_binaries_in_repo,
                          fileinfo_ext_all, repository_arch_state,
                          repository_path_expand, target_archs)
+
 from osclib.repochecks import installcheck, mirror
 from osclib.stagingapi import StagingAPI
 
@@ -29,22 +29,21 @@ CheckResult = namedtuple('CheckResult', ('success', 'comment'))
 class InstallChecker(object):
     def __init__(self, api, config):
         self.api = api
-        self.config = conf.config[api.project]
         self.logger = logging.getLogger('InstallChecker')
         self.commentapi = CommentAPI(api.apiurl)
 
-        self.arch_whitelist = self.config.get('repo_checker-arch-whitelist')
+        self.arch_whitelist = config.get('repo_checker-arch-whitelist')
         if self.arch_whitelist:
             self.arch_whitelist = set(self.arch_whitelist.split(' '))
 
-        self.ring_whitelist = set(self.config.get('repo_checker-binary-whitelist-ring', '').split(' '))
+        self.ring_whitelist = set(config.get('repo_checker-binary-whitelist-ring', '').split(' '))
 
-        self.cycle_packages = self.config.get('repo_checker-allowed-in-cycles')
+        self.cycle_packages = config.get('repo_checker-allowed-in-cycles')
         self.calculate_allowed_cycles()
 
-        self.ignore_duplicated = set(self.config.get('installcheck-ignore-duplicated-binaries', '').split(' '))
-        self.ignore_conflicts = set(self.config.get('installcheck-ignore-conflicts', '').split(' '))
-        self.ignore_deletes = str2bool(self.config.get('installcheck-ignore-deletes', 'False'))
+        self.ignore_duplicated = set(config.get('installcheck-ignore-duplicated-binaries', '').split(' '))
+        self.ignore_conflicts = set(config.get('installcheck-ignore-conflicts', '').split(' '))
+        self.ignore_deletes = str2bool(config.get('installcheck-ignore-deletes', 'False'))
 
     def check_required_by(self, fileinfo, provides, requiredby, built_binaries, comments):
         if requiredby.get('name') in built_binaries:
@@ -374,7 +373,7 @@ if __name__ == '__main__':
     osc.conf.config['debug'] = args.debug
 
     apiurl = osc.conf.config['apiurl']
-    config = Config(apiurl, args.project)
+    config = Config.get(apiurl, args.project)
     api = StagingAPI(apiurl, args.project)
     staging_report = InstallChecker(api, config)
 

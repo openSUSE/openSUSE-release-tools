@@ -16,8 +16,6 @@ from osclib.core import devel_project_get
 from osclib.core import devel_project_fallback
 from osclib.core import group_members
 from osclib.core import package_kind
-from osclib.core import source_file_load
-from osclib.core import target_archs
 from osclib.core import create_add_role_request
 from osc.core import show_project_meta
 from osc.core import get_request_list
@@ -30,11 +28,6 @@ from osclib.conf import str2bool
 class CheckSource(ReviewBot.ReviewBot):
 
     SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
-    AUDIT_BUG_URL = "https://en.opensuse.org/openSUSE:Package_security_guidelines#audit_bugs"
-    AUDIT_BUG_MESSAGE = """The package is submitted to an official product and it has warnings that indicate
-that it need to go through a security review.
-Those warnings can only be ignored in devel projects. For more information please read: {}.""".format(
-        AUDIT_BUG_URL)
 
     def __init__(self, *args, **kwargs):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
@@ -59,8 +52,6 @@ Those warnings can only be ignored in devel projects. For more information pleas
         self.required_maintainer = config.get('required-source-maintainer', '')
         self.devel_whitelist = config.get('devel-whitelist', '').split()
         self.skip_add_reviews = False
-        self.security_review_team = config.get('security-review-team', 'security-team')
-        self.bad_rpmlint_entries = config.get('bad-rpmlint-entries', '').split()
 
         if self.action.type == 'maintenance_incident':
             # The workflow effectively enforces the names to match and the
@@ -265,67 +256,7 @@ Those warnings can only be ignored in devel projects. For more information pleas
             elif self.repo_checker is not None:
                 self.add_review(self.request, by_user=self.repo_checker, msg='Please review build success')
 
-        if self.bad_rpmlint_entries:
-            warnings = self.has_whitelist_warnings(source_project, source_package, target_project, target_package)
-            if warnings:
-                # if there are any add a review for the security team
-                # maybe add the found warnings to the message for the review
-                message = CheckSource.AUDIT_BUG_MESSAGE + \
-                    "\nTriggered by whitelist warnings:\n{}".format("\n".join(warnings))
-                self.add_review(self.request, by_group=self.security_review_team, msg=message)
-            warnings = self.suppresses_whitelist_warnings(source_project, source_package)
-            if warnings:
-                message = CheckSource.AUDIT_BUG_MESSAGE + \
-                    "\nTriggered by suppressed whitelist warning:\n{}".format("\n".join(warnings))
-                self.add_review(self.request, by_group=self.security_review_team, msg=message)
-
         return True
-
-    def suppresses_whitelist_warnings(self, source_project, source_package):
-        # checks if there's a rpmlintrc that suppresses warnings that we check
-        found_entries = set()
-        contents = source_file_load(self.apiurl, source_project, source_package, source_package + '-rpmlintrc')
-        if contents:
-            contents = re.sub(r'(?m)^ *#.*\n?', '', contents)
-            matches = re.findall(r'addFilter\(["\']([^"\']+)["\']\)', contents)
-            # this is a bit tricky. Since users can specify arbitrary regular expresions it's not easy
-            # to match bad_rpmlint_entries against what we found
-            for entry in self.bad_rpmlint_entries:
-                for match in matches:
-                    # First we try to see if our entries appear verbatim in the rpmlint entries
-                    if entry in match:
-                        self.logger.info(f'found suppressed whitelist warning: {match}')
-                        found_entries.add(match)
-                    # if that's not the case then we check if one of the entries in the rpmlint file would match one
-                    # of our entries (e.g. addFilter(".*")
-                    elif re.search(match, entry) and match not in found_entries:
-                        self.logger.info(f'found rpmlint entry that suppresses an important warning: {match}')
-                        found_entries.add(match)
-
-        return found_entries
-
-    def has_whitelist_warnings(self, source_project, source_package, target_project, target_package):
-        # this checks if this is a submit to an product project and it has warnings for non-whitelisted permissions/files
-        found_entries = set()
-        url = osc.core.makeurl(self.apiurl, ['build', target_project])
-        xml = ET.parse(osc.core.http_GET(url)).getroot()
-        for f in xml.findall('entry'):
-            # we check all repos in the source project for errors that exist in the target project
-            repo = f.attrib['name']
-            query = {'last': 1, }
-            for arch in target_archs(self.apiurl, source_project, repo):
-                url = osc.core.makeurl(self.apiurl, ['build', source_project, repo,
-                                       arch, source_package, '_log'], query=query)
-                try:
-                    result = osc.core.http_GET(url)
-                    contents = str(result.read())
-                    for entry in self.bad_rpmlint_entries:
-                        if (': W: ' + entry in contents) and not (entry in found_entries):
-                            self.logger.info(f'found missing whitelist for warning: {entry}')
-                            found_entries.add(entry)
-                except HTTPError as e:
-                    self.logger.info('ERROR in URL %s [%s]' % (url, e))
-        return found_entries
 
     def is_devel_project(self, source_project, target_project):
         if source_project in self.devel_whitelist:
