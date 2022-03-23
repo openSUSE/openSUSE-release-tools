@@ -242,6 +242,18 @@ BuildArch:      noarch
 %description -n osc-plugin-cycle
 OSC plugin for cycle visualization, see `osc cycle --help`.
 
+%package -n osc-plugin-pcheck
+Summary:        OSC plugin to support devel project maintainers
+Group:          Development/Tools/Other
+Requires:       osc >= 0.165.1
+Requires:       osclib = %{version}
+BuildArch:      noarch
+
+%description -n osc-plugin-pcheck
+OSC plugin for devel project maintainers. Helps them check the submit
+state (done, todo, missing links) of a devel project to the parent project.
+See 'osc pcheck --help'
+
 %package -n osc-plugin-origin
 Summary:        OSC plugin for origin management
 Group:          Development/Tools/Other
@@ -378,6 +390,7 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/osclib
 %exclude %{_datadir}/%{source_dir}/osc-cycle.py
 %exclude %{_datadir}/%{source_dir}/osc-origin.py
+%exclude %{_datadir}/%{source_dir}/osc-pcheck.py
 %exclude %{_datadir}/%{source_dir}/osc-staging.py
 %exclude %{_datadir}/%{source_dir}/findfileconflicts
 %exclude %{_datadir}/%{source_dir}/write_repo_susetags_file.pl
@@ -469,6 +482,10 @@ exit 0
 %files -n osc-plugin-cycle
 %{_datadir}/%{source_dir}/osc-cycle.py
 %{osc_plugin_dir}/osc-cycle.py
+
+%files -n osc-plugin-pcheck
+%{_datadir}/%{source_dir}/osc-pcheck.py
+%{osc_plugin_dir}/osc-pcheck.py
 
 %files -n osc-plugin-origin
 %{_datadir}/%{source_dir}/osc-origin.py
