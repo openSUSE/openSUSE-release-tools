@@ -127,8 +127,11 @@ def meta_role_expand(apiurl, meta, role='maintainer'):
     return users
 
 
-def package_list(apiurl, project):
-    url = makeurl(apiurl, ['source', project], {'expand': 1})
+def package_list(apiurl, project, expand=True):
+    query = {}
+    if expand:
+        query['expand'] = 1
+    url = makeurl(apiurl, ['source', project], query)
     root = ET.parse(http_GET(url)).getroot()
 
     packages = []
