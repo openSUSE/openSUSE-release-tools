@@ -7,7 +7,6 @@ import solv
 import shutil
 import subprocess
 import yaml
-import textwrap
 
 from lxml import etree as ET
 
@@ -23,7 +22,7 @@ from osclib.conf import str2bool
 from osclib.core import repository_path_expand
 from osclib.core import repository_arch_state
 from osclib.cache_manager import CacheManager
-from osclib.comments import CommentAPI
+from osclib.pkglistgen_comments import PkglistComments
 
 from urllib.parse import urlparse
 
@@ -33,7 +32,6 @@ from pkglistgen.group import Group
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 PRODUCT_SERVICE = '/usr/lib/obs/service/create_single_product'
-MARKER = 'PackageListDiff'
 
 # share header cache with repochecker
 CACHEDIR = CacheManager.directory('repository-meta')
@@ -48,7 +46,7 @@ class PkgListGen(ToolBase.ToolBase):
     def __init__(self):
         ToolBase.ToolBase.__init__(self)
         self.logger = logging.getLogger(__name__)
-        self.comment = CommentAPI(self.apiurl)
+        self.comment = PkglistComments(self.apiurl)
         self.reset()
 
     def reset(self):
@@ -508,106 +506,6 @@ class PkgListGen(ToolBase.ToolBase):
                 print('%endif', file=output)
         output.flush()
 
-    def read_summary_file(self, file):
-        ret = dict()
-        with open(file, 'r') as f:
-            for line in f:
-                pkg, group = line.strip().split(':')
-                ret.setdefault(pkg, [])
-                ret[pkg].append(group)
-        return ret
-
-    def calculcate_package_diff(self, old_file, new_file):
-        old_file = self.read_summary_file(old_file)
-        new_file = self.read_summary_file(new_file)
-
-        # remove common part
-        keys = list(old_file.keys())
-        for key in keys:
-            if new_file.get(key, []) == old_file[key]:
-                del new_file[key]
-                del old_file[key]
-
-        if not old_file and not new_file:
-            return None
-
-        removed = dict()
-        for pkg in old_file:
-            old_groups = old_file[pkg]
-            if new_file.get(pkg):
-                continue
-            removekey = ','.join(old_groups)
-            removed.setdefault(removekey, [])
-            removed[removekey].append(pkg)
-
-        report = ''
-        for rm in sorted(removed.keys()):
-            report += f"**Remove from {rm}**\n\n```\n"
-            paragraph = ', '.join(removed[rm])
-            report += "\n".join(textwrap.wrap(paragraph, width=90, break_long_words=False, break_on_hyphens=False))
-            report += "\n```\n\n"
-
-        moved = dict()
-        for pkg in old_file:
-            old_groups = old_file[pkg]
-            new_groups = new_file.get(pkg)
-            if not new_groups:
-                continue
-            movekey = ','.join(old_groups) + ' to ' + ','.join(new_groups)
-            moved.setdefault(movekey, [])
-            moved[movekey].append(pkg)
-
-        for move in sorted(moved.keys()):
-            report += f"**Move from {move}**\n\n```\n"
-            paragraph = ', '.join(moved[move])
-            report += "\n".join(textwrap.wrap(paragraph, width=90, break_long_words=False, break_on_hyphens=False))
-            report += "\n```\n\n"
-
-        added = dict()
-        for pkg in new_file:
-            if pkg in old_file:
-                continue
-            addkey = ','.join(new_file[pkg])
-            added.setdefault(addkey, [])
-            added[addkey].append(pkg)
-
-        for group in sorted(added):
-            report += f"**Add to {group}**\n\n```\n"
-            paragraph = ', '.join(added[group])
-            report += "\n".join(textwrap.wrap(paragraph, width=90, break_long_words=False, break_on_hyphens=False))
-            report += "\n```\n\n"
-
-        return report.strip()
-
-    def handle_package_diff(self, project, old_file, new_file):
-        comments = self.comment.get_comments(project_name=project)
-        comment, _ = self.comment.comment_find(comments, MARKER)
-
-        report = self.calculcate_package_diff(old_file, new_file)
-        if not report:
-            if comment:
-                self.comment.delete(comment['id'])
-            return 0
-        report = self.comment.add_marker(report, MARKER)
-
-        if comment:
-            write_comment = report != comment['comment']
-        else:
-            write_comment = True
-        if write_comment:
-            if comment:
-                self.comment.delete(comment['id'])
-            self.comment.add_comment(project_name=project, comment=report)
-        else:
-            for c in comments.values():
-                if c['parent'] == comment['id']:
-                    ct = c['comment']
-                    if ct.startswith('ignore ') or ct == 'ignore':
-                        print(c)
-                        return 0
-
-        return 1
-
     def solve_project(self, ignore_unresolvable=False, ignore_recommended=False, locale=None, locales_from=None):
         self.load_all_groups()
         if not self.output:
@@ -766,8 +664,6 @@ class PkgListGen(ToolBase.ToolBase):
             checkout_package(api.apiurl, project, package, expand_link=True,
                              prj_dir=cache_dir, outdir=os.path.join(cache_dir, package))
 
-        # print('RET', self.handle_package_diff(project, f"{group_dir}/summary-staging.txt", f"{product_dir}/summary-staging.txt"))
-
         file_utils.unlink_all_except(release_dir, ['weakremovers.inc'])
         if not only_release_packages:
             file_utils.unlink_all_except(product_dir)
@@ -860,4 +756,4 @@ class PkgListGen(ToolBase.ToolBase):
         self.commit_package(product_dir)
 
         if os.path.isfile(reference_summary):
-            return self.handle_package_diff(project, reference_summary, summary_file)
+            return self.comment.handle_package_diff(project, reference_summary, summary_file)

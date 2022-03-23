@@ -12,7 +12,7 @@ The generated release spec files are split into 000release-packages to avoid nee
 The package list generator reads several files. The most important are group*.yml (tradionally only groups.yml) within 000package-groups.
 
 ### supportstatus.txt
- TODO
+The file lists the packages and their support level. It's only necessary to list packages here that have a different level than the default level specificied in the groups. The format is plain text: <package name> <level> - the level is handed over 1:1 to KIWI file. Currently used values are: unsupported, l2 and l3
  
 ### group*.yml
 The file is a list of package lists and the special hash 'OUTPUT'. OUTPUT contains an entry for every group file that needs to be written out. The group name of it needs to exist as package list as well. OUTPUT also contains flags for the groups.
@@ -90,3 +90,10 @@ list2:
 ## Overlap calculcation
  TODO 
 
+## Handling in staging workflow
+If 000package-groups contains a file named summary-staging.txt, the bot will trigger a diff mode on staging projects. 
+It will create an equal summary-staging.txt in 000product and create a comment with a human readable diff in the staging
+project. This comment can be replied to. If the reply starts with 'approve', staging accept will apply the diff to this
+txt file. If the reply starts with 'ignore', the bot will continue with the pipeline and do nothing on staging accept.
+
+This way simple changes to the summary can be accepted without a submit request (of which there can only be one at a time).
