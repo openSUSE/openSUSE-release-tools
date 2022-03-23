@@ -128,6 +128,9 @@ class PkglistComments(object):
                     if ct.startswith('ignore ') or ct == 'ignore':
                         print(c)
                         return 0
+                    if ct.startswith('approve ') or ct == 'approve':
+                        print(c)
+                        return 0
 
         return 1
 
