@@ -214,6 +214,14 @@ class CheckSource(ReviewBot.ReviewBot):
         if not self.check_rpmlint(target_package):
             return False
 
+        specs = [os.path.basename(x) for x in glob.glob(os.path.join(target_package, "*.spec"))]
+        if not specs:
+            # package without spec files e.g kiwi only
+            return True
+
+        if not self.check_spec_policy(target_package, specs):
+            return False
+
         # Run check_source.pl script and interpret output.
         source_checker = os.path.join(CheckSource.SCRIPT_PATH, 'check_source.pl')
         civs = ''
@@ -307,6 +315,35 @@ class CheckSource(ReviewBot.ReviewBot):
                         continue
                     self.review_messages['declined'] = f"For product submissions, you cannot use setBadness. Use filters in {rpmlintrc}."
                     return False
+        return True
+
+    def check_spec_policy(self, directory, specs):
+        bname = os.path.basename(directory)
+        if not os.path.exists(os.path.join(directory, bname + '.changes')):
+            text = f"{bname}.changes is missing. "
+            text += "A package submitted as FooBar needs to have a FooBar.changes file with a format created by `osc vc`."
+            self.review_messages['declined'] = text
+            return False
+
+        specfile = os.path.join(directory, bname + '.spec')
+        if not os.path.exists(specfile):
+            self.review_messages['declined'] = f"{bname}.spec is missing. A package submitted as FooBar needs to have a FooBar.spec file."
+            return False
+
+        for spec in specs:
+            with open(os.path.join(directory, spec), 'r') as f:
+                content = f.read()
+                if not re.search(r'#[*\s]+Copyright\s', content):
+                    text = f"{spec} does not appear to contain a Copyright comment. Please stick to the format\n\n"
+                    text += "# Copyright (c) 2022 Unsong Hero\n\n"
+                    text += "or use osc service runall format_spec_file"
+                    self.review_messages['declined'] = text
+                    return False
+
+                if re.search(r'\nVendor:', content):
+                    self.review_messages['declined'] = "{spec} contains a Vendor line, this is forbidden."
+                    return False
+
         return True
 
     def source_has_correct_maintainers(self, source_project):

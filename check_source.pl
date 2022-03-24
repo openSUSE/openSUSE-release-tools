@@ -2,8 +2,6 @@
 
 use File::Basename;
 use File::Temp qw/ tempdir  /;
-use XML::Simple;
-use Data::Dumper;
 use Cwd;
 use Text::Diff;
 BEGIN {
@@ -17,39 +15,6 @@ my $old = $ARGV[0];
 my $dir = $ARGV[1];
 my $bname = basename($dir);
 
-my @specs = map basename($_), glob("$dir/*.spec");
-
-if (@specs) {
-    if (!-f "$dir/$bname.changes") {
-        print "$bname.changes is missing. A package submitted as FooBar needs to have a FooBar.changes file with a format created by `osc vc`.\n";
-        $ret = 1;
-    }
-
-    if (!-f "$dir/$bname.spec") {
-        print "$bname.spec is missing. A package submitted as FooBar needs to have a FooBar.spec file.\n";
-        $ret = 1;
-    }
-    exit($ret) if ($ret);
-} else {
-    # package without spec files, eg kiwi only
-    exit($ret);
-}
-
-open(SPEC, "$dir/$bname.spec");
-my $spec = join("", <SPEC>);
-close(SPEC);
-
-if ($spec !~ m/#[*\s]+Copyright\s/) {
-    print "$bname.spec does not appear to contain a Copyright comment. Please stick to the format\n\n";
-    print "# Copyright (c) 2011 Stephan Kulow\n\n";
-    print "or use osc service runall format_spec_file\n";
-    $ret = 1;
-}
-
-if ($spec =~ m/\nVendor:/) {
-    print "$bname.spec contains a Vendor line, this is forbidden.\n";
-    $ret = 1;
-}
 
 # Check that we have for each spec file a changes file - and that at least one
 # contains changes
