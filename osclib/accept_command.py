@@ -133,9 +133,8 @@ class AcceptCommand(object):
                 self.api.delete_empty_adi_project(project)
                 continue
 
-            self.api.staging_deactivate(project)
-
             self.pkglist_comments.check_staging_accept(project, self.api.project)
+            self.api.staging_deactivate(project)
             self.reset_rebuild_data(project)
 
             if cleanup:
