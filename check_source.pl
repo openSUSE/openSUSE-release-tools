@@ -17,26 +17,6 @@ my $bname = basename($dir);
 
 my %patches = ();
 
-for my $test (glob("/usr/lib/obs/service/source_validators/*")) {
-    next if (!-f "$test");
-    my $checkivsd = `/bin/bash $test --batchmode $dir $old < /dev/null 2>&1`;
-    if ($?) {
-        print "Source validator failed. Try \"osc service runall source_validator\"\n";
-        print $checkivsd;
-        print "\n";
-        $ret = 1;
-    }
-    else {
-        for my $line (split(/\n/, $checkivsd)) {
-            # pimp up some warnings
-            if ($line =~ m/Attention.*not mentioned/) {
-                $line =~ s,\(W\) ,,;
-                print "$line\n";
-                $ret = 1;
-            }
-        }
-    }
-}
 
 my $odir = getcwd();
 

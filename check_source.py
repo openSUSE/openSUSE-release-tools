@@ -222,6 +222,9 @@ class CheckSource(ReviewBot.ReviewBot):
         if not self.check_spec_policy('_old', target_package, specs):
             return False
 
+        if not self.run_source_validator('_old', target_package):
+            return False
+
         # Run check_source.pl script and interpret output.
         source_checker = os.path.join(CheckSource.SCRIPT_PATH, 'check_source.pl')
         civs = ''
@@ -546,6 +549,29 @@ class CheckSource(ReviewBot.ReviewBot):
             return False
 
         self.review_messages['accepted'] = 'unhandled: removing repository'
+        return True
+
+    def run_source_validator(self, old, directory):
+        scripts = glob.glob("/usr/lib/obs/service/source_validators/*")
+        if not scripts:
+            raise RuntimeError.new('Missing source validator')
+        for script in scripts:
+            if os.path.isdir(script):
+                continue
+            res = subprocess.run(['/bin/bash', script, '--batchmode', directory, old], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            if res.returncode:
+                text = "Source validator failed. Try \"osc service runall source_validator\"\n"
+                text += res.stdout.decode('utf-8')
+                self.review_messages['declined'] = text
+                return False
+
+            for line in res.stdout.decode('utf-8').split("\n"):
+                # pimp up some warnings
+                if re.search(r'Attention.*not mentioned', line):
+                    line = re.sub(r'\(W\) ', '', line)
+                    self.review_messages['declined'] = line
+                    return False
+
         return True
 
 
