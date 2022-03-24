@@ -16,31 +16,6 @@ my $dir = $ARGV[1];
 my $bname = basename($dir);
 
 
-# Check that we have for each spec file a changes file - and that at least one
-# contains changes
-my $changes_updated = 0;
-for my $spec (@specs) {
-    $changes = $spec;
-    $changes =~ s/\.spec$/.changes/;
-
-    # new or deleted .changes files also count
-    if ((-f "$old/$changes") != (-f "$dir/$changes")) {
-        $changes_updated = 1;
-        last;
-    }
-    elsif ((-f "$old/$changes") && (-f "$dir/$changes")) {
-        if (system(("cmp", "-s", "$old/$changes", "$dir/$changes"))) {
-            $changes_updated = 1;
-            last;
-        }
-    }
-}
-
-if (!$changes_updated) {
-    print "No changelog. Please use 'osc vc' to update the changes file(s).\n";
-    $ret = 1;
-}
-
 if ($spec !~ m/\n%changelog\s/ && $spec != m/\n%changelog$/) {
     print "$bname.spec does not contain a %changelog line. We don't want a changelog in the spec file, but the %changelog section needs to be present\n";
     $ret = 1;

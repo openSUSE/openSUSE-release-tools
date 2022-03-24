@@ -299,6 +299,22 @@ class TestCheckSource(OBSLocal.TestCase):
         review = self.assertReview(req_id, by_user=(self.bot_user, 'declined'))
         self.assertIn("blowfish.spec does not appear to contain a Copyright comment.", review.comment)
 
+    @pytest.mark.usefixtures("default_config")
+    def test_no_changelog(self):
+        """Declines submit request with just changed spec file"""
+        self._setup_devel_project(devel_files='blowfish-without-changes-update')
+
+        req_id = self.wf.create_submit_request(self.devel_package.project,
+                                               self.devel_package.name, add_commit=False).reqid
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'new'))
+
+        self.review_bot.set_request_ids([req_id])
+        self.review_bot.check_requests()
+
+        review = self.assertReview(req_id, by_user=(self.bot_user, 'declined'))
+        self.assertIn("No changelog. Please use 'osc vc' to update the changes file(s).", review.comment)
+
     def _setup_devel_project(self, maintainer={}, devel_files='blowfish-with-patch-changes',
                              target_files='blowfish'):
         devel_project = self.wf.create_project(SRC_PROJECT, maintainer=maintainer)

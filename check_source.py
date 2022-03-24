@@ -219,7 +219,7 @@ class CheckSource(ReviewBot.ReviewBot):
             # package without spec files e.g kiwi only
             return True
 
-        if not self.check_spec_policy(target_package, specs):
+        if not self.check_spec_policy('_old', target_package, specs):
             return False
 
         # Run check_source.pl script and interpret output.
@@ -317,7 +317,7 @@ class CheckSource(ReviewBot.ReviewBot):
                     return False
         return True
 
-    def check_spec_policy(self, directory, specs):
+    def check_spec_policy(self, old, directory, specs):
         bname = os.path.basename(directory)
         if not os.path.exists(os.path.join(directory, bname + '.changes')):
             text = f"{bname}.changes is missing. "
@@ -330,6 +330,7 @@ class CheckSource(ReviewBot.ReviewBot):
             self.review_messages['declined'] = f"{bname}.spec is missing. A package submitted as FooBar needs to have a FooBar.spec file."
             return False
 
+        changes_updated = False
         for spec in specs:
             with open(os.path.join(directory, spec), 'r') as f:
                 content = f.read()
@@ -343,6 +344,23 @@ class CheckSource(ReviewBot.ReviewBot):
                 if re.search(r'\nVendor:', content):
                     self.review_messages['declined'] = "{spec} contains a Vendor line, this is forbidden."
                     return False
+
+            # Check that we have for each spec file a changes file - and that at least one
+            # contains changes
+            changes = spec.replace('.spec', '.changes')
+
+            # new or deleted .changes files also count
+            old_exists = os.path.exists(os.path.join(old, changes))
+            new_exists = os.path.exists(os.path.join(directory, changes))
+            if old_exists != new_exists:
+                changes_updated = True
+            elif old_exists and new_exists:
+                if subprocess.run(["cmp", "-s", os.path.join(old, changes), os.path.join(directory, changes)]).returncode:
+                    changes_updated = True
+
+        if not changes_updated:
+            self.review_messages['declined'] = "No changelog. Please use 'osc vc' to update the changes file(s)."
+            return False
 
         return True
 
