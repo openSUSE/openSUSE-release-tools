@@ -214,6 +214,17 @@ class CheckSource(ReviewBot.ReviewBot):
         if not self.check_rpmlint(target_package):
             return False
 
+        specs = [os.path.basename(x) for x in glob.glob(os.path.join(target_package, "*.spec"))]
+        if not specs:
+            # package without spec files e.g kiwi only
+            return True
+
+        if not self.check_spec_policy('_old', target_package, specs):
+            return False
+
+        if not self.run_source_validator('_old', target_package):
+            return False
+
         # Run check_source.pl script and interpret output.
         source_checker = os.path.join(CheckSource.SCRIPT_PATH, 'check_source.pl')
         civs = ''
@@ -307,6 +318,67 @@ class CheckSource(ReviewBot.ReviewBot):
                         continue
                     self.review_messages['declined'] = f"For product submissions, you cannot use setBadness. Use filters in {rpmlintrc}."
                     return False
+        return True
+
+    def check_spec_policy(self, old, directory, specs):
+        bname = os.path.basename(directory)
+        if not os.path.exists(os.path.join(directory, bname + '.changes')):
+            text = f"{bname}.changes is missing. "
+            text += "A package submitted as FooBar needs to have a FooBar.changes file with a format created by `osc vc`."
+            self.review_messages['declined'] = text
+            return False
+
+        specfile = os.path.join(directory, bname + '.spec')
+        if not os.path.exists(specfile):
+            self.review_messages['declined'] = f"{bname}.spec is missing. A package submitted as FooBar needs to have a FooBar.spec file."
+            return False
+
+        changes_updated = False
+        for spec in specs:
+            with open(os.path.join(directory, spec), 'r') as f:
+                content = f.read()
+                if not re.search(r'#[*\s]+Copyright\s', content):
+                    text = f"{spec} does not appear to contain a Copyright comment. Please stick to the format\n\n"
+                    text += "# Copyright (c) 2022 Unsong Hero\n\n"
+                    text += "or use osc service runall format_spec_file"
+                    self.review_messages['declined'] = text
+                    return False
+
+                if re.search(r'\nVendor:', content):
+                    self.review_messages['declined'] = "{spec} contains a Vendor line, this is forbidden."
+                    return False
+
+                if not re.search(r'\n%changelog\s', content) and not re.search(r'\n%changelog$', content):
+                    text = f"{spec} does not contain a %changelog line. We don't want a changelog in the spec file"
+                    text += ", but the %changelog section needs to be present\n"
+                    self.review_messages['declined'] = text
+                    return False
+
+                if not re.search('#[^\n]*license', content, flags=re.IGNORECASE):
+                    text = f"{spec} does not appear to have a license. The file needs to contain a free software license\n"
+                    text += "Suggestion: use \"osc service runall format_spec_file\" to get our default license or\n"
+                    text += "the minimal license:\n\n"
+                    text += "# This file is under MIT license\n"
+                    self.review_messages['declined'] = text
+                    return False
+
+            # Check that we have for each spec file a changes file - and that at least one
+            # contains changes
+            changes = spec.replace('.spec', '.changes')
+
+            # new or deleted .changes files also count
+            old_exists = os.path.exists(os.path.join(old, changes))
+            new_exists = os.path.exists(os.path.join(directory, changes))
+            if old_exists != new_exists:
+                changes_updated = True
+            elif old_exists and new_exists:
+                if subprocess.run(["cmp", "-s", os.path.join(old, changes), os.path.join(directory, changes)]).returncode:
+                    changes_updated = True
+
+        if not changes_updated:
+            self.review_messages['declined'] = "No changelog. Please use 'osc vc' to update the changes file(s)."
+            return False
+
         return True
 
     def source_has_correct_maintainers(self, source_project):
@@ -477,6 +549,29 @@ class CheckSource(ReviewBot.ReviewBot):
             return False
 
         self.review_messages['accepted'] = 'unhandled: removing repository'
+        return True
+
+    def run_source_validator(self, old, directory):
+        scripts = glob.glob("/usr/lib/obs/service/source_validators/*")
+        if not scripts:
+            raise RuntimeError.new('Missing source validator')
+        for script in scripts:
+            if os.path.isdir(script):
+                continue
+            res = subprocess.run(['/bin/bash', script, '--batchmode', directory, old], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            if res.returncode:
+                text = "Source validator failed. Try \"osc service runall source_validator\"\n"
+                text += res.stdout.decode('utf-8')
+                self.review_messages['declined'] = text
+                return False
+
+            for line in res.stdout.decode('utf-8').split("\n"):
+                # pimp up some warnings
+                if re.search(r'Attention.*not mentioned', line):
+                    line = re.sub(r'\(W\) ', '', line)
+                    self.review_messages['declined'] = line
+                    return False
+
         return True
 
 
