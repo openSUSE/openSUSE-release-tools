@@ -234,6 +234,22 @@ class TestCheckSource(OBSLocal.TestCase):
         self.assertEqual(add_role_req.actions[0].tgt_project, SRC_PROJECT)
         self.assertEqual('Created automatically from request %s' % req.reqid, add_role_req.description)
 
+    @pytest.mark.usefixtures("default_config")
+    def test_bad_rpmlintrc(self):
+        """Accepts a request if it adds patch and it is mentioned in changelog"""
+        self._setup_devel_project(devel_files='blowfish-with-rpmlintrc')
+
+        req_id = self.wf.create_submit_request(self.devel_package.project,
+                                               self.devel_package.name, add_commit=False).reqid
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'new'))
+
+        self.review_bot.set_request_ids([req_id])
+        self.review_bot.check_requests()
+
+        review = self.assertReview(req_id, by_user=(self.bot_user, 'declined'))
+        self.assertEqual('For product submissions, you cannot use setBadness. Use filters in blowfish/blowfish-rpmlintrc.', review.comment)
+
     def _setup_devel_project(self, maintainer={}, devel_files='blowfish-with-patch-changes',
                              target_files='blowfish'):
         devel_project = self.wf.create_project(SRC_PROJECT, maintainer=maintainer)
