@@ -251,7 +251,6 @@ class TestCheckSource(OBSLocal.TestCase):
         self.assertEqual('For product submissions, you cannot use setBadness. Use filters in blowfish/blowfish-rpmlintrc.', review.comment)
 
     @pytest.mark.usefixtures("default_config")
-    @pytest.mark.skip(reason="Need the service in miniobs container first")
     def test_remote_service(self):
         """Declines _service files with remote services"""
         self._setup_devel_project(devel_files='blowfish-with-remote-service')
