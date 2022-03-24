@@ -17,12 +17,6 @@ my $old = $ARGV[0];
 my $dir = $ARGV[1];
 my $bname = basename($dir);
 
-for my $file (glob("$dir/_service:*")) {
-    $file=basename($file);
-    print "Found _service generated file $file in checkout. Please clean this up first.";
-    $ret = 1;
-}
-
 my @specs = map basename($_), glob("$dir/*.spec");
 
 if (@specs) {

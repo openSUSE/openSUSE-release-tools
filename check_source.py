@@ -289,6 +289,12 @@ class CheckSource(ReviewBot.ReviewBot):
                 return False
             # remove it away to have full service from source validator
             os.unlink(servicefile)
+
+        for file in glob.glob(os.path.join(directory, "_service:*")):
+            file = os.path.basename(file)
+            self.review_messages['declined'] = f"Found _service generated file {file} in checkout. Please clean this up first."
+            return False
+
         return True
 
     def check_rpmlint(self, directory):
