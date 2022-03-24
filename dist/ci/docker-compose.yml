@@ -28,7 +28,7 @@ services:
       - cache
       - srcserver
       - repserver
-      - servicedispatch
+      - serviceserver
     ports:
       - "0.0.0.0:${OSRT_EXPOSED_OBS_PORT:-3000}:3000"
   srcserver:
@@ -37,9 +37,9 @@ services:
   repserver:
     <<: *obs
     command: chroot --userspec=obsrun / /usr/lib/obs/server/bs_repserver
-  servicedispatch:
+  serviceserver:
     <<: *obs
-    command: chroot --userspec=obsrun / /usr/lib/obs/server/bs_servicedispatch
+    command: /usr/lib/obs/server/bs_service
   smtp:
     <<: *testenv
     command: python3 /code/dist/ci/smtp/eml-server.py
