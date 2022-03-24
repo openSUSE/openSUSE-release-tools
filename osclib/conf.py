@@ -36,8 +36,6 @@ DEFAULT = {
         'devel-project-enforce': 'True',
         'review-team': 'opensuse-review-team',
         'legal-review-group': 'legal-auto',
-        'repo_checker-no-filter': 'True',
-        'repo_checker-package-comment-devel': 'True',
         'pkglistgen-product-family-include': 'openSUSE:Leap:N',
         'pkglistgen-locales-from': 'openSUSE.product.in',
         'mail-list': 'factory@lists.opensuse.org',
@@ -87,8 +85,6 @@ DEFAULT = {
         'check-source-single-action-require': 'True',
         # review-team optionally added by leaper.py.
         'repo_checker-arch-whitelist': 'x86_64',
-        'repo_checker-no-filter': 'True',
-        'repo_checker-package-comment-devel': 'True',
         # 16 hour staging window for follow-ups since lower throughput.
         'splitter-staging-age-max': '57600',
         # No special packages since they will pass through SLE first.
@@ -116,8 +112,6 @@ DEFAULT = {
     r'openSUSE:(?P<project>Leap:(?P<version>[\d.]+)?:Update)$': {
         'main-repo': 'standard',
         'repo_checker-arch-whitelist': 'x86_64',
-        'repo_checker-no-filter': 'True',
-        'repo_checker-package-comment-devel': 'True',
         'review-install-check': 'maintenance-installcheck',
         'review-openqa': 'qam-openqa',
     },

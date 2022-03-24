@@ -48,7 +48,6 @@ class CheckSource(ReviewBot.ReviewBot):
         self.review_team = config.get('review-team')
         self.mail_release_list = config.get('mail-release-list')
         self.staging_group = config.get('staging-group')
-        self.repo_checker = config.get('repo-checker')
         self.required_maintainer = config.get('required-source-maintainer', '')
         self.devel_whitelist = config.get('devel-whitelist', '').split()
         self.skip_add_reviews = False
@@ -253,8 +252,6 @@ class CheckSource(ReviewBot.ReviewBot):
                                                      message='skipping the staging process since only .changes modifications')
                 else:
                     self.logger.debug('unable to skip staging review since not a member of staging group')
-            elif self.repo_checker is not None:
-                self.add_review(self.request, by_user=self.repo_checker, msg='Please review build success')
 
         return True
 
@@ -412,9 +409,6 @@ class CheckSource(ReviewBot.ReviewBot):
 
         if not self.ignore_devel:
             self.devel_project_review_ensure(request, action.tgt_project, action.tgt_package)
-
-        if not self.skip_add_reviews and self.repo_checker is not None:
-            self.add_review(self.request, by_user=self.repo_checker, msg='Is this delete request safe?')
 
         return True
 
