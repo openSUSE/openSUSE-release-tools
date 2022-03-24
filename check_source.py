@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import glob
 import os
 import re
 import shutil
@@ -48,7 +49,6 @@ class CheckSource(ReviewBot.ReviewBot):
         self.review_team = config.get('review-team')
         self.mail_release_list = config.get('mail-release-list')
         self.staging_group = config.get('staging-group')
-        self.repo_checker = config.get('repo-checker')
         self.required_maintainer = config.get('required-source-maintainer', '')
         self.devel_whitelist = config.get('devel-whitelist', '').split()
         self.skip_add_reviews = False
@@ -208,6 +208,12 @@ class CheckSource(ReviewBot.ReviewBot):
                 target_package, target_package, new_info['name'])
             return False
 
+        if not self.check_service_file(target_package):
+            return False
+
+        if not self.check_rpmlint(target_package):
+            return False
+
         # Run check_source.pl script and interpret output.
         source_checker = os.path.join(CheckSource.SCRIPT_PATH, 'check_source.pl')
         civs = ''
@@ -253,8 +259,6 @@ class CheckSource(ReviewBot.ReviewBot):
                                                      message='skipping the staging process since only .changes modifications')
                 else:
                     self.logger.debug('unable to skip staging review since not a member of staging group')
-            elif self.repo_checker is not None:
-                self.add_review(self.request, by_user=self.repo_checker, msg='Please review build success')
 
         return True
 
@@ -268,6 +272,42 @@ class CheckSource(ReviewBot.ReviewBot):
         }
         result = osc.core.search(self.apiurl, **search)
         return result['package'].attrib['matches'] != '0'
+
+    def check_service_file(self, directory):
+        ALLOWED_MODES = ['localonly', 'disabled', 'buildtime', 'manual']
+
+        servicefile = os.path.join(directory, '_service')
+        if os.path.exists(servicefile):
+            services = ET.parse(servicefile)
+            for service in services.findall('service'):
+                mode = service.get('mode')
+                if mode in ALLOWED_MODES:
+                    continue
+                allowed = ', '.join(ALLOWED_MODES)
+                name = service.get('name')
+                self.review_messages[
+                    'declined'] = f"Services are only allowed if their mode is one of {allowed}. " + \
+                    f"Please change the mode of {name} and use `osc service localrun/disabledrun`."
+                return False
+            # remove it away to have full service from source validator
+            os.unlink(servicefile)
+
+        for file in glob.glob(os.path.join(directory, "_service:*")):
+            file = os.path.basename(file)
+            self.review_messages['declined'] = f"Found _service generated file {file} in checkout. Please clean this up first."
+            return False
+
+        return True
+
+    def check_rpmlint(self, directory):
+        for rpmlintrc in glob.glob(os.path.join(directory, "*rpmlintrc")):
+            with open(rpmlintrc, 'r') as f:
+                for line in f:
+                    if not re.match(r'^\s*setBadness', line):
+                        continue
+                    self.review_messages['declined'] = f"For product submissions, you cannot use setBadness. Use filters in {rpmlintrc}."
+                    return False
+        return True
 
     def source_has_correct_maintainers(self, source_project):
         """Checks whether the source project has the required maintainer
@@ -412,9 +452,6 @@ class CheckSource(ReviewBot.ReviewBot):
 
         if not self.ignore_devel:
             self.devel_project_review_ensure(request, action.tgt_project, action.tgt_package)
-
-        if not self.skip_add_reviews and self.repo_checker is not None:
-            self.add_review(self.request, by_user=self.repo_checker, msg='Is this delete request safe?')
 
         return True
 

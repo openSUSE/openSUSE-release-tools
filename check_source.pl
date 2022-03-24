@@ -17,24 +17,6 @@ my $old = $ARGV[0];
 my $dir = $ARGV[1];
 my $bname = basename($dir);
 
-if (-f "$dir/_service") {
-    my $service = XMLin("$dir/_service", ForceArray => ['service']);
-    while( my ($name, $s) = each %{$service->{service}} ) {
-        my $mode = $s->{mode} || '';
-        next if ($mode eq "localonly" || $mode eq "disabled" || $mode eq "buildtime" || $mode eq "manual" );
-        print "Services are only allowed if they are mode='localonly', 'disabled', 'manual' or 'buildtime'. Please change the mode of $name and use `osc service localrun/disabledrun`.\n";
-        $ret = 1;
-    }
-    # move it away to have full service from source validator
-    rename("$dir/_service", "$dir/_service.bak") || die "rename failed";
-}
-
-for my $file (glob("$dir/_service:*")) {
-    $file=basename($file);
-    print "Found _service generated file $file in checkout. Please clean this up first.";
-    $ret = 1;
-}
-
 my @specs = map basename($_), glob("$dir/*.spec");
 
 if (@specs) {
@@ -240,64 +222,11 @@ if (-d "$old") {
     }
 }
 
-my $odir2 = getcwd;
 my $tmpdir = tempdir("obs-XXXXXXX", TMPDIR => 1, CLEANUP => 1);
 chdir($dir) || die 'tempdir failed';
 if (system("/usr/lib/obs/service/download_files","--enforceupstream", "yes", "--enforcelocal", "yes", "--outdir", $tmpdir)) {
     print "Source URLs are not valid. Try \"osc service runall download_files\".\n";
     $ret = 2;
 }
-chdir($odir2);
 
-for my $rpmlint (glob("$dir/*rpmlintrc")) {
-    open(RPMLINTRC, $rpmlint);
-    while (<RPMLINTRC>) {
-        if (m/^\s*setBadness/) {
-            print "For Factory submissions, you cannot use setBadness. Use filters in $rpmlint.\n";
-            $ret = 1;
-        }
-    }
-}
-
-exit($ret) if $ret;
-
-# now check if the change is small enough to warrent a review-by-mail
-exit(0) unless -d $old;
-
-sub prepare_package($) {
-
-    my $files = shift;
-
-    unlink glob "*.changes"; # ignore changes
-    unlink glob "*.tar.*"; # we can't diff them anyway
-    unlink glob "*.zip";
-
-    # restore original spec file
-    for my $spec (glob("*.beforeurlstrip")) {
-        my $oldname = $spec;
-        $oldname =~ s/.beforeurlstrip//;
-        rename($spec, $oldname);
-    }
-
-    for my $spec (glob("*.spec")) {
-        open(SPEC, "/usr/lib/obs/service/format_spec_file.files/prepare_spec $spec | grep -v '^#' |");
-        my @lines = <SPEC>;
-        close(SPEC);
-        open(SPEC, ">", $spec);
-        print SPEC join('', @lines);
-        close(SPEC);
-    }
-}
-
-# move it back so we also diff the service file
-if (-f "$dir/_service.bak") {
-    rename("$dir/_service.bak", "$dir/_service") || die "rename failed";
-}
-
-my %files;
-chdir($old);
-prepare_package(\%files);
-chdir($odir2);
-chdir($dir);
-prepare_package(\%files);
-exit(0);
+exit($ret);

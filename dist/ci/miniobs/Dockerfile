@@ -6,7 +6,8 @@ RUN zypper ar http://download.opensuse.org/repositories/OBS:/Server:/Unstable/15
 
 RUN zypper install -y obs-api obs-worker obs-server \
     ca-certificates patch vim vim-data psmisc timezone \
-    glibc-locale aaa_base aaa_base-extras netcat net-tools
+    glibc-locale aaa_base aaa_base-extras netcat net-tools \
+    obs-service-recompress obs-service-format_spec_file
 
 COPY database.yml.local /srv/www/obs/api/config/database.yml
 

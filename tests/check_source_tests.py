@@ -234,6 +234,40 @@ class TestCheckSource(OBSLocal.TestCase):
         self.assertEqual(add_role_req.actions[0].tgt_project, SRC_PROJECT)
         self.assertEqual('Created automatically from request %s' % req.reqid, add_role_req.description)
 
+    @pytest.mark.usefixtures("default_config")
+    def test_bad_rpmlintrc(self):
+        """Declines a request if it uses setBadness in rpmlintrc"""
+        self._setup_devel_project(devel_files='blowfish-with-rpmlintrc')
+
+        req_id = self.wf.create_submit_request(self.devel_package.project,
+                                               self.devel_package.name, add_commit=False).reqid
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'new'))
+
+        self.review_bot.set_request_ids([req_id])
+        self.review_bot.check_requests()
+
+        review = self.assertReview(req_id, by_user=(self.bot_user, 'declined'))
+        self.assertEqual('For product submissions, you cannot use setBadness. Use filters in blowfish/blowfish-rpmlintrc.', review.comment)
+
+    @pytest.mark.usefixtures("default_config")
+    @pytest.mark.skip(reason="Need the service in miniobs container first")
+    def test_remote_service(self):
+        """Declines _service files with remote services"""
+        self._setup_devel_project(devel_files='blowfish-with-remote-service')
+
+        req_id = self.wf.create_submit_request(self.devel_package.project,
+                                               self.devel_package.name, add_commit=False).reqid
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'new'))
+
+        self.review_bot.set_request_ids([req_id])
+        self.review_bot.check_requests()
+
+        review = self.assertReview(req_id, by_user=(self.bot_user, 'declined'))
+        self.assertEqual('Services are only allowed if their mode is one of localonly, disabled, buildtime, ' +
+                         'manual. Please change the mode of recompress and use `osc service localrun/disabledrun`.', review.comment)
+
     def _setup_devel_project(self, maintainer={}, devel_files='blowfish-with-patch-changes',
                              target_files='blowfish'):
         devel_project = self.wf.create_project(SRC_PROJECT, maintainer=maintainer)
@@ -241,6 +275,7 @@ class TestCheckSource(OBSLocal.TestCase):
 
         fixtures_path = os.path.join(FIXTURES, 'packages', devel_files)
         self.devel_package.commit_files(fixtures_path)
+        self.devel_package.wait_services()
 
         fixtures_path = os.path.join(FIXTURES, 'packages', target_files)
         self.target_package = OBSLocal.Package('blowfish', self.wf.projects[PROJECT], devel_project=SRC_PROJECT)
