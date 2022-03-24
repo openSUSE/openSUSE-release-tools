@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import difflib
 import glob
 import os
 import re
@@ -223,6 +224,9 @@ class CheckSource(ReviewBot.ReviewBot):
             return False
 
         if not self.run_source_validator('_old', target_package):
+            return False
+
+        if not self.detect_mentioned_patches('_old', target_package):
             return False
 
         # Run check_source.pl script and interpret output.
@@ -573,6 +577,73 @@ class CheckSource(ReviewBot.ReviewBot):
                     return False
 
         return True
+
+    def difflines(self, oldf, newf):
+        with open(oldf, 'r') as f:
+            oldl = f.readlines()
+        with open(newf, 'r') as f:
+            newl = f.readlines()
+        return list(difflib.unified_diff(oldl, newl))
+
+    def detect_mentioned_patches(self, old, directory):
+        # new packages have different rules
+        if not os.path.isdir(old):
+            return True
+        opatches = self.list_patches(old)
+        npatches = self.list_patches(directory)
+
+        cpatches = opatches.intersection(npatches)
+        opatches -= cpatches
+        npatches -= cpatches
+
+        if not npatches and not opatches:
+            return True
+
+        patches_to_mention = dict()
+        for p in opatches:
+            patches_to_mention[p] = 'old'
+        for p in npatches:
+            patches_to_mention[p] = 'new'
+        for changes in glob.glob(os.path.join(directory, '*.changes')):
+            base = os.path.basename(changes)
+            oldchanges = os.path.join(old, base)
+            if os.path.exists(oldchanges):
+                diff = self.difflines(oldchanges, changes)
+            else:
+                with open(changes, 'r') as f:
+                    diff = ['+' + l for l in f.readlines()]
+            for line in diff:
+                pass
+                # Check if the line mentions a patch being added (starts with +)
+                # or removed (starts with -)
+                if not re.match(r'[+-]', line):
+                    continue
+                # In any of those cases, remove the patch from the list
+                line = line[1:].strip()
+                for patch in patches_to_mention:
+                    if line.find(patch) >= 0:
+                        del patches_to_mention[patch]
+                        break
+
+        if not patches_to_mention:
+            return True
+
+        lines = []
+        for patch, state in patches_to_mention.items():
+            # wording stolen from Raymond's declines :)
+            if state == 'new':
+                lines.append(f"A patch ({patch}) is being added without this addition being mentioned in the changelog.")
+            else:
+                lines.append(f"A patch ({patch}) is being deleted without this removal being mentioned in the changelog.")
+        self.review_messages['declined'] = '\n'.join(lines)
+        return False
+
+    def list_patches(self, directory):
+        ret = set()
+        for ext in ['*.diff', '*.patch', '*.dif']:
+            for file in glob.glob(os.path.join(directory, ext)):
+                ret.add(os.path.basename(file))
+        return ret
 
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):

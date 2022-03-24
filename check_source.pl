@@ -15,16 +15,7 @@ my $old = $ARGV[0];
 my $dir = $ARGV[1];
 my $bname = basename($dir);
 
-my %patches = ();
-
-
 my $odir = getcwd();
-
-chdir($dir) || die "chdir $dir failed";
-for my $patch (glob("*.diff *.patch *.dif")) {
-    $patches{$patch} = 'current';
-}
-chdir($odir) || die "chdir $odir failed";
 
 if (-d "$old") {
 
@@ -41,15 +32,7 @@ if (-d "$old") {
             }
         }
     }
-    for my $patch (glob("*.diff *.patch *.dif")) {
-        if ($patches{$patch}) {
-            delete $patches{$patch};
-        }
-        else {
-            $patches{$patch} = 'old';
-        }
-    }
-
+   
     chdir($odir) || die "chdir $odir failed";
     chdir($dir) || die "chdir $dir failed";
     for my $spec (glob("*.spec")) {
@@ -85,51 +68,11 @@ if (-d "$old") {
         rename("$spec.new", "$spec") || die "rename failed";
     }
 
-    chdir($dir);
-    my @changes = glob("*.changes");
-    chdir($odir);
-
-    if (%patches) {
-        # parse changes
-        for my $changes (@changes) {
-            my $diff = "";
-            if (! -e "$old/$changes") {
-                $diff = diff "/dev/null", "$dir/$changes";
-            }
-            else {
-                $diff = diff "$old/$changes", "$dir/$changes";
-            }
-            for my $line (split(/\n/, $diff)) {
-                # Check if the line mentions a patch being added (starts with +)
-                # or removed (starts with -)
-                next unless $line =~ m/^[+-]/;
-                # In any of those cases, remove the patch from the list
-                $line =~ s/^[+-]//;
-                for my $patch (keys %patches) {
-                    if (index($line, $patch) != -1) {
-                        delete $patches{$patch};
-                    }
-                }
-            }
-        }
-    }
-    # still some left?
-    if (%patches) {
-        $ret = 1;
-        for my $patch (keys %patches) {
-            # wording stolen from Raymond's declines :)
-            if ($patches{$patch} eq 'current') {
-                print "A patch ($patch) is being added without this addition being mentioned in the changelog.\n";
-            }
-            else {
-                print "A patch ($patch) is being deleted without this removal being mentioned in the changelog.\n";
-            }
-        }
-    }
 }
 
 my $tmpdir = tempdir("obs-XXXXXXX", TMPDIR => 1, CLEANUP => 1);
-chdir($dir) || die 'tempdir failed';
+chdir($odir) || die "chdir $odir failed";
+chdir($dir) || die "chdir $dir failed";
 if (system("/usr/lib/obs/service/download_files","--enforceupstream", "yes", "--enforcelocal", "yes", "--outdir", $tmpdir)) {
     print "Source URLs are not valid. Try \"osc service runall download_files\".\n";
     $ret = 2;
