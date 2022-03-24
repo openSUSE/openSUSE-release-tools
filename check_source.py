@@ -207,6 +207,9 @@ class CheckSource(ReviewBot.ReviewBot):
                 target_package, target_package, new_info['name'])
             return False
 
+        if not self.check_service_file(target_package):
+            return False
+
         # Run check_source.pl script and interpret output.
         source_checker = os.path.join(CheckSource.SCRIPT_PATH, 'check_source.pl')
         civs = ''
@@ -265,6 +268,24 @@ class CheckSource(ReviewBot.ReviewBot):
         }
         result = osc.core.search(self.apiurl, **search)
         return result['package'].attrib['matches'] != '0'
+
+    def check_service_file(self, directory):
+        ALLOWED_MODES = ['localonly', 'disabled', 'buildtime', 'manual']
+
+        servicefile = os.path.join(directory, '_service')
+        if os.path.exists(servicefile):
+            services = ET.parse(servicefile)
+            for service in services.findall('service'):
+                mode = service.get('mode')
+                if mode in ALLOWED_MODES:
+                    continue
+                allowed = ', '.join(ALLOWED_MODES)
+                self.review_messages[
+                    'declined'] = f"Services are only allowed if their mode is one of {allowed}. Please change the mode of $name and use `osc service localrun/disabledrun`."
+                return False
+            # move it away to have full service from source validator
+            os.rename(servicefile, servicefile + '.bak')
+        return True
 
     def source_has_correct_maintainers(self, source_project):
         """Checks whether the source project has the required maintainer

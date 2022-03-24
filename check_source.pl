@@ -17,18 +17,6 @@ my $old = $ARGV[0];
 my $dir = $ARGV[1];
 my $bname = basename($dir);
 
-if (-f "$dir/_service") {
-    my $service = XMLin("$dir/_service", ForceArray => ['service']);
-    while( my ($name, $s) = each %{$service->{service}} ) {
-        my $mode = $s->{mode} || '';
-        next if ($mode eq "localonly" || $mode eq "disabled" || $mode eq "buildtime" || $mode eq "manual" );
-        print "Services are only allowed if they are mode='localonly', 'disabled', 'manual' or 'buildtime'. Please change the mode of $name and use `osc service localrun/disabledrun`.\n";
-        $ret = 1;
-    }
-    # move it away to have full service from source validator
-    rename("$dir/_service", "$dir/_service.bak") || die "rename failed";
-}
-
 for my $file (glob("$dir/_service:*")) {
     $file=basename($file);
     print "Found _service generated file $file in checkout. Please clean this up first.";
