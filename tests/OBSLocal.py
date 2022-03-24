@@ -1039,6 +1039,10 @@ class Package(object):
             with open(os.path.join(path, filename), 'rb') as f:
                 self.create_commit(filename=filename, text=f.read())
 
+    def wait_services(self):
+        url = osc.core.makeurl(APIURL, ['source', self.project.name, self.name], {'cmd': 'waitservice'})
+        osc.core.http_POST(url)
+
 
 class Request(object):
     """This class represents a request in the local OBS instance used to test the release tools and

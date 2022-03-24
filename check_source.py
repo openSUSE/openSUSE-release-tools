@@ -284,8 +284,10 @@ class CheckSource(ReviewBot.ReviewBot):
                 if mode in ALLOWED_MODES:
                     continue
                 allowed = ', '.join(ALLOWED_MODES)
+                name = service.get('name')
                 self.review_messages[
-                    'declined'] = f"Services are only allowed if their mode is one of {allowed}. Please change the mode of $name and use `osc service localrun/disabledrun`."
+                    'declined'] = f"Services are only allowed if their mode is one of {allowed}. " + \
+                    f"Please change the mode of {name} and use `osc service localrun/disabledrun`."
                 return False
             # remove it away to have full service from source validator
             os.unlink(servicefile)
