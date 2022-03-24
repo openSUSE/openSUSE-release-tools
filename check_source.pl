@@ -15,20 +15,6 @@ my $old = $ARGV[0];
 my $dir = $ARGV[1];
 my $bname = basename($dir);
 
-
-if ($spec !~ m/\n%changelog\s/ && $spec != m/\n%changelog$/) {
-    print "$bname.spec does not contain a %changelog line. We don't want a changelog in the spec file, but the %changelog section needs to be present\n";
-    $ret = 1;
-}
-
-if ($spec !~ m/(#[^\n]*license)/i) {
-    print "$bname.spec does not appear to have a license. The file needs to contain a free software license\n";
-    print "Suggestion: use \"osc service runall format_spec_file\" to get our default license or\n";
-    print "the minimal license:\n\n";
-    print "# This file is under MIT license\n";
-    $ret = 1;
-}
-
 my %patches = ();
 
 for my $test (glob("/usr/lib/obs/service/source_validators/*")) {

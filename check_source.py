@@ -345,6 +345,20 @@ class CheckSource(ReviewBot.ReviewBot):
                     self.review_messages['declined'] = "{spec} contains a Vendor line, this is forbidden."
                     return False
 
+                if not re.search(r'\n%changelog\s', content) and not re.search(r'\n%changelog$', content):
+                    text = f"{spec} does not contain a %changelog line. We don't want a changelog in the spec file"
+                    text += ", but the %changelog section needs to be present\n"
+                    self.review_messages['declined'] = text
+                    return False
+
+                if not re.search('#[^\n]*license', content, flags=re.IGNORECASE):
+                    text = f"{spec} does not appear to have a license. The file needs to contain a free software license\n"
+                    text += "Suggestion: use \"osc service runall format_spec_file\" to get our default license or\n"
+                    text += "the minimal license:\n\n"
+                    text += "# This file is under MIT license\n"
+                    self.review_messages['declined'] = text
+                    return False
+
             # Check that we have for each spec file a changes file - and that at least one
             # contains changes
             changes = spec.replace('.spec', '.changes')
