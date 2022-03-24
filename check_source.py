@@ -283,8 +283,8 @@ class CheckSource(ReviewBot.ReviewBot):
                 self.review_messages[
                     'declined'] = f"Services are only allowed if their mode is one of {allowed}. Please change the mode of $name and use `osc service localrun/disabledrun`."
                 return False
-            # move it away to have full service from source validator
-            os.rename(servicefile, servicefile + '.bak')
+            # remove it away to have full service from source validator
+            os.unlink(servicefile)
         return True
 
     def source_has_correct_maintainers(self, source_project):
