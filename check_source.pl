@@ -228,23 +228,11 @@ if (-d "$old") {
     }
 }
 
-my $odir2 = getcwd;
 my $tmpdir = tempdir("obs-XXXXXXX", TMPDIR => 1, CLEANUP => 1);
 chdir($dir) || die 'tempdir failed';
 if (system("/usr/lib/obs/service/download_files","--enforceupstream", "yes", "--enforcelocal", "yes", "--outdir", $tmpdir)) {
     print "Source URLs are not valid. Try \"osc service runall download_files\".\n";
     $ret = 2;
-}
-chdir($odir2);
-
-for my $rpmlint (glob("$dir/*rpmlintrc")) {
-    open(RPMLINTRC, $rpmlint);
-    while (<RPMLINTRC>) {
-        if (m/^\s*setBadness/) {
-            print "For Factory submissions, you cannot use setBadness. Use filters in $rpmlint.\n";
-            $ret = 1;
-        }
-    }
 }
 
 exit($ret);

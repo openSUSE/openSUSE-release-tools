@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import glob
 import os
 import re
 import shutil
@@ -210,6 +211,9 @@ class CheckSource(ReviewBot.ReviewBot):
         if not self.check_service_file(target_package):
             return False
 
+        if not self.check_rpmlint(target_package):
+            return False
+
         # Run check_source.pl script and interpret output.
         source_checker = os.path.join(CheckSource.SCRIPT_PATH, 'check_source.pl')
         civs = ''
@@ -285,6 +289,16 @@ class CheckSource(ReviewBot.ReviewBot):
                 return False
             # remove it away to have full service from source validator
             os.unlink(servicefile)
+        return True
+
+    def check_rpmlint(self, directory):
+        for rpmlintrc in glob.glob(os.path.join(directory, "*rpmlintrc")):
+            with open(rpmlintrc, 'r') as f:
+                for line in f:
+                    if not re.match(r'^\s*setBadness', line):
+                        continue
+                    self.review_messages['declined'] = f"For product submissions, you cannot use setBadness. Use filters in {rpmlintrc}."
+                    return False
         return True
 
     def source_has_correct_maintainers(self, source_project):
