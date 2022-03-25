@@ -397,6 +397,21 @@ class TestCheckSource(OBSLocal.TestCase):
 
         self.assertReview(req_id, by_user=(self.bot_user, 'accepted'))
 
+    @pytest.mark.usefixtures("default_config")
+    def test_two_patches_in_one_line(self):
+        """Accepts patches even if mentioned in one line"""
+        self._setup_devel_project(devel_files='blowfish-with-two-patches')
+
+        req_id = self.wf.create_submit_request(self.devel_package.project,
+                                               self.devel_package.name, add_commit=False).reqid
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'new'))
+
+        self.review_bot.set_request_ids([req_id])
+        self.review_bot.check_requests()
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'accepted'))
+
     def _setup_devel_project(self, maintainer={}, devel_files='blowfish-with-patch-changes',
                              target_files='blowfish'):
         devel_project = self.wf.create_project(SRC_PROJECT, maintainer=maintainer)
