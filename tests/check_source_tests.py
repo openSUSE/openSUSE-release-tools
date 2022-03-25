@@ -368,7 +368,7 @@ class TestCheckSource(OBSLocal.TestCase):
 
     @pytest.mark.usefixtures("default_config")
     def test_source_urls(self):
-        """Declines invalid source URLs"""
+        """Soft-Declines invalid source URLs"""
         self._setup_devel_project(devel_files='blowfish-with-urls')
 
         req_id = self.wf.create_submit_request(self.devel_package.project,
@@ -379,7 +379,8 @@ class TestCheckSource(OBSLocal.TestCase):
         self.review_bot.set_request_ids([req_id])
         self.review_bot.check_requests()
 
-        review = self.assertReview(req_id, by_user=(self.bot_user, 'declined'))
+        # not declined but not accepted either
+        review = self.assertReview(req_id, by_user=(self.bot_user, 'new'))
         self.assertIn("Source URLs are not valid. Try `osc service runall download_files`.\nblowfish-1.tar.gz", review.comment)
 
     @pytest.mark.usefixtures("default_config")

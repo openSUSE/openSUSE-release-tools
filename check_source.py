@@ -228,7 +228,11 @@ class CheckSource(ReviewBot.ReviewBot):
             return False
 
         if not self.check_urls('_old', target_package, specs):
-            return False
+            osc.core.change_review_state(apiurl=self.apiurl,
+                                         reqid=self.request.reqid, newstate='new',
+                                         by_group=self.review_group,
+                                         by_user=self.review_user, message=self.review_messages['new'])
+            return None
 
         shutil.rmtree(dir)
         self.review_messages['accepted'] = 'Check script succeeded'
@@ -563,7 +567,6 @@ class CheckSource(ReviewBot.ReviewBot):
             with open(specfn) as rf:
                 for line in rf:
                     m = re.match(r'(Source[0-9]*\s*):\s*(.*)$', line)
-                    print(line, m)
                     if m and m.group(2) in oldsources:
                         wf.write(m.group(1) + ":" + os.path.basename(m.group(2)) + "\n")
                         continue
@@ -579,7 +582,7 @@ class CheckSource(ReviewBot.ReviewBot):
             res = subprocess.run(["/usr/lib/obs/service/download_files", "--enforceupstream",
                                   "yes", "--enforcelocal", "yes", "--outdir", tmpdir], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             if res.returncode:
-                self.review_messages['declined'] = "Source URLs are not valid. Try `osc service runall download_files`.\n" + \
+                self.review_messages['new'] = "Source URLs are not valid. Try `osc service runall download_files`.\n" + \
                     res.stdout.decode('utf-8')
                 os.chdir(oldcwd)
                 return False
