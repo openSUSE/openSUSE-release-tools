@@ -642,10 +642,9 @@ class CheckSource(ReviewBot.ReviewBot):
                     continue
                 # In any of those cases, remove the patch from the list
                 line = line[1:].strip()
-                for patch in patches_to_mention:
+                for patch in list(patches_to_mention):
                     if line.find(patch) >= 0:
                         del patches_to_mention[patch]
-                        break
 
         # if a patch is mentioned as source, we ignore it
         sources = self._mentioned_sources(directory, specs)
