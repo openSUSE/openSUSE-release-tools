@@ -151,6 +151,25 @@ class TestCheckSource(OBSLocal.TestCase):
         self.assertReview(req_id, by_user=(self.bot_user, 'accepted'))
         self.assertReview(req_id, by_group=(REVIEW_TEAM, 'new'))
 
+    @pytest.mark.usefixtures("default_config")
+    def test_patch_as_source(self):
+        """Accepts a request if a new patch is a source"""
+        # switch target and devel, so basically do revert of changes done
+        # with patch and changes
+        self._setup_devel_project(devel_files='blowfish-patch-as-source',
+                                  target_files='blowfish')
+
+        req_id = self.wf.create_submit_request(self.devel_package.project,
+                                               self.devel_package.name, add_commit=False).reqid
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'new'))
+
+        self.review_bot.set_request_ids([req_id])
+        self.review_bot.check_requests()
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'accepted'))
+        self.assertReview(req_id, by_group=(REVIEW_TEAM, 'new'))
+
     @pytest.mark.usefixtures("required_source_maintainer")
     def test_no_source_maintainer(self):
         """Declines the request when the 'required_maintainer' is not maintainer of the source project
@@ -346,6 +365,37 @@ class TestCheckSource(OBSLocal.TestCase):
 
         review = self.assertReview(req_id, by_user=(self.bot_user, 'declined'))
         self.assertEqual("Attention, README is not mentioned in spec files as source or patch.", review.comment)
+
+    @pytest.mark.usefixtures("default_config")
+    def test_source_urls(self):
+        """Declines invalid source URLs"""
+        self._setup_devel_project(devel_files='blowfish-with-urls')
+
+        req_id = self.wf.create_submit_request(self.devel_package.project,
+                                               self.devel_package.name, add_commit=False).reqid
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'new'))
+
+        self.review_bot.set_request_ids([req_id])
+        self.review_bot.check_requests()
+
+        review = self.assertReview(req_id, by_user=(self.bot_user, 'declined'))
+        self.assertIn("Source URLs are not valid. Try `osc service runall download_files`.\nblowfish-1.tar.gz", review.comment)
+
+    @pytest.mark.usefixtures("default_config")
+    def test_existing_source_urls(self):
+        """Accepts invalid source URLs if previously present"""
+        self._setup_devel_project(devel_files='blowfish-with-urls', target_files='blowfish-with-existing-url')
+
+        req_id = self.wf.create_submit_request(self.devel_package.project,
+                                               self.devel_package.name, add_commit=False).reqid
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'new'))
+
+        self.review_bot.set_request_ids([req_id])
+        self.review_bot.check_requests()
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'accepted'))
 
     def _setup_devel_project(self, maintainer={}, devel_files='blowfish-with-patch-changes',
                              target_files='blowfish'):

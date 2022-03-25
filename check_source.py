@@ -1,17 +1,18 @@
 #!/usr/bin/python3
 
+import difflib
 import glob
 import os
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 
 from lxml import etree as ET
 
 import osc.conf
 import osc.core
-from osc.util.helper import decode_list
 from osclib.conf import Config
 from osclib.core import devel_project_get
 from osclib.core import devel_project_fallback
@@ -182,13 +183,11 @@ class CheckSource(ReviewBot.ReviewBot):
         os.makedirs(dir)
         os.chdir(dir)
 
-        old_info = {'version': None}
         try:
             CheckSource.checkout_package(self.apiurl, target_project, target_package, pathname=dir,
                                          server_service_files=True, expand_link=True)
             shutil.rmtree(os.path.join(target_package, '.osc'))
             os.rename(target_package, '_old')
-            old_info = self.package_source_parse(target_project, target_package)
         except HTTPError as e:
             if e.code == 404:
                 self.logger.info('target package does not exist %s/%s' % (target_project, target_package))
@@ -225,51 +224,30 @@ class CheckSource(ReviewBot.ReviewBot):
         if not self.run_source_validator('_old', target_package):
             return False
 
-        # Run check_source.pl script and interpret output.
-        source_checker = os.path.join(CheckSource.SCRIPT_PATH, 'check_source.pl')
-        civs = ''
-        new_version = None
-        if old_info['version'] and old_info['version'] != new_info['version']:
-            new_version = new_info['version']
-            civs += "NEW_VERSION='{}' ".format(new_version)
-        civs += 'LC_ALL=C perl %s _old %s 2>&1' % (source_checker, target_package)
-        p = subprocess.Popen(civs, shell=True, stdout=subprocess.PIPE, close_fds=True)
-        ret = os.waitpid(p.pid, 0)[1]
-        checked = decode_list(p.stdout.readlines())
+        if not self.detect_mentioned_patches('_old', target_package, specs):
+            return False
 
-        output = '  '.join(checked).replace('\033', '')
-        os.chdir('/tmp')
-
-        # ret = 0 : Good
-        # ret = 1 : Bad
-        # ret = 2 : Bad but can be non-fatal in some cases
-        if ret > 1 and target_project.startswith('openSUSE:Leap:') and (source_project.startswith('SUSE:SLE-15:') or
-                                                                        source_project.startswith('openSUSE:Factory')):
-            pass
-        elif ret != 0:
-            shutil.rmtree(dir)
-            self.review_messages['declined'] = "Output of check script:\n" + output
+        if not self.check_urls('_old', target_package, specs):
             return False
 
         shutil.rmtree(dir)
         self.review_messages['accepted'] = 'Check script succeeded'
 
-        if len(checked):
-            self.review_messages['accepted'] += "\n\nOutput of check script (non-fatal):\n" + output
+        if self.skip_add_reviews:
+            return True
 
-        if not self.skip_add_reviews:
-            if self.add_review_team and self.review_team is not None:
-                self.add_review(self.request, by_group=self.review_team, msg='Please review sources')
+        if self.add_review_team and self.review_team is not None:
+            self.add_review(self.request, by_group=self.review_team, msg='Please review sources')
 
-            if self.only_changes():
-                self.logger.debug('only .changes modifications')
-                if self.staging_group and self.review_user in group_members(self.apiurl, self.staging_group):
-                    if not self.dryrun:
-                        osc.core.change_review_state(self.apiurl, str(self.request.reqid), 'accepted',
-                                                     by_group=self.staging_group,
-                                                     message='skipping the staging process since only .changes modifications')
-                else:
-                    self.logger.debug('unable to skip staging review since not a member of staging group')
+        if self.only_changes():
+            self.logger.debug('only .changes modifications')
+            if self.staging_group and self.review_user in group_members(self.apiurl, self.staging_group):
+                if not self.dryrun:
+                    osc.core.change_review_state(self.apiurl, str(self.request.reqid), 'accepted',
+                                                 by_group=self.staging_group,
+                                                 message='skipping the staging process since only .changes modifications')
+            else:
+                self.logger.debug('unable to skip staging review since not a member of staging group')
 
         return True
 
@@ -573,6 +551,128 @@ class CheckSource(ReviewBot.ReviewBot):
                     return False
 
         return True
+
+    def _snipe_out_existing_urls(self, old, directory, specs):
+        if not os.path.isdir(old):
+            return
+        oldsources = self._mentioned_sources(old, specs)
+        for spec in specs:
+            specfn = os.path.join(directory, spec)
+            nspecfn = specfn + '.new'
+            wf = open(nspecfn, 'w')
+            with open(specfn) as rf:
+                for line in rf:
+                    m = re.match(r'(Source[0-9]*\s*):\s*(.*)$', line)
+                    print(line, m)
+                    if m and m.group(2) in oldsources:
+                        wf.write(m.group(1) + ":" + os.path.basename(m.group(2)) + "\n")
+                        continue
+                    wf.write(line)
+            wf.close()
+            os.rename(nspecfn, specfn)
+
+    def check_urls(self, old, directory, specs):
+        self._snipe_out_existing_urls(old, directory, specs)
+        oldcwd = os.getcwd()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            os.chdir(directory)
+            res = subprocess.run(["/usr/lib/obs/service/download_files", "--enforceupstream",
+                                  "yes", "--enforcelocal", "yes", "--outdir", tmpdir], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            if res.returncode:
+                self.review_messages['declined'] = "Source URLs are not valid. Try `osc service runall download_files`.\n" + \
+                    res.stdout.decode('utf-8')
+                os.chdir(oldcwd)
+                return False
+        os.chdir(oldcwd)
+        return True
+
+    def difflines(self, oldf, newf):
+        with open(oldf, 'r') as f:
+            oldl = f.readlines()
+        with open(newf, 'r') as f:
+            newl = f.readlines()
+        return list(difflib.unified_diff(oldl, newl))
+
+    def _mentioned_sources(self, directory, specs):
+        sources = set()
+        for spec in specs:
+            specfn = os.path.join(directory, spec)
+            if not os.path.exists(specfn):
+                continue
+            with open(specfn) as f:
+                for line in f:
+                    m = re.match(r'Source[0-9]*\s*:\s*(.*)$', line)
+                    if not m:
+                        continue
+                    sources.add(m.group(1))
+        return sources
+
+    def detect_mentioned_patches(self, old, directory, specs):
+        # new packages have different rules
+        if not os.path.isdir(old):
+            return True
+        opatches = self.list_patches(old)
+        npatches = self.list_patches(directory)
+
+        cpatches = opatches.intersection(npatches)
+        opatches -= cpatches
+        npatches -= cpatches
+
+        if not npatches and not opatches:
+            return True
+
+        patches_to_mention = dict()
+        for p in opatches:
+            patches_to_mention[p] = 'old'
+        for p in npatches:
+            patches_to_mention[p] = 'new'
+        for changes in glob.glob(os.path.join(directory, '*.changes')):
+            base = os.path.basename(changes)
+            oldchanges = os.path.join(old, base)
+            if os.path.exists(oldchanges):
+                diff = self.difflines(oldchanges, changes)
+            else:
+                with open(changes, 'r') as f:
+                    diff = ['+' + line for line in f.readlines()]
+            for line in diff:
+                pass
+                # Check if the line mentions a patch being added (starts with +)
+                # or removed (starts with -)
+                if not re.match(r'[+-]', line):
+                    continue
+                # In any of those cases, remove the patch from the list
+                line = line[1:].strip()
+                for patch in patches_to_mention:
+                    if line.find(patch) >= 0:
+                        del patches_to_mention[patch]
+                        break
+
+        # if a patch is mentioned as source, we ignore it
+        sources = self._mentioned_sources(directory, specs)
+        sources |= self._mentioned_sources(old, specs)
+
+        for s in sources:
+            patches_to_mention.pop(s, None)
+
+        if not patches_to_mention:
+            return True
+
+        lines = []
+        for patch, state in patches_to_mention.items():
+            # wording stolen from Raymond's declines :)
+            if state == 'new':
+                lines.append(f"A patch ({patch}) is being added without this addition being mentioned in the changelog.")
+            else:
+                lines.append(f"A patch ({patch}) is being deleted without this removal being mentioned in the changelog.")
+        self.review_messages['declined'] = '\n'.join(lines)
+        return False
+
+    def list_patches(self, directory):
+        ret = set()
+        for ext in ['*.diff', '*.patch', '*.dif']:
+            for file in glob.glob(os.path.join(directory, ext)):
+                ret.add(os.path.basename(file))
+        return ret
 
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
