@@ -226,7 +226,7 @@ class CheckSource(ReviewBot.ReviewBot):
         if not self.run_source_validator('_old', target_package):
             return False
 
-        if not self.detect_mentioned_patches('_old', target_package):
+        if not self.detect_mentioned_patches('_old', target_package, specs):
             return False
 
         # Run check_source.pl script and interpret output.
@@ -585,7 +585,18 @@ class CheckSource(ReviewBot.ReviewBot):
             newl = f.readlines()
         return list(difflib.unified_diff(oldl, newl))
 
-    def detect_mentioned_patches(self, old, directory):
+    def _mentioned_sources(self, directory, specs):
+        sources = set()
+        for spec in specs:
+            with open(os.path.join(directory, spec)) as f:
+                for line in f:
+                    m = re.match(r'Source[0-9]*\s*:\s*(.*)$', line)
+                    if not m:
+                        continue
+                    sources.add(m.group(1))
+        return sources
+
+    def detect_mentioned_patches(self, old, directory, specs):
         # new packages have different rules
         if not os.path.isdir(old):
             return True
@@ -624,6 +635,13 @@ class CheckSource(ReviewBot.ReviewBot):
                     if line.find(patch) >= 0:
                         del patches_to_mention[patch]
                         break
+
+        # if a patch is mentioned as source, we ignore it
+        sources = self._mentioned_sources(directory, specs)
+        sources |= self._mentioned_sources(old, specs)
+
+        for s in sources:
+            patches_to_mention.pop(s, None)
 
         if not patches_to_mention:
             return True
