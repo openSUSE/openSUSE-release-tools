@@ -152,7 +152,7 @@ class TestCase(unittest.TestCase):
         try:
             env = os.environ
             env['OSC_CONFIG'] = OSCRC
-            self.output = subprocess.check_output(args, stderr=subprocess.STDOUT, text=True, env=env)
+            self.output = subprocess.check_output(args, stderr=subprocess.STDOUT, universal_newlines=True, env=env)
         except subprocess.CalledProcessError as e:
             print(e.output)
             raise e

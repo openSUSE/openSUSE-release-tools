@@ -881,7 +881,7 @@ class StagingAPI(object):
         """
         freezetime = attribute_value_load(self.apiurl, project, 'FreezeTime')
         if freezetime:
-            freezetime = datetime.fromisoformat(freezetime)
+            freezetime = dateutil.parser.isoparse(freezetime)
             tz_info = freezetime.tzinfo
             return (datetime.now(tz_info) - freezetime).total_seconds() / 3600 / 24
         # fallback: old method
