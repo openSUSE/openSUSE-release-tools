@@ -263,7 +263,7 @@ Inspects built RPMs from staging projects.
 Checks for usual mistakes and problems in the source packages submitted by users. Used also as
 review bot that assigns reviews (?).
 
-* Sources: [check_source.py](check_source.py) and [check_source.pl](check_source.pl)
+* Sources: [check_source.py](check_source.py)
 * Documentation: [docs/check_source.asciidoc](docs/check_source.asciidoc)
 * Package: openSUSE-release-tools-check-source
 * Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+check_source)
