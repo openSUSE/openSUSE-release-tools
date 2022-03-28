@@ -167,16 +167,17 @@ class RepoChecker():
             for package in parsed:
                 parsed[package]['output'] = self._split_and_filter(parsed[package]['output'])
 
-        url = makeurl(self.apiurl, ['build', project, '_result'], {
-                      'repository': repository, 'arch': arch, 'code': 'succeeded'})
+        url = makeurl(self.apiurl, ['build', project, '_result'], {'repository': repository, 'arch': arch})
         root = ET.parse(http_GET(url)).getroot()
-        succeeding = list(map(lambda x: x.get('package'), root.findall('.//status')))
+        buildresult = dict()
+        for p in root.findall('.//status'):
+            buildresult[p.get('package')] = p.get('code')
 
         per_source = dict()
 
         for package, entry in parsed.items():
             source = "{}/{}/{}/{}".format(project, repository, arch, entry['source'])
-            per_source.setdefault(source, {'output': [], 'builds': entry['source'] in succeeding})
+            per_source.setdefault(source, {'output': [], 'builds': buildresult[entry['source']] == 'succeeded'})
             per_source[source]['output'].extend(entry['output'])
 
         rebuilds = set()
@@ -202,7 +203,11 @@ class RepoChecker():
         for source in list(oldstate['check']):
             if not source.startswith('{}/{}/{}/'.format(project, repository, arch)):
                 continue
-            if not os.path.basename(source) in succeeding:
+            code = buildresult.get(os.path.basename(source), 'gone')
+            if code == 'gone':
+                del oldstate['check'][source]
+            if code != 'succeeded':
+                self.logger.debug(f"Skipping build result for {source} {code}")
                 continue
             if source not in per_source:
                 self.logger.info("No known problem, erasing %s", source)
@@ -233,8 +238,8 @@ class RepoChecker():
 
         # calculate build info hashes
         for package in packages:
-            if package not in succeeding:
-                self.logger.debug("Ignore %s for the moment, not succeeding", package)
+            if buildresult[package] != 'succeeded':
+                self.logger.debug("Ignore %s for the moment, %s", package, buildresult[package])
                 continue
             m = hashlib.sha256()
             for bdep in sorted(infos[package]['deps']):
