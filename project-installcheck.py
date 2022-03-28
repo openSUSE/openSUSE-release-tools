@@ -19,10 +19,11 @@ from osc.core import http_request
 
 import ToolBase
 from osclib.conf import Config
-from osclib.core import (http_GET, makeurl,
+from osclib.core import (http_DELETE, http_GET, makeurl,
                          repository_path_expand, repository_path_search,
                          target_archs, source_file_load, source_file_ensure)
 from osclib.repochecks import mirror, parsed_installcheck, CorruptRepos
+from osclib.comments import CommentAPI
 
 
 class RepoChecker():
@@ -49,7 +50,46 @@ class RepoChecker():
             return None
 
         for arch in archs:
-            self.check_pra(project, repository, arch)
+            state = self.check_pra(project, repository, arch)
+
+        comments = dict()
+        for source, details in state['check'].items():
+            _, _, arch, rpm = source.split('/')
+            rpm = rpm.split(':')[0]
+            comments.setdefault(rpm, {})
+            comments[rpm][arch] = details['problem']
+
+        url = makeurl(self.apiurl, ['comments', 'user'])
+        root = ET.parse(http_GET(url)).getroot()
+        for comment in root.findall('.//comment'):
+            if comment.get('project') != project:
+                continue
+            if comment.get('package') in comments:
+                continue
+            self.logger.info("Removing comment for package {}".format(comment.get('package')))
+            url = makeurl(self.apiurl, [comment, comment.get('id')])
+            http_DELETE(url)
+
+        commentapi = CommentAPI(self.apiurl)
+        MARKER = 'Installcheck'
+
+        for package in comments:
+            newcomment = ''
+            for arch in sorted(comments[package]):
+                newcomment += f"\n\n**Installcheck problems for {arch}**\n\n"
+                for problem in sorted(comments[package][arch]):
+                    newcomment += "+ " + problem + "\n"
+
+            newcomment = commentapi.add_marker(newcomment.strip(), MARKER)
+            oldcomments = commentapi.get_comments(project_name=project, package_name=package)
+            oldcomment, _ = commentapi.comment_find(oldcomments, MARKER)
+            if oldcomment and oldcomment['comment'] == newcomment:
+                continue
+
+            if oldcomment:
+                commentapi.delete(oldcomment['id'])
+            self.logger.debug("Adding comment to {}/{}".format(project, package))
+            commentapi.add_comment(project_name=project, package_name=package, comment=newcomment)
 
     def project_pseudometa_file_name(self, project, repository):
         filename = 'repo_checker'
@@ -167,16 +207,17 @@ class RepoChecker():
             for package in parsed:
                 parsed[package]['output'] = self._split_and_filter(parsed[package]['output'])
 
-        url = makeurl(self.apiurl, ['build', project, '_result'], {
-                      'repository': repository, 'arch': arch, 'code': 'succeeded'})
+        url = makeurl(self.apiurl, ['build', project, '_result'], {'repository': repository, 'arch': arch})
         root = ET.parse(http_GET(url)).getroot()
-        succeeding = list(map(lambda x: x.get('package'), root.findall('.//status')))
+        buildresult = dict()
+        for p in root.findall('.//status'):
+            buildresult[p.get('package')] = p.get('code')
 
         per_source = dict()
 
         for package, entry in parsed.items():
             source = "{}/{}/{}/{}".format(project, repository, arch, entry['source'])
-            per_source.setdefault(source, {'output': [], 'builds': entry['source'] in succeeding})
+            per_source.setdefault(source, {'output': [], 'buildresult': buildresult.get(entry['source'], 'gone')})
             per_source[source]['output'].extend(entry['output'])
 
         rebuilds = set()
@@ -184,9 +225,9 @@ class RepoChecker():
         for source in sorted(per_source):
             if not len(per_source[source]['output']):
                 continue
-            self.logger.debug("{} builds: {}".format(source, per_source[source]['builds']))
+            self.logger.debug("{} builds: {}".format(source, per_source[source]['buildresult']))
             self.logger.debug("  " + "\n  ".join(per_source[source]['output']))
-            if not per_source[source]['builds']:  # nothing we can do
+            if per_source[source]['buildresult'] != 'succeeded':  # nothing we can do
                 continue
             old_output = oldstate['check'].get(source, {}).get('problem', [])
             if sorted(old_output) == sorted(per_source[source]['output']):
@@ -202,7 +243,11 @@ class RepoChecker():
         for source in list(oldstate['check']):
             if not source.startswith('{}/{}/{}/'.format(project, repository, arch)):
                 continue
-            if not os.path.basename(source) in succeeding:
+            code = buildresult.get(os.path.basename(source), 'gone')
+            if code == 'gone':
+                del oldstate['check'][source]
+            if code != 'succeeded':
+                self.logger.debug(f"Skipping build result for {source} {code}")
                 continue
             if source not in per_source:
                 self.logger.info("No known problem, erasing %s", source)
@@ -233,8 +278,8 @@ class RepoChecker():
 
         # calculate build info hashes
         for package in packages:
-            if package not in succeeding:
-                self.logger.debug("Ignore %s for the moment, not succeeding", package)
+            if buildresult[package] != 'succeeded':
+                self.logger.debug("Ignore %s for the moment, %s", package, buildresult[package])
                 continue
             m = hashlib.sha256()
             for bdep in sorted(infos[package]['deps']):
@@ -251,13 +296,13 @@ class RepoChecker():
         if self.dryrun:
             if self.rebuild:
                 self.logger.info("To rebuild: %s", ' '.join(rebuilds))
-            return
+            return oldstate
 
         if not self.rebuild or not len(rebuilds):
             self.logger.debug("Nothing to rebuild")
             # in case we do rebuild, wait for it to succeed before saving
             self.store_yaml(oldstate, project, repository, arch)
-            return
+            return oldstate
 
         query = {'cmd': 'rebuild', 'repository': repository, 'arch': arch, 'package': rebuilds}
         url = makeurl(self.apiurl, ['build', project])
@@ -265,6 +310,7 @@ class RepoChecker():
         http_request('POST', url, headers, data=urlencode(query, doseq=True))
 
         self.store_yaml(oldstate, project, repository, arch)
+        return oldstate
 
     def check_leaf_package(self, project, repository, arch, package):
         url = makeurl(self.apiurl, ['build', project, repository, arch, package, '_buildinfo'])
