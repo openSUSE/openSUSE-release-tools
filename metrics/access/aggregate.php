@@ -154,7 +154,7 @@ function subprocess_count()
 function aggregate_all($period)
 {
   global $CACHE_DIR;
-  $intervals = ['day' => 'Y-m-d', 'week' => 'Y-W', 'month' => 'Y-m'];
+  $intervals = ['day' => 'Y-m-d', 'week' => 'Y-W', 'month' => 'Y-m', 'FQ' => null, 'FY' => null];
   $merged = [];
   $merged_protocol = [];
   $date_previous = null;
@@ -213,7 +213,12 @@ function aggregate_all($period)
 function aggregate($intervals, &$merged, $date, $date_previous, $data, $tags = [], $prefix = 'access')
 {
   foreach ($intervals as $interval => $format) {
-    $value = $date->format($format);
+    if ($interval == 'FQ')
+      $value = format_FQ($date);
+    elseif ($interval == 'FY')
+      $value = format_FY($date);
+    else
+      $value = $date->format($format);
     if (!isset($merged[$interval]) || $value != $merged[$interval]['value']) {
       if (!empty($merged[$interval]['data'])) {
         $summary = summarize($merged[$interval]['data']);
@@ -243,6 +248,23 @@ function aggregate($intervals, &$merged, $date, $date_previous, $data, $tags = [
     else
       merge($merged[$interval]['data'], $data);
   }
+}
+
+function format_FQ($date)
+{
+  $financial_date = clone $date;
+  date_add($financial_date, date_interval_create_from_date_string('2 months'));
+  $quarter = ceil($financial_date->format('n')/3);
+
+  return $financial_date->format('Y') . '-' . $quarter;
+}
+
+function format_FY($date)
+{
+  $financial_date = clone $date;
+  date_add($financial_date, date_interval_create_from_date_string('2 months'));
+
+  return $financial_date->format('Y');
 }
 
 function normalize(&$data)
