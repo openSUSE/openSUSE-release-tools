@@ -346,15 +346,6 @@ class InstallChecker(object):
         self.logger.info('cycle check: passed')
         return CheckResult(True, None)
 
-    def project_pseudometa_file_name(self, project, repository):
-        filename = 'repo_checker'
-
-        main_repo = Config.get(self.api.apiurl, project).get('main-repo')
-        if not main_repo:
-            filename += '.' + repository
-
-        return filename
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

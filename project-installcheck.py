@@ -40,11 +40,13 @@ class RepoChecker():
             self.store_project, self.store_package = project_package.split('/')
 
     def check(self, project, repository):
+        self.project = project
         if not repository:
             repository = self.project_repository(project)
         if not repository:
             self.logger.error('a repository must be specified via OSRT:Config main-repo for {}'.format(project))
             return
+        self.repository = repository
 
         archs = target_archs(self.apiurl, project, repository)
         if not len(archs):
@@ -52,12 +54,13 @@ class RepoChecker():
             return None
 
         for arch in archs:
+            self.arch = arch
             state = self.check_pra(project, repository, arch)
 
         if self.comment:
-            self.create_comments(state, project)
+            self.create_comments(state)
 
-    def create_comments(self, state, project):
+    def create_comments(self, state):
         comments = dict()
         for source, details in state['check'].items():
             rebuild = dateutil.parser.parse(details["rebuild"])
@@ -72,7 +75,7 @@ class RepoChecker():
         url = makeurl(self.apiurl, ['comments', 'user'])
         root = ET.parse(http_GET(url)).getroot()
         for comment in root.findall('.//comment'):
-            if comment.get('project') != project:
+            if comment.get('project') != self.project:
                 continue
             if comment.get('package') in comments:
                 continue
@@ -91,24 +94,15 @@ class RepoChecker():
                     newcomment += "+ " + problem + "\n"
 
             newcomment = commentapi.add_marker(newcomment.strip(), MARKER)
-            oldcomments = commentapi.get_comments(project_name=project, package_name=package)
+            oldcomments = commentapi.get_comments(project_name=self.project, package_name=package)
             oldcomment, _ = commentapi.comment_find(oldcomments, MARKER)
             if oldcomment and oldcomment['comment'] == newcomment:
                 continue
 
             if oldcomment:
                 commentapi.delete(oldcomment['id'])
-            self.logger.debug("Adding comment to {}/{}".format(project, package))
-            commentapi.add_comment(project_name=project, package_name=package, comment=newcomment)
-
-    def project_pseudometa_file_name(self, project, repository):
-        filename = 'repo_checker'
-
-        main_repo = Config.get(self.apiurl, project).get('main-repo')
-        if not main_repo:
-            filename += '.' + repository
-
-        return filename
+            self.logger.debug("Adding comment to {}/{}".format(self.project, package))
+            commentapi.add_comment(project_name=self.project, package_name=package, comment=newcomment)
 
     def _split_and_filter(self, output):
         output = output.split("\n")
@@ -143,14 +137,29 @@ class RepoChecker():
 
         return repository
 
-    def store_yaml(self, state, project, repository, arch):
+    def store_yaml(self, state):
         if not self.store_project or not self.store_package:
             return
 
         state_yaml = yaml.dump(state, default_flow_style=False)
-        comment = 'Updated rebuild infos for {}/{}/{}'.format(project, repository, arch)
+        comment = 'Updated rebuild infos for {}/{}/{}'.format(self.project, self.repository, self.arch)
         source_file_ensure(self.apiurl, self.store_project, self.store_package,
                            self.store_filename, state_yaml, comment=comment)
+
+    def check_buildstate(self, oldstate, buildresult, code):
+        oldstate.setdefault(code, {})
+        for source in list(oldstate[code]):
+            project, repo, arch, rpm = source.split('/')
+            if project != self.project or repo != self.repository or arch != self.arch:
+                continue
+            if buildresult.get(rpm, 'gone') != code:
+                del oldstate[code][source]
+        for rpm, rcode in buildresult.items():
+            if rcode != code:
+                continue
+            source = "{}/{}/{}/{}".format(self.project, self.repository, self.arch, rpm)
+            if source not in oldstate[code]:
+                oldstate[code][source] = str(datetime.now())
 
     def check_pra(self, project, repository, arch):
         config = Config.get(self.apiurl, project)
@@ -224,20 +233,9 @@ class RepoChecker():
             buildresult[p.get('package')] = p.get('code')
 
         repo_state = root.find('result').get('state')
-        if repo_state in ['published', 'unpublished']:
-            oldstate.setdefault('unresolvables', {})
-            for source in list(oldstate['unresolvables']):
-                sproject, srepo, sarch, rpm = source.split('/')
-                if sproject != project or srepo != repository or sarch != arch:
-                    continue
-                if buildresult.get(rpm, 'gone') != 'unresolvable':
-                    del oldstate['unresolvables'][source]
-            for rpm, code in buildresult.items():
-                if code != 'unresolvable':
-                    continue
-                source = "{}/{}/{}/{}".format(project, repository, arch, rpm)
-                if source not in oldstate['unresolvables']:
-                    oldstate['unresolvables'][source] = str(datetime.now())
+        if repo_state in ['published', 'unpublished', 'building']:
+            self.check_buildstate(oldstate, buildresult, 'unresolvable')
+            self.check_buildstate(oldstate, buildresult, 'failed')
 
         per_source = dict()
 
@@ -327,7 +325,7 @@ class RepoChecker():
         if not self.rebuild or not len(rebuilds):
             self.logger.debug("Nothing to rebuild")
             # in case we do rebuild, wait for it to succeed before saving
-            self.store_yaml(oldstate, project, repository, arch)
+            self.store_yaml(oldstate)
             return oldstate
 
         query = {'cmd': 'rebuild', 'repository': repository, 'arch': arch, 'package': rebuilds}
@@ -335,7 +333,7 @@ class RepoChecker():
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
         http_request('POST', url, headers, data=urlencode(query, doseq=True))
 
-        self.store_yaml(oldstate, project, repository, arch)
+        self.store_yaml(oldstate)
         return oldstate
 
     def check_leaf_package(self, project, repository, arch, package):
