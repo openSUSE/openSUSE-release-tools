@@ -281,5 +281,6 @@ class TestMaintenance(OBSLocal.TestCase):
 
         self.assertFalse(result['devel_review_added'])
 
+
 if __name__ == '__main__':
     unittest.main()

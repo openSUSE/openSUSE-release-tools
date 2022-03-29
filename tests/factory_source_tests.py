@@ -178,6 +178,5 @@ class TestFactorySourceAccept(OBSLocal.TestCase):
         self.assertTrue(result['status'])
 
 
-
 if __name__ == '__main__':
     unittest.main()
