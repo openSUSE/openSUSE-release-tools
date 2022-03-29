@@ -154,6 +154,7 @@ def mail_send_with_details(relay, sender, subject, to, text, xmailer=None, follo
         msg.add_header('X-Mailer', xmailer)
     msg.add_header('Precedence', 'bulk')
     if dry:
+        logger.debug(text)
         logger.debug(msg.as_string())
         return
     logger.info("%s: %s", msg['To'], msg['Subject'])
