@@ -355,7 +355,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_option_list}
         """
         self.tool.rebuild = not opts.norebuild
-        self.tool.comment = not opts.comments
+        self.tool.comment = opts.comments
         self.tool.parse_store(opts.store)
         self.tool.apiurl = conf.config['apiurl']
         self.tool.check(project, opts.repo)
