@@ -19,7 +19,7 @@ pipelines:
         tasks:
           - script: |-
               echo "openSUSE:Factory"
-              ./project-installcheck.py --debug check --store openSUSE:Factory:Staging/dashboard openSUSE:Factory
+              ./project-installcheck.py --debug check --add-comments --store openSUSE:Factory:Staging/dashboard openSUSE:Factory
   Trigger.Rebuild.Factory.Power:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished

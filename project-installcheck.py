@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import datetime
 import difflib
 import hashlib
 import logging
@@ -10,6 +9,8 @@ import subprocess
 import sys
 import tempfile
 import cmdln
+import dateutil.parser
+from datetime import datetime, timedelta
 from urllib.parse import urlencode
 
 import yaml
@@ -32,6 +33,7 @@ class RepoChecker():
         self.store_project = None
         self.store_package = None
         self.rebuild = None
+        self.comment = None
 
     def parse_store(self, project_package):
         if project_package:
@@ -52,8 +54,16 @@ class RepoChecker():
         for arch in archs:
             state = self.check_pra(project, repository, arch)
 
+        if self.comment:
+            self.create_comments(state, project)
+
+    def create_comments(self, state, project):
         comments = dict()
         for source, details in state['check'].items():
+            rebuild = dateutil.parser.parse(details["rebuild"])
+            if datetime.now() - rebuild < timedelta(days=2):
+                self.logger.debug(f"Ignore {source} - problem too recent")
+                continue
             _, _, arch, rpm = source.split('/')
             rpm = rpm.split(':')[0]
             comments.setdefault(rpm, {})
@@ -238,7 +248,7 @@ class RepoChecker():
             for line in difflib.unified_diff(old_output, per_source[source]['output'], 'before', 'now'):
                 self.logger.debug(line.strip())
             oldstate['check'][source] = {'problem': per_source[source]['output'],
-                                         'rebuild': str(datetime.datetime.now())}
+                                         'rebuild': str(datetime.now())}
 
         for source in list(oldstate['check']):
             if not source.startswith('{}/{}/{}/'.format(project, repository, arch)):
@@ -291,7 +301,7 @@ class RepoChecker():
             self.logger.info("rebuild leaf package %s (%s vs %s)", package, olddigest, m.hexdigest())
             rebuilds.add(package)
             oldstate['leafs'][state_key] = {'buildinfo': m.hexdigest(),
-                                            'rebuild': str(datetime.datetime.now())}
+                                            'rebuild': str(datetime.now())}
 
         if self.dryrun:
             if self.rebuild:
@@ -336,6 +346,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
     @cmdln.option('--store', help='Project/Package to store the rebuild infos in')
     @cmdln.option('-r', '--repo', dest='repo', help='Repository to check')
+    @cmdln.option('--add-comments', dest='comments', action='store_true', help='Create comments about issues')
     @cmdln.option('--no-rebuild', dest='norebuild', action='store_true', help='Only track issues, do not rebuild')
     def do_check(self, subcmd, opts, project):
         """${cmd_name}: Rebuild packages in rebuild=local projects
@@ -344,6 +355,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_option_list}
         """
         self.tool.rebuild = not opts.norebuild
+        self.tool.comment = not opts.comments
         self.tool.parse_store(opts.store)
         self.tool.apiurl = conf.config['apiurl']
         self.tool.check(project, opts.repo)
