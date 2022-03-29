@@ -113,11 +113,6 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
 
         self._check_maintainer_review_needed(req, a)
 
-        if a.tgt_releaseproject.startswith("openSUSE:Backports:") \
-            and not a.tgt_releaseproject.startswith("openSUSE:Backports:SLE-15-SP3") \
-                and not a.tgt_releaseproject.startswith("openSUSE:Backports:SLE-15-SP4"):
-            self.add_factory_source = True
-
         return True
 
     def check_action_submit(self, req, a):
@@ -132,22 +127,9 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         return True
 
     def check_one_request(self, req):
-        self.add_factory_source = False
         self.needs_maintainer_review = set()
 
         ret = ReviewBot.ReviewBot.check_one_request(self, req)
-
-        # check if factory-source is already a reviewer
-        if self.add_factory_source:
-            for r in req.reviews:
-                if r.by_user == 'factory-source':
-                    self.add_factory_source = False
-                    self.logger.debug("factory-source already is a reviewer")
-                    break
-
-        if self.add_factory_source:
-            self.logger.debug("%s needs review by factory-source" % req.reqid)
-            self.add_review(req, by_user='factory-source')
 
         if self.needs_maintainer_review:
             for p in self.needs_maintainer_review:
