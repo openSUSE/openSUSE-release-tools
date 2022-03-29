@@ -223,6 +223,22 @@ class RepoChecker():
         for p in root.findall('.//status'):
             buildresult[p.get('package')] = p.get('code')
 
+        repo_state = root.find('result').get('state')
+        if repo_state in ['published', 'unpublished']:
+            oldstate.setdefault('unresolvables', {})
+            for source in list(oldstate['unresolvables']):
+                sproject, srepo, sarch, rpm = source.split('/')
+                if sproject != project or srepo != repository or sarch != arch:
+                    continue
+                if buildresult.get(rpm, 'gone') != 'unresolvable':
+                    del oldstate['unresolvables'][source]
+            for rpm, code in buildresult.items():
+                if code != 'unresolvable':
+                    continue
+                source = "{}/{}/{}/{}".format(project, repository, arch, rpm)
+                if source not in oldstate['unresolvables']:
+                    oldstate['unresolvables'][source] = str(datetime.now())
+
         per_source = dict()
 
         for package, entry in parsed.items():
