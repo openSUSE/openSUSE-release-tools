@@ -77,7 +77,7 @@ class RepoChecker():
             if comment.get('package') in comments:
                 continue
             self.logger.info("Removing comment for package {}".format(comment.get('package')))
-            url = makeurl(self.apiurl, [comment, comment.get('id')])
+            url = makeurl(self.apiurl, ['comment', comment.get('id')])
             http_DELETE(url)
 
         commentapi = CommentAPI(self.apiurl)
