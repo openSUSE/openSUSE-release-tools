@@ -1431,12 +1431,16 @@ class StagingAPI(object):
           {repository}
             <path project="{self.cstaging}" repository="standard"/>
             <path project="{self.project}" repository="standard"/>
-            <arch>x86_64</arch>
           </repository>
           {images_repo}
           {containerfile_repo}
         </project>"""
 
+        root = ET.fromstring(meta)
+        repository = root.find('.//repository[@name="standard"]')
+        for arch in self.cstaging_archs:
+            a = ET.SubElement(repository, 'arch')
+            a.text = arch
         url = make_meta_url('prj', name, self.apiurl)
         http_PUT(url, data=meta)
         # put twice because on first put, the API adds useless maintainer
