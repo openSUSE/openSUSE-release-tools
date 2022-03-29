@@ -19,6 +19,9 @@ import email.utils
 FACTORY = 'openSUSE:Factory'
 SEVEN_DAYS = 7 * 86400
 
+apiurl = None
+project = None
+
 
 class RemindedPackage(object):
     def __init__(self, firstfail, problem, reminded, remindCount):
@@ -114,6 +117,18 @@ def check_reminder(pname, first, problem, now, Reminded, RemindedLoaded):
     Reminded[pname] = RemindedPackage(first, problem, reminded, remindCount)
 
 
+def extract_package_name(source):
+    _, _, _, rpm = source.split('/')
+    # strip multibuild flavor
+    package = rpm.split(':')[0]
+    # check multi spec origin
+    url = osc.core.makeurl(apiurl, ['source', project, package])
+    root = ET.parse(osc.core.http_GET(url))
+    for li in root.findall('linkinfo'):
+        return li.get('package')
+    return package
+
+
 def main(args):
 
     # do some work here
@@ -122,33 +137,28 @@ def main(args):
 
     osc.conf.get_config(override_apiurl=args.apiurl)
     osc.conf.config['debug'] = args.osc_debug
+    global apiurl
     apiurl = osc.conf.config['apiurl']
 
     sender = args.sender
+    global project
     project = args.project
 
     logger.debug('loading build fails for %s' % project)
-    url = osc.core.makeurl(apiurl, ['projects', project, 'status'],
-                           {'ignore_pending': True,
-                            'limit_to_fails': True,
-                            'include_versions': False,
-                            'format': 'json'
-                            })
-    json_data = osc.core.http_GET(url)
-    faildata = {}
-    faildata = json.load(json_data)
-    json_data.close()
-
     url = osc.core.makeurl(apiurl, ['source', f'{project}:Staging', 'dashboard', f'rebuildpacs.{project}-standard.yaml'])
     try:
         _data = osc.core.http_GET(url)
-        rebuilddata = yaml.safe_load(_data)['check']
+        rebuilddata = yaml.safe_load(_data)
         _data.close()
     except HTTPError as e:
         if e.code == 404:
             rebuilddata = {}
         else:
             raise e
+
+    rebuilddata.setdefault('check', {})
+    rebuilddata.setdefault('failed', {})
+    rebuilddata.setdefault('unresolvable', {})
 
     reminded_json = args.json
     if not reminded_json:
@@ -167,14 +177,17 @@ def main(args):
     ProjectComplainList = []
 
     # Go through all the failed packages and update the reminder
-    for package in faildata:
-        check_reminder(package["name"], package["firstfail"], "Fails to build", now, Reminded, RemindedLoaded)
+    for source, timestamp in rebuilddata['failed'].items():
+        date = int(dateutil.parser.parse(timestamp).timestamp())
+        check_reminder(extract_package_name(source), date, "Fails to build", now, Reminded, RemindedLoaded)
+
+    for source, timestamp in rebuilddata['unresolvable'].items():
+        date = int(dateutil.parser.parse(timestamp).timestamp())
+        check_reminder(extract_package_name(source), date, "Unresolvable", now, Reminded, RemindedLoaded)
 
     repochecks = dict()
-    for prpa, details in rebuilddata.items():
-        _, _, _, rpm = prpa.split('/')
-        # strip multibuild flavor
-        package = rpm.split(':')[0]
+    for prpa, details in rebuilddata['check'].items():
+        package = extract_package_name(prpa)
         date = int(dateutil.parser.parse(details["rebuild"]).timestamp())
         repochecks.setdefault(package, {"problems": set(), "rebuild": date})
         for problem in details["problem"]:
