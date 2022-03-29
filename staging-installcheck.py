@@ -224,7 +224,7 @@ class InstallChecker(object):
                 del duplicates[arch]
         if len(duplicates):
             self.logger.warning('Found duplicated binaries')
-            result.comment.append('Found duplicated binaries')
+            result_comment.append('Found duplicated binaries')
             result_comment.append(yaml.dump(duplicates, default_flow_style=False))
             result = False
 
