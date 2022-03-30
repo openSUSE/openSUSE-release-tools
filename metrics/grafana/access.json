@@ -2415,9 +2415,19 @@
             "selected": true,
             "text": "month",
             "value": "month"
+          },
+          {
+            "selected": false,
+            "text": "FQ",
+            "value": "FQ"
+          },
+          {
+            "selected": false,
+            "text": "FY",
+            "value": "FY"
           }
         ],
-        "query": "day, week, month",
+        "query": "day, week, month, FQ, FY",
         "type": "custom"
       },
       {
