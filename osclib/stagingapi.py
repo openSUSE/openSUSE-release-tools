@@ -1441,6 +1441,7 @@ class StagingAPI(object):
         for arch in self.cstaging_archs:
             a = ET.SubElement(repository, 'arch')
             a.text = arch
+        meta = ET.tostring(root)
         url = make_meta_url('prj', name, self.apiurl)
         http_PUT(url, data=meta)
         # put twice because on first put, the API adds useless maintainer
