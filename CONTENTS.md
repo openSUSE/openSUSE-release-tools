@@ -224,17 +224,6 @@ Checks ABI compatibility in OBS requests.
 * Package: openSUSE-release-tools-abichecker
 * Usage: gocd?
 
-#### check_source_in_factory
-
-Checks if the sources of a submission are either in Factory or a request for Factory with the same
-sources exist. Not used as a standalone bot anymore, but called internally from
-check_tags_in_requests.
-
-* Sources: [check_source_in_factory.py](check_source_in_factory.py)
-* Documentation: [docs/factory-source.asciidoc](docs/factory-source.asciidoc)
-* Package: openSUSE-release-tools
-* Usage: used from other bots (check_tags_in_requests)
-
 #### openqa-maintenance
 
 OpenQA stuff, not sure about the details.
