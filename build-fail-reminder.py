@@ -48,7 +48,7 @@ See https://build.opensuse.org/package/show/%(project)s/%(package)s
 
 This can be due to an error in your package directly or could be
 caused by a package you depend on to build. In any case, please do
-your utmost to get the status back to building.
+your utmost to make the package building and usable again.
 
 You will get another reminder in a week if the package still shows
 problems by then.
@@ -71,7 +71,7 @@ https://build.opensuse.org/package/show/%(project)s/%(package)s
 Since %(date)s we noticed the following problem:
   %(problem)s
 
-Please find the time to fix the build of this package. If needed,
+Please find the time to make this package usable again. If needed,
 also reach out to the broader community, trying to find somebody to
 help you fix this package.
 
