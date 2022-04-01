@@ -3,6 +3,7 @@
 import argparse
 import logging
 import sys
+import time
 
 import osc
 from osc.core import http_GET, makeurl
@@ -34,6 +35,12 @@ if __name__ == '__main__':
             continue
         logger.error('Repository {}/{}/{} is not yet finished'.format(args.project, args.repository, arch))
         logger.debug(ET.tostring(root).decode('utf-8'))
+        # scheduling means the scheduler had some reason to double check the repository state.
+        # this may or may not result in a restart of the build, but if it doesn't, we're in trouble.
+        # There won't arrive any new finished event - so better keep looking
+        if root.get('code') == 'scheduling' or root.get('dirty', 'false') == 'true':
+            time.sleep(60)
+            continue
         sys.exit(1)
 
     # now check if all packages built fine
