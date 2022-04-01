@@ -4,6 +4,7 @@ import argparse
 import glob
 import json
 import logging
+import random
 import subprocess
 
 import osc
@@ -22,10 +23,13 @@ class Listener(PubSubConsumer):
         self.apiurl = apiurl
         self.amqp_prefix = amqp_prefix
         self.namespaces = namespaces
+        # repos to check on startup
         self.repositories_to_check = []
+        # repos to check periodically that in flux
+        self.repositories_to_monitor = set()
 
     def interval(self):
-        if len(self.repositories_to_check):
+        if len(self.repositories_to_check) or len(self.repositories_to_monitor):
             return 5
         return super(Listener, self).interval()
 
@@ -44,6 +48,9 @@ class Listener(PubSubConsumer):
             buildid = root.find('buildid')
             if buildid is not None:
                 return buildid.text
+        self.logger.info(f"{project}/{repository}/{architecture}: code=%s dirty=%s" % (root.get('code'), root.get('dirty', 'false')))
+        if root.get('code') == 'scheduling' or root.get('dirty', 'false') == 'true':
+            self.repositories_to_monitor.add(f'{project}/{repository}')
 
     def check_all_archs(self, project, repository):
         ids = {}
@@ -58,6 +65,7 @@ class Listener(PubSubConsumer):
                 return None
             ids[arch] = repoid
         self.logger.info('All of {}/{} finished'.format(project, repository))
+        self.repositories_to_monitor.discard(f'{project}/{repository}')
         return ids
 
     def is_part_of_namespaces(self, project):
@@ -83,6 +91,16 @@ class Listener(PubSubConsumer):
         while len(self.repositories_to_check):
             project, repository = self.repositories_to_check.pop()
             self.logger.debug(f"Check repo {project}/{repository}")
+            self.update_repo(project, repository)
+            count += 1
+            if count >= limit:
+                return
+        # shuffle to avoid starvation of the repos freshly added
+        repos = list(self.repositories_to_monitor)
+        random.shuffle(repos)
+        for entry in repos:
+            project, repository = entry.split('/')
+            self.logger.debug(f"Recheck repo {project}/{repository}")
             self.update_repo(project, repository)
             count += 1
             if count >= limit:
