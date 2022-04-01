@@ -28,7 +28,7 @@ class FreezeCommand(object):
         f = self.api.retried_GET(url)
         oldmeta = ET.parse(f).getroot()
 
-        meta = ET.fromstring(self.prj_meta_for_bootstrap_copy(self.prj))
+        meta = ET.fromstring(self.prj_meta_for_bootstrap_copy())
         meta.find('title').text = oldmeta.find('title').text
         meta.find('description').text = oldmeta.find('description').text
         for person in oldmeta.findall('person'):
@@ -36,6 +36,9 @@ class FreezeCommand(object):
             meta.insert(2, ET.Element('person', role=person.get('role'), userid=person.get('userid')))
 
         self.api.retried_PUT(url, ET.tostring(meta))
+
+    def is_images_disabled(self):
+        return self.api.get_flag_in_prj(self.prj, flag='build', repository='images') == 'disable'
 
     def create_bootstrap_aggregate(self):
         self.create_bootstrap_aggregate_meta()
@@ -144,8 +147,8 @@ class FreezeCommand(object):
         # Set the original build status for the project
         self.api.build_switch_prj(prj, build_status)
 
-    def prj_meta_for_bootstrap_copy(self, prj):
-        root = ET.Element('project', {'name': prj})
+    def prj_meta_for_bootstrap_copy(self):
+        root = ET.Element('project', {'name': self.prj})
         ET.SubElement(root, 'title')
         ET.SubElement(root, 'description')
         links = self.projectlinks or ['{}:1-MinimalX'.format(self.api.crings)]
@@ -158,7 +161,10 @@ class FreezeCommand(object):
         ET.SubElement(f, 'disable')
         f = ET.SubElement(root, 'publish')
         ET.SubElement(f, 'disable')
-        ET.SubElement(f, 'enable', {'repository': 'images'})
+        images_flag = 'enable'
+        if self.is_images_disabled():
+            images_flag = 'disable'
+        ET.SubElement(f, images_flag, {'repository': 'images'})
         f = ET.SubElement(root, 'debuginfo')
         ET.SubElement(f, 'enable')
 
@@ -169,15 +175,15 @@ class FreezeCommand(object):
             a.text = arch
 
         r = ET.SubElement(root, 'repository', {'name': 'standard', 'linkedbuild': 'all', 'rebuild': 'direct'})
-        ET.SubElement(r, 'path', {'project': prj, 'repository': 'bootstrap_copy'})
+        ET.SubElement(r, 'path', {'project': self.prj, 'repository': 'bootstrap_copy'})
         for arch in self.api.cstaging_archs:
             a = ET.SubElement(r, 'arch')
             a.text = arch
 
         r = ET.SubElement(root, 'repository', {'name': 'images', 'linkedbuild': 'all'})
-        ET.SubElement(r, 'path', {'project': prj, 'repository': 'standard'})
+        ET.SubElement(r, 'path', {'project': self.prj, 'repository': 'standard'})
 
-        if prj.startswith('SUSE:'):
+        if self.prj.startswith('SUSE:'):
             a = ET.SubElement(r, 'arch')
             a.text = 'local'
         a = ET.SubElement(r, 'arch')

@@ -27,10 +27,11 @@ class TestFreeze(OBSLocal.TestCase):
         fc = FreezeCommand(wf.api)
 
         fp = self._get_fixture_path('staging-meta-for-bootstrap-copy.xml')
+        fc.prj = 'openSUSE:Factory:Staging:A'
         fixture = subprocess.check_output('/usr/bin/xmllint --format %s' % fp, shell=True).decode('utf-8')
 
         f = tempfile.NamedTemporaryFile(delete=False)
-        f.write(fc.prj_meta_for_bootstrap_copy('openSUSE:Factory:Staging:A'))
+        f.write(fc.prj_meta_for_bootstrap_copy())
         f.close()
 
         output = subprocess.check_output('/usr/bin/xmllint --format %s' % f.name, shell=True).decode('utf-8')
