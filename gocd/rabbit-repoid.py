@@ -65,7 +65,6 @@ class Listener(PubSubConsumer):
                 return None
             ids[arch] = repoid
         self.logger.info('All of {}/{} finished'.format(project, repository))
-        self.repositories_to_monitor.discard(f'{project}/{repository}')
         return ids
 
     def is_part_of_namespaces(self, project):
@@ -99,6 +98,7 @@ class Listener(PubSubConsumer):
         repos = list(self.repositories_to_monitor)
         random.shuffle(repos)
         for entry in repos:
+            self.repositories_to_monitor.discard(entry)
             project, repository = entry.split('/')
             self.logger.debug(f"Recheck repo {project}/{repository}")
             self.update_repo(project, repository)
