@@ -1144,7 +1144,7 @@ class StagingAPI(object):
         section = root.find(flag)
         if section is None:
             # the default for build and publish (is all we care for)
-            return 'enabled'
+            return 'enable'
         for status in section:
             is_repository = status.get('repository', None) == repository
             is_arch = status.get('arch', None) == arch
@@ -1160,13 +1160,13 @@ class StagingAPI(object):
         url = self.makeurl(['source', project], query)
         http_POST(url)
 
-    def build_switch_prj(self, project, state):
+    def build_switch_prj(self, project, state, repository=None, arch=None):
         """
         Switch build state of project to desired state
         :param project: project to switch state for
         :param state: desired state for build
         """
-        self.switch_flag_in_prj(project, flag='build', state=state, repository=None, arch=None)
+        self.switch_flag_in_prj(project, flag='build', state=state, repository=repository, arch=arch)
 
     def prj_frozen_enough(self, project):
         """

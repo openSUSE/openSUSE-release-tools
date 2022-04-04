@@ -38,7 +38,12 @@ class FreezeCommand(object):
         self.api.retried_PUT(url, ET.tostring(meta))
 
     def is_images_disabled(self):
-        return self.api.get_flag_in_prj(self.prj, flag='build', repository='images') == 'disable'
+        flag = self.api.get_flag_in_prj(self.prj, flag='build', repository='images')
+        if flag == 'disable':
+            return True
+        if flag == 'enable':
+            return False
+        return self.api.get_flag_in_prj(self.prj, flag='build') == 'disable'
 
     def create_bootstrap_aggregate(self):
         self.create_bootstrap_aggregate_meta()
@@ -126,6 +131,7 @@ class FreezeCommand(object):
         self.copy_weakremovers()
 
         build_status = self.api.get_flag_in_prj(prj, flag='build')
+        images_status = self.api.get_flag_in_prj(prj, flag='build', repository='images')
 
         # If there is not a bootstrap repository, there is not
         # anything more to do.
@@ -146,6 +152,9 @@ class FreezeCommand(object):
 
         # Set the original build status for the project
         self.api.build_switch_prj(prj, build_status)
+        # if we build we *might* want to enable images as well (but only if preexistant)
+        if build_status == 'enable':
+            self.api.build_switch_prj(prj, images_status, repository='images')
 
     def prj_meta_for_bootstrap_copy(self):
         root = ET.Element('project', {'name': self.prj})
@@ -154,17 +163,22 @@ class FreezeCommand(object):
         links = self.projectlinks or ['{}:1-MinimalX'.format(self.api.crings)]
         for lprj in links:
             ET.SubElement(root, 'link', {'project': lprj})
+
+        # build flag
         f = ET.SubElement(root, 'build')
-        # this one stays
-        ET.SubElement(f, 'disable', {'repository': 'bootstrap_copy'})
         # this one is the global toggle
         ET.SubElement(f, 'disable')
+        # this one stays
+        ET.SubElement(f, 'disable', {'repository': 'bootstrap_copy'})
+        # to be flipped by botmaster
+        ET.SubElement(f, 'disable', {'repository': 'images'})
+
+        # publish flag
         f = ET.SubElement(root, 'publish')
         ET.SubElement(f, 'disable')
-        images_flag = 'enable'
-        if self.is_images_disabled():
-            images_flag = 'disable'
-        ET.SubElement(f, images_flag, {'repository': 'images'})
+        ET.SubElement(f, 'enable', {'repository': 'images'})
+
+        # debuginfo flag
         f = ET.SubElement(root, 'debuginfo')
         ET.SubElement(f, 'enable')
 
