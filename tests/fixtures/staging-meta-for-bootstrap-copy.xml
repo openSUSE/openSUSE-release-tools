@@ -3,8 +3,9 @@
   <description></description>
   <link project="openSUSE:Factory:Rings:1-MinimalX"/>
   <build>
-    <disable repository="bootstrap_copy"/>
     <disable/>
+    <disable repository="bootstrap_copy"/>
+    <disable repository="images"/>
   </build>
   <publish>
     <disable/>
