@@ -4,6 +4,7 @@ from osclib.accept_command import AcceptCommand
 from osclib.select_command import SelectCommand
 from osclib.comments import CommentAPI
 from osclib.core import package_list
+from osc.core import get_request
 
 from mock import MagicMock
 from . import OBSLocal
@@ -13,7 +14,7 @@ from . import OBSLocal
 
 class TestAccept(unittest.TestCase):
 
-    def setup_wf(self):
+    def setup_wf(self, description=''):
         wf = OBSLocal.FactoryWorkflow()
         wf.setup_rings()
 
@@ -22,7 +23,7 @@ class TestAccept(unittest.TestCase):
         staging_b = wf.create_staging('B', freeze=True)
         self.prj = staging_b.name
 
-        self.winerq = wf.create_submit_request('devel:wine', 'wine', text='Hallo World')
+        self.winerq = wf.create_submit_request('devel:wine', 'wine', text='Hallo World', description=description)
         self.assertEqual(True, SelectCommand(wf.api, self.prj).perform(['wine']))
         self.comments = self.c_api.get_comments(project_name=self.prj)
         wf.create_attribute_type('OSRT', 'ProductVersion', 1)
@@ -36,6 +37,18 @@ class TestAccept(unittest.TestCase):
         # Comments are cleared up
         accepted_comments = self.c_api.get_comments(project_name=self.prj)
         self.assertEqual(len(accepted_comments), 0)
+
+    def test_accept_bugowners(self):
+        wf = self.setup_wf(description="bugowner: group:factory-staging")
+
+        self.assertEqual(True, AcceptCommand(wf.api).accept_all(['B']))
+        # we expect that the requests increase by 1 - to avoid a full search
+        request = get_request(wf.apiurl, str(int(self.winerq.reqid) + 1))
+        # it's in review because this is a staging workflow
+        self.assertEqual(request.state.name, 'review')
+        exp = '<action type="set_bugowner">\n  <target project="openSUSE:Factory" ' + \
+            'package="wine" />\n  <group name="factory-staging" />\n</action>'
+        self.assertEqual(request.actions[0].to_str(), exp)
 
     def test_accept_final_comment(self):
         wf = self.setup_wf()
