@@ -1,5 +1,5 @@
 import time
-
+import re
 from urllib.error import HTTPError
 
 from lxml import etree as ET
@@ -8,10 +8,9 @@ from osc.core import change_request_state
 from osc.core import http_GET, http_POST
 from osc.core import delete_package, meta_get_packagelist
 from osc import conf
-from osclib.core import attribute_value_save
-from osclib.core import attribute_value_load
-from osclib.core import source_file_load
-from osclib.core import source_file_save
+from osclib.core import attribute_value_save, attribute_value_load
+from osclib.core import source_file_load, source_file_save
+from osclib.core import create_set_bugowner_request
 from osclib.pkglistgen_comments import PkglistComments
 from datetime import date
 
@@ -64,6 +63,22 @@ class AcceptCommand(object):
                     delete_package(self.api.apiurl, link['project'], link['package'],
                                    msg="remove link while accepting delete of {}".format(package))
 
+    def check_request_for_bugowner(self, to_request, package, id):
+        url = self.api.makeurl(['request', str(id)])
+
+        f = http_GET(url)
+        root = ET.parse(f).getroot()
+        description = root.find('description').text
+        if not description:
+            return
+        for line in description.splitlines():
+            # this relies on the format relied upon in check_bugowner
+            m = re.search(r'^bugowner:\s*(\S*)', line)
+            if not m:
+                continue
+            to_request[package] = {'id': id, 'bugowner': m.group(1)}
+            return
+
     def accept_all(self, projects, force=False, cleanup=True):
         accept_all_green = len(projects) == 0
         if accept_all_green:
@@ -78,6 +93,7 @@ class AcceptCommand(object):
         if accept_all_green:
             projects = self.api.get_staging_projects()
 
+        bugowners_to_request = dict()
         for prj in projects:
             project = self.api.prj_from_letter(prj)
 
@@ -94,12 +110,16 @@ class AcceptCommand(object):
                 type = request.get('type')
                 if type in self.requests:
                     self.requests[type].append(request.get('package'))
+                if type == 'submit':
+                    self.check_request_for_bugowner(bugowners_to_request, request.get('package'), request.get('id'))
                 staging_packages[project].append(request.get('package'))
 
         other_new = self.find_new_requests(self.api.project)
         for req in other_new:
             if req['type'] in self.requests:
                 self.requests[req['type']].append(req['package'])
+            if req['type'] == 'submit':
+                self.check_request_for_bugowner(bugowners_to_request, req['package'], req['id'])
 
         print('delete links to packages pending deletion...')
         self.delete_linked()
@@ -142,6 +162,12 @@ class AcceptCommand(object):
 
         for package in self.requests['submit']:
             self.fix_linking_packages(package)
+            if package in bugowners_to_request:
+                infos = bugowners_to_request[package]
+                id = infos['id']
+                message = f"Bugowner info derived from request {id}"
+                create_set_bugowner_request(self.api.apiurl, self.api.project, infos['bugowner'],
+                                            target_package=package, message=message)
 
         if self.api.project.startswith('openSUSE:'):
             self.update_factory_version()

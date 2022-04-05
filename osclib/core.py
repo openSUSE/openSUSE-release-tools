@@ -1216,6 +1216,22 @@ def create_add_role_request(apiurl, target_project, user, role, target_package=N
     return create_request(apiurl, action, message)
 
 
+def create_set_bugowner_request(apiurl, target_project, user, target_package=None, message=None):
+    """Create an set_bugowner request
+
+    user -- user or group name. If it is a group, it has to start with 'group:'.
+    """
+
+    if user.startswith('group:'):
+        group = user.replace('group:', '')
+        kargs = dict(group_name=group)
+    else:
+        kargs = dict(person_name=user)
+
+    action = Action('set_bugowner', tgt_project=target_project, tgt_package=target_package, **kargs)
+    return create_request(apiurl, action, message)
+
+
 def create_request(apiurl, action, message=None):
     """Create a request for the given action
 
