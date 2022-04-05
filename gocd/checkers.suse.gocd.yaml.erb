@@ -39,7 +39,7 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: ./check_bugowner.py -A https://api.suse.de --verbose --user=bugowner-checker --review=accept-onpass review
+            - script: ./check_bugowner.py -A https://api.suse.de --verbose --user=bugowner-checker review
   SLE15SP4.Project:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
