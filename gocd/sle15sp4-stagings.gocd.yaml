@@ -4,7 +4,7 @@ pipelines:
   SLE15.SP4.Stagings.RelPkgs:
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP4.Stagings
+    group: SLE15.Stagings
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 0 * ? * *
@@ -99,7 +99,7 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP4:GA:Staging:A
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP4.Stagings
+    group: SLE15.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -167,7 +167,7 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP4:GA:Staging:B
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP4.Stagings
+    group: SLE15.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -235,7 +235,7 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP4:GA:Staging:C
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP4.Stagings
+    group: SLE15.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -303,7 +303,7 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP4:GA:Staging:D
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP4.Stagings
+    group: SLE15.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -371,7 +371,7 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP4:GA:Staging:E
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP4.Stagings
+    group: SLE15.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -439,7 +439,7 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP4:GA:Staging:F
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP4.Stagings
+    group: SLE15.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -507,7 +507,7 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP4:GA:Staging:G
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP4.Stagings
+    group: SLE15.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -575,7 +575,7 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP4:GA:Staging:H
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP4.Stagings
+    group: SLE15.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -643,7 +643,7 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP4:GA:Staging:S
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP4.Stagings
+    group: SLE15.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -711,7 +711,7 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP4:GA:Staging:V
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP4.Stagings
+    group: SLE15.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -779,7 +779,7 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP4:GA:Staging:Y
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP4.Stagings
+    group: SLE15.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:

@@ -27,7 +27,7 @@ pipelines:
             - script: |-
                 ./scripts/staging-installcheck.py -A https://api.opensuse.org -p openSUSE:<%= project %>
   SBot.Regular.<%= nickname %>:
-    group: <%= nickname %>.pkglistgen
+    group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 0 * ? * *

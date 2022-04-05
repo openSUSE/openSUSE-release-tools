@@ -25,7 +25,7 @@ pipelines:
             - script: |-
                 ./scripts/staging-installcheck.py -A https://api.opensuse.org -p openSUSE:Factory
   SBot.Regular.Factory:
-    group: Factory.pkglistgen
+    group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 0 * ? * *
@@ -81,7 +81,7 @@ pipelines:
             - script: |-
                 ./scripts/staging-installcheck.py -A https://api.opensuse.org -p openSUSE:Backports:SLE-15-SP4
   SBot.Regular.Backports.SLE-15-SP4:
-    group: Backports.SLE-15-SP4.pkglistgen
+    group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 0 * ? * *

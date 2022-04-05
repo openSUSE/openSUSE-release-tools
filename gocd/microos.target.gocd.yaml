@@ -1,7 +1,7 @@
 format_version: 3
 pipelines:
   MicroOS.RelPkgs:
-    group: MicroOS.Target
+    group: MicroOS
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 10 * ? * *
@@ -20,7 +20,7 @@ pipelines:
         - script: ./pkglistgen.py -A https://api.suse.de update_and_solve -p SUSE:SLE-15-SP3:Update:Products:MicroOS52 -s target --only-release-packages --force
 
   MicroOS.Package.Lists:
-    group: MicroOS.Target
+    group: MicroOS
     lock_behavior: unlockWhenFinished
     materials:
       repos:
@@ -45,7 +45,7 @@ pipelines:
         - script: ./scripts/pkglistgen.py -A https://api.suse.de --debug update_and_solve -p SUSE:SLE-15-SP3:Update:Products:MicroOS52 -s target --force
 
   MicroOS.Images:
-    group: MicroOS.Target
+    group: MicroOS
     lock_behavior: unlockWhenFinished
     materials:
       repos:

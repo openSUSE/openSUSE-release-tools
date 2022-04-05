@@ -1,7 +1,7 @@
 format_version: 3
 pipelines:
   LeapMicro.RelPkgs:
-    group: LeapMicro.Target
+    group: Leap
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 10 * ? * *
@@ -20,7 +20,7 @@ pipelines:
           - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:Micro:5.2 -s target --only-release-packages
 
   LeapMicro.Package.Lists:
-    group: LeapMicro.Target
+    group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot

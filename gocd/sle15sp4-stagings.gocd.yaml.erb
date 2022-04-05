@@ -5,7 +5,7 @@ pipelines:
   SLE15.SP4.Stagings.RelPkgs:
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP4.Stagings
+    group: SLE15.Stagings
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 0 * ? * *
@@ -32,7 +32,7 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP4:GA:Staging:<%= letter %>
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLE15.SP4.Stagings
+    group: SLE15.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
