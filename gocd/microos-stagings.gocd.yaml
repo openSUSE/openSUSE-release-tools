@@ -4,7 +4,7 @@ pipelines:
   MicroOS.Stagings.RelPkgs:
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: MicroOS.Stagings
+    group: MicroOS
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 0 * ? * *
@@ -36,7 +36,7 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP3:Update:Products:MicroOS52:Staging:A
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: MicroOS.Stagings
+    group: MicroOS
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -99,7 +99,7 @@ pipelines:
       STAGING_PROJECT: SUSE:SLE-15-SP3:Update:Products:MicroOS52:Staging:B
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: MicroOS.Stagings
+    group: MicroOS
     lock_behavior: unlockWhenFinished
     materials:
       stagings:

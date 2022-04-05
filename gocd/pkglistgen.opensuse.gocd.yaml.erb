@@ -1,7 +1,7 @@
 format_version: 3
 pipelines:
   Pkglistgen.openSUSE_Factory:
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
@@ -35,7 +35,7 @@ pipelines:
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %>
 <% end -%>
   Update.Repos.Factory:
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
@@ -58,7 +58,7 @@ pipelines:
              - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos <%= project %>
 <% end -%>
   Pkglistgen.openSUSE_Leap_15.4:
-    group: Leap.pkglistgen
+    group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
@@ -89,7 +89,7 @@ pipelines:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %>
 <% end -%>
   Pkglistgen.openSUSE_Leap_15.3_Update_Respin:
-    group: Leap.pkglistgen
+    group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
@@ -122,7 +122,7 @@ pipelines:
 
 <% %w(openSUSE:Leap:15.4 openSUSE:Leap:15.3:Update:Respin).each do |project| -%>
   Update.Repos.Leap.<%= project.gsub(':', '_') %>:
-    group: Leap.pkglistgen
+    group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot

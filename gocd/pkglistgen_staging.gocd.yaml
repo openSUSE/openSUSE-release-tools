@@ -3,7 +3,7 @@ pipelines:
   Factory.Stagings.RelPkgs:
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 0 * ? * *
@@ -133,7 +133,7 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:A
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -198,7 +198,7 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:B
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -263,7 +263,7 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:C
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -328,7 +328,7 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:D
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -393,7 +393,7 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:E
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -458,7 +458,7 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:F
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -523,7 +523,7 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:G
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -588,7 +588,7 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:H
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -653,7 +653,7 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:I
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -718,7 +718,7 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:J
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -783,7 +783,7 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:K
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -848,7 +848,7 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:L
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -913,7 +913,7 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:M
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -978,7 +978,7 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:N
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -1043,7 +1043,7 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:O
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -1108,7 +1108,7 @@ pipelines:
       STAGING_PROJECT: openSUSE:Factory:Staging:Gcc7
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     materials:
       stagings:

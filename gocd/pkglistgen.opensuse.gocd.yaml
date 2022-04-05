@@ -1,7 +1,7 @@
 format_version: 3
 pipelines:
   Pkglistgen.openSUSE_Factory:
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
@@ -66,7 +66,7 @@ pipelines:
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:RISCV -s target --only-release-packages --force
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:RISCV -s target
   Update.Repos.Factory:
-    group: Factory.pkglistgen
+    group: Factory
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
@@ -102,7 +102,7 @@ pipelines:
             tasks:
              - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:RISCV
   Pkglistgen.openSUSE_Leap_15.4:
-    group: Leap.pkglistgen
+    group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
@@ -124,7 +124,7 @@ pipelines:
             - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o openSUSE:Leap:15.4 -s SUSE:SLE-15-SP4:GA
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.4 -s target
   Pkglistgen.openSUSE_Leap_15.3_Update_Respin:
-    group: Leap.pkglistgen
+    group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
@@ -147,7 +147,7 @@ pipelines:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.3:Update:Respin -s target
 
   Update.Repos.Leap.openSUSE_Leap_15.4:
-    group: Leap.pkglistgen
+    group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
@@ -168,7 +168,7 @@ pipelines:
             tasks:
              - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.4
   Update.Repos.Leap.openSUSE_Leap_15.3_Update_Respin:
-    group: Leap.pkglistgen
+    group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
