@@ -19,6 +19,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
     def __init__(self, *args, **kwargs):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
         self.request_default_return = True
+        self.override_allow = False
 
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         self.logger.info("%s/%s@%s -> %s/%s" % (src_project,
@@ -46,7 +47,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
                 return False
             return True
         self.review_messages['declined'] += f"\n{target_package } appears to be a new package and " + \
-            "no matching 'bugowner:' line could be found in the request description."
+            "no matching 'bugowner:' line could be found in the request description. See https://confluence.suse.com/x/WgH2OQ"
         return False
 
     def existing_url(self, url):
