@@ -268,7 +268,7 @@ class RepoChecker():
             if not source.startswith('{}/{}/{}/'.format(project, repository, arch)):
                 continue
             code = buildresult.get(os.path.basename(source), 'gone')
-            if code == 'gone':
+            if code == 'gone' or code == 'excluded':
                 del oldstate['check'][source]
             if code != 'succeeded':
                 self.logger.debug(f"Skipping build result for {source} {code}")
