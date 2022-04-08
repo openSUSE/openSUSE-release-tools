@@ -213,12 +213,21 @@ function aggregate_all($period)
 function aggregate($intervals, &$merged, $date, $date_previous, $data, $tags = [], $prefix = 'access')
 {
   foreach ($intervals as $interval => $format) {
-    if ($interval == 'FQ')
+    if ($interval == 'FQ') {
       $value = format_FQ($date);
-    elseif ($interval == 'FY')
+      if (isset($date_previous))
+        $value_previous = format_FQ($date_previous);
+    }
+    elseif ($interval == 'FY') {
       $value = format_FY($date);
-    else
+      if (isset($date_previous))
+        $value_previous = format_FY($date_previous);
+    }
+    else {
       $value = $date->format($format);
+      if (isset($date_previous))
+        $value_previous = $date_previous->format($format);
+    }
     if (!isset($merged[$interval]) || $value != $merged[$interval]['value']) {
       if (!empty($merged[$interval]['data'])) {
         $summary = summarize($merged[$interval]['data']);
@@ -226,15 +235,17 @@ function aggregate($intervals, &$merged, $date, $date_previous, $data, $tags = [
           $summary = ['-' => $summary['-']];
         }
 
-        $count = write_summary($interval, $date_previous, $summary, $tags, $prefix);
+        if (isset($value_previous) and $value != $value_previous) {
+          $count = write_summary($interval, $date_previous, $summary, $tags, $prefix);
 
-        if ($prefix == 'access') {
-          $summary = summarize_product_plus_key($merged[$interval]['data']['total_image_product']);
-          $count += write_summary_product_plus_key($interval, $date_previous, $summary, 'image');
+          if ($prefix == 'access') {
+            $summary = summarize_product_plus_key($merged[$interval]['data']['total_image_product']);
+            $count += write_summary_product_plus_key($interval, $date_previous, $summary, 'image');
+          }
+
+          error_log("[$prefix] [$interval] [{$merged[$interval]['value']}] wrote $count points at " .
+            $date_previous->format('Y-m-d') . " spanning " . $merged[$interval]['data']['days'] . ' day(s)');
         }
-
-        error_log("[$prefix] [$interval] [{$merged[$interval]['value']}] wrote $count points at " .
-          $date_previous->format('Y-m-d') . " spanning " . $merged[$interval]['data']['days'] . ' day(s)');
       }
 
       // Reset merge data to current data.
