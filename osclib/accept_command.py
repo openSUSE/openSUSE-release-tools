@@ -68,9 +68,10 @@ class AcceptCommand(object):
 
         f = http_GET(url)
         root = ET.parse(f).getroot()
-        description = root.find('description').text
-        if not description:
+        description = root.find('description')
+        if description is None or description.text is None:
             return
+        description = description.text
         for line in description.splitlines():
             # this relies on the format relied upon in check_bugowner
             m = re.search(r'^bugowner:\s*(\S*)', line)
