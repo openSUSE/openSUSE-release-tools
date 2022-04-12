@@ -90,10 +90,8 @@ class SkippkgFinder(object):
             'osad',
             'rhncfg',
             'python-ibus',
-            'python-pymemcache',
             'suse-build-key',
             'suse-hpc',
-            'txt2tags',
             'zypp-plugin-spacewalk',
             'zypper-search-packages-plugin',
         )
