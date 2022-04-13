@@ -172,7 +172,9 @@ if __name__ == '__main__':
     else:
         fetcher.add('openSUSE:Leap:Micro:5.2', nick='Leap:Micro:5.2',
                     download_url='https://download.opensuse.org/distribution/leap-micro/5.2/product/iso',
-                    openqa_group='openSUSE Leap Micro 5.2', openqa_version='5.2', openqa_groupid=94)
+                    openqa_group='openSUSE Leap Micro 5.2', openqa_version='5.2', openqa_groupid=95)
+        fetcher.add('openSUSE:Leap:Micro:5.2:Images', nick='Leap:Micro:5.2:Images',
+                    openqa_group='openSUSE Leap Micro 5.2 Image', openqa_version='5.2', openqa_groupid=94)
         fetcher.add('openSUSE:Leap:15.4', nick='Leap:15.4',
                     download_url='https://download.opensuse.org/distribution/leap/15.4/iso',
                     openqa_group='openSUSE Leap 15', openqa_version='15.4', openqa_groupid=50)
