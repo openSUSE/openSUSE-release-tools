@@ -69,7 +69,7 @@ pipelines:
         tasks:
         - script: |
             export PYTHONPATH=scripts
-            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP4:GA -r images
+            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP4:GA -r images && ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP4:GA -r containerfile
 
     - Release.Images.To.Test:
         approval: manual
@@ -83,7 +83,7 @@ pipelines:
         - script: |-
             set -e
             PRODUCTS=$(osc -A https://api.suse.de ls SUSE:SLE-15-SP4:GA | grep "^SLES15-SP4" | grep -v release)
-            for product in kiwi-templates-Minimal sles15-image 000product $PRODUCTS; do
+            for product in kiwi-templates-Minimal sles15-image cdi-apiserver-container cdi-cloner-container cdi-controller-container cdi-importer-container cdi-operator-container cdi-uploadproxy-container cdi-uploadserver-container virt-api-container virt-controller-container virt-handler-container virt-launcher-container virt-libguestfs-tools-container virt-operator-container 000product $PRODUCTS; do
               osc -A https://api.suse.de release SUSE:SLE-15-SP4:GA $product
             done
             sleep 600
@@ -141,7 +141,7 @@ pipelines:
             tasks:
               - script: |
                   export PYTHONPATH=scripts
-                  while (! ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP4:GA -r images); do
+                  while (! ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP4:GA -r images && ! ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP4:GA -r containerfile); do
                     sleep 300
                   done
           Release.To.Test:
@@ -153,7 +153,7 @@ pipelines:
               - script: |-
                   set -e
                   PRODUCTS=$(osc -A https://api.suse.de ls SUSE:SLE-15-SP4:GA | grep "^SLES15-SP4" | grep -v release)
-                  for product in kiwi-templates-Minimal sles15-image 000product $PRODUCTS; do
+                  for product in kiwi-templates-Minimal sles15-image cdi-apiserver-container cdi-cloner-container cdi-controller-container cdi-importer-container cdi-operator-container cdi-uploadproxy-container cdi-uploadserver-container virt-api-container virt-controller-container virt-handler-container virt-launcher-container virt-libguestfs-tools-container virt-operator-container 000product $PRODUCTS; do
                     osc -A https://api.suse.de release SUSE:SLE-15-SP4:GA $product
                   done
 
