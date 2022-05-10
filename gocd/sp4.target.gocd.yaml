@@ -69,6 +69,8 @@ pipelines:
         tasks:
         - script: |
             export PYTHONPATH=scripts
+            set -e
+            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP4:GA -r containerfile
             ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP4:GA -r images
 
     - Release.Images.To.Test:
@@ -82,11 +84,18 @@ pipelines:
         tasks:
         - script: |-
             set -e
+            osc -A https://api.suse.de release SUSE:SLE-15-SP4:GA -r containerfile
+            osc -A https://api.suse.de release --target-project=SUSE:SLE-15-SP4:GA:TEST --target-repository=containers -r images SUSE:SLE-15-SP4:GA sles15-image
             PRODUCTS=$(osc -A https://api.suse.de ls SUSE:SLE-15-SP4:GA | grep "^SLES15-SP4" | grep -v release)
-            for product in kiwi-templates-Minimal sles15-image 000product $PRODUCTS; do
+            for product in kiwi-templates-Minimal 000product $PRODUCTS; do
               osc -A https://api.suse.de release SUSE:SLE-15-SP4:GA $product
             done
             sleep 600
+            while (osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP4:GA:TEST/_result?view=summary&repository=containers" | grep "result project" | grep -v 'code="published" state="published">'); do
+                echo PENDING
+                sleep 600
+            done
+            osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP4:GA:TEST/_result?view=summary&repository=containers" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
             while (osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP4:GA:TEST/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
                 echo PENDING
                 sleep 600
@@ -105,6 +114,11 @@ pipelines:
         - script: |-
             osc -A https://api.suse.de release SUSE:SLE-15-SP4:GA:TEST
             sleep 600
+            while (osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP4:GA:PUBLISH/_result?view=summary&repository=containers" | grep "result project" | grep -v 'code="published" state="published">'); do
+                echo PENDING
+                sleep 600
+            done
+            osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP4:GA:PUBLISH/_result?view=summary&repository=containers" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
             while (osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP4:GA:PUBLISH/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
                 echo PENDING
                 sleep 600
@@ -141,6 +155,9 @@ pipelines:
             tasks:
               - script: |
                   export PYTHONPATH=scripts
+                  while (! ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP4:GA -r containerfile); do
+                    sleep 300
+                  done
                   while (! ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP4:GA -r images); do
                     sleep 300
                   done
@@ -152,8 +169,10 @@ pipelines:
             tasks:
               - script: |-
                   set -e
+                  osc -A https://api.suse.de release SUSE:SLE-15-SP4:GA -r containerfile
+                  osc -A https://api.suse.de release --target-project=SUSE:SLE-15-SP4:GA:TEST --target-repository=containers -r images SUSE:SLE-15-SP4:GA sles15-image
                   PRODUCTS=$(osc -A https://api.suse.de ls SUSE:SLE-15-SP4:GA | grep "^SLES15-SP4" | grep -v release)
-                  for product in kiwi-templates-Minimal sles15-image 000product $PRODUCTS; do
+                  for product in kiwi-templates-Minimal 000product $PRODUCTS; do
                     osc -A https://api.suse.de release SUSE:SLE-15-SP4:GA $product
                   done
 
