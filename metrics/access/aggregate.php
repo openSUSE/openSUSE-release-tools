@@ -443,6 +443,8 @@ function write($points)
 
   if (!$database) {
     $database = InfluxDB\Client::fromDSN('influxdb://0.0.0.0:8086/osrt_access');
+    $database->drop();
+    $database->create();
   }
 
   if (!$database->writePoints($points, Database::PRECISION_SECONDS)) die('failed to write points');
