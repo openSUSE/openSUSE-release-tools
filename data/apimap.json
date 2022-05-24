@@ -8,5 +8,15 @@
     "version": "15.3",
     "flavor": "DVD-Backports-Incidents",
     "distri": "opensuse"
+  },
+  "openSUSE:Leap:15.4:Update" : {
+    "version": "15.4",
+    "flavor": "DVD-Incidents",
+    "distri": "opensuse"
+  },
+  "openSUSE:Backports:SLE-15-SP4:Update" : {
+    "version": "15.4",
+    "flavor": "DVD-Backports-Incidents",
+    "distri": "opensuse"
   }
 }
