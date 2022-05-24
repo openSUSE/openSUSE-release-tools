@@ -60,7 +60,7 @@ pipelines:
             - repo-checker
             tasks:
             - script: ./project-installcheck.py -A https://api.suse.de --debug check --store SUSE:SLE-15-SP4:GA:Staging/dashboard --no-rebuild SUSE:SLE-15-SP4:GA
-  MicroOS.Project:
+  SLE-Micro.Project:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
@@ -75,11 +75,11 @@ pipelines:
     - Run:
         approval: manual
         jobs:
-          MicroOS:
+          SLE-Micro:
             resources:
             - repo-checker
             tasks:
-            - script: ./project-installcheck.py -A https://api.suse.de --debug check --store SUSE:SLE-15-SP3:Update:Products:MicroOS52:Staging/dashboard --no-rebuild SUSE:SLE-15-SP3:Update:Products:MicroOS52
+            - script: ./project-installcheck.py -A https://api.suse.de --debug check --store SUSE:SLE-15-SP4:Update:Products:Micro53:Staging/dashboard --no-rebuild SUSE:SLE-15-SP4:Update:Products:Micro53
   SLE.Origin.Manager:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
@@ -131,7 +131,7 @@ pipelines:
                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP4:GA unselect --cleanup
                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP4:GA repair --cleanup
                rm -rf $tempdir
-  MicroOS.Staging.Bot.Regular:
+  SLE-Micro.Staging.Bot.Regular:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
@@ -158,11 +158,11 @@ pipelines:
                ln -s $PWD/osclib $tempdir/.osc-plugins
                export HOME=$tempdir
 
-               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP3:Update:Products:MicroOS52 rebuild
-               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP3:Update:Products:MicroOS52 list --supersede
-               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP3:Update:Products:MicroOS52 select --non-interactive --merge --try-strategies
-               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP3:Update:Products:MicroOS52 unselect --cleanup
-               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP3:Update:Products:MicroOS52 repair --cleanup
+               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP4:Update:Products:Micro53 rebuild
+               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP4:Update:Products:Micro53 list --supersede
+               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP4:Update:Products:Micro53 select --non-interactive --merge --try-strategies
+               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP4:Update:Products:Micro53 unselect --cleanup
+               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP4:Update:Products:Micro53 repair --cleanup
                rm -rf $tempdir
   S15.SP4.Staging.Bot.Report:
     group: SLE.Checkers
@@ -184,7 +184,7 @@ pipelines:
             - staging-bot
             tasks:
             - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:SLE-15-SP4:GA
-  MicroOS.Staging.Bot.Report:
+  SLE-Micro.Staging.Bot.Report:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
@@ -203,7 +203,7 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:SLE-15-SP3:Update:Products:MicroOS52
+            - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:SLE-15-SP4:Update:Products:Micro53
   SLE.Source.Check:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
