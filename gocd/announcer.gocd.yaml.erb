@@ -1,6 +1,6 @@
 format_version: 3
 pipelines:
-<% ['Factory', 'Factory:ARM', 'Kubic', 'Kubic:ARM', 'MicroOS', 'MicroOS:ARM'].each_with_index do |project, index| -%>
+<% ['Factory', 'Factory:ARM', 'MicroOS', 'MicroOS:ARM'].each_with_index do |project, index| -%>
 <% name = project.gsub(':', '_') -%>
   Announcer.<%= name %>:
     group: openSUSE.Checkers

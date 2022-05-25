@@ -33,12 +33,6 @@ pipelines:
             tasks:
               - script: |
                   ruby obs-to-vagrantcloud.rb --url https://download.opensuse.org/tumbleweed/appliances/boxes/openSUSE-MicroOS.x86_64-Vagrant.json --organization opensuse --new-box-name MicroOS.x86_64
-          publish_Kubic_x86_64:
-            resources:
-            - staging-bot
-            tasks:
-              - script: |
-                  ruby obs-to-vagrantcloud.rb --url https://download.opensuse.org/tumbleweed/appliances/boxes/openSUSE-MicroOS.x86_64-Kubic-kubeadm-Vagrant.json --organization opensuse --new-box-name Kubic.x86_64
           publish_MicroOS-ContainerHost_x86_64:
             resources:
             - staging-bot
@@ -51,12 +45,6 @@ pipelines:
             tasks:
               - script: |
                   ruby obs-to-vagrantcloud.rb --url https://download.opensuse.org/ports/aarch64/tumbleweed/appliances/boxes/openSUSE-MicroOS.aarch64-Vagrant.json --organization opensuse --new-box-name MicroOS.aarch64
-          publish_Kubic_aarch64:
-            resources:
-            - staging-bot
-            tasks:
-              - script: |
-                  ruby obs-to-vagrantcloud.rb --url https://download.opensuse.org/ports/aarch64/tumbleweed/appliances/boxes/openSUSE-MicroOS.aarch64-Kubic-kubeadm-Vagrant.json --organization opensuse --new-box-name Kubic.aarch64
           publish_MicroOS-ContainerHost_aarch64:
             resources:
             - staging-bot
