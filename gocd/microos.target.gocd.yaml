@@ -1,6 +1,6 @@
 format_version: 3
 pipelines:
-  MicroOS.RelPkgs:
+  SLE-Micro.RelPkgs:
     group: MicroOS
     lock_behavior: unlockWhenFinished
     timer:
@@ -17,9 +17,9 @@ pipelines:
         resources:
         - repo-checker
         tasks:
-        - script: ./pkglistgen.py -A https://api.suse.de update_and_solve -p SUSE:SLE-15-SP3:Update:Products:MicroOS52 -s target --only-release-packages --force
+        - script: ./pkglistgen.py -A https://api.suse.de update_and_solve -p SUSE:SLE-15-SP4:Update:Products:Micro53 -s target --only-release-packages --force
 
-  MicroOS.Package.Lists:
+  SLE-Micro.Package.Lists:
     group: MicroOS
     lock_behavior: unlockWhenFinished
     materials:
@@ -28,7 +28,7 @@ pipelines:
         auto_update: true
         destination: repos
         whitelist:
-          - SUSE:SLE-15-SP3:Update:Products:MicroOS52_-_standard.yaml
+          - SUSE:SLE-15-SP4:Update:Products:Micro53_-_standard.yaml
       scripts:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
         auto_update: true
@@ -42,9 +42,9 @@ pipelines:
         resources:
         - repo-checker
         tasks:
-        - script: ./scripts/pkglistgen.py -A https://api.suse.de --debug update_and_solve -p SUSE:SLE-15-SP3:Update:Products:MicroOS52 -s target --force
+        - script: ./scripts/pkglistgen.py -A https://api.suse.de --debug update_and_solve -p SUSE:SLE-15-SP4:Update:Products:Micro53 -s target --force
 
-  MicroOS.Images:
+  SLE-Micro.Images:
     group: MicroOS
     lock_behavior: unlockWhenFinished
     materials:
@@ -52,7 +52,7 @@ pipelines:
         git: git://botmaster.suse.de/suse-repos.git
         auto_update: true
         whitelist:
-          - SUSE:SLE-15-SP3:Update:Products:MicroOS52_-_images.yaml
+          - SUSE:SLE-15-SP4:Update:Products:Micro53_-_images.yaml
         destination: repos
       scripts:
         auto_update: true
@@ -69,7 +69,7 @@ pipelines:
         tasks:
         - script: |
             export PYTHONPATH=scripts
-            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP3:Update:Products:MicroOS52 -r images
+            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP4:Update:Products:Micro53 -r images
 
     - Release.Images.To.Test:
         approval: manual
@@ -81,8 +81,8 @@ pipelines:
         - staging-bot
         tasks:
         - script: |-
-            for product in 000product SUSE-MicroOS; do
-              osc -A https://api.suse.de release SUSE:SLE-15-SP3:Update:Products:MicroOS52 $product
+            for product in 000product SLE-Micro; do
+              osc -A https://api.suse.de release SUSE:SLE-15-SP4:Update:Products:Micro53 $product
             done
 
     - Release.Images.To.Publish:
@@ -94,4 +94,4 @@ pipelines:
         resources:
         - staging-bot
         tasks:
-        - script: osc -A https://api.suse.de release SUSE:SLE-15-SP3:Update:Products:MicroOS52:TEST
+        - script: osc -A https://api.suse.de release SUSE:SLE-15-SP4:Update:Products:Micro53:TEST
