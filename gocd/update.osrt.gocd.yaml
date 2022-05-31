@@ -13,7 +13,7 @@ pipelines:
       only_on_changes: false
     materials:
       git:
-        git: https://github.com/openSUSE/opensuse-release-tools.git
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
     stages:
     - obs-deploy:
         resources:
