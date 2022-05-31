@@ -1,0 +1,10 @@
+[Unit]
+Description=openSUSE Release Tools: Docker image publisher
+
+[Timer]
+OnBootSec=120
+OnUnitInactiveSec=15 min
+Unit=osrt-docker-publisher.service
+
+[Install]
+WantedBy=timers.target

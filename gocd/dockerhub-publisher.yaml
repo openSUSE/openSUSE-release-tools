@@ -1,0 +1,26 @@
+format_version: 3
+pipelines:
+  openSUSE.DockerHub.Publish:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      REGISTRY: 'https://registry-1.docker.io'
+      REGISTRY_USER: 'opensusereleasebot'
+      REGISTRY_PASSWORD: '{{SECRET:[opensuse.secrets][REGISTRY_PASSWORD]}}'
+      REGISTRY_REPO_TW: 'opensuse/tumbleweed'
+      REGISTRY_REPO_LEAP: 'opensuse/leap'
+    materials:
+      git:
+        git: https://github.com/Vogtinator/opensuse-release-tools.git
+        branch: docker-release-gocd
+    timer:
+      spec: 0 */15 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+        - staging-bot
+        tasks:
+        - script:
+            ./docker_publisher.py
