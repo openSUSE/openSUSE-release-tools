@@ -41,26 +41,33 @@ class Handler:
                 return prev
             prev = rev
 
+    def get_revision(self, project, revision):
+        for r in self.projects[project]:
+            if r.rev == revision:
+                return r
+        print(f"Can't find {revision} in {project}")
+        return None
+
 class Revision:
     def __init__(self, project, package) -> None:
         self.project = project
         self.package = package
 
     def parse(self, xml):
-        self.rev = xml.get('rev')
-        self.vrev = xml.get('vrev')
+        self.rev = int(xml.get('rev'))
+        self.vrev = int(xml.get('vrev'))
         self.srcmd5 = xml.find('srcmd5').text
         self.version = xml.find('version').text
         time = int(xml.find('time').text)
         self.time = datetime.datetime.fromtimestamp(time)
-        userid = xml.find('userid')
+        userid = xml.find('user')
         if userid is not None:
             self.userid = userid.text
         else:
             self.userid = 'unknown'
         comment = xml.find('comment')
         if comment is not None:
-            self.comment = comment.text
+            self.comment = comment.text or ''
         else:
             self.comment = ''
         self.linkrev = None
@@ -107,15 +114,38 @@ class Revision:
 
     def check_request(self):
         if not self.requestid:
-            return
+            return 0
         u = osc.core.makeurl(apiurl, ['request', str(self.requestid)])
         try:
             r = osc.core.http_GET(u)
         except HTTPError as e:
             print(u, e)
-            return None
+            return 0
         root = ET.parse(r)
         print(ET.tostring(root).decode('utf-8'))
+        # TODO: this only works for Factory
+        action_source = root.find('action/source')
+        return int(action_source.get('rev'))
+
+    def git_commit(self, first_commit):
+        index = repo.index
+        index.add_all()
+        index.write()
+        author = pygit2.Signature(f'OBS User {r.userid}', 'null@suse.de', time=int(self.time.timestamp()))
+        commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de')
+        message = r.comment
+        if first_commit:
+            ref = "HEAD"
+            parents = []
+            first_commit = False
+        else:
+            ref = repo.head.name
+            parents = [repo.head.target]
+
+        tree = index.write_tree()
+        print(parents)
+        self.commit = repo.create_commit(ref, author, commiter, message, tree, parents)
+        return self.commit
 
 handler = Handler('bash')
 revs_factory = handler.get_revisions('openSUSE:Factory')
@@ -123,28 +153,38 @@ revs_devel = handler.get_revisions('Base:System')
 
 os.mkdir('repo')
 repo = pygit2.init_repository('repo', False)
-first_commit = True
+last_commit = None
 
 for r in revs_devel:
     r.check_link(handler)
     r.get_file('bash.spec', 'repo/bash.spec')
-    index = repo.index
-    index.add_all()
-    index.write()
-    author = pygit2.Signature(f'OBS User {r.userid}', 'null@suse.de')
-    commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de')
-    message = r.comment
-    if first_commit:
-        ref = "HEAD"
-        parents = []
-        first_commit = False
-    else:
-        ref = repo.head.name
-        parents = [repo.head.target]
-        
-    tree = index.write_tree()
-    repo.create_commit(ref, author, commiter, message, tree, parents)
+    last_commit = r.git_commit(last_commit is None)
 
+index = repo.index
+tree = index.write_tree()
+repo.create_branch('factory', repo.get(handler.get_revision('Base:System', 1).commit))
+branch = repo.lookup_branch('factory')
+ref = repo.lookup_reference(branch.name)
+repo.checkout(ref)
+
+last_commit = ref
 for r in revs_factory:
-    #r.get_file('bash.spec')
-    r.check_request()
+    submitted_revision = r.check_request()
+    if submitted_revision:
+        rev = handler.get_revision('Base:System', submitted_revision)
+        author = pygit2.Signature(f'OBS User {r.userid}', 'null@suse.de')
+        commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de')
+        message = r.comment or f'Accepting request {r.requestid}'
+        index = repo.index
+        tree = index.write_tree()
+        ref = repo.head.name
+        if last_commit:
+            parents = [last_commit, rev.commit]
+        else:
+            parents = [rev.commit]
+        print("create", parents)
+        commit = repo.create_commit(ref, author, commiter, message, tree, parents)
+        last_commit = commit
+    else:
+        r.get_file('bash.spec', 'repo/bash.spec')
+        last_commit = r.git_commit(last_commit is None)
