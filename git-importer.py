@@ -29,6 +29,8 @@ class Handler:
         root = ET.parse(r).getroot()
         for revision in root.findall('revision'):
             r = Revision(project, self.package).parse(revision)
+            #if r.userid == 'buildservice-autocommit':
+            #    continue
             revs.append(r)
 
         self.projects[project] = revs
@@ -37,13 +39,18 @@ class Handler:
     def find_lastrev(self, project, time):
         prev = None
         for rev in self.projects[project]:
-            if rev.time >= time:
+            if rev.time > time:
                 return prev
+            if rev.time == time:
+                return rev
             prev = rev
+        return prev
 
     def get_revision(self, project, revision):
         for r in self.projects[project]:
-            if r.rev == revision:
+            if str(r.rev) == revision:
+                return r
+            if r.srcmd5 == revision:
                 return r
         print(f"Can't find {revision} in {project}")
         return None
@@ -122,29 +129,23 @@ class Revision:
             print(u, e)
             return 0
         root = ET.parse(r)
-        print(ET.tostring(root).decode('utf-8'))
+        #print(ET.tostring(root).decode('utf-8'))
         # TODO: this only works for Factory
         action_source = root.find('action/source')
-        return int(action_source.get('rev'))
+        return action_source.get('rev') or 0
 
-    def git_commit(self, first_commit):
+    def git_commit(self):
         index = repo.index
         index.add_all()
         index.write()
         author = pygit2.Signature(f'OBS User {r.userid}', 'null@suse.de', time=int(self.time.timestamp()))
         commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de')
         message = r.comment
-        if first_commit:
-            ref = "HEAD"
-            parents = []
-            first_commit = False
-        else:
-            ref = repo.head.name
-            parents = [repo.head.target]
+        ref = repo.head.name
+        parents = [repo.head.target]
 
         tree = index.write_tree()
-        print(parents)
-        self.commit = repo.create_commit(ref, author, commiter, message, tree, parents)
+        self.commit = str(repo.create_commit(ref, author, commiter, message, tree, parents))
         return self.commit
 
 handler = Handler('bash')
@@ -155,14 +156,29 @@ os.mkdir('repo')
 repo = pygit2.init_repository('repo', False)
 last_commit = None
 
+index = repo.index
+index.write()
+author = pygit2.Signature(f'None', 'null@suse.de', time=int(revs_devel[0].time.timestamp()))
+commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de')
+message = 'Initialize empty repo'
+ref = 'refs/heads/devel'
+parents = []
+
+tree = index.write_tree()
+repo.create_commit(ref, author, commiter, message, tree, parents)
+branch = repo.lookup_branch('devel')
+ref = repo.lookup_reference(branch.name)
+repo.reset(ref.peel().id, pygit2.GIT_RESET_HARD)
+repo.checkout(ref)
+
 for r in revs_devel:
     r.check_link(handler)
     r.get_file('bash.spec', 'repo/bash.spec')
-    last_commit = r.git_commit(last_commit is None)
+    r.git_commit()
 
 index = repo.index
 tree = index.write_tree()
-repo.create_branch('factory', repo.get(handler.get_revision('Base:System', 1).commit))
+repo.create_branch('factory', repo.get(handler.get_revision('Base:System', '1').commit))
 branch = repo.lookup_branch('factory')
 ref = repo.lookup_reference(branch.name)
 repo.checkout(ref)
@@ -175,16 +191,19 @@ for r in revs_factory:
         author = pygit2.Signature(f'OBS User {r.userid}', 'null@suse.de')
         commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de')
         message = r.comment or f'Accepting request {r.requestid}'
-        index = repo.index
-        tree = index.write_tree()
         ref = repo.head.name
-        if last_commit:
-            parents = [last_commit, rev.commit]
-        else:
-            parents = [rev.commit]
+        repo.reset(repo.head.target, pygit2.GIT_RESET_HARD)
+        repo.checkout(ref)
+        repo.merge(repo.get(rev.commit).peel(pygit2.Commit).id)
+  
+        r.get_file('bash.spec', 'repo/bash.spec')
+        index.add_all()
+        index.write()
+        parents = [repo.head.target, repo.get(rev.commit).peel(pygit2.Commit).id]
         print("create", parents)
         commit = repo.create_commit(ref, author, commiter, message, tree, parents)
         last_commit = commit
     else:
+        print("commit")
         r.get_file('bash.spec', 'repo/bash.spec')
-        last_commit = r.git_commit(last_commit is None)
+        last_commit = r.git_commit()
