@@ -197,11 +197,13 @@ for r in revs:
             repo.merge(repo.get(rev.commit).peel(pygit2.Commit).id)
 
             r.download('repo')
+            index = repo.index
             index.add_all()
             index.write()
+            tree = index.write_tree()
             parents = [repo.head.target, repo.get(rev.commit).peel(pygit2.Commit).id]
             print("create", parents)
-            commit = repo.create_commit(ref, author, commiter, message, tree, parents)
+            commit = repo.create_commit(repo.head.name, author, commiter, message, tree, parents)
             repo.references["refs/heads/devel"].set_target(commit)
             continue
     else:
