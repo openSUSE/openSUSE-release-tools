@@ -123,6 +123,7 @@ class Revision:
 
     def download(self, target):
         self.get_file(self.package + '.spec', os.path.join(target, self.package + '.spec'))
+        self.get_file(self.package + '.changes', os.path.join(target, self.package + '.changes'))
 
     def check_request(self):
         if not self.requestid:
