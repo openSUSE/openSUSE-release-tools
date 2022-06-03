@@ -155,8 +155,8 @@ class Revision:
         return self.commit
 
 
-package = 'icecream'
-devel_project = 'devel:tools:building'
+package = 'bash'
+devel_project = 'Base:System'
 handler = Handler(package)
 revs_factory = handler.get_revisions('openSUSE:Factory')
 revs_devel = handler.get_revisions(devel_project)
