@@ -37,14 +37,6 @@ class FreezeCommand(object):
 
         self.api.retried_PUT(url, ET.tostring(meta))
 
-    def is_images_disabled(self):
-        flag = self.api.get_flag_in_prj(self.prj, flag='build', repository='images')
-        if flag == 'disable':
-            return True
-        if flag == 'enable':
-            return False
-        return self.api.get_flag_in_prj(self.prj, flag='build') == 'disable'
-
     def create_bootstrap_aggregate(self):
         self.create_bootstrap_aggregate_meta()
         self.create_bootstrap_aggregate_file()
@@ -131,7 +123,6 @@ class FreezeCommand(object):
         self.copy_weakremovers()
 
         build_status = self.api.get_flag_in_prj(prj, flag='build')
-        images_status = self.api.get_flag_in_prj(prj, flag='build', repository='images')
 
         # If there is not a bootstrap repository, there is not
         # anything more to do.
@@ -152,9 +143,8 @@ class FreezeCommand(object):
 
         # Set the original build status for the project
         self.api.build_switch_prj(prj, build_status)
-        # if we build we *might* want to enable images as well (but only if preexistant)
-        if build_status == 'enable':
-            self.api.build_switch_prj(prj, images_status, repository='images')
+        # disable image build; after freeze, /standard needs to build.
+        self.api.build_switch_prj(prj, 'disable', repository='images')
 
     def prj_meta_for_bootstrap_copy(self):
         root = ET.Element('project', {'name': self.prj})
