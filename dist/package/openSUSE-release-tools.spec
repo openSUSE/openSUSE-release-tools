@@ -103,6 +103,7 @@ OBS product release announcer for generating email diffs summaries.
 %package check-source
 Summary:        Check source review bot
 Group:          Development/Tools/Other
+Requires:       obs-scm-bridge
 Requires:       obs-service-download_files
 Requires:       obs-service-source_validator
 Requires:       osclib = %{version}
