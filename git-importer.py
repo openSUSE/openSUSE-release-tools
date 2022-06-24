@@ -7,6 +7,7 @@ from lxml import etree as ET
 import datetime
 import os
 import pygit2
+import sys
 
 logger = logging.getLogger()
 osc.conf.get_config(override_apiurl='https://api.opensuse.org')
@@ -53,7 +54,10 @@ class Handler:
                 return r
             if r.srcmd5 == revision:
                 return r
-        print(f"Can't find {revision} in {project}")
+        print(f"Can't find '{revision}' in {project}")
+        for r in self.projects[project]:
+            print(r)
+        sys.exit(1)
         return None
 
 
@@ -61,6 +65,7 @@ class Revision:
     def __init__(self, project, package) -> None:
         self.project = project
         self.package = package
+        self.commit = None
 
     def parse(self, xml):
         self.rev = int(xml.get('rev'))
@@ -101,7 +106,14 @@ class Revision:
         tproject = root.get('project')
         self.linkrev = handler.find_lastrev(tproject, self.time).srcmd5
 
-        u = osc.core.makeurl(apiurl, ['source', self.project, self.package], {'rev': self.srcmd5, 'linkrev': self.linkrev, 'expand': '1'})
+    # even if it's not a link we still need to check the expanded srcmd5 as it's possible used in
+    # submit requests
+    def check_expanded(self, handler):
+        self.check_link(handler)
+        opts = {'rev': self.srcmd5, 'expand': '1'}
+        if self.linkrev:
+            opts['linkrev'] = self.linkrev
+        u = osc.core.makeurl(apiurl, ['source', self.project, self.package], opts)
         try:
             r = osc.core.http_GET(u)
         except HTTPError:
@@ -155,14 +167,14 @@ class Revision:
         return self.commit
 
 
-package = 'bash'
+package = 'systemd'
 devel_project = 'Base:System'
 handler = Handler(package)
 revs_factory = handler.get_revisions('openSUSE:Factory')
 revs_devel = handler.get_revisions(devel_project)
 
 for r in revs_devel:
-    r.check_link(handler)
+    r.check_expanded(handler)
 
 revs = sorted(revs_factory + revs_devel, key=lambda x: x.time.timestamp())
 
@@ -192,21 +204,26 @@ for r in revs:
         submitted_revision = r.check_request()
         if submitted_revision:
             rev = handler.get_revision(devel_project, submitted_revision)
-            author = pygit2.Signature(f'OBS User {r.userid}', 'null@suse.de', time=int(r.time.timestamp()))
-            commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de', time=int(r.time.timestamp()))
-            message = r.comment or f'Accepting request {r.requestid}'
-            repo.merge(repo.get(rev.commit).peel(pygit2.Commit).id)
+            if not rev:
+                print(r)
+            if rev.commit:
+                author = pygit2.Signature(f'OBS User {r.userid}', 'null@suse.de', time=int(r.time.timestamp()))
+                commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de', time=int(r.time.timestamp()))
+                message = r.comment or f'Accepting request {r.requestid}'
+                repo.merge(repo.get(rev.commit).peel(pygit2.Commit).id)
 
-            r.download('repo')
-            index = repo.index
-            index.add_all()
-            index.write()
-            tree = index.write_tree()
-            parents = [repo.head.target, repo.get(rev.commit).peel(pygit2.Commit).id]
-            print("create", parents)
-            commit = repo.create_commit(repo.head.name, author, commiter, message, tree, parents)
-            repo.references["refs/heads/devel"].set_target(commit)
-            continue
+                r.download('repo')
+                index = repo.index
+                index.add_all()
+                index.write()
+                tree = index.write_tree()
+                parents = [repo.head.target, repo.get(rev.commit).peel(pygit2.Commit).id]
+                print("create", parents)
+                commit = repo.create_commit(repo.head.name, author, commiter, message, tree, parents)
+                repo.references["refs/heads/devel"].set_target(commit)
+                continue
+            else:
+                logger.warning(str(rev) + " submitted from another devel project")
     else:
         branch = repo.lookup_branch('devel')
         ref = repo.lookup_reference(branch.name)
