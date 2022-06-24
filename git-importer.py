@@ -1,5 +1,6 @@
 #! /usr/bin/python3
 
+from email.policy import HTTP
 import osc.core
 import logging
 from urllib.error import HTTPError, URLError
@@ -8,10 +9,48 @@ import datetime
 import os
 import pygit2
 import sys
+import pathlib
+import hashlib
+import requests
+from osc.core import quote_plus
 
 logger = logging.getLogger()
 osc.conf.get_config(override_apiurl='https://api.opensuse.org')
 apiurl = osc.conf.config['apiurl']
+
+# copied from obsgit
+BINARY = {
+    ".xz",
+    ".gz",
+    ".bz2",
+    ".zip",
+    ".gem",
+    ".tgz",
+    ".png",
+    ".pdf",
+    ".jar",
+    ".oxt",
+    ".whl",
+    ".rpm",
+    ".obscpio"
+}
+
+
+def is_binary(filename):
+    # Shortcut the detection based on the file extension
+    suffix = pathlib.Path(filename).suffix
+    return suffix in BINARY
+
+
+def md5(name):
+    md5 = hashlib.md5()
+    with open(name, "rb") as f:
+        while True:
+            chunk = f.read(1024 * 4)
+            if not chunk:
+                break
+            md5.update(chunk)
+    return md5.hexdigest()
 
 
 class Handler:
@@ -122,21 +161,6 @@ class Revision:
         root = ET.parse(r).getroot()
         self.srcmd5 = root.get('srcmd5')
 
-    def get_file(self, file, target):
-        opts = {'rev': self.srcmd5, 'expand': 1}
-        u = osc.core.makeurl(apiurl, ['source', self.project, self.package, file], opts)
-        try:
-            r = osc.core.http_GET(u)
-        except HTTPError as e:
-            print(u, e)
-            return None
-        with open(target, 'wb') as f:
-            f.write(r.read())
-
-    def download(self, target):
-        self.get_file(self.package + '.spec', os.path.join(target, self.package + '.spec'))
-        self.get_file(self.package + '.changes', os.path.join(target, self.package + '.changes'))
-
     def check_request(self):
         if not self.requestid:
             return 0
@@ -165,6 +189,67 @@ class Revision:
         tree = index.write_tree()
         self.commit = str(repo.create_commit(ref, author, commiter, message, tree, parents))
         return self.commit
+
+    def download(self, targetdir):
+        try:
+            root = ET.parse(osc.core.http_GET(osc.core.makeurl(
+                apiurl, ['source', self.project, self.package], {'expand': 1, 'rev': self.srcmd5})))
+        except HTTPError:
+            return
+        newfiles = dict()
+        files = dict()
+        # caching this needs to consider switching branches
+        for file in os.listdir(targetdir):
+            if file == '.git':
+                continue
+            files[file] = md5(os.path.join(targetdir, file))
+        remotes = dict()
+        repo.index.read()
+        for entry in root.findall('entry'):
+            name = entry.get('name')
+            large = int(entry.get('size')) > 40000
+            if large and (name.endswith('.changes') or name.endswith('.spec')):
+                large = False
+            if is_binary(name) or large:
+                remotes[name] = entry.get('md5')
+                quoted_name = quote_plus(name)
+                url = f'{apiurl}/public/source/{self.project}/{self.package}/{quoted_name}?rev={self.srcmd5}'
+                requests.put('http://source.dyn.cloud.suse.de/',
+                             data={'hash': entry.get('md5'), 'filename': name, 'url': url})
+                continue
+            newfiles[name] = entry.get('md5')
+            oldmd5 = files.pop(name, 'none')
+            if newfiles[name] != oldmd5:
+                print('download', name)
+                url = osc.core.makeurl(apiurl, [
+                    'source', self.project, self.package, quote_plus(name)], {'rev': self.srcmd5})
+                target = os.path.join(targetdir, name)
+                with open(target, 'wb') as f:
+                    f.write(osc.core.http_GET(url).read())
+                if md5(target) != newfiles[name]:
+                    raise Exception(f'Download error in {name}')
+                repo.index.add(name)
+            files.pop(name, None)
+        for file in files:
+            print('remove', file)
+            repo.index.remove(file)
+            os.unlink(os.path.join(targetdir, file))
+        firstspec = None
+        for file in sorted(newfiles):
+            if file.endswith('.spec'):
+                firstspec = os.path.join(targetdir, file)
+                break
+        if not firstspec:
+            print(self, newfiles)
+        content = open(firstspec, 'rb').readlines()
+        with open(firstspec, 'wb') as f:
+            for file in sorted(remotes):
+                quoted_file = quote_plus(file)
+                f.write(
+                    f'#!RemoteAssetURL: http://source.dyn.cloud.suse.de/{remotes[file]}/{quoted_file}\n'.encode('utf-8'))
+            for line in content:
+                if not line.startswith(b'#!RemoteAssetURL: http://source.dyn'):
+                    f.write(line)
 
 
 package = 'systemd'
