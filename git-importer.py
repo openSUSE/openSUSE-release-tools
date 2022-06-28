@@ -1,9 +1,8 @@
 #! /usr/bin/python3
 
-from email.policy import HTTP
 import osc.core
 import logging
-from urllib.error import HTTPError, URLError
+from urllib.error import HTTPError
 from lxml import etree as ET
 import datetime
 import os
@@ -96,7 +95,6 @@ class Handler:
         print(f"Can't find '{revision}' in {project}")
         for r in self.projects[project]:
             print(r)
-        sys.exit(1)
         return None
 
 
@@ -132,7 +130,7 @@ class Revision:
         return self
 
     def __str__(self) -> str:
-        return f"Rev {self.project}/{self.rev} Md5 {self.srcmd5} {self.time} {self.userid}"
+        return f"Rev {self.project}/{self.rev} Md5 {self.srcmd5} {self.time} {self.userid} {self.requestid}"
 
     def check_link(self, handler):
         u = osc.core.makeurl(apiurl, ['source', self.project, self.package, '_link'], {'rev': self.srcmd5})
@@ -207,6 +205,8 @@ class Revision:
         repo.index.read()
         for entry in root.findall('entry'):
             name = entry.get('name')
+            if not name.endswith('.spec'):
+                continue
             large = int(entry.get('size')) > 40000
             if large and (name.endswith('.changes') or name.endswith('.spec')):
                 large = False
@@ -240,7 +240,9 @@ class Revision:
                 firstspec = os.path.join(targetdir, file)
                 break
         if not firstspec:
+            logger.error("No spec file found")
             print(self, newfiles)
+            return
         content = open(firstspec, 'rb').readlines()
         with open(firstspec, 'wb') as f:
             for file in sorted(remotes):
@@ -251,9 +253,18 @@ class Revision:
                 if not line.startswith(b'#!RemoteAssetURL: http://source.dyn'):
                     f.write(line)
 
+def get_devel_package(package):
+    u = osc.core.makeurl(apiurl, ['source', 'openSUSE:Factory', package, '_meta'])
+    try:
+        r = osc.core.http_GET(u)
+    except HTTPError:
+        # no link
+        return None
+    root = ET.parse(r).getroot()
+    return root.find('devel').get('project')
 
-package = 'systemd'
-devel_project = 'Base:System'
+package = 'Mesa'
+devel_project = get_devel_package(package)
 handler = Handler(package)
 revs_factory = handler.get_revisions('openSUSE:Factory')
 revs_devel = handler.get_revisions(devel_project)
@@ -304,8 +315,8 @@ for r in revs:
                 tree = index.write_tree()
                 parents = [repo.head.target, repo.get(rev.commit).peel(pygit2.Commit).id]
                 print("create", parents)
-                commit = repo.create_commit(repo.head.name, author, commiter, message, tree, parents)
-                repo.references["refs/heads/devel"].set_target(commit)
+                r.commit = repo.create_commit(repo.head.name, author, commiter, message, tree, parents)
+                repo.references["refs/heads/devel"].set_target(r.commit)
                 continue
             else:
                 logger.warning(str(rev) + " submitted from another devel project")
@@ -314,6 +325,40 @@ for r in revs:
         ref = repo.lookup_reference(branch.name)
         repo.checkout(ref)
 
+    print("commit", r.project, r.rev)
+    r.download('repo')
+    r.git_commit()
+
+osc.conf.get_config(override_apiurl='https://api.suse.de')
+apiurl = osc.conf.config['apiurl']
+revs = handler.get_revisions('SUSE:SLE-15:GA')
+first=True
+for r in revs:
+    rev = handler.get_revision('openSUSE:Factory', r.srcmd5)
+    if first:
+        index = repo.index
+        tree = index.write_tree()
+        repo.create_branch('SLE_15_GA', repo.get(rev.commit))
+        first = False
+        branch = repo.lookup_branch('SLE_15_GA')
+        ref = repo.lookup_reference(branch.name)
+        repo.checkout(ref)
+    elif rev and rev.commit:
+        author = pygit2.Signature(f'OBS User {r.userid}', 'null@suse.de', time=int(r.time.timestamp()))
+        commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de', time=int(r.time.timestamp()))
+        message = r.comment or 'No commit log found'
+        repo.merge(repo.get(rev.commit).peel(pygit2.Commit).id)
+
+        r.download('repo')
+        index = repo.index
+        index.add_all()
+        index.write()
+        tree = index.write_tree()
+        parents = [repo.head.target, repo.get(rev.commit).peel(pygit2.Commit).id]
+        print("create", parents)
+        r.commit = repo.create_commit(repo.head.name, author, commiter, message, tree, parents)
+        #repo.references["refs/heads/SLE_15_GA"].set_target(r.commit)
+        continue
     print("commit", r.project, r.rev)
     r.download('repo')
     r.git_commit()
