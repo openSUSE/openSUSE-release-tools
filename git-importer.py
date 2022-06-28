@@ -69,8 +69,6 @@ class Handler:
         root = ET.parse(r).getroot()
         for revision in root.findall('revision'):
             r = Revision(project, self.package).parse(revision)
-            # if r.userid == 'buildservice-autocommit':
-            #    continue
             revs.append(r)
 
         self.projects[project] = revs
@@ -193,7 +191,7 @@ class Revision:
             root = ET.parse(osc.core.http_GET(osc.core.makeurl(
                 apiurl, ['source', self.project, self.package], {'expand': 1, 'rev': self.srcmd5})))
         except HTTPError:
-            return
+            return False
         newfiles = dict()
         files = dict()
         # caching this needs to consider switching branches
@@ -203,6 +201,7 @@ class Revision:
             files[file] = md5(os.path.join(targetdir, file))
         remotes = dict()
         repo.index.read()
+        different = False
         for entry in root.findall('entry'):
             name = entry.get('name')
             if not name.endswith('.spec'):
@@ -229,29 +228,28 @@ class Revision:
                 if md5(target) != newfiles[name]:
                     raise Exception(f'Download error in {name}')
                 repo.index.add(name)
+                different = True
             files.pop(name, None)
         for file in files:
+            if file == '_remoteassets':
+                continue
             print('remove', file)
             repo.index.remove(file)
             os.unlink(os.path.join(targetdir, file))
-        firstspec = None
-        for file in sorted(newfiles):
-            if file.endswith('.spec'):
-                firstspec = os.path.join(targetdir, file)
-                break
-        if not firstspec:
-            logger.error("No spec file found")
-            print(self, newfiles)
-            return
-        content = open(firstspec, 'rb').readlines()
-        with open(firstspec, 'wb') as f:
-            for file in sorted(remotes):
-                quoted_file = quote_plus(file)
-                f.write(
-                    f'#!RemoteAssetURL: http://source.dyn.cloud.suse.de/{remotes[file]}/{quoted_file}\n'.encode('utf-8'))
-            for line in content:
-                if not line.startswith(b'#!RemoteAssetURL: http://source.dyn'):
-                    f.write(line)
+            different = True
+        if len(remotes):
+            with open(os.path.join(targetdir, '_remoteassets'), 'wb') as f:
+                for file in sorted(remotes):
+                    quoted_file = quote_plus(file)
+                    f.write(
+                        f'#!RemoteAssetURL: http://source.dyn.cloud.suse.de/{remotes[file]}/{quoted_file}\n'.encode('utf-8'))
+            repo.index.add('_remoteassets')
+            if files.get('_remoteassets') != md5(os.path.join(targetdir, '_remoteassets')):
+                different = True
+        elif '_remoteassets' in files:
+            repo.index.remove('_remoteassets')
+        print(r, 'download', different)
+        return different
 
 def get_devel_package(package):
     u = osc.core.makeurl(apiurl, ['source', 'openSUSE:Factory', package, '_meta'])
@@ -325,8 +323,9 @@ for r in revs:
         ref = repo.lookup_reference(branch.name)
         repo.checkout(ref)
 
+    if not r.download('repo') and r.userid == 'buildservice-autocommit':
+        continue
     print("commit", r.project, r.rev)
-    r.download('repo')
     r.git_commit()
 
 osc.conf.get_config(override_apiurl='https://api.suse.de')
@@ -359,6 +358,8 @@ for r in revs:
         r.commit = repo.create_commit(repo.head.name, author, commiter, message, tree, parents)
         #repo.references["refs/heads/SLE_15_GA"].set_target(r.commit)
         continue
+
     print("commit", r.project, r.rev)
-    r.download('repo')
+    if not r.download('repo') and r.userid == 'buildservice-autocommit':
+        continue
     r.git_commit()
