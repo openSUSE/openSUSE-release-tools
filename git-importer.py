@@ -101,9 +101,9 @@ class Handler:
                 return r
             if r.srcmd5 == revision:
                 return r
-        print(f"Can't find '{revision}' in {project}")
-        for r in self.projects.get(project, []):
-            print(r)
+        #print(f"Can't find '{revision}' in {project}")
+        # for r in self.projects.get(project, []):
+        #    print(r)
         return None
 
 
@@ -360,19 +360,64 @@ for project, branchname in projects:
         if first.get(branchname, True):
             index = repo.index
             tree = index.write_tree()
-            if not rev:
+            base_commit = None
+            if rev and rev.commit:
+                base_commit = rev.commit
+            if not base_commit:
                 # try older SLE versions
                 oprojects = []
+                obranches = []
                 for oproject, obranchname in projects:
                     if obranchname == branchname:
                         break
                     oprojects.append(oproject)
+                    obranches.append(obranchname)
                 for oproject in reversed(oprojects):
                     rev = handler.get_revision(oproject, r.srcmd5)
                     if rev:
+                        base_commit = rev.commit
                         break
-            if rev and rev.commit:
-                repo.create_branch(branchname, repo.get(rev.commit))
+                if not base_commit:
+                    min_patch_size = sys.maxsize
+                    min_commit = None
+
+                    # create temporary commit to diff it
+                    r.download('repo')
+                    repo.index.add_all()
+                    repo.index.write()
+                    tree = repo.index.write_tree()
+                    parent, ref = repo.resolve_refish(refish=repo.head.name)
+                    new_commit = repo.create_commit(
+                        f'refs/heads/tmp',
+                        repo.default_signature,
+                        repo.default_signature,
+                        "Temporary branch",
+                        tree,
+                        [repo.head.target],
+                    )
+                    obranches.append('factory')
+                    obranches.append('devel')
+                    for obranch in obranches:
+                        branch = repo.lookup_branch(obranch)
+                        ref = repo.get(branch.target).peel(pygit2.Commit).id
+
+                        for commit in repo.walk(ref, pygit2.GIT_SORT_TIME):
+                            d = repo.diff(new_commit, commit)
+                            patch_len = len(d.patch)
+                            print(f"diff between {commit} and {new_commit} is {patch_len}")
+                            if min_patch_size > patch_len:
+                                min_patch_size = patch_len
+                                min_commit = commit
+                    if min_patch_size < 1000:
+                        base_commit = min_commit.id
+                    else:
+                        logger.debug(f"Min patch is {min_patch_size} - ignoring")
+                    branch = repo.lookup_branch('factory')
+                    ref = repo.lookup_reference(branch.name)
+                    repo.checkout(ref)
+                    repo.branches.delete('tmp')
+            if base_commit:
+                repo.create_branch(branchname, repo.get(base_commit))
             else:
                 author = pygit2.Signature(f'No one', 'null@suse.de', time=int(r.time.timestamp()))
                 commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de', time=int(r.time.timestamp()))
