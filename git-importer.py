@@ -59,6 +59,18 @@ class Handler:
 
     def get_revisions(self, project):
         revs = []
+        u = osc.core.makeurl(apiurl, ['source', project, self.package, '_meta'])
+        try:
+            r = osc.core.http_GET(u)
+            root = ET.parse(r).getroot()
+            if root.get('project') != project:
+                logger.debug("package does not live here")
+                return revs
+        except HTTPError:
+            logger.debug("package has no meta!?")
+            return None
+
+
         u = osc.core.makeurl(apiurl, ['source', project, self.package, '_history'])
         try:
             r = osc.core.http_GET(u)
@@ -76,7 +88,7 @@ class Handler:
 
     def find_lastrev(self, project, time):
         prev = None
-        for rev in self.projects[project]:
+        for rev in self.projects.get(project, []):
             if rev.time > time:
                 return prev
             if rev.time == time:
@@ -139,7 +151,9 @@ class Revision:
             return None
         root = ET.parse(r).getroot()
         tproject = root.get('project')
-        self.linkrev = handler.find_lastrev(tproject, self.time).srcmd5
+        rev = handler.find_lastrev(tproject, self.time)
+        if rev:
+            self.linkrev = rev.srcmd5
 
     # even if it's not a link we still need to check the expanded srcmd5 as it's possible used in
     # submit requests
@@ -248,8 +262,8 @@ class Revision:
                 different = True
         elif '_remoteassets' in files:
             repo.index.remove('_remoteassets')
-        print(r, 'download', different)
         return different
+
 
 def get_devel_package(package):
     u = osc.core.makeurl(apiurl, ['source', 'openSUSE:Factory', package, '_meta'])
@@ -260,6 +274,7 @@ def get_devel_package(package):
         return None
     root = ET.parse(r).getroot()
     return root.find('devel').get('project')
+
 
 package = 'Mesa'
 devel_project = get_devel_package(package)
@@ -330,36 +345,56 @@ for r in revs:
 
 osc.conf.get_config(override_apiurl='https://api.suse.de')
 apiurl = osc.conf.config['apiurl']
-revs = handler.get_revisions('SUSE:SLE-15:GA')
-first=True
-for r in revs:
-    rev = handler.get_revision('openSUSE:Factory', r.srcmd5)
-    if first:
-        index = repo.index
-        tree = index.write_tree()
-        repo.create_branch('SLE_15_GA', repo.get(rev.commit))
-        first = False
-        branch = repo.lookup_branch('SLE_15_GA')
-        ref = repo.lookup_reference(branch.name)
-        repo.checkout(ref)
-    elif rev and rev.commit:
-        author = pygit2.Signature(f'OBS User {r.userid}', 'null@suse.de', time=int(r.time.timestamp()))
-        commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de', time=int(r.time.timestamp()))
-        message = r.comment or 'No commit log found'
-        repo.merge(repo.get(rev.commit).peel(pygit2.Commit).id)
 
+first = dict()
+projects = [('SUSE:SLE-15:GA', 'SLE_15'), ('SUSE:SLE-15:Update', 'SLE_15'),
+            ('SUSE:SLE-15-SP1:GA', 'SLE_15_SP1'), ('SUSE:SLE-15-SP1:Update', 'SLE_15_SP1'),
+            ('SUSE:SLE-15-SP2:GA', 'SLE_15_SP2'), ('SUSE:SLE-15-SP2:Update', 'SLE_15_SP2'),
+            ('SUSE:SLE-15-SP3:GA', 'SLE_15_SP3'), ('SUSE:SLE-15-SP3:Update', 'SLE_15_SP3'),
+            ('SUSE:SLE-15-SP4:GA', 'SLE_15_SP4'), ('SUSE:SLE-15-SP4:Update', 'SLE_15_SP4')
+            ]
+for project, branchname in projects:
+    revs = handler.get_revisions(project)
+    for r in revs:
+        r.check_expanded(handler)
+        rev = handler.get_revision('openSUSE:Factory', r.srcmd5)
+        if first.get(branchname, True):
+            index = repo.index
+            tree = index.write_tree()
+            if rev and rev.commit:
+                repo.create_branch(branchname, repo.get(rev.commit))
+            else:
+                author = pygit2.Signature(f'No one', 'null@suse.de', time=int(r.time.timestamp()))
+                commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de', time=int(r.time.timestamp()))
+                repo.create_commit(
+                    f'refs/heads/{branchname}',
+                    author,
+                    commiter,
+                    "Initialize branch",
+                    tree,
+                    [])
+
+            first[branchname] = False
+            branch = repo.lookup_branch(branchname)
+            ref = repo.lookup_reference(branch.name)
+            repo.checkout(ref)
+        elif rev and rev.commit:
+            author = pygit2.Signature(f'OBS User {r.userid}', 'null@suse.de', time=int(r.time.timestamp()))
+            commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de', time=int(r.time.timestamp()))
+            message = r.comment or 'No commit log found'
+            repo.merge(repo.get(rev.commit).peel(pygit2.Commit).id)
+
+            r.download('repo')
+            index = repo.index
+            index.add_all()
+            index.write()
+            tree = index.write_tree()
+            parents = [repo.head.target, repo.get(rev.commit).peel(pygit2.Commit).id]
+            print("create", parents)
+            r.commit = repo.create_commit(repo.head.name, author, commiter, message, tree, parents)
+            # repo.references["refs/heads/SLE_15_GA"].set_target(r.commit)
+            continue
+
+        print("commit", r.project, r.rev)
         r.download('repo')
-        index = repo.index
-        index.add_all()
-        index.write()
-        tree = index.write_tree()
-        parents = [repo.head.target, repo.get(rev.commit).peel(pygit2.Commit).id]
-        print("create", parents)
-        r.commit = repo.create_commit(repo.head.name, author, commiter, message, tree, parents)
-        #repo.references["refs/heads/SLE_15_GA"].set_target(r.commit)
-        continue
-
-    print("commit", r.project, r.rev)
-    if not r.download('repo') and r.userid == 'buildservice-autocommit':
-        continue
-    r.git_commit()
+        r.git_commit()
