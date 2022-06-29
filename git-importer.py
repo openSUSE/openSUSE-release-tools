@@ -15,11 +15,13 @@ from osc.core import quote_plus
 from osclib.cache import Cache
 from osc import conf
 
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
 osc.conf.get_config(override_apiurl='https://api.opensuse.org')
 #conf.config['debug'] = True
 apiurl = osc.conf.config['apiurl']
+
+logger = logging.getLogger("Importer")
+logging.basicConfig()
+logger.setLevel(logging.DEBUG)
 
 # copied from obsgit
 BINARY = {
@@ -392,18 +394,21 @@ for project, branchname in projects:
 
                     # create temporary commit to diff it
                     logger.debug(f"Create tmp commit for {r}")
-                    repo.checkout(empty_commit)
+                    repo.create_branch('tmp', repo.get(empty_commit))
+                    branch = repo.lookup_branch('tmp')
+                    ref = repo.lookup_reference(branch.name)
+                    repo.checkout(ref)
                     r.download('repo')
                     repo.index.write()
                     tree = repo.index.write_tree()
                     parent, ref = repo.resolve_refish(refish=repo.head.name)
                     new_commit = repo.create_commit(
-                        f'refs/heads/tmp',
+                        ref.name,
                         repo.default_signature,
                         repo.default_signature,
                         "Temporary branch",
                         tree,
-                        [empty_commit],
+                        [parent.oid],
                     )
                     logger.debug(f"Created tmp commit for {new_commit}")
                     obranches.append('factory')
@@ -426,7 +431,7 @@ for project, branchname in projects:
                         logger.debug(f"Min patch is {min_patch_size} - ignoring")
                     branch = repo.lookup_branch('factory')
                     ref = repo.lookup_reference(branch.name)
-                    repo.reset(ref.peel().id, pygit2.GIT_RESET_SOFT)
+                    repo.reset(ref.peel().id, pygit2.GIT_RESET_HARD)
                     repo.checkout(ref)
                     repo.branches.delete('tmp')
             if base_commit:
