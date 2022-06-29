@@ -12,9 +12,13 @@ import pathlib
 import hashlib
 import requests
 from osc.core import quote_plus
+from osclib.cache import Cache
+from osc import conf
 
 logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 osc.conf.get_config(override_apiurl='https://api.opensuse.org')
+#conf.config['debug'] = True
 apiurl = osc.conf.config['apiurl']
 
 # copied from obsgit
@@ -34,6 +38,7 @@ BINARY = {
     ".obscpio"
 }
 
+Cache.init()
 
 def is_binary(filename):
     # Shortcut the detection based on the file extension
@@ -217,7 +222,7 @@ class Revision:
         different = False
         for entry in root.findall('entry'):
             name = entry.get('name')
-            if not name.endswith('.spec'):
+            if not (name.endswith('.spec') or name.endswith('.changes')):
                 continue
             large = int(entry.get('size')) > 40000
             if large and (name.endswith('.changes') or name.endswith('.spec')):
@@ -298,11 +303,10 @@ ref = 'refs/heads/devel'
 parents = []
 
 tree = index.write_tree()
-commit = repo.create_commit(ref, author, commiter, message, tree, parents)
-
+empty_commit = repo.create_commit(ref, author, commiter, message, tree, parents)
 index = repo.index
 tree = index.write_tree()
-repo.create_branch('factory', repo.get(commit))
+repo.create_branch('factory', repo.get(empty_commit))
 
 for r in revs:
     if r.project == 'openSUSE:Factory':
@@ -318,6 +322,7 @@ for r in revs:
                 author = pygit2.Signature(f'OBS User {r.userid}', 'null@suse.de', time=int(r.time.timestamp()))
                 commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de', time=int(r.time.timestamp()))
                 message = r.comment or f'Accepting request {r.requestid}'
+                print('merge request', rev.commit)
                 repo.merge(repo.get(rev.commit).peel(pygit2.Commit).id)
 
                 r.download('repo')
@@ -344,6 +349,7 @@ for r in revs:
 
 osc.conf.get_config(override_apiurl='https://api.suse.de')
 apiurl = osc.conf.config['apiurl']
+#conf.config['debug'] = True
 
 first = dict()
 projects = [('SUSE:SLE-15:GA', 'SLE_15'), ('SUSE:SLE-15:Update', 'SLE_15'),
@@ -372,9 +378,12 @@ for project, branchname in projects:
                         break
                     oprojects.append(oproject)
                     obranches.append(obranchname)
+                logger.debug(f"looking for {r.srcmd5}")
                 for oproject in reversed(oprojects):
+                    logger.debug(f"looking for {r.srcmd5} in {oproject}")
                     rev = handler.get_revision(oproject, r.srcmd5)
                     if rev:
+                        logger.debug(f"found {r.srcmd5} in {oproject}: {rev}")
                         base_commit = rev.commit
                         break
                 if not base_commit:
@@ -382,8 +391,9 @@ for project, branchname in projects:
                     min_commit = None
 
                     # create temporary commit to diff it
+                    logger.debug(f"Create tmp commit for {r}")
+                    repo.checkout(empty_commit)
                     r.download('repo')
-                    repo.index.add_all()
                     repo.index.write()
                     tree = repo.index.write_tree()
                     parent, ref = repo.resolve_refish(refish=repo.head.name)
@@ -393,8 +403,9 @@ for project, branchname in projects:
                         repo.default_signature,
                         "Temporary branch",
                         tree,
-                        [repo.head.target],
+                        [empty_commit],
                     )
+                    logger.debug(f"Created tmp commit for {new_commit}")
                     obranches.append('factory')
                     obranches.append('devel')
                     for obranch in obranches:
@@ -404,16 +415,18 @@ for project, branchname in projects:
                         for commit in repo.walk(ref, pygit2.GIT_SORT_TIME):
                             d = repo.diff(new_commit, commit)
                             patch_len = len(d.patch)
-                            print(f"diff between {commit} and {new_commit} is {patch_len}")
+                            #print(f"diff between {commit} and {new_commit} is {patch_len}")
                             if min_patch_size > patch_len:
                                 min_patch_size = patch_len
                                 min_commit = commit
                     if min_patch_size < 1000:
                         base_commit = min_commit.id
+                        logger.debug(f"Base {r} on {base_commit}")
                     else:
                         logger.debug(f"Min patch is {min_patch_size} - ignoring")
                     branch = repo.lookup_branch('factory')
                     ref = repo.lookup_reference(branch.name)
+                    repo.reset(ref.peel().id, pygit2.GIT_RESET_SOFT)
                     repo.checkout(ref)
                     repo.branches.delete('tmp')
             if base_commit:
@@ -437,6 +450,7 @@ for project, branchname in projects:
             author = pygit2.Signature(f'OBS User {r.userid}', 'null@suse.de', time=int(r.time.timestamp()))
             commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de', time=int(r.time.timestamp()))
             message = r.comment or 'No commit log found'
+            print('merge', rev.commit)
             repo.merge(repo.get(rev.commit).peel(pygit2.Commit).id)
 
             r.download('repo')
