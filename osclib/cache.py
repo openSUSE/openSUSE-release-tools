@@ -74,7 +74,7 @@ class Cache(object):
         # Group members cannot be guaranteed, but change rarely.
         r'/group/[^/?]+$': TTL_SHORT,
         # Clear target project cache upon request acceptance.
-        r'/request/(\d+)\?.*newstate=accepted': TTL_DUPLICATE,
+        r'/request/(\d+)': TTL_LONG,
         r"/search/package\?match=\[@project='([^']+)'\]$": TTL_LONG,
         # Potentially expire the latest_updated since it will be the only way to
         # tell after an adi staging is removed. For now just cache the calls
@@ -87,6 +87,7 @@ class Cache(object):
         # Handle origin-manager repetative package_source_hash_history() calls.
         r'/source/([^/]+)/(?:[^/]+)/(?:_history)$': TTL_SHORT,
         r'/source/([^/]+)/(?:[^/]+)/(?:_meta|_link)$': TTL_LONG,
+        r'/source/([^/]+)/(?:[^/]+)/_link\?rev=.*$': TTL_LONG,
         r'/source/([^/]+)/dashboard/[^/]+': TTL_LONG,
         r'/source/([^/]+)/_attribute/[^/]+': TTL_DUPLICATE,
         # Presumably users are not interweaving in short windows.
@@ -96,7 +97,9 @@ class Cache(object):
         r'/source/([^/]+)/_meta$': TTL_DUPLICATE,
         # Handles clearing local cache on package deletes. Lots of queries like
         # updating project info, comment, and package additions.
-        r'/source/([^/]+)/(?:[^/?]+)(?:\?[^/]+)?$': TTL_DUPLICATE,
+        r'/source/([^/]+)/(?:[^/?]+)(?:\?[^/]+)?$': TTL_LONG,
+        r'/source/([^/]+)/([^/]+)/.*$': TTL_LONG,
+        r'/source/([^/]+)/(?:[^/?]+)(?:\?[^/]+)\?expand=1&rev=.*$': TTL_LONG,
     }
 
     last_updated = {}
@@ -179,6 +182,8 @@ class Cache(object):
                 reason = '(' + ('expired' if os.path.exists(path) else 'does not exist') + ')'
                 if conf.config['debug']:
                     print('CACHE_MISS', url, reason, file=sys.stderr)
+        else:
+            print('CACHE UNPATTERNED', url, file=sys.stderr)
 
         return None
 
@@ -257,6 +262,7 @@ class Cache(object):
             if match:
                 return (pattern.pattern,
                         match.group(1) if len(match.groups()) > 0 else None)
+        print('NO pattern match', path)
         return (False, None)
 
     @staticmethod
