@@ -70,7 +70,6 @@ class Handler:
             logger.debug("package has no meta!?")
             return None
 
-
         u = osc.core.makeurl(apiurl, ['source', project, self.package, '_history'])
         try:
             r = osc.core.http_GET(u)
@@ -97,13 +96,13 @@ class Handler:
         return prev
 
     def get_revision(self, project, revision):
-        for r in self.projects[project]:
+        for r in self.projects.get(project, []):
             if str(r.rev) == revision:
                 return r
             if r.srcmd5 == revision:
                 return r
         print(f"Can't find '{revision}' in {project}")
-        for r in self.projects[project]:
+        for r in self.projects.get(project, []):
             print(r)
         return None
 
@@ -361,6 +360,17 @@ for project, branchname in projects:
         if first.get(branchname, True):
             index = repo.index
             tree = index.write_tree()
+            if not rev:
+                # try older SLE versions
+                oprojects = []
+                for oproject, obranchname in projects:
+                    if obranchname == branchname:
+                        break
+                    oprojects.append(oproject)
+                for oproject in reversed(oprojects):
+                    rev = handler.get_revision(oproject, r.srcmd5)
+                    if rev:
+                        break
             if rev and rev.commit:
                 repo.create_branch(branchname, repo.get(rev.commit))
             else:
