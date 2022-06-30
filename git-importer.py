@@ -122,7 +122,6 @@ class Revision:
 
     def parse(self, xml):
         self.rev = int(xml.get('rev'))
-        self.vrev = int(xml.get('vrev'))
         self.srcmd5 = xml.find('srcmd5').text
         self.version = xml.find('version').text
         time = int(xml.find('time').text)
@@ -354,7 +353,13 @@ apiurl = osc.conf.config['apiurl']
 #conf.config['debug'] = True
 
 first = dict()
-projects = [('SUSE:SLE-15:GA', 'SLE_15'), ('SUSE:SLE-15:Update', 'SLE_15'),
+projects = [('SUSE:SLE-12:GA', 'SLE_12'), ('SUSE:SLE-12:Update', 'SLE_12'),
+            ('SUSE:SLE-12-SP1:GA', 'SLE_12_SP1'), ('SUSE:SLE-12-SP1:Update', 'SLE_12_SP1'),
+            ('SUSE:SLE-12-SP2:GA', 'SLE_12_SP2'), ('SUSE:SLE-12-SP2:Update', 'SLE_12_SP2'),
+            ('SUSE:SLE-12-SP3:GA', 'SLE_12_SP3'), ('SUSE:SLE-12-SP3:Update', 'SLE_12_SP3'),
+            ('SUSE:SLE-12-SP4:GA', 'SLE_12_SP4'), ('SUSE:SLE-12-SP4:Update', 'SLE_12_SP4'),
+            ('SUSE:SLE-12-SP5:GA', 'SLE_12_SP5'), ('SUSE:SLE-12-SP5:Update', 'SLE_12_SP5'),
+            ('SUSE:SLE-15:GA', 'SLE_15'), ('SUSE:SLE-15:Update', 'SLE_15'),
             ('SUSE:SLE-15-SP1:GA', 'SLE_15_SP1'), ('SUSE:SLE-15-SP1:Update', 'SLE_15_SP1'),
             ('SUSE:SLE-15-SP2:GA', 'SLE_15_SP2'), ('SUSE:SLE-15-SP2:Update', 'SLE_15_SP2'),
             ('SUSE:SLE-15-SP3:GA', 'SLE_15_SP3'), ('SUSE:SLE-15-SP3:Update', 'SLE_15_SP3'),
@@ -415,6 +420,9 @@ for project, branchname in projects:
                     obranches.append('devel')
                     for obranch in obranches:
                         branch = repo.lookup_branch(obranch)
+                        # TODO we need to create a branch even if there are no revisions in a SP
+                        if not branch:
+                            continue
                         ref = repo.get(branch.target).peel(pygit2.Commit).id
 
                         for commit in repo.walk(ref, pygit2.GIT_SORT_TIME):
