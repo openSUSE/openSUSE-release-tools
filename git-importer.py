@@ -241,7 +241,7 @@ class Revision:
             if newfiles[name] != oldmd5:
                 print('download', name)
                 url = osc.core.makeurl(apiurl, [
-                    'source', self.project, self.package, quote_plus(name)], {'rev': self.srcmd5})
+                    'source', self.project, self.package, quote_plus(name)], {'rev': self.srcmd5, 'expand': '1'})
                 print(url, name)
                 target = os.path.join(targetdir, name)
                 with open(target, 'wb') as f:
