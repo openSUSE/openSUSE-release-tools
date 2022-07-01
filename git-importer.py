@@ -75,14 +75,14 @@ class Handler:
                 return revs
         except HTTPError:
             logger.debug("package has no meta!?")
-            return None
+            return revs
 
         u = osc.core.makeurl(apiurl, ['source', project, self.package, '_history'])
         try:
             r = osc.core.http_GET(u)
         except HTTPError:
             logger.debug("package has no history!?")
-            return None
+            return revs
 
         root = ET.parse(r).getroot()
         for revision in root.findall('revision'):
