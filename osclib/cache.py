@@ -63,7 +63,7 @@ class Cache(object):
     """
 
     CACHE_DIR = None
-    TTL_LONG = 12 * 60 * 60
+    TTL_LONG = 120 * 24 * 60 * 60
     TTL_MEDIUM = 30 * 60
     TTL_SHORT = 5 * 60
     TTL_DUPLICATE = 3
@@ -136,43 +136,6 @@ class Cache(object):
         if match:
             path = Cache.path(url, project, include_file=True)
             ttl = Cache.PATTERNS[match]
-
-            if project:
-                # Given project context check to see if project has been updated
-                # remotely more recently than local cache.
-                apiurl, _ = Cache.spliturl(url)
-                Cache.last_updated_load(apiurl)
-
-                # Use the project last updated timestamp if availabe, otherwise
-                # the oldest record indicates the longest period that can be
-                # guaranteed to have no changes.
-                if project in Cache.last_updated[apiurl]:
-                    unchanged_since = Cache.last_updated[apiurl][project]
-                else:
-                    unchanged_since = Cache.last_updated[apiurl]['__oldest']
-
-                now = datetime.datetime.utcnow()
-                unchanged_since = datetime.datetime.strptime(unchanged_since, '%Y-%m-%dT%H:%M:%SZ')
-                history_span = now - unchanged_since
-
-                # Treat non-existant cache as brand new for the sake of history
-                # span check since it behaves as desired.
-                age = 0
-                directory = Cache.path(url, project)
-                if os.path.exists(directory):
-                    age = time() - os.path.getmtime(directory)
-
-                # If history span is shorter than allowed cache life and the age
-                # of the current cache is older than history span with no
-                # changes the cache cannot be guaranteed. For example:
-                #   ttl = 1 day
-                #   history_span = 0.5 day
-                #   age = 0.75
-                # Cannot be guaranteed.
-                ttl_delta = datetime.timedelta(seconds=ttl)
-                age_delta = datetime.timedelta(seconds=age)
-                if history_span < ttl_delta and age_delta > history_span:
-                    Cache.delete_project(apiurl, project)
 
             if os.path.exists(path) and time() - os.path.getmtime(path) <= ttl:
                 if conf.config['debug']:
