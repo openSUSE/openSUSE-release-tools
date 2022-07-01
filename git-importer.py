@@ -16,7 +16,7 @@ from osclib.cache import Cache
 from osc import conf
 
 osc.conf.get_config(override_apiurl='https://api.opensuse.org')
-#conf.config['debug'] = True
+conf.config['debug'] = True
 apiurl = osc.conf.config['apiurl']
 
 logger = logging.getLogger("Importer")
@@ -224,7 +224,8 @@ class Revision:
         for entry in root.findall('entry'):
             name = entry.get('name')
             if not (name.endswith('.spec') or name.endswith('.changes')):
-                continue
+                pass
+                #continue
             large = int(entry.get('size')) > 40000
             if large and (name.endswith('.changes') or name.endswith('.spec')):
                 large = False
@@ -241,6 +242,7 @@ class Revision:
                 print('download', name)
                 url = osc.core.makeurl(apiurl, [
                     'source', self.project, self.package, quote_plus(name)], {'rev': self.srcmd5})
+                print(url, name)
                 target = os.path.join(targetdir, name)
                 with open(target, 'wb') as f:
                     f.write(osc.core.http_GET(url).read())
@@ -281,7 +283,8 @@ def get_devel_package(package):
     return root.find('devel').get('project')
 
 
-package = 'Mesa'
+package = sys.argv[1]
+repodir = sys.argv[2]
 devel_project = get_devel_package(package)
 handler = Handler(package)
 revs_factory = handler.get_revisions('openSUSE:Factory')
@@ -292,8 +295,8 @@ for r in revs_devel:
 
 revs = sorted(revs_factory + revs_devel, key=lambda x: x.time.timestamp())
 
-os.mkdir('repo')
-repo = pygit2.init_repository('repo', False)
+os.mkdir(repodir)
+repo = pygit2.init_repository(repodir, False)
 
 index = repo.index
 index.write()
@@ -326,7 +329,7 @@ for r in revs:
                 print('merge request', rev.commit)
                 repo.merge(repo.get(rev.commit).peel(pygit2.Commit).id)
 
-                r.download('repo')
+                r.download(repodir)
                 index = repo.index
                 index.add_all()
                 index.write()
@@ -343,14 +346,14 @@ for r in revs:
         ref = repo.lookup_reference(branch.name)
         repo.checkout(ref)
 
-    if not r.download('repo') and r.userid == 'buildservice-autocommit':
+    if not r.download(repodir) and r.userid == 'buildservice-autocommit':
         continue
     print("commit", r.project, r.rev)
     r.git_commit()
 
 osc.conf.get_config(override_apiurl='https://api.suse.de')
 apiurl = osc.conf.config['apiurl']
-#conf.config['debug'] = True
+conf.config['debug'] = True
 
 first = dict()
 projects = [('SUSE:SLE-12:GA', 'SLE_12'), ('SUSE:SLE-12:Update', 'SLE_12'),
@@ -403,7 +406,7 @@ for project, branchname in projects:
                     branch = repo.lookup_branch('tmp')
                     ref = repo.lookup_reference(branch.name)
                     repo.checkout(ref)
-                    r.download('repo')
+                    r.download(repodir)
                     repo.index.write()
                     tree = repo.index.write_tree()
                     parent, ref = repo.resolve_refish(refish=repo.head.name)
@@ -466,7 +469,7 @@ for project, branchname in projects:
             print('merge', rev.commit)
             repo.merge(repo.get(rev.commit).peel(pygit2.Commit).id)
 
-            r.download('repo')
+            r.download(repodir)
             index = repo.index
             index.add_all()
             index.write()
@@ -478,5 +481,5 @@ for project, branchname in projects:
             continue
 
         print("commit", r.project, r.rev)
-        r.download('repo')
+        r.download(repodir)
         r.git_commit()
