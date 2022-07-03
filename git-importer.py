@@ -16,7 +16,7 @@ from osclib.cache import Cache
 from osc import conf
 
 osc.conf.get_config(override_apiurl='https://api.opensuse.org')
-conf.config['debug'] = True
+#conf.config['debug'] = True
 apiurl = osc.conf.config['apiurl']
 
 logger = logging.getLogger("Importer")
@@ -326,7 +326,10 @@ for r in revs:
                 commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de', time=int(r.time.timestamp()))
                 message = r.comment or f'Accepting request {r.requestid}'
                 print('merge request', rev.commit)
-                repo.merge(repo.get(rev.commit).peel(pygit2.Commit).id)
+                mr = repo.merge(repo.get(rev.commit).peel(pygit2.Commit).id)
+                if repo.index.conflicts:
+                    for conflict in repo.index.conflicts:
+                        print('CONFLICT', conflict)
 
                 r.download(repodir)
                 index = repo.index
@@ -352,7 +355,7 @@ for r in revs:
 
 osc.conf.get_config(override_apiurl='https://api.suse.de')
 apiurl = osc.conf.config['apiurl']
-conf.config['debug'] = True
+#conf.config['debug'] = True
 
 first = dict()
 projects = [('SUSE:SLE-12:GA', 'SLE_12'), ('SUSE:SLE-12:Update', 'SLE_12'),
@@ -466,7 +469,18 @@ for project, branchname in projects:
             commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de', time=int(r.time.timestamp()))
             message = r.comment or 'No commit log found'
             print('merge', rev.commit)
-            repo.merge(repo.get(rev.commit).peel(pygit2.Commit).id)
+            mr = repo.merge(repo.get(rev.commit).peel(pygit2.Commit).id)
+            if repo.index.conflicts:
+                # TODO we really should not run into conflicts. but for that we need to be aware of the
+                # order the commits happen other than what the time says
+                for conflict in repo.index.conflicts:
+                    logger.warning(f'CONFLICT #{conflict}')
+                for path, mode in repo.status().items():
+                    # merge leaves ~HEAD and ~REV files behind
+                    if mode == pygit2.GIT_STATUS_WT_NEW:
+                        logger.debug(f"Remove {path}")
+                        os.unlink(os.path.join(repodir, path))
+                print(repo.status())
 
             r.download(repodir)
             index = repo.index
