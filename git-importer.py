@@ -321,7 +321,7 @@ for r in revs:
             rev = handler.get_revision(devel_project, submitted_revision)
             if not rev:
                 print(r)
-            if rev.commit:
+            if rev and rev.commit:
                 author = pygit2.Signature(f'OBS User {r.userid}', 'null@suse.de', time=int(r.time.timestamp()))
                 commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de', time=int(r.time.timestamp()))
                 message = r.comment or f'Accepting request {r.requestid}'
