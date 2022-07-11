@@ -330,6 +330,20 @@ for r in revs:
                 if repo.index.conflicts:
                     for conflict in repo.index.conflicts:
                         print('CONFLICT', conflict)
+                    for path, mode in repo.status().items():
+                        # merge leaves ~HEAD and ~REV files behind
+                        if mode == pygit2.GIT_STATUS_WT_NEW:
+                            logger.debug(f"Remove {path}")
+                            os.unlink(os.path.join(repodir, path))
+                        if mode == pygit2.GIT_STATUS_CONFLICTED:
+                            # remove files in conflict - we'll download the revision
+                            # TODO: just as in above, if we have a conflict, the commit isn't fitting
+                            os.unlink(os.path.join(repodir, path))
+                            try:
+                                repo.index.remove(path)
+                            except OSError:
+                                pass
+                    print(repo.status())
 
                 r.download(repodir)
                 index = repo.index
