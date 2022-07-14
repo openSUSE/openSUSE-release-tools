@@ -226,15 +226,24 @@ class Revision:
             if not (name.endswith('.spec') or name.endswith('.changes')):
                 pass
                 #continue
-            large = int(entry.get('size')) > 40000
+            size = int(entry.get('size'))
+            large = size > 40000
             if large and (name.endswith('.changes') or name.endswith('.spec')):
                 large = False
             if is_binary(name) or large:
                 remotes[name] = entry.get('md5')
                 quoted_name = quote_plus(name)
                 url = f'{apiurl}/public/source/{self.project}/{self.package}/{quoted_name}?rev={self.srcmd5}'
-                requests.put('http://source.dyn.cloud.suse.de/',
+                response = requests.put('http://source.dyn.cloud.suse.de/',
                              data={'hash': entry.get('md5'), 'filename': name, 'url': url})
+                if response.status_code != 200:
+                    raise Exception("Redirector error")
+                sha256 = response.content.decode('utf-8')
+                with open(os.path.join(targetdir, name), 'w') as f:
+                    f.write("version https://git-lfs.github.com/spec/v1\n")
+                    f.write(f"oid sha256:{sha256}\n")
+                    f.write(f"size {size}\n")
+                repo.index.add(name)
                 continue
             newfiles[name] = entry.get('md5')
             oldmd5 = files.pop(name, 'none')
@@ -251,23 +260,13 @@ class Revision:
                 different = True
             files.pop(name, None)
         for file in files:
-            if file == '_remoteassets':
-                continue
             print('remove', file)
             repo.index.remove(file)
             os.unlink(os.path.join(targetdir, file))
             different = True
         if len(remotes):
-            with open(os.path.join(targetdir, '_remoteassets'), 'wb') as f:
-                for file in sorted(remotes):
-                    quoted_file = quote_plus(file)
-                    f.write(
-                        f'#!RemoteAssetURL: http://source.dyn.cloud.suse.de/{remotes[file]}/{quoted_file}\n'.encode('utf-8'))
-            repo.index.add('_remoteassets')
-            if files.get('_remoteassets') != md5(os.path.join(targetdir, '_remoteassets')):
-                different = True
-        elif '_remoteassets' in files:
-            repo.index.remove('_remoteassets')
+            # TODO add tracking files
+            pass
         return different
 
 
