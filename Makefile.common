@@ -9,3 +9,4 @@ grafana_provisioning_dir="$(sysconfdir)/grafana/provisioning"
 oscplugindir=$(prefix)/lib/osc-plugins
 apachevhostsdir=$(sysconfdir)/apache2/vhosts.d
 tmpfilesdir=$(prefix)/lib/tmpfiles.d
+logdir=/var/log

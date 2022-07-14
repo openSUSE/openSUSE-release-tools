@@ -1,3 +1,8 @@
 #!/usr/bin/env sh
-/usr/share/openSUSE-release-tools/verify-repo-built-successful.py -A $API_URL -p $1 -r standard
-/usr/bin/osrt-pkglistgen -A $API_URL --debug update_and_solve -p $1 -s target --force
+
+LOG_DIR="/var/log//openSUSE-release-tools/$1"
+
+[ ! -d "${LOG_DIR}" ] && mkdir ${LOG_DIR}
+
+/usr/share/openSUSE-release-tools/verify-repo-built-successful.py -A $API_URL -p $1 -r standard > ${LOG_DIR}/verify-build.log 2>&1
+/usr/bin/osrt-pkglistgen -A $API_URL --debug update_and_solve -p $1 -s target --force > ${LOG_DIR}/pkglistgen.log 2>&1
