@@ -121,6 +121,7 @@ class Revision:
         self.project = project
         self.package = package
         self.commit = None
+        self.broken = False
 
     def parse(self, xml):
         self.rev = int(xml.get('rev'))
@@ -159,7 +160,8 @@ class Revision:
         try:
             root = ET.parse(r).getroot()
         except ET.XMLSyntaxError:
-            logger.error("_link can't be parsed")
+            logger.error(f"_link can't be parsed in {self}")
+            self.broken = True
             return None
         tproject = root.get('project')
         rev = handler.find_lastrev(tproject, self.time)
@@ -177,7 +179,8 @@ class Revision:
         try:
             r = osc.core.http_GET(u)
         except HTTPError:
-            logger.error("package can't be expanded")
+            logger.error(f"package can't be expanded in {self}")
+            self.broken = True
             return None
         root = ET.parse(r).getroot()
         self.srcmd5 = root.get('srcmd5')
@@ -212,6 +215,8 @@ class Revision:
         return self.commit
 
     def download(self, targetdir):
+        if self.broken:
+            return False
         try:
             root = ET.parse(osc.core.http_GET(osc.core.makeurl(
                 apiurl, ['source', self.project, self.package], {'expand': 1, 'rev': self.srcmd5})))
@@ -246,7 +251,8 @@ class Revision:
                     response = requests.put('http://source.dyn.cloud.suse.de/',
                                 data={'hash': fmd5, 'filename': name, 'url': url})
                     if response.status_code != 200:
-                        raise Exception("Redirector error")
+                        print(response.content)
+                        raise Exception("Redirector error on " + url + f" for {self}")
                     sha256s[key] = response.content.decode('utf-8')
                 sha256 = sha256s[key]
                 with open(os.path.join(targetdir, name), 'w') as f:
