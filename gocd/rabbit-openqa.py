@@ -47,7 +47,11 @@ class Project(object):
         old = parts[1]
         new = parts[2]
         new = new.replace('$LETTER', self.staging_letter(staging_project))
-        return re.compile(old).sub(new, iso)
+        try:
+            return re.compile(old).sub(new, iso)
+        except re.error:
+            self.logger.error(f"_MAP_ISO {self.replace_string} does not create valid regexps in {self.name}")
+            return iso
 
     def gather_isos(self, name, repository):
         url = self.api.makeurl(['published', name, repository, 'iso'])
