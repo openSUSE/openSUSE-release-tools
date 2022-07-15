@@ -41,6 +41,7 @@ BINARY = {
 }
 
 Cache.init()
+sha256s = dict()
 
 def is_binary(filename):
     # Shortcut the detection based on the file extension
@@ -231,21 +232,25 @@ class Revision:
             if large and (name.endswith('.changes') or name.endswith('.spec')):
                 large = False
             if is_binary(name) or large:
-                remotes[name] = entry.get('md5')
-                quoted_name = quote_plus(name)
-                url = f'{apiurl}/public/source/{self.project}/{self.package}/{quoted_name}?rev={self.srcmd5}'
-                response = requests.put('http://source.dyn.cloud.suse.de/',
-                             data={'hash': entry.get('md5'), 'filename': name, 'url': url})
-                if response.status_code != 200:
-                    raise Exception("Redirector error")
-                sha256 = response.content.decode('utf-8')
+                md5 = entry.get('md5')
+                remotes[name] = md5
+                key = f'{md5}-{name}'
+                if key not in sha256s:
+                    quoted_name = quote_plus(name)
+                    url = f'{apiurl}/public/source/{self.project}/{self.package}/{quoted_name}?rev={self.srcmd5}'
+                    response = requests.put('http://source.dyn.cloud.suse.de/',
+                                data={'hash': md5, 'filename': name, 'url': url})
+                    if response.status_code != 200:
+                        raise Exception("Redirector error")
+                    sha256s[key] = response.content.decode('utf-8')
+                sha256 = sha256s[key]
                 with open(os.path.join(targetdir, name), 'w') as f:
                     f.write("version https://git-lfs.github.com/spec/v1\n")
                     f.write(f"oid sha256:{sha256}\n")
                     f.write(f"size {size}\n")
                 repo.index.add(name)
                 continue
-            newfiles[name] = entry.get('md5')
+            newfiles[name] = md5
             oldmd5 = files.pop(name, 'none')
             if newfiles[name] != oldmd5:
                 print('download', name)
