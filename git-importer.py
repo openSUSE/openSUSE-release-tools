@@ -304,9 +304,6 @@ handler = Handler(package)
 revs_factory = handler.get_revisions('openSUSE:Factory')
 revs_devel = handler.get_revisions(devel_project)
 
-for r in revs_devel:
-    r.check_expanded(handler)
-
 revs = sorted(revs_factory + revs_devel, key=lambda x: x.time.timestamp())
 
 os.mkdir(repodir)
@@ -327,6 +324,7 @@ tree = index.write_tree()
 repo.create_branch('factory', repo.get(empty_commit))
 
 for r in revs:
+    r.check_expanded(handler)
     if r.project == 'openSUSE:Factory':
         branch = repo.lookup_branch('factory')
         ref = repo.lookup_reference(branch.name)
