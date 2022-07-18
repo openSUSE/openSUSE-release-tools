@@ -12,7 +12,7 @@ import sys
 import pathlib
 import hashlib
 import requests
-from osc.core import quote_plus
+from urllib.parse import quote
 from osclib.cache import Cache
 from osc import conf
 
@@ -246,7 +246,7 @@ class Revision:
                 remotes[name] = fmd5
                 key = f'{fmd5}-{name}'
                 if key not in sha256s:
-                    quoted_name = quote_plus(name)
+                    quoted_name = quote(name)
                     url = f'{apiurl}/public/source/{self.project}/{self.package}/{quoted_name}?rev={self.srcmd5}'
                     response = requests.put('http://source.dyn.cloud.suse.de/',
                                 data={'hash': fmd5, 'filename': name, 'url': url})
@@ -266,7 +266,7 @@ class Revision:
             if newfiles[name] != oldmd5:
                 print('download', name)
                 url = osc.core.makeurl(apiurl, [
-                    'source', self.project, self.package, quote_plus(name)], {'rev': self.srcmd5, 'expand': '1'})
+                    'source', self.project, self.package, quote(name)], {'rev': self.srcmd5, 'expand': '1'})
                 target = os.path.join(targetdir, name)
                 with open(target, 'wb') as f:
                     f.write(osc.core.http_GET(url).read())
