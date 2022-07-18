@@ -127,7 +127,8 @@ pipelines:
 
                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP5:GA rebuild
                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP5:GA list --supersede
-               osc -A https://api.suse.de staging -p SUSE:SLE-15-SP5:GA select --non-interactive --merge --try-strategies
+               # Don't fill staging projects randomly
+               # osc -A https://api.suse.de staging -p SUSE:SLE-15-SP5:GA select --non-interactive --merge --try-strategies
                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP5:GA unselect --cleanup
                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP5:GA repair --cleanup
                rm -rf $tempdir
