@@ -1,6 +1,5 @@
 #! /usr/bin/python3
 
-from tempfile import TemporaryFile
 import osc.core
 import logging
 from urllib.error import HTTPError
@@ -14,7 +13,7 @@ import hashlib
 import requests
 from urllib.parse import quote
 from osclib.cache import Cache
-from osc import conf
+from fnmatch import fnmatch
 
 osc.conf.get_config(override_apiurl='https://api.opensuse.org')
 #conf.config['debug'] = True
@@ -41,8 +40,19 @@ BINARY = {
     ".obscpio"
 }
 
+LFS_SUFFIX = "filter=lfs diff=lfs merge=lfs -text"
+
+
+def default_gitattributes():
+    str = "## Default LFS\n"
+    for binary in BINARY:
+        str += f"*{binary} {LFS_SUFFIX}\n"
+    return str
+
+
 Cache.init()
 sha256s = dict()
+
 
 def is_binary(filename):
     # Shortcut the detection based on the file extension
@@ -229,37 +239,46 @@ class Revision:
             if file == '.git':
                 continue
             files[file] = md5(os.path.join(targetdir, file))
-        remotes = dict()
+
+        # prepare default gitattributes
+        target = os.path.join(targetdir, '.gitattributes')
+        with open(target, 'w') as f:
+            f.write(default_gitattributes())
+        first_non_default_lfs = True
+
+        remotes = set()
         repo.index.read()
         different = False
         for entry in root.findall('entry'):
             name = entry.get('name')
-            if not (name.endswith('.spec') or name.endswith('.changes')):
-                pass
-                #continue
+            target = os.path.join(targetdir, name)
             size = int(entry.get('size'))
             large = size > 40000
             if large and (name.endswith('.changes') or name.endswith('.spec')):
                 large = False
             fmd5 = entry.get('md5')
             if is_binary(name) or large:
-                remotes[name] = fmd5
+                remotes.add(name)
                 key = f'{fmd5}-{name}'
                 if key not in sha256s:
                     quoted_name = quote(name)
                     url = f'{apiurl}/public/source/{self.project}/{self.package}/{quoted_name}?rev={self.srcmd5}'
                     response = requests.put('http://source.dyn.cloud.suse.de/',
-                                data={'hash': fmd5, 'filename': name, 'url': url})
+                                            data={'hash': fmd5, 'filename': name, 'url': url})
                     if response.status_code != 200:
                         print(response.content)
                         raise Exception("Redirector error on " + url + f" for {self}")
                     sha256s[key] = response.content.decode('utf-8')
                 sha256 = sha256s[key]
-                with open(os.path.join(targetdir, name), 'w') as f:
+                with open(target, 'w') as f:
                     f.write("version https://git-lfs.github.com/spec/v1\n")
                     f.write(f"oid sha256:{sha256}\n")
                     f.write(f"size {size}\n")
                 repo.index.add(name)
+                remotes.add(name)
+                newfiles[name] = md5(target)
+                if newfiles[name] != files.pop(name, 'none'):
+                    different = True
                 continue
             newfiles[name] = fmd5
             oldmd5 = files.pop(name, 'none')
@@ -267,7 +286,6 @@ class Revision:
                 print('download', name)
                 url = osc.core.makeurl(apiurl, [
                     'source', self.project, self.package, quote(name)], {'rev': self.srcmd5, 'expand': '1'})
-                target = os.path.join(targetdir, name)
                 with open(target, 'wb') as f:
                     f.write(osc.core.http_GET(url).read())
                 if md5(target) != newfiles[name]:
@@ -275,14 +293,36 @@ class Revision:
                 repo.index.add(name)
                 different = True
             files.pop(name, None)
+
+        if remotes:
+            target = os.path.join(targetdir, '.lfsconfig')
+            with open(target, 'w') as f:
+                f.write("[lfs]\n  url = http://gitea.opensuse.org:9999/gitlfs")
+            if '.lfsconfig' not in files:
+                different = True
+                repo.index.add('.lfsconfig')
+            else:
+                files.pop('.lfsconfig')
+
+            # write .gitattributes
+            target = os.path.join(targetdir, '.gitattributes')
+            for file in sorted(remotes):
+                # we differ between binaries and large files
+                if not is_binary(file):
+                    with open(target, 'a') as f:
+                        if first_non_default_lfs:
+                            f.write("\n## Specific LFS patterns\n")
+                        f.write(f"{file} {LFS_SUFFIX}\n")
+                    first_non_default_lfs = False
+
+        repo.index.add('.gitattributes')
+        files.pop('.gitattributes', 'none')
+
         for file in files:
             print('remove', file)
             repo.index.remove(file)
             os.unlink(os.path.join(targetdir, file))
             different = True
-        if len(remotes):
-            # TODO add tracking files
-            pass
         return different
 
 
