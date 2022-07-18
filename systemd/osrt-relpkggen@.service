@@ -1,0 +1,6 @@
+[Service]
+User=openSUSE-release-tools
+SyslogIdentifier=openSUSE-release-tools
+EnvironmentFile=/etc/openSUSE-release-tools/ibsapi
+ExecStart=/usr/bin/osrt-generate-release-packages %i
+RuntimeMaxSec=120 hour

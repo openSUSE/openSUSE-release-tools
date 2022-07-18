@@ -1,5 +1,5 @@
 [Service]
-User=sysuser
-SyslogIdentifier=sysuser
+User=openSUSE-release-tools
+SyslogIdentifier=openSUSE-release-tools
 EnvironmentFile=/etc/openSUSE-release-tools/ibsapi
 ExecStart=/usr/bin/osrt-verify-build-and-generatelists %i
