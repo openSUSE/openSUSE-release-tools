@@ -377,10 +377,12 @@ for r in revs:
             if rev and rev.commit:
                 author = pygit2.Signature(f'OBS User {r.userid}', 'null@suse.de', time=int(r.time.timestamp()))
                 commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de', time=int(r.time.timestamp()))
-                message = r.comment or f'Accepting request {r.requestid}'
+                message = f'Accepting request {r.requestid}: {r.comment}'
+                message += "\n\n" + str(r)
                 print('merge request', rev.commit)
                 mr = repo.merge(repo.get(rev.commit).peel(pygit2.Commit).id)
                 if repo.index.conflicts:
+                    message = "CONFLICT " + message
                     for conflict in repo.index.conflicts:
                         print('CONFLICT', conflict)
                     for path, mode in repo.status().items():
@@ -535,9 +537,11 @@ for project, branchname in projects:
             author = pygit2.Signature(f'OBS User {r.userid}', 'null@suse.de', time=int(r.time.timestamp()))
             commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de', time=int(r.time.timestamp()))
             message = r.comment or 'No commit log found'
+            message += "\n\n" + str(r)
             print('merge', rev.commit)
             mr = repo.merge(repo.get(rev.commit).peel(pygit2.Commit).id)
             if repo.index.conflicts:
+                message = "CONFLICT " + message
                 # TODO we really should not run into conflicts. but for that we need to be aware of the
                 # order the commits happen other than what the time says
                 for conflict in repo.index.conflicts:
