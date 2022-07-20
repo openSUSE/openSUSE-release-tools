@@ -1,7 +1,8 @@
 #!/usr/bin/env sh
 
-LOG_DIR="/var/log/openSUSE-release-tools/$1"
-
+PROJECT=$1
+LOG_DIR="/var/log/openSUSE-release-tools/${PROJECT}"
 [ ! -d "${LOG_DIR}" ] && mkdir ${LOG_DIR}
 
-/usr/bin/osrt-pkglistgen -A $API_URL update_and_solve -p SUSE:SLE-15-SP4:GA -s target --only-release-packages --force > ${LOG_DIR}/relpkggen-$(date -Is).log 2>&1
+date -Is >> ${LOG_DIR}/relpkggen.log
+/usr/bin/osrt-pkglistgen -A ${API_URL} update_and_solve -p ${PROJECT} -s target --only-release-packages --force >> ${LOG_DIR}/relpkggen.log 2>&1

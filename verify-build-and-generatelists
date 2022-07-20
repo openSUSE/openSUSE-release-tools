@@ -1,9 +1,65 @@
 #!/usr/bin/env sh
 
-LOG_DIR="/var/log/openSUSE-release-tools/$1"
-
+PROJECT=$1
+LOG_DIR="/var/log/openSUSE-release-tools/${PROJECT}"
 [ ! -d "${LOG_DIR}" ] && mkdir ${LOG_DIR}
 
-if /usr/share/openSUSE-release-tools/verify-repo-built-successful.py -A $API_URL -p $1 -r standard > ${LOG_DIR}/verify-build-$(date -Is).log 2>&1 ; then
-    /usr/bin/osrt-pkglistgen -A $API_URL --debug update_and_solve -p $1 -s target --force > ${LOG_DIR}/pkglistgen-$(date -Is).log 2>&1
-fi
+polling_repo() {
+    # poll repository every 20min
+    sleep 20m
+    OUTPUT=$(/usr/share/openSUSE-release-tools/verify-repo-built-successful.py -A ${API_URL} -p ${PROJECT} -r standard 2>&1)
+    RETURNCODE=$?
+    if [ ${RETURNCODE} -eq 0 ]; then
+        REPO_STATUS="Repository is NOT building"
+    else
+        case ${OUTPUT} in
+            *"Repository "*" is not yet finished"*)
+                REPO_STATUS="Repository is building"
+                RETURNCODE=3
+                ;;
+            *"Repository "*" has "*" packages"*)
+                REPO_STATUS="Repository has package build failed"
+                RETURNCODE=4
+                ;;
+            *"Repository "*" has more disabled packages than succeeded"*)
+                REPO_STATUS="Repository has more disabled packages than succeeded"
+                RETURNCODE=5
+                ;;
+        esac
+        date -Is >> ${LOG_DIR}/verify-build.log
+        echo ${REPO_STATUS} >> ${LOG_DIR}/verify-build.log
+        echo ${OUTPUT} >> ${LOG_DIR}/verify-build.log
+    fi
+    return ${RETURNCODE}
+}
+
+while true; do
+    polling_repo
+    # Check if repository building
+    if [ $? -eq 3 ]; then
+        # Repository is building, waiting it finishes
+        while true; do
+            polling_repo
+            case $? in
+                0)
+                    # Stop polling repository results: Repository finished building, run pkglistgen
+                    date -Is >> ${LOG_DIR}/pkglistgen.log
+                    /usr/bin/osrt-pkglistgen -A ${API_URL} --debug update_and_solve -p ${PROJECT} -s target --force >> ${LOG_DIR}/pkglistgen.log 2>&1
+                    break
+                    ;;
+                3)
+                    # Continue polling repository results: Repository is still building
+                    continue
+                    ;;
+                4)
+                    # Stop polling repository results: Repository has package build failed
+                    break
+                    ;;
+                5)
+                    # Stop polling repository results: Repository has more disabled packages than succeeded
+                    break
+                    ;;
+            esac
+        done
+    fi
+done
