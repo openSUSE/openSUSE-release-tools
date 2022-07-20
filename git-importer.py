@@ -11,6 +11,7 @@ import sys
 import pathlib
 import hashlib
 import requests
+import time
 from urllib.parse import quote
 from osclib.cache import Cache
 from fnmatch import fnmatch
@@ -76,6 +77,24 @@ class Handler:
         self.package = package
         self.projects = dict()
 
+    def retried_GET(self, url):
+        try:
+           return osc.core.http_GET(url)
+        except HTTPError as e:
+           if 500 <= e.code <= 599:
+                print('Retrying {}'.format(url))
+                time.sleep(1)
+                return self.retried_GET(url)
+           raise e
+        except OSError as e:
+           print(f"OSERROR - '{str(e)}'")
+           if '[Errno 101]' in str(e): # sporadically hits cloud VMs :(
+              print('Retrying {}'.format(url))
+              time.sleep(1)
+              return self.retried_GET(url)
+           raise e
+
+
     def get_revisions(self, project):
         revs = []
         u = osc.core.makeurl(apiurl, ['source', project, self.package, '_meta'])
@@ -91,7 +110,7 @@ class Handler:
 
         u = osc.core.makeurl(apiurl, ['source', project, self.package, '_history'])
         try:
-            r = osc.core.http_GET(u)
+            r = self.retried_GET(u)
         except HTTPError:
             logger.debug("package has no history!?")
             return revs
@@ -163,7 +182,7 @@ class Revision:
     def check_link(self, handler):
         u = osc.core.makeurl(apiurl, ['source', self.project, self.package, '_link'], {'rev': self.srcmd5})
         try:
-            r = osc.core.http_GET(u)
+            r = handler.retried_GET(u)
         except HTTPError:
             # no link
             return None
@@ -187,7 +206,7 @@ class Revision:
             opts['linkrev'] = self.linkrev
         u = osc.core.makeurl(apiurl, ['source', self.project, self.package], opts)
         try:
-            r = osc.core.http_GET(u)
+            r = handler.retried_GET(u)
         except HTTPError:
             logger.error(f"package can't be expanded in {self}")
             self.broken = True
@@ -195,12 +214,12 @@ class Revision:
         root = ET.parse(r).getroot()
         self.srcmd5 = root.get('srcmd5')
 
-    def check_request(self):
+    def check_request(self, handler):
         if not self.requestid:
             return 0
         u = osc.core.makeurl(apiurl, ['request', str(self.requestid)])
         try:
-            r = osc.core.http_GET(u)
+            r = handler.retried_GET(u)
         except HTTPError as e:
             print(u, e)
             return 0
@@ -369,7 +388,7 @@ for r in revs:
         branch = repo.lookup_branch('factory')
         ref = repo.lookup_reference(branch.name)
         repo.checkout(ref)
-        submitted_revision = r.check_request()
+        submitted_revision = r.check_request(handler)
         if submitted_revision:
             rev = handler.get_revision(devel_project, submitted_revision)
             if not rev:
