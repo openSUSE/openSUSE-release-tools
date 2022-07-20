@@ -145,9 +145,8 @@ class Cache(object):
                 reason = '(' + ('expired' if os.path.exists(path) else 'does not exist') + ')'
                 if conf.config['debug']:
                     print('CACHE_MISS', url, reason, file=sys.stderr)
-        else:
-            print('CACHE UNPATTERNED', url, file=sys.stderr)
 
+        print('CACHE UNPATTERNED', url, file=sys.stderr)
         return None
 
     @staticmethod
