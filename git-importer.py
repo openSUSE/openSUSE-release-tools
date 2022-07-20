@@ -1,24 +1,26 @@
 #! /usr/bin/python3
 
-import osc.core
-import logging
-from urllib.error import HTTPError
-from lxml import etree as ET
 import datetime
-import os
-import pygit2
-import sys
-import pathlib
 import hashlib
-import requests
+import logging
+import os
+import pathlib
+import sys
 import time
-from urllib.parse import quote
-from osclib.cache import Cache
 from fnmatch import fnmatch
+from urllib.error import HTTPError
+from urllib.parse import quote
 
-osc.conf.get_config(override_apiurl='https://api.opensuse.org')
-#conf.config['debug'] = True
-apiurl = osc.conf.config['apiurl']
+import osc.core
+import pygit2
+import requests
+from lxml import etree as ET
+
+from osclib.cache import Cache
+
+osc.conf.get_config(override_apiurl="https://api.opensuse.org")
+# conf.config['debug'] = True
+apiurl = osc.conf.config["apiurl"]
 
 logger = logging.getLogger("Importer")
 logging.basicConfig()
@@ -47,7 +49,7 @@ BINARY = {
     ".oxt",
     ".whl",
     ".rpm",
-    ".obscpio"
+    ".obscpio",
 }
 
 LFS_SUFFIX = "filter=lfs diff=lfs merge=lfs -text"
@@ -91,32 +93,32 @@ class Handler:
             return osc.core.http_GET(url)
         except HTTPError as e:
             if 500 <= e.code <= 599:
-                print('Retrying {}'.format(url))
+                print("Retrying {}".format(url))
                 time.sleep(1)
                 return self.retried_GET(url)
             raise e
         except OSError as e:
             print(f"OSERROR - '{str(e)}'")
-            if '[Errno 101]' in str(e):  # sporadically hits cloud VMs :(
-                print('Retrying {}'.format(url))
+            if "[Errno 101]" in str(e):  # sporadically hits cloud VMs :(
+                print("Retrying {}".format(url))
                 time.sleep(1)
                 return self.retried_GET(url)
             raise e
 
     def get_revisions(self, project):
         revs = []
-        u = osc.core.makeurl(apiurl, ['source', project, self.package, '_meta'])
+        u = osc.core.makeurl(apiurl, ["source", project, self.package, "_meta"])
         try:
             r = osc.core.http_GET(u)
             root = ET.parse(r).getroot()
-            if root.get('project') != project:
+            if root.get("project") != project:
                 logger.debug("package does not live here")
                 return revs
         except HTTPError:
             logger.debug("package has no meta!?")
             return revs
 
-        u = osc.core.makeurl(apiurl, ['source', project, self.package, '_history'])
+        u = osc.core.makeurl(apiurl, ["source", project, self.package, "_history"])
         try:
             r = self.retried_GET(u)
         except HTTPError:
@@ -124,7 +126,7 @@ class Handler:
             return revs
 
         root = ET.parse(r).getroot()
-        for revision in root.findall('revision'):
+        for revision in root.findall("revision"):
             r = Revision(project, self.package).parse(revision)
             revs.append(r)
 
@@ -147,7 +149,7 @@ class Handler:
                 return r
             if r.srcmd5 == revision:
                 return r
-        #print(f"Can't find '{revision}' in {project}")
+        # print(f"Can't find '{revision}' in {project}")
         # for r in self.projects.get(project, []):
         #    print(r)
         return None
@@ -161,23 +163,23 @@ class Revision:
         self.broken = False
 
     def parse(self, xml):
-        self.rev = int(xml.get('rev'))
-        self.srcmd5 = xml.find('srcmd5').text
-        self.version = xml.find('version').text
-        time = int(xml.find('time').text)
+        self.rev = int(xml.get("rev"))
+        self.srcmd5 = xml.find("srcmd5").text
+        self.version = xml.find("version").text
+        time = int(xml.find("time").text)
         self.time = datetime.datetime.fromtimestamp(time)
-        userid = xml.find('user')
+        userid = xml.find("user")
         if userid is not None:
             self.userid = userid.text
         else:
-            self.userid = 'unknown'
-        comment = xml.find('comment')
+            self.userid = "unknown"
+        comment = xml.find("comment")
         if comment is not None:
-            self.comment = comment.text or ''
+            self.comment = comment.text or ""
         else:
-            self.comment = ''
+            self.comment = ""
         self.linkrev = None
-        requestid = xml.find('requestid')
+        requestid = xml.find("requestid")
         if requestid is not None:
             self.requestid = int(requestid.text)
         else:
@@ -188,7 +190,11 @@ class Revision:
         return f"Rev {self.project}/{self.rev} Md5 {self.srcmd5} {self.time} {self.userid} {self.requestid}"
 
     def check_link(self, handler):
-        u = osc.core.makeurl(apiurl, ['source', self.project, self.package, '_link'], {'rev': self.srcmd5})
+        u = osc.core.makeurl(
+            apiurl,
+            ["source", self.project, self.package, "_link"],
+            {"rev": self.srcmd5},
+        )
         try:
             r = handler.retried_GET(u)
         except HTTPError:
@@ -200,7 +206,7 @@ class Revision:
             logger.error(f"_link can't be parsed in {self}")
             self.broken = True
             return None
-        tproject = root.get('project')
+        tproject = root.get("project")
         rev = handler.find_lastrev(tproject, self.time)
         if rev:
             self.linkrev = rev.srcmd5
@@ -209,10 +215,10 @@ class Revision:
     # submit requests
     def check_expanded(self, handler):
         self.check_link(handler)
-        opts = {'rev': self.srcmd5, 'expand': '1'}
+        opts = {"rev": self.srcmd5, "expand": "1"}
         if self.linkrev:
-            opts['linkrev'] = self.linkrev
-        u = osc.core.makeurl(apiurl, ['source', self.project, self.package], opts)
+            opts["linkrev"] = self.linkrev
+        u = osc.core.makeurl(apiurl, ["source", self.project, self.package], opts)
         try:
             r = handler.retried_GET(u)
         except HTTPError:
@@ -220,12 +226,12 @@ class Revision:
             self.broken = True
             return None
         root = ET.parse(r).getroot()
-        self.srcmd5 = root.get('srcmd5')
+        self.srcmd5 = root.get("srcmd5")
 
     def check_request(self, handler):
         if not self.requestid:
             return 0
-        u = osc.core.makeurl(apiurl, ['request', str(self.requestid)])
+        u = osc.core.makeurl(apiurl, ["request", str(self.requestid)])
         try:
             r = handler.retried_GET(u)
         except HTTPError as e:
@@ -235,121 +241,139 @@ class Revision:
         # print(ET.tostring(root).decode('utf-8'))
         # TODO: in projects other than Factory we
         # might find multi action requests
-        if root.find('action').get('type') == 'delete':
+        if root.find("action").get("type") == "delete":
             return 0
-        action_source = root.find('action/source')
-        return action_source.get('rev') or 0
+        action_source = root.find("action/source")
+        return action_source.get("rev") or 0
 
     def git_commit(self):
         index = repo.index
         index.add_all()
         index.write()
-        author = pygit2.Signature(f'OBS User {r.userid}', 'null@suse.de', time=int(self.time.timestamp()))
-        commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de', time=int(self.time.timestamp()))
+        author = pygit2.Signature(
+            f"OBS User {r.userid}", "null@suse.de", time=int(self.time.timestamp())
+        )
+        commiter = pygit2.Signature(
+            "Git OBS Bridge", "obsbridge@suse.de", time=int(self.time.timestamp())
+        )
         message = r.comment + "\n\n" + str(self)
         ref = repo.head.name
         parents = [repo.head.target]
 
         tree = index.write_tree()
-        self.commit = str(repo.create_commit(ref, author, commiter, message, tree, parents))
+        self.commit = str(
+            repo.create_commit(ref, author, commiter, message, tree, parents)
+        )
         return self.commit
 
     def download(self, targetdir):
         if self.broken:
             return False
         try:
-            root = ET.parse(osc.core.http_GET(osc.core.makeurl(
-                apiurl, ['source', self.project, self.package], {'expand': 1, 'rev': self.srcmd5})))
+            root = ET.parse(
+                osc.core.http_GET(
+                    osc.core.makeurl(
+                        apiurl,
+                        ["source", self.project, self.package],
+                        {"expand": 1, "rev": self.srcmd5},
+                    )
+                )
+            )
         except HTTPError:
             return False
         newfiles = dict()
         files = dict()
         # caching this needs to consider switching branches
         for file in os.listdir(targetdir):
-            if file == '.git':
+            if file == ".git":
                 continue
             files[file] = md5(os.path.join(targetdir, file))
 
         # prepare default gitattributes
-        target = os.path.join(targetdir, '.gitattributes')
-        with open(target, 'w') as f:
+        target = os.path.join(targetdir, ".gitattributes")
+        with open(target, "w") as f:
             f.write(default_gitattributes())
         first_non_default_lfs = True
 
         remotes = set()
         repo.index.read()
         different = False
-        for entry in root.findall('entry'):
-            name = entry.get('name')
+        for entry in root.findall("entry"):
+            name = entry.get("name")
             target = os.path.join(targetdir, name)
-            size = int(entry.get('size'))
+            size = int(entry.get("size"))
             large = size > 40000
-            if large and (name.endswith('.changes') or name.endswith('.spec')):
+            if large and (name.endswith(".changes") or name.endswith(".spec")):
                 large = False
-            fmd5 = entry.get('md5')
+            fmd5 = entry.get("md5")
             if is_binary(name) or large:
                 remotes.add(name)
-                key = f'{fmd5}-{name}'
+                key = f"{fmd5}-{name}"
                 if key not in sha256s:
                     quoted_name = quote(name)
-                    url = f'{apiurl}/public/source/{self.project}/{self.package}/{quoted_name}?rev={self.srcmd5}'
-                    response = requests.put('http://source.dyn.cloud.suse.de/',
-                                            data={'hash': fmd5, 'filename': name, 'url': url})
+                    url = f"{apiurl}/public/source/{self.project}/{self.package}/{quoted_name}?rev={self.srcmd5}"
+                    response = requests.put(
+                        "http://source.dyn.cloud.suse.de/",
+                        data={"hash": fmd5, "filename": name, "url": url},
+                    )
                     if response.status_code != 200:
                         print(response.content)
                         raise Exception("Redirector error on " + url + f" for {self}")
-                    sha256s[key] = response.content.decode('utf-8')
+                    sha256s[key] = response.content.decode("utf-8")
                 sha256 = sha256s[key]
-                with open(target, 'w') as f:
+                with open(target, "w") as f:
                     f.write("version https://git-lfs.github.com/spec/v1\n")
                     f.write(f"oid sha256:{sha256}\n")
                     f.write(f"size {size}\n")
                 repo.index.add(name)
                 remotes.add(name)
                 newfiles[name] = md5(target)
-                if newfiles[name] != files.pop(name, 'none'):
+                if newfiles[name] != files.pop(name, "none"):
                     different = True
                 continue
             newfiles[name] = fmd5
-            oldmd5 = files.pop(name, 'none')
+            oldmd5 = files.pop(name, "none")
             if newfiles[name] != oldmd5:
-                print('download', name)
-                url = osc.core.makeurl(apiurl, [
-                    'source', self.project, self.package, quote(name)], {'rev': self.srcmd5, 'expand': '1'})
-                with open(target, 'wb') as f:
+                print("download", name)
+                url = osc.core.makeurl(
+                    apiurl,
+                    ["source", self.project, self.package, quote(name)],
+                    {"rev": self.srcmd5, "expand": "1"},
+                )
+                with open(target, "wb") as f:
                     f.write(osc.core.http_GET(url).read())
                 if md5(target) != newfiles[name]:
-                    raise Exception(f'Download error in {name}')
+                    raise Exception(f"Download error in {name}")
                 repo.index.add(name)
                 different = True
             files.pop(name, None)
 
         if remotes:
-            target = os.path.join(targetdir, '.lfsconfig')
-            with open(target, 'w') as f:
+            target = os.path.join(targetdir, ".lfsconfig")
+            with open(target, "w") as f:
                 f.write("[lfs]\n  url = http://gitea.opensuse.org:9999/gitlfs")
-            if '.lfsconfig' not in files:
+            if ".lfsconfig" not in files:
                 different = True
-                repo.index.add('.lfsconfig')
+                repo.index.add(".lfsconfig")
             else:
-                files.pop('.lfsconfig')
+                files.pop(".lfsconfig")
 
             # write .gitattributes
-            target = os.path.join(targetdir, '.gitattributes')
+            target = os.path.join(targetdir, ".gitattributes")
             for file in sorted(remotes):
                 # we differ between binaries and large files
                 if not is_binary(file):
-                    with open(target, 'a') as f:
+                    with open(target, "a") as f:
                         if first_non_default_lfs:
                             f.write("\n## Specific LFS patterns\n")
                         f.write(f"{file} {LFS_SUFFIX}\n")
                     first_non_default_lfs = False
 
-        repo.index.add('.gitattributes')
-        files.pop('.gitattributes', 'none')
+        repo.index.add(".gitattributes")
+        files.pop(".gitattributes", "none")
 
         for file in files:
-            print('remove', file)
+            print("remove", file)
             repo.index.remove(file)
             os.unlink(os.path.join(targetdir, file))
             different = True
@@ -357,21 +381,21 @@ class Revision:
 
 
 def get_devel_package(package):
-    u = osc.core.makeurl(apiurl, ['source', 'openSUSE:Factory', package, '_meta'])
+    u = osc.core.makeurl(apiurl, ["source", "openSUSE:Factory", package, "_meta"])
     try:
         r = osc.core.http_GET(u)
     except HTTPError:
         # no link
         return None
     root = ET.parse(r).getroot()
-    return root.find('devel').get('project')
+    return root.find("devel").get("project")
 
 
 package = sys.argv[1]
 repodir = sys.argv[2]
 devel_project = get_devel_package(package)
 handler = Handler(package)
-revs_factory = handler.get_revisions('openSUSE:Factory')
+revs_factory = handler.get_revisions("openSUSE:Factory")
 revs_devel = handler.get_revisions(devel_project)
 
 revs = sorted(revs_factory + revs_devel, key=lambda x: x.time.timestamp())
@@ -381,22 +405,24 @@ repo = pygit2.init_repository(repodir, False)
 
 index = repo.index
 index.write()
-author = pygit2.Signature(f'None', 'null@suse.de', time=int(revs[0].time.timestamp()))
-commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de', time=int(revs[0].time.timestamp()))
-message = 'Initialize empty repo'
-ref = 'refs/heads/devel'
+author = pygit2.Signature(f"None", "null@suse.de", time=int(revs[0].time.timestamp()))
+commiter = pygit2.Signature(
+    "Git OBS Bridge", "obsbridge@suse.de", time=int(revs[0].time.timestamp())
+)
+message = "Initialize empty repo"
+ref = "refs/heads/devel"
 parents = []
 
 tree = index.write_tree()
 empty_commit = repo.create_commit(ref, author, commiter, message, tree, parents)
 index = repo.index
 tree = index.write_tree()
-repo.create_branch('factory', repo.get(empty_commit))
+repo.create_branch("factory", repo.get(empty_commit))
 
 for r in revs:
     r.check_expanded(handler)
-    if r.project == 'openSUSE:Factory':
-        branch = repo.lookup_branch('factory')
+    if r.project == "openSUSE:Factory":
+        branch = repo.lookup_branch("factory")
         ref = repo.lookup_reference(branch.name)
         repo.checkout(ref)
         submitted_revision = r.check_request(handler)
@@ -405,16 +431,20 @@ for r in revs:
             if not rev:
                 print(r)
             if rev and rev.commit:
-                author = pygit2.Signature(f'OBS User {r.userid}', 'null@suse.de', time=int(r.time.timestamp()))
-                commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de', time=int(r.time.timestamp()))
-                message = f'Accepting request {r.requestid}: {r.comment}'
+                author = pygit2.Signature(
+                    f"OBS User {r.userid}", "null@suse.de", time=int(r.time.timestamp())
+                )
+                commiter = pygit2.Signature(
+                    "Git OBS Bridge", "obsbridge@suse.de", time=int(r.time.timestamp())
+                )
+                message = f"Accepting request {r.requestid}: {r.comment}"
                 message += "\n\n" + str(r)
-                print('merge request', rev.commit)
+                print("merge request", rev.commit)
                 mr = repo.merge(repo.get(rev.commit).peel(pygit2.Commit).id)
                 if repo.index.conflicts:
                     message = "CONFLICT " + message
                     for conflict in repo.index.conflicts:
-                        print('CONFLICT', conflict)
+                        print("CONFLICT", conflict)
                     for path, mode in repo.status().items():
                         # merge leaves ~HEAD and ~REV files behind
                         if mode == pygit2.GIT_STATUS_WT_NEW:
@@ -438,45 +468,62 @@ for r in revs:
                 index.add_all()
                 index.write()
                 tree = index.write_tree()
-                parents = [repo.head.target, repo.get(rev.commit).peel(pygit2.Commit).id]
+                parents = [
+                    repo.head.target,
+                    repo.get(rev.commit).peel(pygit2.Commit).id,
+                ]
                 print("create", parents)
-                r.commit = repo.create_commit(repo.head.name, author, commiter, message, tree, parents)
+                r.commit = repo.create_commit(
+                    repo.head.name, author, commiter, message, tree, parents
+                )
                 repo.references["refs/heads/devel"].set_target(r.commit)
                 continue
             else:
                 logger.warning(str(rev) + " submitted from another devel project")
     else:
-        branch = repo.lookup_branch('devel')
+        branch = repo.lookup_branch("devel")
         ref = repo.lookup_reference(branch.name)
         repo.checkout(ref)
 
-    if not r.download(repodir) and r.userid == 'buildservice-autocommit':
+    if not r.download(repodir) and r.userid == "buildservice-autocommit":
         continue
     print("commit", r.project, r.rev)
     r.git_commit()
 
-osc.conf.get_config(override_apiurl='https://api.suse.de')
-apiurl = osc.conf.config['apiurl']
-#conf.config['debug'] = True
+osc.conf.get_config(override_apiurl="https://api.suse.de")
+apiurl = osc.conf.config["apiurl"]
+# conf.config['debug'] = True
 
 first = dict()
-projects = [('SUSE:SLE-12:GA', 'SLE_12'), ('SUSE:SLE-12:Update', 'SLE_12'),
-            ('SUSE:SLE-12-SP1:GA', 'SLE_12_SP1'), ('SUSE:SLE-12-SP1:Update', 'SLE_12_SP1'),
-            ('SUSE:SLE-12-SP2:GA', 'SLE_12_SP2'), ('SUSE:SLE-12-SP2:Update', 'SLE_12_SP2'),
-            ('SUSE:SLE-12-SP3:GA', 'SLE_12_SP3'), ('SUSE:SLE-12-SP3:Update', 'SLE_12_SP3'),
-            ('SUSE:SLE-12-SP4:GA', 'SLE_12_SP4'), ('SUSE:SLE-12-SP4:Update', 'SLE_12_SP4'),
-            ('SUSE:SLE-12-SP5:GA', 'SLE_12_SP5'), ('SUSE:SLE-12-SP5:Update', 'SLE_12_SP5'),
-            ('SUSE:SLE-15:GA', 'SLE_15'), ('SUSE:SLE-15:Update', 'SLE_15'),
-            ('SUSE:SLE-15-SP1:GA', 'SLE_15_SP1'), ('SUSE:SLE-15-SP1:Update', 'SLE_15_SP1'),
-            ('SUSE:SLE-15-SP2:GA', 'SLE_15_SP2'), ('SUSE:SLE-15-SP2:Update', 'SLE_15_SP2'),
-            ('SUSE:SLE-15-SP3:GA', 'SLE_15_SP3'), ('SUSE:SLE-15-SP3:Update', 'SLE_15_SP3'),
-            ('SUSE:SLE-15-SP4:GA', 'SLE_15_SP4'), ('SUSE:SLE-15-SP4:Update', 'SLE_15_SP4')
-            ]
+projects = [
+    ("SUSE:SLE-12:GA", "SLE_12"),
+    ("SUSE:SLE-12:Update", "SLE_12"),
+    ("SUSE:SLE-12-SP1:GA", "SLE_12_SP1"),
+    ("SUSE:SLE-12-SP1:Update", "SLE_12_SP1"),
+    ("SUSE:SLE-12-SP2:GA", "SLE_12_SP2"),
+    ("SUSE:SLE-12-SP2:Update", "SLE_12_SP2"),
+    ("SUSE:SLE-12-SP3:GA", "SLE_12_SP3"),
+    ("SUSE:SLE-12-SP3:Update", "SLE_12_SP3"),
+    ("SUSE:SLE-12-SP4:GA", "SLE_12_SP4"),
+    ("SUSE:SLE-12-SP4:Update", "SLE_12_SP4"),
+    ("SUSE:SLE-12-SP5:GA", "SLE_12_SP5"),
+    ("SUSE:SLE-12-SP5:Update", "SLE_12_SP5"),
+    ("SUSE:SLE-15:GA", "SLE_15"),
+    ("SUSE:SLE-15:Update", "SLE_15"),
+    ("SUSE:SLE-15-SP1:GA", "SLE_15_SP1"),
+    ("SUSE:SLE-15-SP1:Update", "SLE_15_SP1"),
+    ("SUSE:SLE-15-SP2:GA", "SLE_15_SP2"),
+    ("SUSE:SLE-15-SP2:Update", "SLE_15_SP2"),
+    ("SUSE:SLE-15-SP3:GA", "SLE_15_SP3"),
+    ("SUSE:SLE-15-SP3:Update", "SLE_15_SP3"),
+    ("SUSE:SLE-15-SP4:GA", "SLE_15_SP4"),
+    ("SUSE:SLE-15-SP4:Update", "SLE_15_SP4"),
+]
 for project, branchname in projects:
     revs = handler.get_revisions(project)
     for r in revs:
         r.check_expanded(handler)
-        rev = handler.get_revision('openSUSE:Factory', r.srcmd5)
+        rev = handler.get_revision("openSUSE:Factory", r.srcmd5)
         if first.get(branchname, True):
             index = repo.index
             tree = index.write_tree()
@@ -506,8 +553,8 @@ for project, branchname in projects:
 
                     # create temporary commit to diff it
                     logger.debug(f"Create tmp commit for {r}")
-                    repo.create_branch('tmp', repo.get(empty_commit))
-                    branch = repo.lookup_branch('tmp')
+                    repo.create_branch("tmp", repo.get(empty_commit))
+                    branch = repo.lookup_branch("tmp")
                     ref = repo.lookup_reference(branch.name)
                     repo.checkout(ref)
                     r.download(repodir)
@@ -523,8 +570,8 @@ for project, branchname in projects:
                         [parent.oid],
                     )
                     logger.debug(f"Created tmp commit for {new_commit}")
-                    obranches.append('factory')
-                    obranches.append('devel')
+                    obranches.append("factory")
+                    obranches.append("devel")
                     for obranch in obranches:
                         branch = repo.lookup_branch(obranch)
                         # TODO we need to create a branch even if there are no revisions in a SP
@@ -535,7 +582,7 @@ for project, branchname in projects:
                         for commit in repo.walk(ref, pygit2.GIT_SORT_TIME):
                             d = repo.diff(new_commit, commit)
                             patch_len = len(d.patch)
-                            #print(f"diff between {commit} and {new_commit} is {patch_len}")
+                            # print(f"diff between {commit} and {new_commit} is {patch_len}")
                             if min_patch_size > patch_len:
                                 min_patch_size = patch_len
                                 min_commit = commit
@@ -544,41 +591,50 @@ for project, branchname in projects:
                         logger.debug(f"Base {r} on {base_commit}")
                     else:
                         logger.debug(f"Min patch is {min_patch_size} - ignoring")
-                    branch = repo.lookup_branch('factory')
+                    branch = repo.lookup_branch("factory")
                     ref = repo.lookup_reference(branch.name)
                     repo.reset(ref.peel().id, pygit2.GIT_RESET_HARD)
                     repo.checkout(ref)
-                    repo.branches.delete('tmp')
+                    repo.branches.delete("tmp")
             if base_commit:
                 repo.create_branch(branchname, repo.get(base_commit))
             else:
-                author = pygit2.Signature(f'No one', 'null@suse.de', time=int(r.time.timestamp()))
-                commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de', time=int(r.time.timestamp()))
+                author = pygit2.Signature(
+                    f"No one", "null@suse.de", time=int(r.time.timestamp())
+                )
+                commiter = pygit2.Signature(
+                    "Git OBS Bridge", "obsbridge@suse.de", time=int(r.time.timestamp())
+                )
                 repo.create_commit(
-                    f'refs/heads/{branchname}',
+                    f"refs/heads/{branchname}",
                     author,
                     commiter,
                     "Initialize branch",
                     tree,
-                    [])
+                    [],
+                )
 
             first[branchname] = False
             branch = repo.lookup_branch(branchname)
             ref = repo.lookup_reference(branch.name)
             repo.checkout(ref)
         elif rev and rev.commit:
-            author = pygit2.Signature(f'OBS User {r.userid}', 'null@suse.de', time=int(r.time.timestamp()))
-            commiter = pygit2.Signature('Git OBS Bridge', 'obsbridge@suse.de', time=int(r.time.timestamp()))
-            message = r.comment or 'No commit log found'
+            author = pygit2.Signature(
+                f"OBS User {r.userid}", "null@suse.de", time=int(r.time.timestamp())
+            )
+            commiter = pygit2.Signature(
+                "Git OBS Bridge", "obsbridge@suse.de", time=int(r.time.timestamp())
+            )
+            message = r.comment or "No commit log found"
             message += "\n\n" + str(r)
-            print('merge', rev.commit)
+            print("merge", rev.commit)
             mr = repo.merge(repo.get(rev.commit).peel(pygit2.Commit).id)
             if repo.index.conflicts:
                 message = "CONFLICT " + message
                 # TODO we really should not run into conflicts. but for that we need to be aware of the
                 # order the commits happen other than what the time says
                 for conflict in repo.index.conflicts:
-                    logger.warning(f'CONFLICT #{conflict}')
+                    logger.warning(f"CONFLICT #{conflict}")
                 for path, mode in repo.status().items():
                     # merge leaves ~HEAD and ~REV files behind
                     if mode == pygit2.GIT_STATUS_WT_NEW:
@@ -604,7 +660,9 @@ for project, branchname in projects:
             tree = index.write_tree()
             parents = [repo.head.target, repo.get(rev.commit).peel(pygit2.Commit).id]
             print("create", parents)
-            r.commit = repo.create_commit(repo.head.name, author, commiter, message, tree, parents)
+            r.commit = repo.create_commit(
+                repo.head.name, author, commiter, message, tree, parents
+            )
             # repo.references["refs/heads/SLE_15_GA"].set_target(r.commit)
             continue
 
