@@ -23,10 +23,6 @@ osc.conf.get_config(override_apiurl="https://api.opensuse.org")
 # conf.config['debug'] = True
 apiurl = osc.conf.config["apiurl"]
 
-logger = logging.getLogger("Importer")
-logging.basicConfig()
-logger.setLevel(logging.DEBUG)
-
 # copied from obsgit
 BINARY = {
     ".xz",
@@ -117,17 +113,17 @@ class Handler:
             r = osc.core.http_GET(u)
             root = ET.parse(r).getroot()
             if root.get("project") != project:
-                logger.debug("package does not live here")
+                logging.debug("package does not live here")
                 return revs
         except HTTPError:
-            logger.debug("package has no meta!?")
+            logging.debug("package has no meta!?")
             return revs
 
         u = osc.core.makeurl(apiurl, ["source", project, self.package, "_history"])
         try:
             r = self.retried_GET(u)
         except HTTPError:
-            logger.debug("package has no history!?")
+            logging.debug("package has no history!?")
             return revs
 
         root = ET.parse(r).getroot()
@@ -208,7 +204,7 @@ class Revision:
         try:
             root = ET.parse(r).getroot()
         except ET.XMLSyntaxError:
-            logger.error(f"_link can't be parsed in {self}")
+            logging.error(f"_link can't be parsed in {self}")
             self.broken = True
             return None
         tproject = root.get("project")
@@ -227,7 +223,7 @@ class Revision:
         try:
             r = handler.retried_GET(u)
         except HTTPError:
-            logger.error(f"package can't be expanded in {self}")
+            logging.error(f"package can't be expanded in {self}")
             self.broken = True
             return None
         root = ET.parse(r).getroot()
@@ -461,7 +457,7 @@ def importer(package, repodir):
                         for path, mode in repo.status().items():
                             # merge leaves ~HEAD and ~REV files behind
                             if mode == pygit2.GIT_STATUS_WT_NEW:
-                                logger.debug(f"Remove {path}")
+                                logging.debug(f"Remove {path}")
                                 os.unlink(os.path.join(repodir, path))
                             if mode == pygit2.GIT_STATUS_CONFLICTED:
                                 # remove files in conflict - we'll download the revision
@@ -492,7 +488,7 @@ def importer(package, repodir):
                     repo.references["refs/heads/devel"].set_target(r.commit)
                     continue
                 else:
-                    logger.warning(str(rev) + " submitted from another devel project")
+                    logging.warning(str(rev) + " submitted from another devel project")
         else:
             branch = repo.lookup_branch("devel")
             ref = repo.lookup_reference(branch.name)
@@ -552,12 +548,12 @@ def importer(package, repodir):
                             break
                         oprojects.append(oproject)
                         obranches.append(obranchname)
-                    logger.debug(f"looking for {r.srcmd5}")
+                    logging.debug(f"looking for {r.srcmd5}")
                     for oproject in reversed(oprojects):
-                        logger.debug(f"looking for {r.srcmd5} in {oproject}")
+                        logging.debug(f"looking for {r.srcmd5} in {oproject}")
                         rev = handler.get_revision(oproject, r.srcmd5)
                         if rev:
-                            logger.debug(f"found {r.srcmd5} in {oproject}: {rev}")
+                            logging.debug(f"found {r.srcmd5} in {oproject}: {rev}")
                             base_commit = rev.commit
                             break
                     if not base_commit:
@@ -565,7 +561,7 @@ def importer(package, repodir):
                         min_commit = None
 
                         # create temporary commit to diff it
-                        logger.debug(f"Create tmp commit for {r}")
+                        logging.debug(f"Create tmp commit for {r}")
                         repo.create_branch("tmp", repo.get(empty_commit))
                         branch = repo.lookup_branch("tmp")
                         ref = repo.lookup_reference(branch.name)
@@ -582,7 +578,7 @@ def importer(package, repodir):
                             tree,
                             [parent.oid],
                         )
-                        logger.debug(f"Created tmp commit for {new_commit}")
+                        logging.debug(f"Created tmp commit for {new_commit}")
                         obranches.append("factory")
                         obranches.append("devel")
                         for obranch in obranches:
@@ -601,9 +597,9 @@ def importer(package, repodir):
                                     min_commit = commit
                         if min_patch_size < 1000:
                             base_commit = min_commit.id
-                            logger.debug(f"Base {r} on {base_commit}")
+                            logging.debug(f"Base {r} on {base_commit}")
                         else:
-                            logger.debug(f"Min patch is {min_patch_size} - ignoring")
+                            logging.debug(f"Min patch is {min_patch_size} - ignoring")
                         branch = repo.lookup_branch("factory")
                         ref = repo.lookup_reference(branch.name)
                         repo.reset(ref.peel().id, pygit2.GIT_RESET_HARD)
@@ -649,11 +645,11 @@ def importer(package, repodir):
                     # TODO we really should not run into conflicts. but for that we need to be aware of the
                     # order the commits happen other than what the time says
                     for conflict in repo.index.conflicts:
-                        logger.warning(f"CONFLICT #{conflict}")
+                        logging.warning(f"CONFLICT #{conflict}")
                     for path, mode in repo.status().items():
                         # merge leaves ~HEAD and ~REV files behind
                         if mode == pygit2.GIT_STATUS_WT_NEW:
-                            logger.debug(f"Remove {path}")
+                            logging.debug(f"Remove {path}")
                             os.unlink(os.path.join(repodir, path))
                         if mode == pygit2.GIT_STATUS_CONFLICTED:
                             # remove files in conflict - we'll download the revision
@@ -695,8 +691,22 @@ def main():
     parser.add_argument(
         "-r", "--repodir", required=False, help="Local git repository directory"
     )
+    parser.add_argument(
+        "--level",
+        "-l",
+        default="INFO",
+        help="logging level",
+    )
 
     args = parser.parse_args()
+
+    if args.level:
+        numeric_level = getattr(logging, args.level.upper(), None)
+        if not isinstance(numeric_level, int):
+            print(f"Invalid log level: {args.level}")
+            sys.exit(-1)
+        logging.basicConfig(level=numeric_level)
+
     if not args.repodir:
         args.repodir = args.package
 
