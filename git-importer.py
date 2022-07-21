@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import datetime
 import hashlib
 import logging
@@ -395,12 +396,10 @@ def get_devel_package(package):
     return root.find("devel").get("project")
 
 
-def importer():
+def importer(package, repodir):
     global repo
     global r
 
-    package = sys.argv[1]
-    repodir = sys.argv[2]
     devel_project = get_devel_package(package)
     handler = Handler(package)
     revs_factory = handler.get_revisions("openSUSE:Factory")
@@ -691,7 +690,17 @@ def importer():
 
 
 def main():
-    importer()
+    parser = argparse.ArgumentParser(description="OBS history importer into git")
+    parser.add_argument("package", help="OBS package name")
+    parser.add_argument(
+        "-r", "--repodir", required=False, help="Local git repository directory"
+    )
+
+    args = parser.parse_args()
+    if not args.repodir:
+        args.repodir = args.package
+
+    importer(args.package, args.repodir)
 
 
 if __name__ == "__main__":
