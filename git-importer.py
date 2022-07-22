@@ -20,10 +20,44 @@ import requests
 from osclib.cache import Cache
 
 osc.conf.get_config(override_apiurl="https://api.opensuse.org")
-# conf.config['debug'] = True
+# osc.conf.config['debug'] = True
 apiurl = osc.conf.config["apiurl"]
 
-# copied from obsgit
+
+# Add a retry wrapper for some of the HTTP actions.
+def retry(func):
+    def wrapper(*args, **kwargs):
+        retry = 0
+        while retry < 5:
+            try:
+                return func(*args, **kwargs)
+            except HTTPError as e:
+                if 500 <= e.code <= 599:
+                    retry += 1
+                    logging.warning(
+                        f"HTTPError {e.code} -- Retrying {args[0]} ({retry})"
+                    )
+                    # TODO: remove when move to async
+                    time.sleep(0.5)
+                else:
+                    raise
+            except OSError as e:
+                if "[Errno 101]" in str(e):  # sporadically hits cloud VMs :(
+                    retry += 1
+                    logging.warning(f"OSError {e} -- Retrying {args[0]} ({retry})")
+                    # TODO: remove when move to async
+                    time.sleep(0.5)
+                else:
+                    raise
+
+    return wrapper
+
+
+osc.core.http_GET = retry(osc.core.http_GET)
+
+Cache.init()
+sha256s = {}
+
 BINARY = {
     ".7z",
     ".bsp",
@@ -81,24 +115,7 @@ r = None
 class Handler:
     def __init__(self, package) -> None:
         self.package = package
-        self.projects = dict()
-
-    def retried_GET(self, url):
-        try:
-            return osc.core.http_GET(url)
-        except HTTPError as e:
-            if 500 <= e.code <= 599:
-                print("Retrying {}".format(url))
-                time.sleep(1)
-                return self.retried_GET(url)
-            raise e
-        except OSError as e:
-            print(f"OSERROR - '{str(e)}'")
-            if "[Errno 101]" in str(e):  # sporadically hits cloud VMs :(
-                print("Retrying {}".format(url))
-                time.sleep(1)
-                return self.retried_GET(url)
-            raise e
+        self.projects = {}
 
     def get_revisions(self, project):
         revs = []
@@ -115,7 +132,7 @@ class Handler:
 
         u = osc.core.makeurl(apiurl, ["source", project, self.package, "_history"])
         try:
-            r = self.retried_GET(u)
+            r = osc.core.http_GET(u)
         except HTTPError:
             logging.debug("package has no history!?")
             return revs
@@ -191,7 +208,7 @@ class Revision:
             {"rev": self.srcmd5},
         )
         try:
-            r = handler.retried_GET(u)
+            r = osc.core.http_GET(u)
         except HTTPError:
             # no link
             return None
@@ -215,7 +232,7 @@ class Revision:
             opts["linkrev"] = self.linkrev
         u = osc.core.makeurl(apiurl, ["source", self.project, self.package], opts)
         try:
-            r = handler.retried_GET(u)
+            r = osc.core.http_GET(u)
         except HTTPError:
             logging.error(f"package can't be expanded in {self}")
             self.broken = True
@@ -228,7 +245,7 @@ class Revision:
             return 0
         u = osc.core.makeurl(apiurl, ["request", str(self.requestid)])
         try:
-            r = handler.retried_GET(u)
+            r = osc.core.http_GET(u)
         except HTTPError as e:
             print(u, e)
             return 0
