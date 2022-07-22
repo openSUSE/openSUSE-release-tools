@@ -25,42 +25,36 @@ apiurl = osc.conf.config["apiurl"]
 
 # copied from obsgit
 BINARY = {
-    ".xz",
-    ".gz",
     ".7z",
+    ".bsp",
+    ".bz2",
+    ".gem",
+    ".gz",
+    ".jar",
     ".lz",
     ".lzma",
-    ".zst",
-    ".bz2",
-    ".zip",
-    ".gem",
-    ".tgz",
-    ".txz",
+    ".obscpio",
+    ".oxt",
+    ".pdf",
+    ".png",
+    ".rpm",
     ".tbz",
     ".tbz2",
+    ".tgz",
     ".ttf",
-    ".png",
-    ".pdf",
-    ".jar",
-    ".bsp",
-    ".oxt",
+    ".txz",
     ".whl",
-    ".rpm",
-    ".obscpio",
+    ".xz",
+    ".zip",
+    ".zst",
 }
 
 LFS_SUFFIX = "filter=lfs diff=lfs merge=lfs -text"
 
 
 def default_gitattributes():
-    str = "## Default LFS\n"
-    for binary in BINARY:
-        str += f"*{binary} {LFS_SUFFIX}\n"
-    return str
-
-
-Cache.init()
-sha256s = dict()
+    gattr = ["## Default LFS"] + [f"*{b} {LFS_SUFFIX}" for b in sorted(BINARY)]
+    return "\n".join(gattr)
 
 
 def is_binary(filename):
