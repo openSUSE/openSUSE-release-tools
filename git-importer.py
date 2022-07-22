@@ -233,7 +233,10 @@ class Revision:
             return 0
         root = ET.parse(r)
         # print(ET.tostring(root).decode('utf-8'))
-        # TODO: this only works for Factory
+        # TODO: in projects other than Factory we
+        # might find multi action requests
+        if root.find('action').get('type') == 'delete':
+            return 0
         action_source = root.find('action/source')
         return action_source.get('rev') or 0
 
