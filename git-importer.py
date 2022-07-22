@@ -88,21 +88,20 @@ class Handler:
 
     def retried_GET(self, url):
         try:
-           return osc.core.http_GET(url)
+            return osc.core.http_GET(url)
         except HTTPError as e:
-           if 500 <= e.code <= 599:
+            if 500 <= e.code <= 599:
                 print('Retrying {}'.format(url))
                 time.sleep(1)
                 return self.retried_GET(url)
-           raise e
+            raise e
         except OSError as e:
-           print(f"OSERROR - '{str(e)}'")
-           if '[Errno 101]' in str(e): # sporadically hits cloud VMs :(
-              print('Retrying {}'.format(url))
-              time.sleep(1)
-              return self.retried_GET(url)
-           raise e
-
+            print(f"OSERROR - '{str(e)}'")
+            if '[Errno 101]' in str(e):  # sporadically hits cloud VMs :(
+                print('Retrying {}'.format(url))
+                time.sleep(1)
+                return self.retried_GET(url)
+            raise e
 
     def get_revisions(self, project):
         revs = []
@@ -421,7 +420,10 @@ for r in revs:
                         if mode == pygit2.GIT_STATUS_CONFLICTED:
                             # remove files in conflict - we'll download the revision
                             # TODO: just as in above, if we have a conflict, the commit isn't fitting
-                            os.unlink(os.path.join(repodir, path))
+                            try:
+                                os.unlink(os.path.join(repodir, path))
+                            except FileNotFoundError:
+                                pass
                             try:
                                 repo.index.remove(path)
                             except OSError:
@@ -582,7 +584,10 @@ for project, branchname in projects:
                     if mode == pygit2.GIT_STATUS_CONFLICTED:
                         # remove files in conflict - we'll download the revision
                         # TODO: just as in above, if we have a conflict, the commit isn't fitting
-                        os.unlink(os.path.join(repodir, path))
+                        try:
+                            os.unlink(os.path.join(repodir, path))
+                        except FileNotFoundError:
+                            pass
                         try:
                             repo.index.remove(path)
                         except OSError:
