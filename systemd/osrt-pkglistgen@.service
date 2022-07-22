@@ -4,3 +4,6 @@ SyslogIdentifier=osrt-slsa
 EnvironmentFile=/etc/openSUSE-release-tools/ibsapi
 Environment="OSC_CONFIG=/etc/openSUSE-release-tools/oscrc"
 ExecStart=/usr/bin/osrt-verify-build-and-generatelists %i
+
+[Install]
+WantedBy=osrt-slsa.target

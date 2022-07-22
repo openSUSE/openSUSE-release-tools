@@ -5,3 +5,6 @@ EnvironmentFile=/etc/openSUSE-release-tools/ibsapi
 Environment="OSC_CONFIG=/etc/openSUSE-release-tools/oscrc"
 ExecStart=/usr/bin/osrt-generate-release-packages %i
 RuntimeMaxSec=120 hour
+
+[Install]
+WantedBy=osrt-slsa.target
