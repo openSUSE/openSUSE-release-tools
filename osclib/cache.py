@@ -146,7 +146,6 @@ class Cache(object):
                 if conf.config['debug']:
                     print('CACHE_MISS', url, reason, file=sys.stderr)
 
-        print('CACHE UNPATTERNED', url, file=sys.stderr)
         return None
 
     @staticmethod
