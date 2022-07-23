@@ -29,8 +29,7 @@ class CacheManager(object):
 
     @staticmethod
     def prune_all():
-        if CacheManager.pruned:
-            return
+        return
         CacheManager.pruned = True
 
         prune_lock = os.path.join(CacheManager.directory(), '.prune')
