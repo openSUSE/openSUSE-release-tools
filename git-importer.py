@@ -58,6 +58,14 @@ osc.core.http_GET = retry(osc.core.http_GET)
 Cache.init()
 sha256s = {}
 
+
+def fill_sha256(package):
+    response = requests.get(f"http://source.dyn.cloud.suse.de/package/{package}")
+    if response.status_code == 200:
+        global sha256s
+        sha256s = response.json()
+
+
 BINARY = {
     ".7z",
     ".bsp",
@@ -720,6 +728,8 @@ def main():
 
     if not args.repodir:
         args.repodir = args.package
+
+    fill_sha256(args.package)
 
     importer(args.package, args.repodir)
 
