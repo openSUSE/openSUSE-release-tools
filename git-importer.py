@@ -117,16 +117,19 @@ r = None
 
 
 class Handler:
-    def __init__(self, package) -> None:
+    def __init__(self, url, package):
+        self.url = url
         self.package = package
         self.projects = {}
 
+    def _xml(self, url_path, **params):
+        url = osc.core.makeurl(self.url, [url_path], params)
+        return ET.parse(osc.core.http_GET(url)).getroot()
+
     def get_revisions(self, project):
         revs = []
-        u = osc.core.makeurl(apiurl, ["source", project, self.package, "_meta"])
         try:
-            r = osc.core.http_GET(u)
-            root = ET.parse(r).getroot()
+            root = self._xml(f"source/{project}/{self.package}/_meta")
             if root.get("project") != project:
                 logging.debug("package does not live here")
                 return revs
@@ -134,14 +137,12 @@ class Handler:
             logging.debug("package has no meta!?")
             return revs
 
-        u = osc.core.makeurl(apiurl, ["source", project, self.package, "_history"])
         try:
-            r = osc.core.http_GET(u)
+            root = self._xml(f"source/{project}/{self.package}/_history")
         except HTTPError:
             logging.debug("package has no history!?")
             return revs
 
-        root = ET.parse(r).getroot()
         for revision in root.findall("revision"):
             r = Revision(project, self.package).parse(revision)
             revs.append(r)
@@ -206,18 +207,13 @@ class Revision:
         return f"Rev {self.project}/{self.rev} Md5 {self.srcmd5} {self.time} {self.userid} {self.requestid}"
 
     def check_link(self, handler):
-        u = osc.core.makeurl(
-            apiurl,
-            ["source", self.project, self.package, "_link"],
-            {"rev": self.srcmd5},
-        )
         try:
-            r = osc.core.http_GET(u)
+            root = handler._xml(
+                f"source/{self.project}/{self.package}/_link", rev=self.srcmd5
+            )
         except HTTPError:
             # no link
             return None
-        try:
-            root = ET.parse(r).getroot()
         except ET.XMLSyntaxError:
             logging.error(f"_link can't be parsed in {self}")
             self.broken = True
@@ -234,26 +230,22 @@ class Revision:
         opts = {"rev": self.srcmd5, "expand": "1"}
         if self.linkrev:
             opts["linkrev"] = self.linkrev
-        u = osc.core.makeurl(apiurl, ["source", self.project, self.package], opts)
         try:
-            r = osc.core.http_GET(u)
+            root = handler._xml(f"source/{self.project}/{self.package}", **opts)
         except HTTPError:
             logging.error(f"package can't be expanded in {self}")
             self.broken = True
             return None
-        root = ET.parse(r).getroot()
         self.srcmd5 = root.get("srcmd5")
 
     def check_request(self, handler):
         if not self.requestid:
             return 0
-        u = osc.core.makeurl(apiurl, ["request", str(self.requestid)])
         try:
-            r = osc.core.http_GET(u)
+            root = handler._xml(f"request/{self.requestid}")
         except HTTPError as e:
-            print(u, e)
+            print(f"request/{self.requestid}", e)
             return 0
-        root = ET.parse(r)
         # print(ET.tostring(root).decode('utf-8'))
         # TODO: in projects other than Factory we
         # might find multi action requests
