@@ -105,14 +105,11 @@ def is_binary(filename):
 
 
 def md5(name):
-    md5 = hashlib.md5()
+    h = hashlib.md5()
     with open(name, "rb") as f:
-        while True:
-            chunk = f.read(1024 * 4)
-            if not chunk:
-                break
-            md5.update(chunk)
-    return md5.hexdigest()
+        while chunk := f.read(1024 * 4):
+            h.update(chunk)
+    return h.hexdigest()
 
 
 repo = None
