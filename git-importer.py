@@ -166,14 +166,11 @@ class Handler:
                 return r
             if r.srcmd5 == revision:
                 return r
-        # print(f"Can't find '{revision}' in {project}")
-        # for r in self.projects.get(project, []):
-        #    print(r)
         return None
 
 
 class Revision:
-    def __init__(self, project, package) -> None:
+    def __init__(self, project, package):
         self.project = project
         self.package = package
         self.commit = None
@@ -203,7 +200,7 @@ class Revision:
             self.requestid = None
         return self
 
-    def __str__(self) -> str:
+    def __str__(self):
         return f"Rev {self.project}/{self.rev} Md5 {self.srcmd5} {self.time} {self.userid} {self.requestid}"
 
     def check_link(self, handler):
@@ -278,6 +275,7 @@ class Revision:
         if self.broken:
             return False
         try:
+            # TODO: refactor this part to use the Handler / OBS object
             root = ET.parse(
                 osc.core.http_GET(
                     osc.core.makeurl(
@@ -344,6 +342,8 @@ class Revision:
                 if newfiles[name] != files.pop(name, "none"):
                     different = True
                 continue
+
+            # It is not a binary file
             newfiles[name] = fmd5
             oldmd5 = files.pop(name, "none")
             if newfiles[name] != oldmd5:
@@ -422,7 +422,7 @@ def importer(package, repodir):
     index = repo.index
     index.write()
     author = pygit2.Signature(
-        f"None", "null@suse.de", time=int(revs[0].time.timestamp())
+        "None", "null@suse.de", time=int(revs[0].time.timestamp())
     )
     commiter = pygit2.Signature(
         "Git OBS Bridge", "obsbridge@suse.de", time=int(revs[0].time.timestamp())
@@ -623,7 +623,7 @@ def importer(package, repodir):
                     repo.create_branch(branchname, repo.get(base_commit))
                 else:
                     author = pygit2.Signature(
-                        f"No one", "null@suse.de", time=int(r.time.timestamp())
+                        "No one", "null@suse.de", time=int(r.time.timestamp())
                     )
                     commiter = pygit2.Signature(
                         "Git OBS Bridge",
