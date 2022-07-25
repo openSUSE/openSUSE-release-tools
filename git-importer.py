@@ -334,7 +334,12 @@ class Revision:
                     url = f"{apiurl}/public/source/{self.project}/{self.package}/{quoted_name}?rev={self.srcmd5}"
                     response = requests.put(
                         "http://source.dyn.cloud.suse.de/",
-                        data={"hash": fmd5, "filename": name, "url": url},
+                        data={
+                            "hash": fmd5,
+                            "filename": name,
+                            "url": url,
+                            "package": self.package,
+                        },
                     )
                     if response.status_code != 200:
                         print(response.content)
