@@ -415,9 +415,10 @@ def get_devel_package(package):
 def importer(package, repodir):
     global repo
     global r
+    global apiurl
 
     devel_project = get_devel_package(package)
-    handler = Handler(package)
+    handler = Handler(apiurl, package)
     revs_factory = handler.get_revisions("openSUSE:Factory")
     revs_devel = handler.get_revisions(devel_project)
 
@@ -522,6 +523,7 @@ def importer(package, repodir):
     osc.conf.get_config(override_apiurl="https://api.suse.de")
     apiurl = osc.conf.config["apiurl"]
     # conf.config['debug'] = True
+    handler.url = apiurl
 
     first = dict()
     projects = [
