@@ -330,8 +330,15 @@ class Revision:
                     if response.status_code != 200:
                         print(response.content)
                         raise Exception("Redirector error on " + url + f" for {self}")
-                    sha256s[key] = response.content.decode("utf-8")
+                    sha256s[key] = {
+                        "sha256": response.content.decode("utf-8"),
+                        "fsize": size,
+                    }
                 sha256 = sha256s[key]
+                # sanity check
+                if sha256["fsize"] != size:
+                    raise Exception("Redirector has different size for " + name)
+                sha256 = sha256["sha256"]
                 with open(target, "w") as f:
                     f.write("version https://git-lfs.github.com/spec/v1\n")
                     f.write(f"oid sha256:{sha256}\n")
