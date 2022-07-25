@@ -9,7 +9,6 @@ import pathlib
 import sys
 import time
 import xml.etree.ElementTree as ET
-from fnmatch import fnmatch
 from urllib.error import HTTPError
 from urllib.parse import quote
 
