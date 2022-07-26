@@ -8,7 +8,7 @@ import os
 import pathlib
 import sys
 import time
-import xml.etree.ElementTree as ET
+from lxml import etree as ET
 from urllib.error import HTTPError
 from urllib.parse import quote
 
