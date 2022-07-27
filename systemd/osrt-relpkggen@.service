@@ -1,3 +1,6 @@
+[Unit]
+PartOf=osrt-slsa.target
+
 [Service]
 User=osrt-slsa
 SyslogIdentifier=osrt-slsa
