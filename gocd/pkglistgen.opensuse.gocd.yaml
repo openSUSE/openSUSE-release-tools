@@ -101,7 +101,7 @@ pipelines:
             - repo-checker
             tasks:
              - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:RISCV
-  Pkglistgen.openSUSE_Leap_15.4:
+  Pkglistgen.openSUSE_Leap_15.5:
     group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -117,12 +117,12 @@ pipelines:
         approval:
           type: manual
         jobs:
-          openSUSE_Leap_15.4_target:
+          openSUSE_Leap_15.5_target:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o openSUSE:Leap:15.4 -s SUSE:SLE-15-SP4:GA
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.4 -s target
+            - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o openSUSE:Leap:15.5 -s SUSE:SLE-15-SP5:GA
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.5 -s target
   Pkglistgen.openSUSE_Leap_15.3_Update_Respin:
     group: Leap
     lock_behavior: unlockWhenFinished
@@ -146,7 +146,7 @@ pipelines:
             - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o openSUSE:Leap:15.3:Update:Respin -t openSUSE:Leap:15.3:Update -s SUSE:SLE-15-SP3:Update
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.3:Update:Respin -s target
 
-  Update.Repos.Leap.openSUSE_Leap_15.4:
+  Update.Repos.Leap.openSUSE_Leap_15.5:
     group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -162,11 +162,11 @@ pipelines:
         approval:
           type: manual
         jobs:
-          openSUSE_Leap_15.4:
+          openSUSE_Leap_15.5:
             resources:
             - repo-checker
             tasks:
-             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.4
+             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.5
   Update.Repos.Leap.openSUSE_Leap_15.3_Update_Respin:
     group: Leap
     lock_behavior: unlockWhenFinished
