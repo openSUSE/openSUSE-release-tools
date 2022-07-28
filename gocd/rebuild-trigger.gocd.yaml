@@ -173,3 +173,23 @@ pipelines:
               ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15-SP1
               echo "Step 15"
               ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15
+  Trigger.Rebuild.Leap_15_5:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-factory-maintainer
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    timer:
+      spec: 0 0 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              echo "Leap 15.5"
+              ./project-installcheck.py --debug check --store openSUSE:Leap:15.5:Staging/dashboard --no-rebuild openSUSE:Leap:15.5
