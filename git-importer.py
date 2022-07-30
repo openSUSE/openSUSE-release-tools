@@ -104,6 +104,14 @@ def is_binary(filename):
     return suffix in BINARY
 
 
+def is_large_exception(filename):
+    if filename.endswith(".changes") or filename.endswith(".spec"):
+        return True
+    if filename.endswith(".spec.in"):
+        return True
+    return False
+
+
 def md5(name):
     h = hashlib.md5()
     with open(name, "rb") as f:
@@ -308,9 +316,7 @@ class Revision:
             name = entry.get("name")
             target = os.path.join(targetdir, name)
             size = int(entry.get("size"))
-            large = size > 40000
-            if large and (name.endswith(".changes") or name.endswith(".spec")):
-                large = False
+            large = size > 60000 and not is_large_exception(name)
             fmd5 = entry.get("md5")
             if is_binary(name) or large:
                 remotes.add(name)
