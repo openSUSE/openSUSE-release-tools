@@ -11,7 +11,7 @@ VERSION = "build-$(shell date +%F)"
 all:
 
 install:
-	install -d -m 755 $(DESTDIR)$(bindir) $(DESTDIR)$(pkgdatadir) $(DESTDIR)$(unitdir) $(DESTDIR)$(oscplugindir) $(DESTDIR)$(sysconfdir)/$(package_name) $(DESTDIR)$(grafana_provisioning_dir)/dashboards $(DESTDIR)$(grafana_provisioning_dir)/datasources $(DESTDIR)$(logdir)/$(package_name) $(DESTDIR)$(varlibdir)/osrt-slsa
+	install -d -m 755 $(DESTDIR)$(bindir) $(DESTDIR)$(pkgdatadir) $(DESTDIR)$(unitdir) $(DESTDIR)$(oscplugindir) $(DESTDIR)$(sysconfdir)/$(package_name) $(DESTDIR)$(grafana_provisioning_dir)/dashboards $(DESTDIR)$(grafana_provisioning_dir)/datasources $(DESTDIR)$(logdir)/$(package_name) $(DESTDIR)$(varlibdir)/osrt-slsa/pkglistgen $(DESTDIR)$(varlibdir)/osrt-slsa/relpkggen
 	for i in $(pkgdata_SCRIPTS); do install -m 755 $$i $(DESTDIR)$(pkgdatadir); done
 	chmod 644 $(DESTDIR)$(pkgdatadir)/osc-*.py
 	for i in $(pkgdata_DATA); do cp -a $$i $(DESTDIR)$(pkgdatadir); done

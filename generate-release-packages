@@ -4,5 +4,17 @@ PROJECT=$1
 LOG_DIR="/var/log/openSUSE-release-tools/${PROJECT}"
 [ ! -d "${LOG_DIR}" ] && mkdir ${LOG_DIR}
 
-date -Is >> ${LOG_DIR}/relpkggen.log
+logger() {
+    date -Is >> ${LOG_DIR}/relpkggen.log
+    echo "$1" >> ${LOG_DIR}/relpkggen.log
+}
+
+logger "[START] Start relpkgen service"
+if pgrep "osrt-pkglistgen"; then
+    logger "[SKIP] Skip execution due to osrt-pkglistgen service is running"
+    exit 0
+fi
+
+logger "[RUNNING] Running osrt-relpkggen"
 /usr/bin/osrt-pkglistgen -A ${API_URL} update_and_solve -p ${PROJECT} -s target --only-release-packages --force >> ${LOG_DIR}/relpkggen.log 2>&1
+logger "[FINISH] Finish relpkgen service"

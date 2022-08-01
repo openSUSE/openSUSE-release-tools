@@ -6,7 +6,7 @@ User=osrt-slsa
 SyslogIdentifier=osrt-slsa
 EnvironmentFile=/etc/openSUSE-release-tools/ibsapi
 Environment="OSC_CONFIG=/etc/openSUSE-release-tools/oscrc"
-WorkingDirectory=/var/lib/osrt-slsa/
+WorkingDirectory=/var/lib/osrt-slsa/relpkggen
 ExecStart=/usr/bin/osrt-generate-release-packages %i
 RuntimeMaxSec=120 hour
 

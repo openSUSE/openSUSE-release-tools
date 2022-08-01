@@ -1,0 +1,7 @@
+[Timer]
+OnBootSec=240
+OnCalendar=*:0/20
+Unit=osrt-pkglistgen@.service
+
+[Install]
+WantedBy=timers.target
