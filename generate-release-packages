@@ -11,6 +11,7 @@ logger() {
 
 logger "[START] Start relpkgen service"
 if pgrep "osrt-pkglistgen"; then
+    logger "[WARNING] osrt-pkglistgen is running"
     logger "[SKIP] Skip execution due to osrt-pkglistgen service is running"
     exit 0
 fi

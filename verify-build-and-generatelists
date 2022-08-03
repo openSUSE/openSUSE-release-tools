@@ -10,8 +10,6 @@ logger() {
 }
 
 polling_repo() {
-    # poll repository every 20min
-    sleep 20m
     OUTPUT=$(/usr/share/openSUSE-release-tools/verify-repo-built-successful.py -A ${API_URL} -p ${PROJECT} -r standard 2>&1)
     RETURNCODE=$?
     if [ ${RETURNCODE} -eq 0 ]; then
@@ -42,11 +40,14 @@ polling_repo
 if [ $? -eq 3 ]; then
     # Repository is building, waiting it finishes
     while true; do
+        logger "[WAITING] Waiting 20min before next repository status checking"
+        sleep 20m
         polling_repo
         case $? in
             0)
                 # Stop polling repository results: Repository finished building
                 if pgrep "osrt-pkglistgen"; then
+                    logger "[WARNING] osrt-relpkgen is running"
                     logger "[WAITING] Waiting for osrt-relpkggen service finishes"
                     continue
                 else
