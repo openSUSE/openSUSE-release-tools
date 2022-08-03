@@ -47,7 +47,7 @@ if [ $? -eq 3 ]; then
             0)
                 # Stop polling repository results: Repository finished building
                 if pgrep "osrt-pkglistgen"; then
-                    logger "[WARNING] osrt-relpkgen is running"
+                    logger "[WARNING] osrt-relpkggen is running"
                     logger "[WAITING] Waiting for osrt-relpkggen service finishes"
                     continue
                 else
