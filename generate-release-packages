@@ -9,13 +9,6 @@ logger() {
     echo "$1" >> ${LOG_DIR}/relpkggen.log
 }
 
-logger "[START] Start relpkggen service"
-if pgrep "osrt-pkglistgen"; then
-    logger "[WARNING] osrt-pkglistgen is running"
-    logger "[SKIP] Skip execution due to osrt-pkglistgen service is running"
-    exit 0
-fi
-
-logger "[RUNNING] Running osrt-relpkggen"
-/usr/bin/osrt-pkglistgen -A ${API_URL} --debug update_and_solve -p ${PROJECT} -s target --only-release-packages --force >> ${LOG_DIR}/relpkggen.log 2>&1
-logger "[FINISH] Finish relpkggen service"
+logger "[START] Start osrt-relpkggen@${PROJECT}.service"
+/usr/bin/osrt-pkglistgen -A ${API_URL} --debug update_and_solve -p ${PROJECT} -s target --only-release-packages --custom-cache-tag releasepackages --force >> ${LOG_DIR}/relpkggen.log 2>&1
+logger "[FINISH] Finish osrt-relpkggen@${PROJECT}.service"

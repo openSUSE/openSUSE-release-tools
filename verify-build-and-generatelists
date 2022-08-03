@@ -10,6 +10,7 @@ logger() {
 }
 
 polling_repo() {
+    logger "[CHECKING] Checking standard repository from ${PROJECT}"
     OUTPUT=$(/usr/share/openSUSE-release-tools/verify-repo-built-successful.py -A ${API_URL} -p ${PROJECT} -r standard 2>&1)
     RETURNCODE=$?
     if [ ${RETURNCODE} -eq 0 ]; then
@@ -34,25 +35,25 @@ polling_repo() {
     return ${RETURNCODE}
 }
 
-logger "[START] Start pkglistgen service: polling repository results"
+logger "[START] Start osrt-pkglistgen@${PROJECT}.service: polling repository results"
 polling_repo
 # Check if repository building
 if [ $? -eq 3 ]; then
     # Repository is building, waiting it finishes
     while true; do
-        logger "[WAITING] Waiting 20min before next repository status checking"
-        sleep 20m
+        logger "[WAITING] Waiting 10min before next repository status check"
+        sleep 10m
         polling_repo
         case $? in
             0)
                 # Stop polling repository results: Repository finished building
-                if pgrep "osrt-pkglistgen"; then
-                    logger "[WARNING] osrt-relpkggen is running"
-                    logger "[WAITING] Waiting for osrt-relpkggen service finishes"
+                if systemctl is-active --quiet osrt-relpkggen@${PROJECT}.service; then
+                    logger "[WARNING] osrt-relpkggen@${PROJECT}.service is running"
+                    logger "[WAITING] Waiting for osrt-relpkggen@${PROJECT}.service finishes"
                     continue
                 else
                     logger"[RUNNING] Running osrt-pkglistgen"
-                    /usr/bin/osrt-pkglistgen -A ${API_URL} --debug update_and_solve -p ${PROJECT} -s target --force >> ${LOG_DIR}/pkglistgen.log 2>&1
+                    /usr/bin/osrt-pkglistgen -A ${API_URL} --debug update_and_solve -p ${PROJECT} -s target --custom-cache-tag product --force >> ${LOG_DIR}/pkglistgen.log 2>&1
                     exit $?
                 fi
                 ;;
@@ -67,4 +68,4 @@ if [ $? -eq 3 ]; then
         esac
     done
 fi
-logger "[FINISH] Finish pkglistgen service"
+logger "[FINISH] Finish osrt-pkglistgen@${PROJECT}.service"

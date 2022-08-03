@@ -611,7 +611,8 @@ class PkgListGen(ToolBase.ToolBase):
         force: bool,
         no_checkout: bool,
         only_release_packages: bool,
-        stop_after_solve: bool
+        stop_after_solve: bool,
+        custom_cache_tag
     ):
         self.all_architectures = target_config.get('pkglistgen-archs').split(' ')
         self.use_newest_version = str2bool(target_config.get('pkglistgen-use-newest-version', 'False'))
@@ -651,7 +652,10 @@ class PkgListGen(ToolBase.ToolBase):
 
         # Cache dir specific to hostname and project.
         host = urlparse(api.apiurl).hostname
-        cache_dir = CacheManager.directory('pkglistgen', host, project)
+        prefix_dir = 'pkglistgen'
+        if custom_cache_tag:
+            prefix_dir += '-' + custom_cache_tag
+        cache_dir = CacheManager.directory(prefix_dir, host, project)
 
         if not no_checkout:
             if os.path.exists(cache_dir):
