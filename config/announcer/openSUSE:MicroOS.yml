@@ -23,7 +23,7 @@ bodytemplate: '
   '
 iso: openSUSE-MicroOS-DVD-x86_64-Current.iso
 changesfile: "Changes.MicroOS.{version}.txt"
-to: opensuse-kubic@opensuse.org
+to: microos@lists.opensuse.org
 name: openSUSE:MicroOS
 subject: New MicroOS snapshot {version} released!
 sender: Richard Brown <rbrown@suse.de>

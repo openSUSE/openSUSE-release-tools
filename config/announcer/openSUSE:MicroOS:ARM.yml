@@ -23,7 +23,7 @@ bodytemplate: '
   '
 iso: openSUSE-MicroOS-DVD-aarch64-Current.iso
 changesfile: "Changes.MicroOS.{version}.txt"
-to: opensuse-kubic@opensuse.org
+to: microos@lists.opensuse.org
 name: openSUSE:MicroOS:ARM
 subject: New ARM MicroOS snapshot {version} released!
 sender: Guillaume Gardet <guillaume.gardet@arm.com>
