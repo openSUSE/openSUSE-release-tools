@@ -1,6 +1,14 @@
 #!/bin/bash
 
-# from stage (/src/ftp-stage) to public (/srv/ftp)
+#
+# The script is executed periodically by cronjob
+# as part of ~mirror/bin/publish_factory_leap wrapper on pontifex
+#
+# Tool publises data from stage (/src/ftp-stage) to public (/srv/ftp - download.opensuse.org) 
+#
+# Configuration lives in openSUSE-release-tools.git/publish_distro_conf
+# Syntax: ./publish_distro config_file
+# 
 
 # no --delete built in
 
