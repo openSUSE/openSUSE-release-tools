@@ -1,1 +1,4 @@
-Not really a patch
+--- README.txt
++++ README.txt
+@@ -0,0 +1 @@
++This works

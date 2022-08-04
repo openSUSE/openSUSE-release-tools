@@ -11,7 +11,7 @@ Summary:        Blowfish
 License:        GPL-2.0-only
 URL:            https://github.com/openSUSE/cockpit-wicked
 Source:         blowfish-1.tar.gz
-Patch1:        test.patch
+Patch1:         test.patch
 BuildArch:      noarch
 
 %prep
