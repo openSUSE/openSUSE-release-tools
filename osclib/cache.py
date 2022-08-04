@@ -10,7 +10,7 @@ from urllib.parse import urlsplit, SplitResult
 from io import BytesIO
 
 from osc import conf
-from osc.core import urlopen
+from urllib.request import urlopen
 from osclib.cache_manager import CacheManager
 from osclib.conf import str2bool
 from osclib.util import rmtree_nfs_safe
