@@ -1,7 +1,7 @@
 format_version: 3
 pipelines:
   ALP.RelPkgs:
-    group: ALP
+    group: LEO
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 10 * ? * *
@@ -20,7 +20,7 @@ pipelines:
         - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve -p SUSE:ALP -s target --only-release-packages --force
 
   Pkglistgen.ALP:
-    group: ALP
+    group: LEO
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
