@@ -13,7 +13,7 @@ done
 
 grep group: *.yaml | cut -d: -f3 | sort -u | while read group; do
    case $group in
-	   BCI|Factory|Leap|Admin|LEO|MicroOS|Monitors|openSUSE.Checkers|SLE15.Stagings|SLE15.Target|SLE.Checkers)
+	   BCI|Factory|Leap|Admin|ALP|MicroOS|Monitors|openSUSE.Checkers|SLE15.Stagings|SLE15.Target|SLE.Checkers)
 		   ;;
            *)
 		   echo "Do not create new groups without being admin and knowing the consequences - found $group"
