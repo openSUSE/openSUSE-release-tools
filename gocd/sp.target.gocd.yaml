@@ -45,7 +45,10 @@ pipelines:
               osc -A https://api.suse.de release --target-project=SUSE:SLE-15-SP5:GA:TEST --target-repository=containers -r containerfile SUSE:SLE-15-SP5:GA $container
             done
             osc -A https://api.suse.de release --target-project=SUSE:SLE-15-SP5:GA:TEST --target-repository=containers -r images SUSE:SLE-15-SP5:GA sles15-image
-            PRODUCTS=$(osc -A https://api.suse.de ls SUSE:SLE-15-SP5:GA | grep "^SLES15-SP5" | grep -v release)
+            PRODUCTS=$(osc -A https://api.suse.de ls SUSE:SLE-15-SP5:GA | grep "^SLES15-SP5" | grep -v release ||:)
+            if [ -z "${PRODUCTS}" ]; then
+              echo "[WARNNING] There is no cloud image to be released"
+            fi
             for product in kiwi-templates-Minimal 000product $PRODUCTS; do
               osc -A https://api.suse.de release SUSE:SLE-15-SP5:GA $product
             done
