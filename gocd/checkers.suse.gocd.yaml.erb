@@ -264,7 +264,7 @@ pipelines:
             - staging-bot
             tasks:
             - script: ./legal-auto.py -A https://api.suse.de --debug --legaldb https://legaldb.suse.de project $(cat /home/go/config/legal-auto-projects-suse)
-<% ['SP1', 'SP2', 'SP3'].each do |servicepack| -%>
+<% ['SP1', 'SP2', 'SP3', 'SP4'].each do |servicepack| -%>
   SLE15.<%= servicepack %>.QR:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
