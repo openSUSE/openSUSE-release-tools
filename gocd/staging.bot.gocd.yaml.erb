@@ -1,6 +1,6 @@
 format_version: 3
 pipelines:
-<% %w(Factory Backports:SLE-15-SP5 Leap:15.5).each do |project| -%>
+<% %w(Factory Factory:NonFree Backports:SLE-15-SP5 Leap:15.5).each do |project| -%>
 <% nickname =  project.gsub(':', '.') -%>
   AdiChecker.<%= nickname %>:
     group: openSUSE.Checkers
@@ -53,6 +53,7 @@ pipelines:
                ln -s $PWD/osclib $tempdir/.osc-plugins
                export HOME=$tempdir
 
+               osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> rebuild
                osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> list --supersede
                osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> adi
                osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> unselect --cleanup
