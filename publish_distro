@@ -272,10 +272,12 @@ if [ -n "$url" ]; then
 	$dryrun curl -X POST -F "version=$version" "$url"
 fi
 
-echo creating hashes
+#echo creating hashes
 #metalink-hasher update -t /srv/metalink-hashes/srv/ftp/pub/opensuse/tumbleweed \
 #                       -b /srv/ftp/pub/opensuse/tumbleweed \
 #                          /srv/ftp/pub/opensuse/tumbleweed
-$dryrun /usr/bin/mb makehashes -b /srv/ftp/pub/opensuse \
-                       -t /srv/metalink-hashes/srv/ftp/pub/opensuse \
-                       $dest
+
+# mb makehaskes is not needed by mirrorcache (replaced mirrorbrain)
+#$dryrun /usr/bin/mb makehashes -b /srv/ftp/pub/opensuse \
+#                       -t /srv/metalink-hashes/srv/ftp/pub/opensuse \
+#                       $dest
