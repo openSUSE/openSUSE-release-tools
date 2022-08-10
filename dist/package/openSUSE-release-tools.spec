@@ -187,6 +187,19 @@ BuildArch:      noarch
 %description origin-manager
 Tools for managing the origin of package sources and keeping them in sync.
 
+%package publish-distro
+Summary:        Tool for publishing ftp-stage to ftp-prod
+Group:          Development/Tools/Other
+Requires:       rsync
+# Currently in openSUSE infra repo
+Requires:       python-mb
+Requires(pre):  shadow
+BuildArch:      noarch
+
+%description publish-distro
+publish_distro tool and related configuration in publish_distro to rsync
+content from OBS to ftp-stage/ftp-prod on pontifex host.
+
 %package repo-checker
 Summary:        Repository checker service
 Group:          Development/Tools/Other
@@ -474,6 +487,9 @@ exit 0
 %files origin-manager
 %{_bindir}/osrt-origin-manager
 %{_datadir}/%{source_dir}/origin-manager.py
+
+%files publish-distro
+%{_bindir}/publish-distro
 
 %files repo-checker
 %{_bindir}/osrt-project-installcheck
