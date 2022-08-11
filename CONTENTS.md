@@ -19,6 +19,8 @@ Apart from these tools, the repository includes:
 * [GoCD](https://www.gocd.org) configuration files in [gocd](gocd). GoCD is an open source CI/CD
   server that is used to deploy the bots on OBS.
 * Several [systemd](systemd) units: the Metrics instance makes use of them.
+* publish_distro tool and related configuration in publish_distro_conf
+  to rsync content from OBS to ftp-stage/ftp-prod on pontifex host
 
 ## Tools
 
