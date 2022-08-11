@@ -233,7 +233,7 @@ class RepoChecker():
             buildresult[p.get('package')] = p.get('code')
 
         repo_state = root.find('result').get('state')
-        if repo_state in ['published', 'unpublished', 'building']:
+        if repo_state in ['published', 'unpublished']:
             self.check_buildstate(oldstate, buildresult, 'unresolvable')
             self.check_buildstate(oldstate, buildresult, 'failed')
 
