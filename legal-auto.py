@@ -187,8 +187,7 @@ class LegalAuto(ReviewBot.ReviewBot):
             match += ' and (' + ' or '.join(sorted(batch)) + ')'
             url = osc.core.makeurl(
                 self.apiurl, ['search', 'request', 'id'], {'match': match})
-            # prefer POST because of the length
-            root = ET.parse(osc.core.http_POST(url)).getroot()
+            root = ET.parse(osc.core.http_GET(url)).getroot()
             for request in root.findall('request'):
                 self.delete_from_db(request.get('id'))
 
