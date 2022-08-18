@@ -450,7 +450,7 @@ class StagingAPI(object):
         is_targeted = (target_package in target_requests or
                        str(request_id) in target_requests)
         if action.get('type') in ['submit', 'delete'] and (
-           not(target_requests) or is_targeted):
+           not (target_requests) or is_targeted):
             stage_info = self.packages_staged.get(target_package)
 
             # Ensure a request for same package is already staged.

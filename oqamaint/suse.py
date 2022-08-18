@@ -12,7 +12,7 @@ MINIMALS = {
     x.rstrip()
     for x in requests.get(
         'https://gitlab.suse.de/qa-maintenance/metadata/raw/master/packages-to-be-tested-on-minimal-systems').iter_lines()
-    if len(x) > 0 and not(x.startswith(b"#") or x.startswith(b' '))}
+    if len(x) > 0 and not (x.startswith(b"#") or x.startswith(b' '))}
 
 
 class SUSEUpdate(Update):
