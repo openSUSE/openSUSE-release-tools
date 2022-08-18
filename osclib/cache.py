@@ -112,6 +112,8 @@ class Cache(object):
             return
 
         Cache.CACHE_DIR = CacheManager.directory('request', directory)
+        if conf.config['debug']:
+            print("CACHE_DIR",  Cache.CACHE_DIR, file=sys.stderr)
 
         Cache.patterns = []
 
