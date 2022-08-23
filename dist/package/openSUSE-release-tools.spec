@@ -489,7 +489,7 @@ exit 0
 %{_datadir}/%{source_dir}/origin-manager.py
 
 %files publish-distro
-%{_bindir}/publish-distro
+%{_bindir}/osrt-publish_distro
 
 %files repo-checker
 %{_bindir}/osrt-project-installcheck
