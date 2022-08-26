@@ -424,6 +424,7 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/osc-origin.py
 %exclude %{_datadir}/%{source_dir}/osc-pcheck.py
 %exclude %{_datadir}/%{source_dir}/osc-staging.py
+%exclude %{_datadir}/%{source_dir}/publish_distro
 %exclude %{_datadir}/%{source_dir}/findfileconflicts
 %exclude %{_datadir}/%{source_dir}/write_repo_susetags_file.pl
 %dir %{_sysconfdir}/openSUSE-release-tools
@@ -490,6 +491,7 @@ exit 0
 
 %files publish-distro
 %{_bindir}/osrt-publish_distro
+%{_datadir}/%{source_dir}/publish_distro
 
 %files repo-checker
 %{_bindir}/osrt-project-installcheck
