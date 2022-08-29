@@ -97,7 +97,7 @@ class CommentAPI(object):
                 if info_match:
                     match = True
                     for key, value in info_match.items():
-                        if not(value is None or (key in info and info[key] == value)):
+                        if not (value is None or (key in info and info[key] == value)):
                             match = False
                             break
                     if not match:

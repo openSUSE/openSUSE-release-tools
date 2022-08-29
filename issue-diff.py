@@ -145,7 +145,7 @@ def prompt_interactive(changes, project, package):
 
 
 def issue_found(package, label, db):
-    return not(package not in db or db[package] is None or label not in db[package])
+    return not (package not in db or db[package] is None or label not in db[package])
 
 
 def issue_trackers(apiurl):
