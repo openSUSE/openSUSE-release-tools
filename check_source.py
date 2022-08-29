@@ -16,9 +16,11 @@ import osc.core
 from osclib.conf import Config
 from osclib.core import devel_project_get
 from osclib.core import devel_project_fallback
+from osclib.core import entity_exists
 from osclib.core import group_members
 from osclib.core import package_kind
 from osclib.core import create_add_role_request
+from osclib.core import maintainers_get
 from osc.core import show_project_meta
 from osc.core import get_request_list
 from urllib.error import HTTPError
@@ -53,6 +55,13 @@ class CheckSource(ReviewBot.ReviewBot):
         self.required_maintainer = config.get('required-source-maintainer', '')
         self.devel_whitelist = config.get('devel-whitelist', '').split()
         self.skip_add_reviews = False
+        self.ensure_source_exist_in_baseproject = str2bool(config.get('check-source-ensure-source-exist-in-baseproject', 'False'))
+        self.devel_baseproject = config.get('check-source-devel-baseproject', '')
+        self.allow_source_in_sle = str2bool(config.get('check-source-allow-source-in-sle', 'True'))
+        self.sle_project_to_check = config.get('check-source-sle-project', '')
+        self.allow_valid_source_origin = str2bool(config.get('check-source-allow-valid-source-origin', 'False'))
+        self.valid_source_origins = set(config.get('check-source-valid-source-origins', '').split(' '))
+        self.add_devel_project_review = str2bool(config.get('check-source-add-devel-project-review', 'False'))
 
         if self.action.type == 'maintenance_incident':
             # The workflow effectively enforces the names to match and the
@@ -123,6 +132,17 @@ class CheckSource(ReviewBot.ReviewBot):
         elif (kind is not None and kind != 'source'):
             self.review_messages['declined'] = 'May not modify a non-source package of type {}'.format(kind)
             return False
+
+        if not self.allow_source_in_sle and self.sle_project_to_check:
+            if entity_exists(self.apiurl, self.sle_project_to_check, target_package):
+                self.review_messages['declined'] = ("SLE-base package, please submit to the corresponding SLE project."
+                                                    "Or let us know the reason why needs to rebuild SLE-base package.")
+                return False
+
+        if self.ensure_source_exist_in_baseproject and self.devel_baseproject:
+            if not entity_exists(self.apiurl, self.devel_baseproject, target_package) and source_project not in self.valid_source_origins:
+                self.review_messages['declined'] = "Per our development policy, please submit to %s first." % self.devel_baseproject
+                return False
 
         inair_renamed = target_package != source_package
 
@@ -241,7 +261,32 @@ class CheckSource(ReviewBot.ReviewBot):
             return True
 
         if self.add_review_team and self.review_team is not None:
-            self.add_review(self.request, by_group=self.review_team, msg='Please review sources')
+            if not (self.allow_valid_source_origin and source_project in self.valid_source_origins):
+                self.add_review(self.request, by_group=self.review_team, msg='Please review sources')
+
+        if self.add_devel_project_review:
+            devel_project, devel_package = devel_project_fallback(self.apiurl, target_project, target_package)
+            if devel_project and devel_package:
+                submitter = self.request.get_creator()
+                maintainers = set(maintainers_get(self.apiurl, devel_project, devel_package))
+                known_maintainer = False
+                if maintainers:
+                    if submitter in maintainers:
+                        self.logger.debug("%s is maintainer" % submitter)
+                        known_maintainer = True
+                    if not known_maintainer:
+                        for r in self.request.reviews:
+                            if r.by_user in maintainers:
+                                self.logger.debug("found %s as reviewer" % r.by_user)
+                                known_maintainer = True
+                if not known_maintainer:
+                    self.logger.warning("submitter: %s, maintainers: %s => need review" % (submitter, ','.join(maintainers)))
+                    self.logger.debug("adding review to %s/%s" % (devel_project, devel_package))
+                    msg = ('Submission for {} by someone who is not maintainer in '
+                           'the devel project ({}). Please review').format(target_package, devel_project)
+                    self.add_review(self.request, by_project=devel_project, by_package=devel_package, msg=msg)
+            else:
+                self.logger.warning("%s doesn't have devel project" % target_package)
 
         if self.only_changes():
             self.logger.debug('only .changes modifications')
