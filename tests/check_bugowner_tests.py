@@ -90,7 +90,7 @@ class TestCheckBugowner(OBSLocal.TestCase):
 
         self.assertReview(req_id, by_user=(self.bot_user, 'new'))
 
-        self.review_bot.set_request_ids([req_id])
+        self.review_bot.set_request_ids_search_review()
         self.review_bot.check_requests()
 
         self.assertReview(req_id, by_user=(self.bot_user, 'accepted'))
