@@ -170,20 +170,22 @@ if __name__ == '__main__':
         fetcher.add('openSUSE:Factory:RISCV', nick='Risc V',
                     download_url='http://download.opensuse.org/ports/riscv/tumbleweed/iso/')
     else:
-        fetcher.add('openSUSE:Leap:Micro:5.2', nick='Leap:Micro:5.2',
-                    download_url='https://download.opensuse.org/distribution/leap-micro/5.2/product/iso',
-                    openqa_group='openSUSE Leap Micro 5.2', openqa_version='5.2', openqa_groupid=95)
-        fetcher.add('openSUSE:Leap:Micro:5.2:Images', nick='Leap:Micro:5.2:Images',
-                    openqa_group='openSUSE Leap Micro 5.2 Image', openqa_version='5.2', openqa_groupid=94)
         fetcher.add('openSUSE:Leap:Micro:5.3', nick='Leap:Micro:5.3',
                     download_url='https://download.opensuse.org/distribution/leap-micro/5.3/product/iso',
                     openqa_group='openSUSE Leap Micro 5.3', openqa_version='5.3', openqa_groupid=102)
         fetcher.add('openSUSE:Leap:Micro:5.3:Images', nick='Leap:Micro:5.3:Images',
                     openqa_group='openSUSE Leap Micro 5.3 Image', openqa_version='5.3', openqa_groupid=101)
-        fetcher.add('openSUSE:Leap:15.4', nick='Leap:15.4',
-                    download_url='https://download.opensuse.org/distribution/leap/15.4/iso',
-                    openqa_group='openSUSE Leap 15', openqa_version='15.4', openqa_groupid=50)
-        fetcher.add('openSUSE:Backports:SLE-15-SP4', nick='Backports:SLE-15-SP4')
+        fetcher.add('openSUSE:Leap:15.5', nick='Leap:15.5',
+                    download_url='https://download.opensuse.org/distribution/leap/15.5/iso',
+                    openqa_group='openSUSE Leap 15', openqa_version='15.5', openqa_groupid=50)
+        fetcher.add('openSUSE:Backports:SLE-15-SP5', nick='Backports:SLE-15-SP5')
+        fetcher.add('openSUSE:Leap:15.5:Images', nick='Leap:15.5:Images', openqa_group='openSUSE Leap 15.5 Images',
+                    openqa_version='15.5', openqa_groupid=105)
+        fetcher.add('openSUSE:Leap:15.5:ARM', nick='Leap:15.5:ARM',
+                    download_url='https://download.opensuse.org/ports/armv7hl/distribution/leap/15.5/iso',
+                    openqa_group='openSUSE Leap 15.5 ARMv7', openqa_version='15.5', openqa_groupid=79)
+        fetcher.add('openSUSE:Leap:15.5:ARM:Images', nick='Leap:15.5:ARM:Images',
+                    openqa_group='openSUSE Leap 15.5 ARMv7 Images', openqa_version='15.5', openqa_groupid=104)
         fetcher.add('openSUSE:Leap:15.4:Images', nick='Leap:15.4:Images', openqa_group='openSUSE Leap 15.4 Images',
                     openqa_version='15.4', openqa_groupid=89)
         fetcher.add('openSUSE:Leap:15.4:ARM', nick='Leap:15.4:ARM',
