@@ -111,8 +111,10 @@ class ToTestManager(ToolBase.ToolBase):
     # normally no chance that releaser and publisher overwrite states
     def update_status(self, status, snapshot):
         status_dict = self.get_status_dict()
+        if status_dict.get(status) == snapshot:
+            return
+        self.logger.info('setting {} snapshot to {} (previously {})'.format(status, snapshot, status_dict.get(status)))
         if self.dryrun:
-            self.logger.info('setting {} snapshot to {}'.format(status, snapshot))
             return
         if status_dict.get(status) != snapshot:
             status_dict[status] = snapshot

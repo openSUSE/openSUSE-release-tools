@@ -31,6 +31,12 @@ class ToTestPublisher(ToTestManager):
         super(ToTestPublisher, self).setup(project)
         self.openqa = OpenQA_Client(server=self.project.openqa_server)
         self.load_issues_to_ignore()
+        self.seen_issues_updated = False
+
+    def ignore_issue(self, ref, build_nr):
+        if self.issues_to_ignore.get(ref) != build_nr:
+            self.issues_to_ignore[ref] = build_nr
+            self.seen_issues_updated = True
 
     def overall_result(self, snapshot):
         """Analyze the openQA jobs of a given snapshot Returns a QAResult"""
@@ -73,12 +79,11 @@ class ToTestPublisher(ToTestManager):
                 for ref in refs:
                     if ref not in self.issues_to_ignore:
                         if to_ignore:
-                            self.issues_to_ignore[ref] = build_nr
+                            self.ignore_issue(ref, build_nr)
                         else:
                             ignored = False
                     else:
-                        # update reference
-                        self.issues_to_ignore[ref] = build_nr
+                        self.ignore_issue(ref, build_nr)
 
                 if ignored or job['result'] == 'parallel_failed':
                     self.failed_ignored_jobs.append(job['id'])
@@ -281,8 +286,9 @@ class ToTestPublisher(ToTestManager):
             self.issues_to_ignore = dict()
 
     def save_issues_to_ignore(self):
-        if self.dryrun:
+        if self.dryrun or not self.seen_issues_updated:
             return
+
         text = yaml.dump({'last_seen': self.issues_to_ignore}, default_flow_style=False)
         self.api.attribute_value_save('IgnoredIssues', text)
 
