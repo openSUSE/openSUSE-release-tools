@@ -208,11 +208,10 @@ files_sha256 = functools.partial(_files_hash, sha256)
 class Git:
     """Local git repository"""
 
-    def __init__(self, path, committer=None, committer_email=None, lfs_server=None):
+    def __init__(self, path, committer=None, committer_email=None):
         self.path = pathlib.Path(path)
         self.committer = committer
         self.committer_email = committer_email
-        self.lfs_server = lfs_server
 
         self.repo = None
 
@@ -366,12 +365,6 @@ class Git:
 
     def add(self, filename):
         self.repo.index.add(filename)
-
-    def add_default_lfsconfig(self, force=False):
-        if self.lfs_server and (not (self.path / ".lfsconfig").exists() or force):
-            with (self.path / ".lfsconfig").open("w") as f:
-                f.write(f"[lfs]\nurl={self.lfs_server}\n")
-            self.add(".lfsconfig")
 
     def add_default_lfs_gitattributes(self, force=False):
         if not (self.path / ".gitattributes").exists() or force:
@@ -820,8 +813,6 @@ class Importer:
             repodir,
             committer="Git OBS Bridge",
             committer_email="obsbridge@suse.de",
-            # TODO: use a CLI parameter to set the URL
-            lfs_server="http://gitea.opensuse.org:9999/gitlfs",
         ).create()
         self.proxy_sha256 = ProxySHA256(self.obs, enabled=False)
 
@@ -847,9 +838,7 @@ class Importer:
             if f.is_file() and f.name not in (".lfsconfig", ".gitattributes")
         }
 
-        # Add ".lfsconfig" and overwrite ".gitattributes" with the
-        # default content
-        self.git.add_default_lfsconfig()
+        # Overwrite ".gitattributes" with the
         self.git.add_default_lfs_gitattributes(force=True)
 
         # Download each file in OBS if it is not a binary (or large)
