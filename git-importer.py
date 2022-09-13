@@ -586,7 +586,7 @@ class Request:
         self.type_ = xml.find("action").get("type")
 
         self.source = xml.find("action/source").get("project")
-        # Can this be a MD5 or is always an integer?
+        # expanded MD5 or commit revision
         self.revisionid = xml.find("action/source").get("rev")
 
         self.target = xml.find("action/target").get("project")
@@ -763,12 +763,22 @@ class History:
         """Sort revisions for all projects, from older to newer"""
         return sorted(itertools.chain(*self.revisions.values()), key=lambda x: x.time)
 
-    def find_revision(self, project, revisionid):
+    def find_revision(self, project, revisionid, accepted_at):
+        last_commited_revision = None
         for r in self.revisions.get(project, []):
             if str(r.rev) == revisionid:
                 return r
             if r.srcmd5 == revisionid:
                 return r
+            if r.time > accepted_at:
+                # if we can't find the right revision, we take the last
+                # commit. Before ~2012 the data was tracked really loosely
+                # (e.g. using different timezones and the state field was
+                # only introduced in 2016...)
+                logging.warning("Deploying workaround for missing request revision")
+                return last_commited_revision
+            if r.commit:
+                last_commited_revision = r
         return None
 
     def find_last_rev_after_time(self, project, time):
@@ -814,7 +824,7 @@ class Importer:
             committer="Git OBS Bridge",
             committer_email="obsbridge@suse.de",
         ).create()
-        self.proxy_sha256 = ProxySHA256(self.obs, enabled=False)
+        self.proxy_sha256 = ProxySHA256(self.obs, enabled=True)
 
         self.history = History(self.obs, self.package)
 
@@ -835,7 +845,7 @@ class Importer:
         git_files = {
             (f.name, f.stat().st_size, md5(f))
             for f in self.git.path.iterdir()
-            if f.is_file() and f.name not in (".lfsconfig", ".gitattributes")
+            if f.is_file() and f.name not in (".gitattributes")
         }
 
         # Overwrite ".gitattributes" with the
@@ -903,9 +913,9 @@ class Importer:
 
     def import_revision_with_request(self, revision, request):
         """Import a single revision via a merge"""
-        
+
         submitted_revision = self.history.find_revision(
-            request.source, request.revisionid
+            request.source, request.revisionid, revision.time
         )
         assert submitted_revision.commit is not None
 
