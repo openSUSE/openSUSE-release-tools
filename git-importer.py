@@ -923,6 +923,17 @@ class Importer:
         )
         assert submitted_revision.commit is not None
 
+        # TODO: detect a revision, case in point
+        # Base:System/bash/284 -> rq683701 -> acccept O:F/151 -> autocommit Base:System/bash/285
+        # Revert lead to openSUSE:Factory/bash/152
+        # Base:System/286 restored the reverted code in devel project
+        # rq684575 was created and accepted as O:F/153
+        # But the 284-285 and the 285-286 changeset is seen as empty as the revert was never in Base:System,
+        # so the submitted_revision of 684575 has no commit
+        if submitted_revision.commit == "EMPTY":
+            logging.warning("Empty commit submitted?!")
+            return
+
         message = (
             f"Accepting request {revision.requestid}: {revision.comment}\n\n{revision}"
         )
