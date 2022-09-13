@@ -517,18 +517,21 @@ class ProxySHA256:
         self.obs = obs
         self.url = url if url else "http://source.dyn.cloud.suse.de"
         self.enabled = enabled
-        self.hashes = {}
+        self.hashes = None
 
     def load_package(self, package):
-        if self.enabled:
-            response = requests.get(
-                f"http://source.dyn.cloud.suse.de/package/{package}"
-            )
-            if response.status_code == 200:
-                self.hashes = response.json()
+        logging.info("Retrieve all previously defined SHA256")
+        response = requests.get(f"http://source.dyn.cloud.suse.de/package/{package}")
+        if response.status_code == 200:
+            self.hashes = response.json()
 
     def get(self, package, name, file_md5):
-        key = (file_md5, name)
+        key = f"{file_md5}-{name}"
+        if self.hashes is None:
+            if self.enabled:
+                self.load_package(package)
+            else:
+                self.hashes = {}
         return self.hashes.get(key, None)
 
     def _proxy_put(self, project, package, name, file_md5, size):
@@ -855,7 +858,6 @@ class Importer:
         # file
         for (name, size, file_md5) in obs_files:
             if is_binary_or_large(name, size):
-                print(f"LFS download {name}")
                 file_sha256 = self.proxy_sha256.get_or_put(
                     revision.project,
                     revision.package,
@@ -1067,7 +1069,11 @@ def main():
             print(f"Invalid log level: {args.level}")
             sys.exit(-1)
         logging.basicConfig(level=numeric_level)
-        osc.conf.config["debug"] = numeric_level == logging.DEBUG
+        if numeric_level == logging.DEBUG:
+            osc.conf.config["debug"] = True
+            requests_log = logging.getLogger("requests.packages.urllib3")
+            requests_log.setLevel(logging.DEBUG)
+            requests_log.propagate = True
 
     if not args.repodir:
         args.repodir = pathlib.Path(args.package)
