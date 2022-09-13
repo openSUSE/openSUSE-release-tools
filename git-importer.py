@@ -616,6 +616,7 @@ class Revision:
         self.package = package
 
         self.commit = None
+        self.ignored = False
 
     def parse(self, xml):
         self.rev = int(xml.get("rev"))
@@ -769,10 +770,11 @@ class History:
     def find_revision(self, project, revisionid, accepted_at):
         last_commited_revision = None
         for r in self.revisions.get(project, []):
-            if str(r.rev) == revisionid:
-                return r
-            if r.srcmd5 == revisionid:
-                return r
+            if str(r.rev) == revisionid or r.srcmd5 == revisionid:
+                if r.ignored:
+                    return last_commited_revision
+                else:
+                    return r
             if r.time > accepted_at:
                 # if we can't find the right revision, we take the last
                 # commit. Before ~2012 the data was tracked really loosely
@@ -897,7 +899,7 @@ class Importer:
         self.history.fetch_all_revisions(self.projects)
         revisions = self.history.sort_all_revisions()
 
-        for revision in revisions[:150]:
+        for revision in revisions:
             self.import_revision(revision)
 
     def _rebase_branch_history(self, project, revision):
@@ -991,10 +993,12 @@ class Importer:
         # when the target project is different from itself.
         if revision.userid == "autobuild" and not revision.requestid:
             logging.info("Ignoring autocommit")
+            revision.ignored = True
             return
 
         if revision.userid == "buildservice-autocommit":
             logging.info("Ignoring autocommit")
+            revision.ignored = True
             return
 
         # Create the reference if the branch is new.  If so return
