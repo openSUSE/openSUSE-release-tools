@@ -129,7 +129,6 @@ class SkippkgFinder(object):
                     pkgname.startswith('_') or\
                     pkgname.startswith('patchinfo.') or\
                     pkgname.startswith('skelcd-control') or\
-                    pkgname.startswith('installation-images') or\
                     pkgname.startswith('Leap-release') or\
                     pkgname.endswith('-mini') or\
                     '-mini.' in pkgname:
