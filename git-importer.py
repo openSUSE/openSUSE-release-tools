@@ -327,7 +327,7 @@ class Git:
 
             if clean_on_conflict:
                 for path, _ in self.repo.status().items():
-                    logging.debug(f"Clean {path}")
+                    logging.debug(f"Cleaning {path}")
                     try:
                         (self.path / path).unlink()
                         self.repo.index.remove(path)
