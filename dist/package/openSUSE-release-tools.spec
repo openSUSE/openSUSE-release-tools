@@ -191,8 +191,6 @@ Tools for managing the origin of package sources and keeping them in sync.
 Summary:        Tool for publishing ftp-stage to ftp-prod
 Group:          Development/Tools/Other
 Requires:       rsync
-# Currently in openSUSE infra repo
-Requires:       python-mb
 Requires(pre):  shadow
 BuildArch:      noarch
 
