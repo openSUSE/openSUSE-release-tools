@@ -318,8 +318,16 @@ class Git:
         merged=False,
         allow_empty=False,
     ):
+        first_commit = False
+
         if not merged:
-            self.repo.merge(commit)
+            try:
+                self.repo.merge(commit)
+            except KeyError:
+                # If it is the first commit, we will have a missing
+                # "HEAD", but the files will be there.  We can proceed
+                # to the commit directly.
+                first_commit = True
 
         if self.repo.index.conflicts:
             for conflict in self.repo.index.conflicts:
@@ -342,10 +350,13 @@ class Git:
             # I really really do miss Rust enums
             return "EMPTY"
 
-        parents = [
-            self.repo.head.target,
-            commit,
-        ]
+        if first_commit:
+            parents = [commit]
+        else:
+            parents = [
+                self.repo.head.target,
+                commit,
+            ]
         commit = self.commit(
             user,
             user_email,
