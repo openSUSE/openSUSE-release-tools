@@ -545,9 +545,9 @@ class ProxySHA256:
                 self.hashes = {}
         return self.hashes.get(key, None)
 
-    def _proxy_put(self, project, package, name, file_md5, size):
+    def _proxy_put(self, project, package, name, revision, file_md5, size):
         quoted_name = urllib.parse.quote(name)
-        url = f"{self.obs.url}/public/source/{project}/{package}/{quoted_name}?rev={file_md5}"
+        url = f"{self.obs.url}/public/source/{project}/{package}/{quoted_name}?rev={revision}"
         response = requests.put(
             self.url,
             data={
@@ -578,7 +578,7 @@ class ProxySHA256:
     def put(self, project, package, name, revision, file_md5, size):
         if not self.enabled:
             return self._obs_put(project, package, name, revision, file_md5, size)
-        return self._proxy_put(project, package, name, file_md5, size)
+        return self._proxy_put(project, package, name, revision, file_md5, size)
 
     def get_or_put(self, project, package, name, revision, file_md5, size):
         result = self.get(package, name, file_md5)
