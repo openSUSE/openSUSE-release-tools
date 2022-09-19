@@ -781,21 +781,24 @@ class History:
     def find_revision(self, project, revisionid, accepted_at):
         last_commited_revision = None
         for r in self.revisions.get(project, []):
-            logging.debug(f"Find revision {r} {revisionid} {accepted_at}")
+            logging.debug(f"Find revision {revisionid} [{accepted_at}]: {r}")
             if str(r.rev) == str(revisionid) or r.srcmd5 == revisionid:
                 if r.ignored:
+                    logging.debug(f"{r} fits but is ignored, returning {last_commited_revision}")
                     return last_commited_revision
                 else:
+                    logging.debug(f"{r} fits")
                     return r
             if r.time > accepted_at:
                 # if we can't find the right revision, we take the last
                 # commit. Before ~2012 the data was tracked really loosely
                 # (e.g. using different timezones and the state field was
                 # only introduced in 2016...)
-                logging.warning("Deploying workaround for missing request revision")
+                logging.warning(f"Deploying workaround for missing request revision - returning {last_commited_revision}")
                 return last_commited_revision
             if r.commit:
                 last_commited_revision = r
+        logging.info("No commited revision found, returning None")
         return None
 
     def find_last_rev_after_time(self, project, time):
@@ -1057,6 +1060,7 @@ class Importer:
             logging.info(f"Commit {commit}")
         else:
             logging.info("Skip empty commit")
+            revision.ignored = True
 
 
 def main():
