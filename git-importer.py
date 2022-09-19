@@ -1011,6 +1011,7 @@ class Importer:
             revision.check_expanded()
         except Exception:
             logging.warning("Broken revision")
+            revision.ignored = True
             return
 
         # When doing a SR, we see also a revision in the origin
