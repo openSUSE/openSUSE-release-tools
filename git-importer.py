@@ -318,7 +318,7 @@ class Git:
         merged=False,
         allow_empty=False,
     ):
-        first_commit = False
+        new_branch = False
 
         if not merged:
             try:
@@ -327,20 +327,14 @@ class Git:
                 # If it is the first commit, we will have a missing
                 # "HEAD", but the files will be there.  We can proceed
                 # to the commit directly.
-                first_commit = True
+                new_branch = True
 
         if self.repo.index.conflicts:
             for conflict in self.repo.index.conflicts:
                 logging.info(f"CONFLICT {conflict[1].path}")
 
             if clean_on_conflict:
-                for path, _ in self.repo.status().items():
-                    logging.debug(f"Cleaning {path}")
-                    try:
-                        (self.path / path).unlink()
-                        self.repo.index.remove(path)
-                    except Exception:
-                        pass
+                self.clean()
             # Now I miss Rust enums
             return "CONFLICT"
 
@@ -350,7 +344,7 @@ class Git:
             # I really really do miss Rust enums
             return "EMPTY"
 
-        if first_commit:
+        if new_branch:
             parents = [commit]
         else:
             parents = [
@@ -373,6 +367,22 @@ class Git:
 
     def merge_abort(self):
         self.repo.state_cleanup()
+
+    def last_commit(self):
+        try:
+            return self.repo.head.target
+        except:
+            return None
+
+    def clean(self):
+        for path, _ in self.repo.status().items():
+            logging.debug(f"Cleaning {path}")
+            try:
+                (self.path / path).unlink()
+                self.repo.index.remove(path)
+            except Exception as e:
+                logging.warning(f"Error removing file {path}: {e}")
+
 
     def add(self, filename):
         self.repo.index.add(filename)
@@ -917,6 +927,24 @@ class Importer:
         for revision in revisions:
             self.import_revision(revision)
 
+    def import_new_revision_with_request(self, revision, request):
+        """Create a new branch as a result of a merge"""
+
+        submitted_revision = self.history.find_revision(
+            request.source, request.revisionid, revision.time
+        )
+        if not submitted_revision:
+            logging.warning(f"Request {request} does not connect to a known revision")
+            return False
+        assert submitted_revision.commit is not None
+
+        project = revision.project
+        branch, _ = self.projects_info[project]
+
+        self.git.branch(branch, submitted_revision.commit)
+        self.git.clean()
+        self.git.checkout(branch)
+
     def _rebase_branch_history(self, project, revision):
         branch, _ = self.projects_info[project]
         history = self.history[project]
@@ -942,12 +970,14 @@ class Importer:
         assert submitted_revision.commit is not None
 
         # TODO: detect a revision, case in point
-        # Base:System/bash/284 -> rq683701 -> acccept O:F/151 -> autocommit Base:System/bash/285
+        # Base:System/bash/284 -> rq683701 -> accept O:F/151
+        #   -> autocommit Base:System/bash/285
         # Revert lead to openSUSE:Factory/bash/152
         # Base:System/286 restored the reverted code in devel project
         # rq684575 was created and accepted as O:F/153
-        # But the 284-285 and the 285-286 changeset is seen as empty as the revert was never in Base:System,
-        # so the submitted_revision of 684575 has no commit
+        # But the 284-285 and the 285-286 changeset is seen as empty
+        # as the revert was never in Base:System, so the
+        # submitted_revision of 684575 has no commit
         if submitted_revision.commit == "EMPTY":
             logging.warning("Empty commit submitted?!")
             return False
@@ -1039,11 +1069,25 @@ class Importer:
 
         if revision.requestid:
             request = self.obs.request(revision.requestid)
-            if request and request.source in self.projects_info:
+            if request and request.source in self.projects_info and request.target == revision.project:
+                if new_branch:
+                    self.import_new_revision_with_request(revision, request)
+                    return
                 if self.import_revision_with_request(revision, request):
                     return
+
             logging.info("Request from a non exported project or missing")
 
+            if request.source not in self.projects_info:
+                logging.info("Request from a non exported project")
+
+            if request.target != revision.project:
+                # This seems to happen when the devel project gets
+                # reinitialized (for example, SR#943593 in 7zip, or
+                # SR#437901 in ColorFull)
+                logging.info("Request target different from current project")
+
+        # Import revision as a single commit (without merging)
         self.download(revision)
 
         if new_branch or self.git.is_dirty():
