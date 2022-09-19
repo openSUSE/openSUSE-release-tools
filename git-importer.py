@@ -781,7 +781,8 @@ class History:
     def find_revision(self, project, revisionid, accepted_at):
         last_commited_revision = None
         for r in self.revisions.get(project, []):
-            if str(r.rev) == revisionid or r.srcmd5 == revisionid:
+            logging.debug(f"Find revision {r} {revisionid} {accepted_at}")
+            if str(r.rev) == str(revisionid) or r.srcmd5 == revisionid:
                 if r.ignored:
                     return last_commited_revision
                 else:
@@ -932,6 +933,9 @@ class Importer:
         submitted_revision = self.history.find_revision(
             request.source, request.revisionid, revision.time
         )
+        if not submitted_revision:
+            logging.warning(f"Request {request} does not connect to a known revision")
+            return False
         assert submitted_revision.commit is not None
 
         # TODO: detect a revision, case in point
@@ -943,7 +947,7 @@ class Importer:
         # so the submitted_revision of 684575 has no commit
         if submitted_revision.commit == "EMPTY":
             logging.warning("Empty commit submitted?!")
-            return
+            return False
 
         message = (
             f"Accepting request {revision.requestid}: {revision.comment}\n\n{revision}"
@@ -961,7 +965,7 @@ class Importer:
             logging.warning("Empty merge. Ignoring the revision and the request")
             self.git.merge_abort()
             revision.commit = commit
-            return
+            return False
 
         if commit == "CONFLICT":
             logging.info("Merge conflict. Downloading revision")
@@ -988,6 +992,8 @@ class Importer:
             if branch == "devel":
                 self.git.repo.references[f"refs/heads/{branch}"].set_target(commit)
                 self._rebase_branch_history(request.source, submitted_revision)
+
+        return True
 
     def import_revision(self, revision):
         """Import a single revision into git"""
@@ -1030,8 +1036,8 @@ class Importer:
         if revision.requestid:
             request = self.obs.request(revision.requestid)
             if request and request.source in self.projects_info:
-                self.import_revision_with_request(revision, request)
-                return
+                if self.import_revision_with_request(revision, request):
+                    return
             logging.info("Request from a non exported project or missing")
 
         self.download(revision)
