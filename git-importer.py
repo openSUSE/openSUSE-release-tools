@@ -329,7 +329,7 @@ class Git:
                 # to the commit directly.
                 first_commit = True
 
-        if self.repo.index.conflicts:
+        if not merged and self.repo.index.conflicts:
             for conflict in self.repo.index.conflicts:
                 logging.info(f"CONFLICT {conflict[1].path}")
 
@@ -983,7 +983,7 @@ class Importer:
                 merged=True,
             )
 
-        assert commit
+        assert commit and commit != "CONFLICT"
         logging.info(f"Merge with {submitted_revision.commit} into {commit}")
         revision.commit = commit
 
