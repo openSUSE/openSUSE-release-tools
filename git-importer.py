@@ -972,6 +972,9 @@ class Importer:
         self.git.clean()
         self.git.checkout(branch)
 
+        logging.info(f"Create new branch based on {submitted_revision.commit}")
+        revision.commit = submitted_revision.commit
+
     def _rebase_branch_history(self, project, revision):
         branch, _ = self.projects_info[project]
         history = self.history[project]
