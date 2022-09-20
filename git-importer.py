@@ -953,6 +953,7 @@ class Importer:
         project = revision.project
         branch, _ = self.projects_info[project]
 
+        # TODO: add an empty commit marking the acceptenace of the request (see discussion in PR 2858)
         self.git.branch(branch, submitted_revision.commit)
         self.git.clean()
         self.git.checkout(branch)
