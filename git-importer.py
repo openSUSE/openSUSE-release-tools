@@ -949,6 +949,13 @@ class Importer:
         if not submitted_revision:
             logging.warning(f"Request {request} does not connect to a known revision")
             return False
+
+        if not submitted_revision.commit:
+            # If the revision appointed by the request is not part of
+            # the git history, we can have an ordering problem.  One
+            # example is "premake4".
+            self.import_revision(submitted_revision)
+
         assert submitted_revision.commit is not None
 
         project = revision.project
