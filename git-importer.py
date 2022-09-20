@@ -384,7 +384,6 @@ class Git:
             except Exception as e:
                 logging.warning(f"Error removing file {path}: {e}")
 
-
     def add(self, filename):
         self.repo.index.add(filename)
 
@@ -1055,6 +1054,34 @@ class Importer:
 
         return True
 
+    def matching_request(self, revision):
+        request = self.obs.request(revision.requestid)
+        if not request:
+            return None
+
+        # to be handled by the caller
+        if request.type() != "submit":
+            return request
+
+        if request.source not in self.projects_info:
+            logging.info("Request from a non exported project")
+            return None
+
+        if request.target != revision.project:
+            # This seems to happen when the devel project gets
+            # reinitialized (for example, SR#943593 in 7zip, or
+            # SR#437901 in ColorFull)
+            logging.info("Request target different from current project")
+            return None
+
+        if request.source == request.target:
+            # this is not a merge, but a different way to do a
+            # contribution to the (devel) project - see bindfs's rev 1
+            logging.info("Request within the same project")
+            return None
+
+        return request
+
     def import_revision(self, revision):
         """Import a single revision into git"""
         project = revision.project
@@ -1095,29 +1122,21 @@ class Importer:
         new_branch = self.git.checkout(branch)
 
         if revision.requestid:
-            request = self.obs.request(revision.requestid)
-            if request and request.type() == "delete":
-                logging.info("Delete request ignored")
-                revision.ignored = True
-                return
+            request = self.matching_request(revision)
+            if request:
+                if request.type() == "delete":
+                    # TODO: after this comes a restore, this should be collapsed
+                    # before even hitting git
+                    logging.info("Delete request ignored")
+                    revision.ignored = True
+                    return
 
-            if request and request.source in self.projects_info and request.target == revision.project:
+                logging.debug(f"Found matching request: #{revision.project} #{request}")
                 if new_branch:
                     self.import_new_revision_with_request(revision, request)
                     return
                 if self.import_revision_with_request(revision, request):
                     return
-
-            logging.info("Request from a non exported project or missing")
-
-            if request.source not in self.projects_info:
-                logging.info("Request from a non exported project")
-
-            if request.target != revision.project:
-                # This seems to happen when the devel project gets
-                # reinitialized (for example, SR#943593 in 7zip, or
-                # SR#437901 in ColorFull)
-                logging.info("Request target different from current project")
 
         # Import revision as a single commit (without merging)
         self.download(revision)
