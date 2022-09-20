@@ -331,8 +331,9 @@ class Git:
 
         if not merged and self.repo.index.conflicts:
             for conflict in self.repo.index.conflicts:
-                path = conflict[1].path if conflict[1] else conflict[0].path
-                logging.info(f"CONFLICT {path}")
+                conflict= [c for c in conflict if c]
+                if conflict:
+                    logging.info(f"CONFLICT {conflict[0].path}")
 
             if clean_on_conflict:
                 self.clean()
