@@ -933,6 +933,10 @@ class Importer:
         self.history.fetch_all_revisions(self.projects)
         revisions = self.history.sort_all_revisions()
 
+        logging.debug(f"Selected import order for {self.package}")
+        for revision in revisions:
+            logging.debug(revision)
+
         for revision in revisions:
             self.import_revision(revision)
 
