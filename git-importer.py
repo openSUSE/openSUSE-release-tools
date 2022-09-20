@@ -615,6 +615,9 @@ class Request:
         self.creator = xml.get("creator")
 
         self.type_ = xml.find("action").get("type")
+        if self.type_ == "delete":
+            # not much to do
+            return self
 
         self.source = xml.find("action/source").get("project")
         # expanded MD5 or commit revision
@@ -628,6 +631,9 @@ class Request:
         # TODO: parse review history
         # TODO: add description
         return self
+
+    def type(self):
+        return self.type_
 
     def __str__(self):
         return f"Req {self.requestid} {self.creator} {self.type_} {self.source}->{self.target} {self.state}"
@@ -1090,6 +1096,11 @@ class Importer:
 
         if revision.requestid:
             request = self.obs.request(revision.requestid)
+            if request and request.type() == "delete":
+                logging.info("Delete request ignored")
+                revision.ignored = True
+                return
+
             if request and request.source in self.projects_info and request.target == revision.project:
                 if new_branch:
                     self.import_new_revision_with_request(revision, request)
