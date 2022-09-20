@@ -331,10 +331,7 @@ class Git:
 
         if not merged and self.repo.index.conflicts:
             for conflict in self.repo.index.conflicts:
-                if conflict[0]:
-                    path = conflict[0].path
-                else:
-                    path = conflict[1].path
+                path = conflict[1].path if conflict[1] else conflict[0].path
                 logging.info(f"CONFLICT {path}")
 
             if clean_on_conflict:
@@ -936,6 +933,10 @@ class Importer:
         self.history.fetch_all_revisions(self.projects)
         revisions = self.history.sort_all_revisions()
 
+        logging.debug(f"Selected import order for {self.package}")
+        for revision in revisions:
+            logging.debug(revision)
+
         for revision in revisions:
             self.import_revision(revision)
 
@@ -948,6 +949,13 @@ class Importer:
         if not submitted_revision:
             logging.warning(f"Request {request} does not connect to a known revision")
             return False
+
+        if not submitted_revision.commit:
+            # If the revision appointed by the request is not part of
+            # the git history, we can have an ordering problem.  One
+            # example is "premake4".
+            self.import_revision(submitted_revision)
+
         assert submitted_revision.commit is not None
 
         project = revision.project
