@@ -533,12 +533,15 @@ class ProxySHA256:
         self.url = url if url else "http://source.dyn.cloud.suse.de"
         self.enabled = enabled
         self.hashes = None
+        self.texts = set()
 
     def load_package(self, package):
         logging.info("Retrieve all previously defined SHA256")
         response = requests.get(f"http://source.dyn.cloud.suse.de/package/{package}")
         if response.status_code == 200:
-            self.hashes = response.json()
+            json = response.json()
+            self.hashes = json['shas']
+            self.texts = set(json['texts'])
 
     def get(self, package, name, file_md5):
         key = f"{file_md5}-{name}"
@@ -583,6 +586,9 @@ class ProxySHA256:
         if not self.enabled:
             return self._obs_put(project, package, name, revision, file_md5, size)
         return self._proxy_put(project, package, name, revision, file_md5, size)
+
+    def is_text(self, filename):
+        return filename in self.texts
 
     def get_or_put(self, project, package, name, revision, file_md5, size):
         result = self.get(package, name, file_md5)
@@ -878,7 +884,9 @@ class Importer:
         # Download each file in OBS if it is not a binary (or large)
         # file
         for (name, size, file_md5) in obs_files:
-            if is_binary_or_large(name, size):
+            # have such files been detected as text mimetype before?
+            is_text = self.proxy_sha256.is_text(name)
+            if not is_text and is_binary_or_large(name, size):
                 file_sha256 = self.proxy_sha256.get_or_put(
                     revision.project,
                     revision.package,
