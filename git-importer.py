@@ -377,11 +377,10 @@ class Git:
         except:
             return None
 
-    def repack(self):
-        breakpoint()
-        logging.info(f"Repackaging {self.path}")
+    def gc(self):
+        logging.info(f"Garbage recollec and repackage {self.path}")
         subprocess.run(
-            ["git", "repack"],
+            ["git", "gc", "--auto"],
             cwd=self.path,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -946,7 +945,7 @@ class Importer:
             print(f"Remove {name}")
             self.git.remove(name)
 
-    def import_all_revisions(self, repack):
+    def import_all_revisions(self, gc):
         # Fetch all the requests and sort them.  Ideally we should
         # build the graph here, to avoid new commits before the merge.
         # For now we will sort them and invalidate the commits if
@@ -958,12 +957,12 @@ class Importer:
         for revision in revisions:
             logging.debug(revision)
 
-        repack_cnt = repack
+        gc_cnt = gc
         for revision in revisions:
-            repack_cnt -= 1
-            if repack_cnt <= 0 and repack:
-                self.git.repack()
-                repack_cnt = repack
+            gc_cnt -= 1
+            if gc_cnt <= 0 and gc:
+                self.git.gc()
+                gc_cnt = gc
             self.import_revision(revision)
 
     def import_new_revision_with_request(self, revision, request):
@@ -1211,12 +1210,12 @@ def main():
         help="The devel project with be rebased after a merge",
     )
     parser.add_argument(
-        "-p",
-        "--repack",
+        "-g",
+        "--gc",
         metavar="N",
         type=int,
         default=200,
-        help="Repack the git history each N commits",
+        help="Garbage recollect and pack the git history each N commits",
     )
     parser.add_argument(
         "--level",
@@ -1255,7 +1254,7 @@ def main():
     importer = Importer(
         PROJECTS, args.package, args.repodir, args.search_ancestor, args.rebase_devel
     )
-    importer.import_all_revisions(args.repack)
+    importer.import_all_revisions(args.gc)
 
 
 if __name__ == "__main__":
