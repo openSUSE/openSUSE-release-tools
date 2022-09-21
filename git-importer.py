@@ -12,6 +12,7 @@ import os
 import pathlib
 import re
 import shutil
+import subprocess
 import sys
 import time
 import urllib.parse
@@ -331,7 +332,7 @@ class Git:
 
         if not merged and self.repo.index.conflicts:
             for conflict in self.repo.index.conflicts:
-                conflict= [c for c in conflict if c]
+                conflict = [c for c in conflict if c]
                 if conflict:
                     logging.info(f"CONFLICT {conflict[0].path}")
 
@@ -375,6 +376,16 @@ class Git:
             return self.repo.head.target
         except:
             return None
+
+    def repack(self):
+        breakpoint()
+        logging.info(f"Repackaging {self.path}")
+        subprocess.run(
+            ["git", "repack"],
+            cwd=self.path,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
 
     def clean(self):
         for path, _ in self.repo.status().items():
@@ -547,8 +558,8 @@ class ProxySHA256:
         response = requests.get(f"http://source.dyn.cloud.suse.de/package/{package}")
         if response.status_code == 200:
             json = response.json()
-            self.hashes = json['shas']
-            self.texts = set(json['texts'])
+            self.hashes = json["shas"]
+            self.texts = set(json["texts"])
 
     def get(self, package, name, file_md5):
         key = f"{file_md5}-{name}"
@@ -807,7 +818,9 @@ class History:
             logging.debug(f"Find revision {revisionid} [{accepted_at}]: {r}")
             if str(r.rev) == str(revisionid) or r.srcmd5 == revisionid:
                 if r.ignored:
-                    logging.debug(f"{r} fits but is ignored, returning {last_commited_revision}")
+                    logging.debug(
+                        f"{r} fits but is ignored, returning {last_commited_revision}"
+                    )
                     return last_commited_revision
                 else:
                     logging.debug(f"{r} fits")
@@ -817,7 +830,9 @@ class History:
                 # commit. Before ~2012 the data was tracked really loosely
                 # (e.g. using different timezones and the state field was
                 # only introduced in 2016...)
-                logging.warning(f"Deploying workaround for missing request revision - returning {last_commited_revision}")
+                logging.warning(
+                    f"Deploying workaround for missing request revision - returning {last_commited_revision}"
+                )
                 return last_commited_revision
             if r.commit:
                 last_commited_revision = r
@@ -931,7 +946,7 @@ class Importer:
             print(f"Remove {name}")
             self.git.remove(name)
 
-    def import_all_revisions(self):
+    def import_all_revisions(self, repack):
         # Fetch all the requests and sort them.  Ideally we should
         # build the graph here, to avoid new commits before the merge.
         # For now we will sort them and invalidate the commits if
@@ -943,7 +958,12 @@ class Importer:
         for revision in revisions:
             logging.debug(revision)
 
+        repack_cnt = repack
         for revision in revisions:
+            repack_cnt -= 1
+            if repack_cnt <= 0 and repack:
+                self.git.repack()
+                repack_cnt = repack
             self.import_revision(revision)
 
     def import_new_revision_with_request(self, revision, request):
@@ -1191,6 +1211,14 @@ def main():
         help="The devel project with be rebased after a merge",
     )
     parser.add_argument(
+        "-p",
+        "--repack",
+        metavar="N",
+        type=int,
+        default=200,
+        help="Repack the git history each N commits",
+    )
+    parser.add_argument(
         "--level",
         "-l",
         default="INFO",
@@ -1227,7 +1255,7 @@ def main():
     importer = Importer(
         PROJECTS, args.package, args.repodir, args.search_ancestor, args.rebase_devel
     )
-    importer.import_all_revisions()
+    importer.import_all_revisions(args.repack)
 
 
 if __name__ == "__main__":
