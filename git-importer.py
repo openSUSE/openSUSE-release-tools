@@ -709,30 +709,34 @@ class Revision:
         return f"[{self.__str__()}]"
 
     def check_link(self):
-        """Add 'linkrev' attribute into the revision"""
+        """Add 'linkrev' attribute into the revision. Returns False if the link is invalid"""
         try:
             root = self.obs._xml(
                 f"source/{self.project}/{self.package}/_link", rev=self.srcmd5
             )
-        except HTTPError:
-            logging.debug("No _link for the revision")
-            return None
+        except HTTPError as e:
+            if e.code == 404:
+                logging.debug("No _link for the revision")
+                return True
+            raise e
         except ET.ParseError:
             logging.error(
                 f"_link can't be parsed [{self.project}/{self.package} rev={self.srcmd5}]"
             )
-            raise
+            return False
 
         target_project = root.get("project")
         rev = self.history.find_last_rev_after_time(target_project, self.time)
         if rev:
             logging.debug(f"Linkrev found: {rev}")
             self.linkrev = rev.srcmd5
+        return True
 
     def check_expanded(self):
         # Even if it's not a link we still need to check the expanded
         # srcmd5 as it's possible used in submit requests
-        self.check_link()
+        if not self.check_link():
+            return False
 
         # If there is a "linkrev", "rev" is ignored
         params = {"rev": self.srcmd5, "expand": "1"}
@@ -741,13 +745,14 @@ class Revision:
 
         try:
             root = self.obs._xml(f"source/{self.project}/{self.package}", **params)
-        except HTTPError:
-            logging.error(
-                f"Package [{self.project}/{self.package} {params}] can't be expanded"
-            )
-            raise
+        except HTTPError as e:
+            if e.code == 400:
+                logging.error(f"Package [{self.project}/{self.package} {params}] can't be expanded: {e}")
+                return False
+            raise e
 
         self.srcmd5 = root.get("srcmd5")
+        return True
 
 
 class History:
@@ -1115,12 +1120,10 @@ class Importer:
         self.obs.change_url(api_url)
 
         # Populate linkrev and replace srcmd5 from the linked
-        # revision.  If somehow fails, the revision will be ignored
+        # revision.  If the expansion fails, the revision will be ignored
         # and not imported.
-        try:
-            revision.check_expanded()
-        except Exception:
-            logging.warning("Broken revision")
+        if not revision.check_expanded():
+            logging.warning(f"Broken revision")
             revision.ignored = True
             return
 
