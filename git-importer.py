@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 import datetime
+import errno
 import fnmatch
 import functools
 import hashlib
@@ -43,13 +44,22 @@ def retry(func):
                     time.sleep(0.5)
                 else:
                     raise
+            except urllib.error.URLError as e:
+                if e.reason.errno in (errno.ENETUNREACH, errno.EADDRNOTAVAIL):
+                    retry += 1
+                    logging.warning(f"URLError {e} -- Retrying {args[0]} ({retry})")
+                    time.sleep(0.5)
+                else:
+                    logging.warning(f"URLError {e.errno} uncaught")
+                    raise
             except OSError as e:
-                if "[Errno 101]" in str(e):  # sporadically hits cloud VMs :(
+                if e.errno in (errno.ENETUNREACH, errno.EADDRNOTAVAIL):  # sporadically hits cloud VMs :(
                     retry += 1
                     logging.warning(f"OSError {e} -- Retrying {args[0]} ({retry})")
                     # TODO: remove when move to async
                     time.sleep(0.5)
                 else:
+                    logging.warning(f"OSError {e.errno} uncaught")
                     raise
 
     return wrapper
