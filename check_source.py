@@ -401,6 +401,14 @@ class CheckSource(ReviewBot.ReviewBot):
             elif old_exists and new_exists:
                 if subprocess.run(["cmp", "-s", os.path.join(old, changes), os.path.join(directory, changes)]).returncode:
                     changes_updated = True
+                else:
+                    # Check for "package-instantiation" on description to allow
+                    # request without changes to be accepted and so to be used to
+                    # instantiate package on target project
+                    for line in self.request.description.splitlines():
+                        m = re.match(r'\s*package-instantiation\s*$', line)
+                        if m:
+                            changes_updated = True
 
         if not changes_updated:
             self.review_messages['declined'] = "No changelog. Please use 'osc vc' to update the changes file(s)."
