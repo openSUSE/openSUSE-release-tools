@@ -38,7 +38,7 @@
             "VERSION" : "15.4",
             "ARCH" : "x86_64"
          },
-         "test" : "kde",
+         "test" : "textmode",
          "repos" : [
             "http://download.opensuse.org/update/leap/15.4/oss/",
             "http://download.opensuse.org/update/leap/15.4/non-oss/",
@@ -54,7 +54,7 @@
          "VERSION" : "15.4",
          "ARCH" : "x86_64"
        },
-       "test" : "kde",
+       "test" : "textmode",
        "repos" : [
          "http://download.opensuse.org/update/leap/15.4/backports/",
          "http://download.opensuse.org/update/leap/15.4/sle/"
