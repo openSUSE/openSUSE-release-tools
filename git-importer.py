@@ -740,6 +740,8 @@ class Revision:
         if rev:
             logging.debug(f"Linkrev found: {rev}")
             self.linkrev = rev.srcmd5
+        else:
+            logging.debug("Could not find a linkrev for {self}")
         return True
 
     def check_expanded(self):
@@ -752,6 +754,7 @@ class Revision:
         params = {"rev": self.srcmd5, "expand": "1"}
         if self.linkrev:
             params["linkrev"] = self.linkrev
+        logging.debug(f"check_expanded {self} {self.linkrev}")
 
         try:
             root = self.obs._xml(f"source/{self.project}/{self.package}", **params)
@@ -762,6 +765,7 @@ class Revision:
             raise e
 
         self.srcmd5 = root.get("srcmd5")
+        logging.debug(ET.tostring(root).decode('utf-8'))
         return True
 
 
@@ -914,6 +918,8 @@ class Importer:
 
     def download(self, revision):
         obs_files = self.obs.files(revision.project, revision.package, revision.srcmd5)
+        for f in self.git.path.iterdir():
+            logging.debug(f"GIT File {f.name} {f.is_file()}")
         git_files = {
             (f.name, f.stat().st_size, md5(f))
             for f in self.git.path.iterdir()
@@ -928,7 +934,9 @@ class Importer:
         for (name, size, file_md5) in obs_files:
             # have such files been detected as text mimetype before?
             is_text = self.proxy_sha256.is_text(name)
+            logging.debug(f"OBS File: {name} {size} {file_md5} {is_text}")
             if not is_text and is_binary_or_large(name, size):
+                logging.debug(f"Add {name} as LFS")
                 file_sha256 = self.proxy_sha256.get_or_put(
                     revision.project,
                     revision.package,
@@ -940,7 +948,7 @@ class Importer:
                 self.git.add_lfs(name, file_sha256["sha256"], size)
             else:
                 if (name, size, file_md5) not in git_files:
-                    print(f"Download {name}")
+                    logging.info(f"Download {name}")
                     self.obs.download(
                         revision.project,
                         revision.package,
@@ -952,12 +960,14 @@ class Importer:
                     if md5(self.git.path / name) != file_md5:
                         raise Exception(f"Download error in {name}")
                     self.git.add(name)
+                else:
+                    logging.debug(f"{name} is already tracked in git")
 
         # Remove extra files
         obs_names = {n for (n, _, _) in obs_files}
         git_names = {n for (n, _, _) in git_files}
         for name in git_names - obs_names:
-            print(f"Remove {name}")
+            logging.info(f"Remove {name}")
             self.git.remove(name)
 
     def import_all_revisions(self, gc):
@@ -1005,6 +1015,14 @@ class Importer:
         self.git.branch(branch, submitted_revision.commit)
         self.git.clean()
         self.git.checkout(branch)
+        self.download(revision)
+        if self.git.is_dirty():
+            commit = self.git.commit(
+                f"OBS User {revision.userid}",
+                "null@suse.de",
+                revision.time,
+                # TODO: Normalize better the commit message
+                "EMPTY SYNC", allow_empty=True)
 
         logging.info(f"Create new branch based on {submitted_revision.commit}")
         revision.commit = submitted_revision.commit
@@ -1080,6 +1098,15 @@ class Importer:
         assert commit and commit != "CONFLICT"
         logging.info(f"Merge with {submitted_revision.commit} into {commit}")
         revision.commit = commit
+        self.git.merge_abort()
+        self.download(revision)
+        if self.git.is_dirty():
+            commit = self.git.commit(
+                f"OBS User {revision.userid}",
+                "null@suse.de",
+                revision.time,
+                # TODO: Normalize better the commit message
+                "EMPTY SYNC", allow_empty=False)
 
         # TODO: There are more checks to do, like for example, the
         # last commit into the non-devel branch should be a merge from
@@ -1242,7 +1269,7 @@ def main():
     if args.level:
         numeric_level = getattr(logging, args.level.upper(), None)
         if not isinstance(numeric_level, int):
-            print(f"Invalid log level: {args.level}")
+            print(f"Invalid log level: {args.level}", file=sys.stderr)
             sys.exit(-1)
         logging.basicConfig(level=numeric_level)
         if numeric_level == logging.DEBUG:
@@ -1255,7 +1282,7 @@ def main():
         args.repodir = pathlib.Path(args.package)
 
     if args.repodir.exists() and not args.force:
-        print(f"Repository {args.repodir} already present")
+        logging.error(f"Repository {args.repodir} already present")
         sys.exit(-1)
     elif args.repodir.exists() and args.force:
         logging.info(f"Removing old repository {args.repodir}")
