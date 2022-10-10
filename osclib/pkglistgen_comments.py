@@ -5,6 +5,7 @@ import tempfile
 import logging
 import os
 import sys
+from typing import Dict, List, Union, Optional
 from lxml import etree as ET
 
 from osclib.comments import CommentAPI
@@ -21,7 +22,7 @@ class PkglistComments(object):
         self.apiurl = apiurl
         self.comment = CommentAPI(apiurl)
 
-    def read_summary_file(self, file):
+    def read_summary_file(self, file: str) -> Dict[str, List[str]]:
         ret = dict()
         with open(file, 'r') as f:
             for line in f:
@@ -30,7 +31,7 @@ class PkglistComments(object):
                 ret[pkg].append(group)
         return ret
 
-    def write_summary_file(self, file, content):
+    def write_summary_file(self, file: str, content: dict):
         output = []
         for pkg in sorted(content):
             for group in sorted(content[pkg]):
@@ -40,7 +41,7 @@ class PkglistComments(object):
             for line in sorted(output):
                 f.write(line + '\n')
 
-    def calculcate_package_diff(self, old_file, new_file):
+    def calculcate_package_diff(self, old_file: str, new_file: str):
         old_file = self.read_summary_file(old_file)
         new_file = self.read_summary_file(new_file)
 
@@ -102,7 +103,7 @@ class PkglistComments(object):
 
         return report.strip()
 
-    def handle_package_diff(self, project, old_file, new_file):
+    def handle_package_diff(self, project: str, old_file: str, new_file: str):
         comments = self.comment.get_comments(project_name=project)
         comment, _ = self.comment.comment_find(comments, MARKER)
 
@@ -134,7 +135,7 @@ class PkglistComments(object):
 
         return 1
 
-    def is_approved(self, comment, comments):
+    def is_approved(self, comment, comments: dict) -> str | None:
         if not comment:
             return None
 
@@ -145,7 +146,7 @@ class PkglistComments(object):
                     return c['who']
         return None
 
-    def parse_title(self, line):
+    def parse_title(self, line: str) -> Optional[Dict[str, Union[str, List[str]]]]:
         m = re.match(r'\*\*Add to (.*)\*\*', line)
         if m:
             return {'cmd': 'add', 'to': m.group(1).split(','), 'pkgs': []}
@@ -157,7 +158,7 @@ class PkglistComments(object):
             return {'cmd': 'remove', 'from': m.group(1).split(','), 'pkgs': []}
         return None
 
-    def parse_sections(self, comment):
+    def parse_sections(self, comment: str) -> List[Dict[str, Union[str, List[str]]]]:
         current_section = None
         sections = []
         in_quote = False
@@ -179,7 +180,7 @@ class PkglistComments(object):
             sections.append(current_section)
         return sections
 
-    def apply_move(self, content, section):
+    def apply_move(self, content: Dict[str, List[str]], section: Dict[str, Union[str, List[str]]]):
         for pkg in section['pkgs']:
             pkg_content = content[pkg]
             for group in section['from']:
@@ -192,12 +193,12 @@ class PkglistComments(object):
                 pkg_content.append(group)
             content[pkg] = pkg_content
 
-    def apply_add(self, content, section):
+    def apply_add(self, content: Dict[str, List[str]], section: Dict[str, Union[str, List[str]]]):
         for pkg in section['pkgs']:
             content.setdefault(pkg, [])
             content[pkg] += section['to']
 
-    def apply_remove(self, content, section):
+    def apply_remove(self, content: Dict[str, List[str]], section: Dict[str, Union[str, List[str]]]):
         for pkg in section['pkgs']:
             pkg_content = content[pkg]
             for group in section['from']:
@@ -208,7 +209,7 @@ class PkglistComments(object):
                     sys.exit(1)
             content[pkg] = pkg_content
 
-    def apply_commands(self, filename, sections):
+    def apply_commands(self, filename: str, sections: List[Dict[str, Union[str, List[str]]]]):
         content = self.read_summary_file(filename)
         for section in sections:
             if section['cmd'] == 'move':
@@ -239,7 +240,7 @@ class PkglistComments(object):
         text = f"  * Remove from {gfrom}:\n"
         return text + self.format_pkgs(section['pkgs'])
 
-    def apply_changes(self, filename, sections, approver):
+    def apply_changes(self, filename: str, sections: List[Dict[str, Union[str, List[str]]]], approver: str):
         text = "-------------------------------------------------------------------\n"
         now = datetime.datetime.utcnow()
         date = now.strftime("%a %b %d %H:%M:%S UTC %Y")
@@ -262,7 +263,7 @@ class PkglistComments(object):
                     writer.write(line)
         os.rename(filename + '.new', filename)
 
-    def check_staging_accept(self, project, target):
+    def check_staging_accept(self, project: str, target: str):
         comments = self.comment.get_comments(project_name=project)
         comment, _ = self.comment.comment_find(comments, MARKER)
         approver = self.is_approved(comment, comments)
