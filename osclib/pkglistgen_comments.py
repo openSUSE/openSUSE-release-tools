@@ -1,3 +1,7 @@
+"""
+This module performs actions related to the staging summary and the comment that these actions are based on.
+"""
+
 import datetime
 import textwrap
 import re
@@ -5,6 +9,7 @@ import tempfile
 import logging
 import os
 import sys
+from typing import Dict, List, Union, Optional
 from lxml import etree as ET
 
 from osclib.comments import CommentAPI
@@ -21,7 +26,13 @@ class PkglistComments(object):
         self.apiurl = apiurl
         self.comment = CommentAPI(apiurl)
 
-    def read_summary_file(self, file):
+    def read_summary_file(self, file: str) -> Dict[str, List[str]]:
+        """
+        Read the summary file and parses the result into a dict.
+
+        :param file: The path to the summary file to read.
+        :returns: A dict following the format {"packagename": ["group1", "group2"]}.
+        """
         ret = dict()
         with open(file, 'r') as f:
             for line in f:
@@ -30,7 +41,13 @@ class PkglistComments(object):
                 ret[pkg].append(group)
         return ret
 
-    def write_summary_file(self, file, content):
+    def write_summary_file(self, file: str, content: dict):
+        """
+        Write the summary file to disk in the desired format.
+
+        :param file: The path to the summary file to write.
+        :param content: The dict in the format of {"packagename": ["group1", "group2"]}.
+        """
         output = []
         for pkg in sorted(content):
             for group in sorted(content[pkg]):
@@ -40,7 +57,14 @@ class PkglistComments(object):
             for line in sorted(output):
                 f.write(line + '\n')
 
-    def calculcate_package_diff(self, old_file, new_file):
+    def calculcate_package_diff(self, old_file: str, new_file: str):
+        """
+        Reads the two summary files from disk and calculates the diff between the two dictionaries and generates a
+        report for the calculated diff.
+
+        :param old_file: The path to the old summary file.
+        :param new_file: The path to the new summary file.
+        """
         old_file = self.read_summary_file(old_file)
         new_file = self.read_summary_file(new_file)
 
@@ -102,7 +126,15 @@ class PkglistComments(object):
 
         return report.strip()
 
-    def handle_package_diff(self, project, old_file, new_file):
+    def handle_package_diff(self, project: str, old_file: str, new_file: str):
+        """
+        Checks a given project for the difference between two summary files. If there is a diff then a comment to the
+        project is added. This method will also handle deleting a redundant comment.
+
+        :param project: The project to handle the package diff for.
+        :param old_file: The path to the file with the old package state
+        :param new_file: The path to the file with the new package state.
+        """
         comments = self.comment.get_comments(project_name=project)
         comment, _ = self.comment.comment_find(comments, MARKER)
 
@@ -134,7 +166,14 @@ class PkglistComments(object):
 
         return 1
 
-    def is_approved(self, comment, comments):
+    def is_approved(self, comment, comments: dict) -> str | None:
+        """
+        Check the comments of a project for approval of the changes that the bot would perform.
+
+        :param comment: The comment that the bot made.
+        :param comments: The comments of the target project.
+        :returns: None or the username of the person
+        """
         if not comment:
             return None
 
@@ -145,7 +184,13 @@ class PkglistComments(object):
                     return c['who']
         return None
 
-    def parse_title(self, line):
+    def parse_title(self, line: str) -> Optional[Dict[str, Union[str, List[str]]]]:
+        """
+        Parses the header of a section from a single line of a comment that has been passed.
+
+        :param line: The line that should be checked.
+        :returns: None or a dict with the following structure: {"cmd": "<add|move|remove", "<to|from>": str, "pkgs": []}
+        """
         m = re.match(r'\*\*Add to (.*)\*\*', line)
         if m:
             return {'cmd': 'add', 'to': m.group(1).split(','), 'pkgs': []}
@@ -157,7 +202,14 @@ class PkglistComments(object):
             return {'cmd': 'remove', 'from': m.group(1).split(','), 'pkgs': []}
         return None
 
-    def parse_sections(self, comment):
+    def parse_sections(self, comment: str) -> List[Dict[str, Union[str, List[str]]]]:
+        """
+        Parses the comment in the staging project that should be used to generate the staging-summary and the changelog
+        file.
+
+        :param comment: The text of the comment that should be parsed.
+        :returns: A list of dictionaries witht the changes parsed from the given comment.
+        """
         current_section = None
         sections = []
         in_quote = False
@@ -179,7 +231,13 @@ class PkglistComments(object):
             sections.append(current_section)
         return sections
 
-    def apply_move(self, content, section):
+    def apply_move(self, content: Dict[str, List[str]], section: Dict[str, Union[str, List[str]]]):
+        """
+        Performs a transformation of the parsed comment to the summary file structure.
+
+        :param content: The dict that contains the summary file content.
+        :param section: The section that contains a move operation of a package
+        """
         for pkg in section['pkgs']:
             pkg_content = content[pkg]
             for group in section['from']:
@@ -192,12 +250,24 @@ class PkglistComments(object):
                 pkg_content.append(group)
             content[pkg] = pkg_content
 
-    def apply_add(self, content, section):
+    def apply_add(self, content: Dict[str, List[str]], section: Dict[str, Union[str, List[str]]]):
+        """
+        Performs a transformation of the parsed comment to the summary file structure.
+
+        :param content: The dict that contains the summary file content.
+        :param section: The section that contains an add operation of a package
+        """
         for pkg in section['pkgs']:
             content.setdefault(pkg, [])
             content[pkg] += section['to']
 
-    def apply_remove(self, content, section):
+    def apply_remove(self, content: Dict[str, List[str]], section: Dict[str, Union[str, List[str]]]):
+        """
+        Performs a transformation of the parsed comment to the summary file structure.
+
+        :param content: The dict that contains the summary file content.
+        :param section: The section that contains a remove operation of a package
+        """
         for pkg in section['pkgs']:
             pkg_content = content[pkg]
             for group in section['from']:
@@ -208,7 +278,13 @@ class PkglistComments(object):
                     sys.exit(1)
             content[pkg] = pkg_content
 
-    def apply_commands(self, filename, sections):
+    def apply_commands(self, filename: str, sections: List[Dict[str, Union[str, List[str]]]]):
+        """
+        Updates the summary file with the sections parsed from the comment that was found.
+
+        :param filename: The location of the summary file that should be updated.
+        :param sections: The list of dicts that represents the sections parsed from the comment.
+        """
         content = self.read_summary_file(filename)
         for section in sections:
             if section['cmd'] == 'move':
@@ -239,7 +315,14 @@ class PkglistComments(object):
         text = f"  * Remove from {gfrom}:\n"
         return text + self.format_pkgs(section['pkgs'])
 
-    def apply_changes(self, filename, sections, approver):
+    def apply_changes(self, filename: str, sections: List[Dict[str, Union[str, List[str]]]], approver: str):
+        """
+        Generates the changelog entry for the .changes file
+
+        :param filename: The path to the changes file
+        :param sections: The sections that should be generated. Can be "move", "add" or "remove"
+        :param approver: The OBS account that should be used for the changelog entry header
+        """
         text = "-------------------------------------------------------------------\n"
         now = datetime.datetime.utcnow()
         date = now.strftime("%a %b %d %H:%M:%S UTC %Y")
@@ -262,7 +345,14 @@ class PkglistComments(object):
                     writer.write(line)
         os.rename(filename + '.new', filename)
 
-    def check_staging_accept(self, project, target):
+    def check_staging_accept(self, project: str, target: str):
+        """
+        Validated that someone approved the submission of the source to the target and then manipulates the staging
+        summary and package group changelog according to the approved changes.
+
+        :param project: The project that should be checked before submission to target.
+        :param target: The target project that should be used for manipulation of the package groups.
+        """
         comments = self.comment.get_comments(project_name=project)
         comment, _ = self.comment.comment_find(comments, MARKER)
         approver = self.is_approved(comment, comments)
@@ -271,7 +361,9 @@ class PkglistComments(object):
         sections = self.parse_sections(comment['comment'])
         with tempfile.TemporaryDirectory() as tmpdirname:
             checkout_package(self.apiurl, target, '000package-groups', expand_link=True, outdir=tmpdirname)
+            # Now should go to Attribute OSRT:summary-staging in the package or project
             self.apply_commands(tmpdirname + '/summary-staging.txt', sections)
+            # Should now go to a devel project - https://build.suse.de/project/show/Devel:ReleaseManagement:SLE-15-SP5
             self.apply_changes(tmpdirname + '/package-groups.changes', sections, approver)
             package = Package(tmpdirname)
             package.commit(msg='Approved packagelist changes', skip_local_service_run=True)
