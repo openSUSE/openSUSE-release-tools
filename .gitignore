@@ -6,3 +6,6 @@
 .docker-tmp/
 .bash_history
 osc
+.venv
+.vscode
+.idea
