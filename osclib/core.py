@@ -6,6 +6,7 @@ import socket
 import logging
 from lxml import etree as ET
 from urllib.error import HTTPError
+from typing import Optional
 
 from osc.core import create_submit_request
 from osc.core import get_binarylist
@@ -413,7 +414,7 @@ def package_list_kind_filtered(apiurl, project, kinds_allowed=['source']):
         yield package
 
 
-def attribute_value_load(apiurl, project, name, namespace='OSRT', package=None):
+def attribute_value_load(apiurl: str, project: str, name: str, namespace='OSRT', package: Optional[str] = None):
     path = list(filter(None, ['source', project, package, '_attribute', namespace + ':' + name]))
     url = makeurl(apiurl, path)
 
@@ -444,7 +445,14 @@ def attribute_value_load(apiurl, project, name, namespace='OSRT', package=None):
 # Remember to create for both OBS and IBS as necessary.
 
 
-def attribute_value_save(apiurl, project, name, value, namespace='OSRT', package=None):
+def attribute_value_save(
+    apiurl: str,
+    project: str,
+    name: str,
+    value: str,
+    namespace='OSRT',
+    package: Optional[str] = None
+):
     root = ET.Element('attributes')
 
     attribute = ET.SubElement(root, 'attribute')
@@ -463,13 +471,13 @@ def attribute_value_save(apiurl, project, name, value, namespace='OSRT', package
         raise e
 
 
-def attribute_value_delete(apiurl, project, name, namespace='OSRT', package=None):
+def attribute_value_delete(apiurl: str, project: str, name: str, namespace='OSRT', package: Optional[str] = None):
     http_DELETE(makeurl(
         apiurl, list(filter(None, ['source', project, package, '_attribute', namespace + ':' + name]))))
 
 
 @memoize(session=True)
-def repository_path_expand(apiurl, project, repo, visited_repos=None):
+def repository_path_expand(apiurl: str, project: str, repo: str, visited_repos: Optional[set] = None):
     """Recursively list underlying projects."""
     if visited_repos is None:
         visited_repos = set()
