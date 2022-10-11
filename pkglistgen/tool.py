@@ -8,6 +8,8 @@ import shutil
 import subprocess
 import yaml
 
+from typing import Any, Mapping, Optional
+
 from lxml import etree as ET
 
 from osc.core import checkout_package
@@ -175,7 +177,7 @@ class PkgListGen(ToolBase.ToolBase):
                     if package[0] not in g.solved_packages['*']:
                         self.logger.error(f'Missing {package[0]} in {groupname} for {arch}')
 
-    def expand_repos(self, project, repo='standard'):
+    def expand_repos(self, project: str, repo='standard'):
         return repository_path_expand(self.apiurl, project, repo)
 
     def _check_supplements(self):
@@ -506,7 +508,13 @@ class PkgListGen(ToolBase.ToolBase):
                 print('%endif', file=output)
         output.flush()
 
-    def solve_project(self, ignore_unresolvable=False, ignore_recommended=False, locale=None, locales_from=None):
+    def solve_project(
+        self,
+        ignore_unresolvable=False,
+        ignore_recommended=False,
+        locale: Optional[str] = None,
+        locales_from: Optional[str] = None
+    ):
         self.load_all_groups()
         if not self.output:
             self.logger.error('OUTPUT not defined')
@@ -601,9 +609,19 @@ class PkgListGen(ToolBase.ToolBase):
             new_lines.append(line.replace('<version></version>', product_version))
         open(product_file, 'w').write(''.join(new_lines))
 
-    def update_and_solve_target(self, api, target_project, target_config, main_repo,
-                                project, scope, force, no_checkout,
-                                only_release_packages, stop_after_solve):
+    def update_and_solve_target(
+        self,
+        api,
+        target_project: str,
+        target_config: Mapping[str, Any],
+        main_repo: str,
+        project: str,
+        scope: str,
+        force: bool,
+        no_checkout: bool,
+        only_release_packages: bool,
+        stop_after_solve: bool
+    ):
         self.all_architectures = target_config.get('pkglistgen-archs').split(' ')
         self.use_newest_version = str2bool(target_config.get('pkglistgen-use-newest-version', 'False'))
         self.repos = self.expand_repos(project, main_repo)
@@ -682,11 +700,12 @@ class PkgListGen(ToolBase.ToolBase):
             self.load_all_groups()
             self.write_group_stubs()
         else:
-            summary = self.solve_project(ignore_unresolvable=str2bool(target_config.get('pkglistgen-ignore-unresolvable')),
-                                         ignore_recommended=str2bool(
-                                             target_config.get('pkglistgen-ignore-recommended')),
-                                         locale=target_config.get('pkglistgen-locale'),
-                                         locales_from=target_config.get('pkglistgen-locales-from'))
+            summary = self.solve_project(
+                ignore_unresolvable=str2bool(target_config.get('pkglistgen-ignore-unresolvable')),
+                ignore_recommended=str2bool(target_config.get('pkglistgen-ignore-recommended')),
+                locale=target_config.get('pkglistgen-locale'),
+                locales_from=target_config.get('pkglistgen-locales-from')
+            )
 
         if stop_after_solve:
             return
