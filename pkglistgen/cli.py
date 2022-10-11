@@ -86,7 +86,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if apiurl.find('opensuse.org') > 0:
             os.environ['OBS_NAME'] = 'build.opensuse.org'
 
-        def solve_project(project, scope):
+        def solve_project(project, scope: str):
             try:
                 self.tool.reset()
                 self.tool.dry_run = self.options.dry
