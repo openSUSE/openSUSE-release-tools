@@ -1,0 +1,5 @@
+<definition name="StagingSummary" namespace="OSRT">
+  <description>Contains the last state of the staged packages</description>
+  <count>1</count>
+  <modifiable_by role="maintainer"/>
+</definition>
