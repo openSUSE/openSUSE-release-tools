@@ -1307,8 +1307,16 @@ class StagingAPI(object):
 
         return pkglist
 
-    def check_pkgs(self, rebuild_list):
-        return list(set(rebuild_list) & set(self.list_packages(self.project)))
+    def check_pkgs(self, pkg_list):
+        """Filter the package list to those still existing in the project"""
+        project_packages = set(self.list_packages(self.project))
+        ret = list()
+        for pkg in pkg_list:
+            # map multibuild flavors
+            source = pkg.split(':')[0]
+            if source in project_packages:
+                ret.append(pkg)
+        return ret
 
     def rebuild_pkg(self, package, prj, arch, code=None):
         query = {

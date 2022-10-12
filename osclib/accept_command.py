@@ -296,8 +296,6 @@ class AcceptCommand(object):
             rebuild_result = self.api.check_pkgs(rebuild_result)
             result = set(rebuild_result) ^ set(fact_result)
 
-            print(sorted(result))
-
             for package in result:
                 self.api.rebuild_pkg(package, self.api.project, arch, None)
                 self.api.rebuild_pkg(package, self.api.crebuild, arch, None)
