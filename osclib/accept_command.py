@@ -1,6 +1,7 @@
 import time
 import re
 from urllib.error import HTTPError
+from typing import List
 
 from lxml import etree as ET
 
@@ -80,7 +81,15 @@ class AcceptCommand(object):
             to_request[package] = {'id': id, 'bugowner': m.group(1)}
             return
 
-    def accept_all(self, projects, force=False, cleanup=True):
+    def accept_all(self, projects: List[str], force=False, cleanup=True):
+        """
+        Accept all staging projects that are either given or acceptable.
+
+        :param projects: The list of staging letters that are to be accepted. If this is an empty list then the method
+                         will search for all green staging projects and accept them.
+        :param force: This option is not allowed to be combined without giving an explicit list of projects.
+        :param cleanup: Delete the packages from staging after they are accepted.
+        """
         accept_all_green = len(projects) == 0
         if accept_all_green:
             print('Accepting all acceptable projects')
@@ -98,6 +107,7 @@ class AcceptCommand(object):
         for prj in projects:
             project = self.api.prj_from_letter(prj)
 
+            # If the following line completes without error we can be sure that the project is existing.
             status = self.api.project_status(project)
             if status.get('state') != 'acceptable':
                 if accept_all_green:
@@ -177,7 +187,13 @@ class AcceptCommand(object):
 
         return True
 
-    def cleanup(self, project):
+    def cleanup(self, project: str):
+        """
+        Deletes all packages in a given project.
+
+        The key "nocleanup_packages" in the osc config will cause that the listed packages will be excluded from
+        deletion.
+        """
         if not self.api.item_exists(project):
             return
 
