@@ -1,5 +1,6 @@
 from io import StringIO
 from datetime import datetime
+from typing import List
 import dateutil.parser
 import logging
 import textwrap
@@ -52,7 +53,7 @@ class StagingAPI(object):
     Class containing various api calls to work with staging projects.
     """
 
-    def __init__(self, apiurl, project):
+    def __init__(self, apiurl: str, project: str):
         """Initialize instance variables."""
 
         self.apiurl = apiurl
@@ -149,7 +150,7 @@ class StagingAPI(object):
         xpath = f'repository[@name="{repo_name}"]'
         return len(meta.xpath(xpath)) > 0
 
-    def makeurl(self, paths, query=None):
+    def makeurl(self, paths: List[str], query=None) -> str:
         """
         Wrapper around osc's makeurl passing our apiurl
         :return url made for l and query
