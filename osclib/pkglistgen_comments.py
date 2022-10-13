@@ -1,24 +1,54 @@
 import datetime
-import textwrap
-import re
-import tempfile
+import enum
 import logging
 import os
+import re
 import sys
-from typing import Dict, List, Union, Optional
+import tempfile
+import textwrap
+from typing import Dict, List, Optional
+
 from lxml import etree as ET
+from osc.core import Package, checkout_package, http_GET, makeurl
 
 from osclib.comments import CommentAPI
-from osc.core import checkout_package, http_GET, makeurl
-from osc.core import Package
 
 MARKER = 'PackageListDiff'
 
 
-class PkglistComments(object):
+class PkglistSectionCommend(enum.Enum):
+    ADD = "add"
+    REMOVE = "remove"
+    MOVE = "move"
+
+
+class PkglistSection:
+    def __init__(
+        self,
+        command: PkglistSectionCommend,
+        pkgs: Optional[List[str]] = None,
+        to_module: Optional[List[str]] = None,
+        from_module: Optional[List[str]] = None
+    ):
+        self.command = command
+        if pkgs is None:
+            self.pkgs = []
+        else:
+            self.pkgs = pkgs
+        if pkgs is None:
+            self.to_module = []
+        else:
+            self.to_module = to_module
+        if pkgs is None:
+            self.from_module = []
+        else:
+            self.from_module = from_module
+
+
+class PkglistComments:
     """Handling staging comments of diffs"""
 
-    def __init__(self, apiurl):
+    def __init__(self, apiurl: str):
         self.apiurl = apiurl
         self.comment = CommentAPI(apiurl)
 
@@ -146,19 +176,28 @@ class PkglistComments(object):
                     return c['who']
         return None
 
-    def parse_title(self, line: str) -> Optional[Dict[str, Union[str, List[str]]]]:
+    def parse_title(self, line: str) -> Optional[PkglistSection]:
         m = re.match(r'\*\*Add to (.*)\*\*', line)
         if m:
-            return {'cmd': 'add', 'to': m.group(1).split(','), 'pkgs': []}
+            return PkglistSection(PkglistSectionCommend.ADD, pkgs=[], to_module=m.group(1).split(','))
         m = re.match(r'\*\*Move from (.*) to (.*)\*\*', line)
         if m:
-            return {'cmd': 'move', 'from': m.group(1).split(','), 'to': m.group(2).split(','), 'pkgs': []}
+            return PkglistSection(
+                PkglistSectionCommend.MOVE,
+                pkgs=[],
+                from_module=m.group(1).split(','),
+                to_module=m.group(2).split(','),
+            )
         m = re.match(r'\*\*Remove from (.*)\*\*', line)
         if m:
-            return {'cmd': 'remove', 'from': m.group(1).split(','), 'pkgs': []}
+            return PkglistSection(
+                PkglistSectionCommend.REMOVE,
+                pkgs=[],
+                from_module=m.group(1).split(','),
+            )
         return None
 
-    def parse_sections(self, comment: str) -> List[Dict[str, Union[str, List[str]]]]:
+    def parse_sections(self, comment: str) -> List[PkglistSection]:
         current_section = None
         sections = []
         in_quote = False
@@ -175,33 +214,33 @@ class PkglistComments(object):
                 for pkg in line.split(','):
                     pkg = pkg.strip()
                     if pkg:
-                        current_section['pkgs'].append(pkg)
+                        current_section.pkgs.append(pkg)
         if current_section:
             sections.append(current_section)
         return sections
 
-    def apply_move(self, content: Dict[str, List[str]], section: Dict[str, Union[str, List[str]]]):
-        for pkg in section['pkgs']:
+    def apply_move(self, content: Dict[str, List[str]], section: PkglistSection):
+        for pkg in section.pkgs:
             pkg_content = content[pkg]
-            for group in section['from']:
+            for group in section.from_module:
                 try:
                     pkg_content.remove(group)
                 except ValueError:
                     logging.error(f"Can't remove {pkg} from {group}, not there. Mismatch.")
                     sys.exit(1)
-            for group in section['to']:
+            for group in section.to_module:
                 pkg_content.append(group)
             content[pkg] = pkg_content
 
-    def apply_add(self, content: Dict[str, List[str]], section: Dict[str, Union[str, List[str]]]):
-        for pkg in section['pkgs']:
+    def apply_add(self, content: Dict[str, List[str]], section: PkglistSection):
+        for pkg in section.pkgs:
             content.setdefault(pkg, [])
-            content[pkg] += section['to']
+            content[pkg] += section.to_module
 
-    def apply_remove(self, content: Dict[str, List[str]], section: Dict[str, Union[str, List[str]]]):
-        for pkg in section['pkgs']:
+    def apply_remove(self, content: Dict[str, List[str]], section: PkglistSection):
+        for pkg in section.pkgs:
             pkg_content = content[pkg]
-            for group in section['from']:
+            for group in section.from_module:
                 try:
                     pkg_content.remove(group)
                 except ValueError:
@@ -209,38 +248,38 @@ class PkglistComments(object):
                     sys.exit(1)
             content[pkg] = pkg_content
 
-    def apply_commands(self, filename: str, sections: List[Dict[str, Union[str, List[str]]]]):
+    def apply_commands(self, filename: str, sections: List[PkglistSection]):
         content = self.read_summary_file(filename)
         for section in sections:
-            if section['cmd'] == 'move':
+            if section.command == PkglistSectionCommend.MOVE:
                 self.apply_move(content, section)
-            elif section['cmd'] == 'add':
+            elif section.command == PkglistSectionCommend.ADD:
                 self.apply_add(content, section)
-            elif section['cmd'] == 'remove':
+            elif section.command == PkglistSectionCommend.REMOVE:
                 self.apply_remove(content, section)
         self.write_summary_file(filename, content)
 
-    def format_pkgs(self, pkgs):
+    def format_pkgs(self, pkgs: List[str]):
         text = ', '.join(pkgs)
         return "  " + "\n  ".join(textwrap.wrap(text, width=68, break_long_words=False, break_on_hyphens=False)) + "\n\n"
 
-    def format_move(self, section):
-        gfrom = ','.join(section['from'])
-        gto = ','.join(section['to'])
+    def format_move(self, section: PkglistSection):
+        gfrom = ','.join(section.from_module)
+        gto = ','.join(section.to_module)
         text = f"  * Move from {gfrom} to {gto}:\n"
-        return text + self.format_pkgs(section['pkgs'])
+        return text + self.format_pkgs(section.pkgs)
 
-    def format_add(self, section):
-        gto = ','.join(section['to'])
+    def format_add(self, section: PkglistSection):
+        gto = ','.join(section.to_module)
         text = f"  * Add to {gto}:\n"
-        return text + self.format_pkgs(section['pkgs'])
+        return text + self.format_pkgs(section.pkgs)
 
-    def format_remove(self, section):
-        gfrom = ','.join(section['from'])
+    def format_remove(self, section: PkglistSection):
+        gfrom = ','.join(section.from_module)
         text = f"  * Remove from {gfrom}:\n"
-        return text + self.format_pkgs(section['pkgs'])
+        return text + self.format_pkgs(section.pkgs)
 
-    def apply_changes(self, filename: str, sections: List[Dict[str, Union[str, List[str]]]], approver: str):
+    def apply_changes(self, filename: str, sections: List[PkglistSection], approver: str):
         text = "-------------------------------------------------------------------\n"
         now = datetime.datetime.utcnow()
         date = now.strftime("%a %b %d %H:%M:%S UTC %Y")
@@ -250,11 +289,11 @@ class PkglistComments(object):
         email = root.find('email').text
         text += f"{date} - {realname} <{email}>\n\n- Approved changes to summary-staging.txt\n"
         for section in sections:
-            if section['cmd'] == 'move':
+            if section.command == PkglistSectionCommend.MOVE:
                 text += self.format_move(section)
-            elif section['cmd'] == 'add':
+            elif section.command == PkglistSectionCommend.ADD:
                 text += self.format_add(section)
-            elif section['cmd'] == 'remove':
+            elif section.command == PkglistSectionCommend.REMOVE:
                 text += self.format_remove(section)
         with open(filename + '.new', 'w') as writer:
             writer.write(text)
