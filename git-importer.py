@@ -527,7 +527,10 @@ class OBS:
 
     def devel_project(self, project, package):
         root = self._meta(project, package)
-        return root.find("devel").get("project")
+        devel = root.find("devel")
+        if devel is None:
+            return None
+        return devel.get("project")
 
     def request(self, requestid):
         root = self._request(requestid)
@@ -905,7 +908,10 @@ class Importer:
         assert project == "openSUSE:Factory"
         self.obs.change_url(api_url)
         devel_project = self.obs.devel_project(project, package)
-        self.projects = [(devel_project, "devel", api_url)] + projects
+        if devel_project:
+            self.projects = [(devel_project, "devel", api_url)] + projects
+        else:
+            self.projects = projects
 
         # Associate the branch and api_url information per project
         self.projects_info = {
