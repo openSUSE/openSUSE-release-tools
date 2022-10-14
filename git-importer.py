@@ -351,7 +351,7 @@ class Git:
             # Now I miss Rust enums
             return "CONFLICT"
 
-        # Some merges are empty in OBS (no chages, not sure
+        # Some merges are empty in OBS (no changes, not sure
         # why), for now we signal them
         if not allow_empty and not self.is_dirty():
             # I really really do miss Rust enums
@@ -566,6 +566,12 @@ class ProxySHA256:
         self.texts = set()
 
     def load_package(self, package):
+        # _project is unreachable for the proxy - due to being a fake package
+        if package == "_project":
+            self.enabled = False
+            self.texts = set(["_config", "_service"])
+            self.hashes = dict()
+            return
         logging.info("Retrieve all previously defined SHA256")
         response = requests.get(f"http://source.dyn.cloud.suse.de/package/{package}")
         if response.status_code == 200:
@@ -932,6 +938,10 @@ class Importer:
         # Download each file in OBS if it is not a binary (or large)
         # file
         for (name, size, file_md5) in obs_files:
+            # this file creates easily 100k commits and is just useless data :(
+            # unfortunately it's stored in the same meta package as the project config
+            if revision.package == "_project" and name == "_staging_workflow":
+                continue
             # have such files been detected as text mimetype before?
             is_text = self.proxy_sha256.is_text(name)
             if not is_text and is_binary_or_large(name, size):
