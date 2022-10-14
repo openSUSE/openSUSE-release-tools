@@ -166,7 +166,7 @@ class PkglistComments:
 
         return 1
 
-    def is_approved(self, comment, comments: dict) -> str | None:
+    def is_approved(self, comment, comments: dict) -> Optional[str]:
         if not comment:
             return None
 
