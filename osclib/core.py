@@ -229,7 +229,7 @@ def binary_src_debug(binary):
 
 
 @memoize(session=True)
-def devel_project_get(apiurl, target_project, target_package):
+def devel_project_get(apiurl: str, target_project: str, target_package: str):
     try:
         meta = ET.fromstringlist(show_package_meta(apiurl, target_project, target_package))
         node = meta.find('devel')

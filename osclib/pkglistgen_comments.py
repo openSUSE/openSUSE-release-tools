@@ -12,6 +12,7 @@ from lxml import etree as ET
 from osc.core import Package, checkout_package, http_GET, makeurl
 
 from osclib.comments import CommentAPI
+from osclib.core import devel_project_get
 
 MARKER = 'PackageListDiff'
 
@@ -165,7 +166,7 @@ class PkglistComments:
 
         return 1
 
-    def is_approved(self, comment, comments: dict) -> str | None:
+    def is_approved(self, comment, comments: dict) -> Optional[str]:
         if not comment:
             return None
 
@@ -309,8 +310,11 @@ class PkglistComments:
         if not approver:
             return
         sections = self.parse_sections(comment['comment'])
+        project, package = devel_project_get(self.apiurl, target, '000package-groups')
+        if project is None or package is None:
+            raise ValueError('Could not determine devel project or package for the "000package-groups"!')
         with tempfile.TemporaryDirectory() as tmpdirname:
-            checkout_package(self.apiurl, target, '000package-groups', expand_link=True, outdir=tmpdirname)
+            checkout_package(self.apiurl, project, package, expand_link=True, outdir=tmpdirname)
             self.apply_commands(tmpdirname + '/summary-staging.txt', sections)
             self.apply_changes(tmpdirname + '/package-groups.changes', sections, approver)
             package = Package(tmpdirname)
