@@ -585,7 +585,7 @@ class CheckSource(ReviewBot.ReviewBot):
         for script in scripts:
             if os.path.isdir(script):
                 continue
-            res = subprocess.run(['/bin/bash', script, '--batchmode', directory, old], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            res = subprocess.run([script, '--batchmode', directory, old], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             if res.returncode:
                 text = "Source validator failed. Try \"osc service runall source_validator\"\n"
                 text += res.stdout.decode('utf-8')
