@@ -41,6 +41,7 @@ pipelines:
             tasks:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p devel:BCI -s target
 
+
   SLE_BCI_15SP3.RelPkgs:
     group: BCI
     lock_behavior: unlockWhenFinished
@@ -123,7 +124,6 @@ pipelines:
               done
               osc -A https://api.suse.de/ api "/build/SUSE:Products:SLE-BCI:15-SP3:$arch/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
             done
-
 
   SLE_BCI_15SP4.RelPkgs:
     group: BCI

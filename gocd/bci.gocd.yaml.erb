@@ -1,0 +1,127 @@
+format_version: 3
+pipelines:
+  BCI.RelPkgs:
+    group: BCI
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 10 * ? * *
+      only_on_changes: false
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    stages:
+    - Create.Release.Packages:
+        approval: manual
+        resources:
+        - repo-checker
+        tasks:
+        - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve -p devel:BCI -s target --only-release-packages --force
+
+  Pkglistgen.BCI:
+    group: BCI
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    timer:
+      spec: 0 10 * ? * *
+      only_on_changes: false
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - pkglistgen:
+        approval:
+          type: manual
+        jobs:
+          BCI_target:
+            resources:
+            - repo-checker
+            tasks:
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p devel:BCI -s target
+
+<% ['SP3', 'SP4', 'SP5'].each do |sp| %>
+  SLE_BCI_15<%= sp %>.RelPkgs:
+    group: BCI
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 10 * ? * *
+      only_on_changes: false
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    stages:
+    - Create.Release.Packages:
+        approval: manual
+        resources:
+        - repo-checker
+        tasks:
+        - script: ./pkglistgen.py -A https://api.suse.de update_and_solve -p SUSE:SLE-15-<%= sp %>:Update:BCI -s target --only-release-packages --force
+
+  Pkglistgen.SLE_BCI_15<%= sp %>:
+    group: BCI
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 10 * ? * *
+      only_on_changes: false
+    materials:
+      repos:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLE-15-<%= sp %>:Update_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    stages:
+    - pkglistgen:
+        approval:
+          type: manual
+        jobs:
+          BCI_target:
+            resources:
+            - repo-checker
+            tasks:
+            - script: ./scripts/pkglistgen.py -d -A https://api.suse.de update_and_solve -p SUSE:SLE-15-<%= sp %>:Update:BCI -s target
+    - Expect.Images.To.Finish:
+        resources:
+        - staging-bot
+        tasks:
+        - script: |
+            export PYTHONPATH=scripts
+            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p  SUSE:SLE-15-<%= sp %>:Update:BCI -r images
+
+    - Release.Images.to.Product:
+        approval: manual
+        roles:
+        - SLE
+        environment_variables:
+          OSC_CONFIG: /home/go/config/oscrc-totest-manager
+        resources:
+        - staging-bot
+        tasks:
+        - script: |-
+            for arch in aarch64 ppc64le s390x x86_64 ; do
+             SPRJ=SUSE:SLE-15-<%= sp %>:Update:BCI
+             PKG="000product:SLE_BCI-ftp-POOL-$arch"
+             PRJ="SUSE:Products:SLE-BCI:15-<%= sp %>:$arch"
+             osc -A https://api.suse.de api -X POST "/source/$SPRJ/$PKG?cmd=release&target_project=$PRJ&repository=images&target_repository=images"
+            done
+            for arch in aarch64 ppc64le s390x x86_64 ; do
+              sleep 600
+              while (osc -A https://api.suse.de/ api "/build/SUSE:Products:SLE-BCI:15-<%= sp %>:$arch/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
+                  echo PENDING
+                  sleep 600
+              done
+              osc -A https://api.suse.de/ api "/build/SUSE:Products:SLE-BCI:15-<%= sp %>:$arch/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
+            done
+<% end %>
