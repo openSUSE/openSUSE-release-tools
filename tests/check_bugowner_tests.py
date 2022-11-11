@@ -82,6 +82,19 @@ class TestCheckBugowner(OBSLocal.TestCase):
         self.assertReview(req_id, by_user=(self.bot_user, 'accepted'))
 
     @pytest.mark.usefixtures("default_config")
+    def test_valid_bugowner_with_space(self):
+        """Accept request with valid maintainer with space"""
+        self.wf.create_user('thegirl')
+        req_id = self.wf.create_submit_request('devel:wine', 'merlot', description="bugowner: thegirl ").reqid
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'new'))
+
+        self.review_bot.set_request_ids([req_id])
+        self.review_bot.check_requests()
+
+        self.assertReview(req_id, by_user=(self.bot_user, 'accepted'))
+
+    @pytest.mark.usefixtures("default_config")
     def test_valid_bugowner_group(self):
         """Accept request with valid group maintainer"""
         self.wf.create_group('coldpool')
