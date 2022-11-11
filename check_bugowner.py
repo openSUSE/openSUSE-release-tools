@@ -31,10 +31,10 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         for line in self.request.description.splitlines():
             matched_package = None
             matched_maintainer = None
-            m = re.match(r'\s*bugowner:\s*(\S*)\s*$', line)
+            m = re.match(r'\s*bugowner:\s*(\S+)\s*$', line)
             if m:
                 matched_maintainer = m.group(1)
-            m = re.match(r'\s*bugowner:\s(\S*)\s(\S*)\s*$', line)
+            m = re.match(r'\s*bugowner:\s(\S+)\s(\S+)\s*$', line)
             if m:
                 matched_maintainer = m.group(2)
                 matched_package = m.group(1)
