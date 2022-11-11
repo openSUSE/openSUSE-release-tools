@@ -364,7 +364,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self.review_bot.check_requests()
 
         review = self.assertReview(req_id, by_user=(self.bot_user, 'declined'))
-        self.assertEqual("Attention, README is not mentioned in spec files as source or patch.", review.comment)
+        self.assertEqual("Attention, \"README\" is not mentioned in spec files as source or patch.", review.comment)
 
     @pytest.mark.usefixtures("default_config")
     def test_source_urls(self):
