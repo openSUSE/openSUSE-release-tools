@@ -32,7 +32,12 @@ while (@ARGV) {
   shift @ARGV;
 }
 
-die("uasge: bs_mirrorfull url dir\n") unless @ARGV == 2;
+if (@ARGV != 2) {
+  my $message = "Usage: $0 url dir
+
+    Example: $0 https://api.opensuse.org/public/build/YaST:Head/openSUSE_Tumbleweed/x86_64 my-mirror\n";
+  die($message);
+}
 my ($url, $dir) = @ARGV;
 $url =~ s/\/$//;
 
