@@ -106,23 +106,25 @@ pipelines:
         - SLE
         environment_variables:
           OSC_CONFIG: /home/go/config/oscrc-totest-manager
+          BCI_TOKEN: '{{SECRET:[opensuse.secrets][BCI_TOKEN]}}'
         resources:
         - staging-bot
         tasks:
         - script: |-
+            SPRJ=SUSE:SLE-15-SP3:Update:BCI
             for arch in aarch64 ppc64le s390x x86_64 ; do
-             SPRJ=SUSE:SLE-15-SP3:Update:BCI
              PKG="000product:SLE_BCI-ftp-POOL-$arch"
              PRJ="SUSE:Products:SLE-BCI:15-SP3:$arch"
-             osc -A https://api.suse.de api -X POST "/source/$SPRJ/$PKG?cmd=release&target_project=$PRJ&repository=images&target_repository=images"
+             # can't use osc command due to https://github.com/openSUSE/osc/issues/1194
+             curl -X POST -H "Authorization: Token $BCI_TOKEN" "https://api.suse.de/trigger/release?project=$SPRJ\&package=$PKG\&targetproject=$PRJ\&targetrepository=images\&filter_source_repository=\"images\""
             done
             for arch in aarch64 ppc64le s390x x86_64 ; do
               sleep 600
-              while (osc -A https://api.suse.de/ api "/build/SUSE:Products:SLE-BCI:15-SP3:$arch/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
+              while (osc -A https://api.suse.de/ api "/build/$PRJ/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
                   echo PENDING
                   sleep 600
               done
-              osc -A https://api.suse.de/ api "/build/SUSE:Products:SLE-BCI:15-SP3:$arch/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
+              osc -A https://api.suse.de/ api "/build/$PRJ/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
             done
 
   SLE_BCI_15SP4.RelPkgs:
@@ -189,23 +191,25 @@ pipelines:
         - SLE
         environment_variables:
           OSC_CONFIG: /home/go/config/oscrc-totest-manager
+          BCI_TOKEN: '{{SECRET:[opensuse.secrets][BCI_TOKEN]}}'
         resources:
         - staging-bot
         tasks:
         - script: |-
+            SPRJ=SUSE:SLE-15-SP4:Update:BCI
             for arch in aarch64 ppc64le s390x x86_64 ; do
-             SPRJ=SUSE:SLE-15-SP4:Update:BCI
              PKG="000product:SLE_BCI-ftp-POOL-$arch"
              PRJ="SUSE:Products:SLE-BCI:15-SP4:$arch"
-             osc -A https://api.suse.de api -X POST "/source/$SPRJ/$PKG?cmd=release&target_project=$PRJ&repository=images&target_repository=images"
+             # can't use osc command due to https://github.com/openSUSE/osc/issues/1194
+             curl -X POST -H "Authorization: Token $BCI_TOKEN" "https://api.suse.de/trigger/release?project=$SPRJ\&package=$PKG\&targetproject=$PRJ\&targetrepository=images\&filter_source_repository=\"images\""
             done
             for arch in aarch64 ppc64le s390x x86_64 ; do
               sleep 600
-              while (osc -A https://api.suse.de/ api "/build/SUSE:Products:SLE-BCI:15-SP4:$arch/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
+              while (osc -A https://api.suse.de/ api "/build/$PRJ/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
                   echo PENDING
                   sleep 600
               done
-              osc -A https://api.suse.de/ api "/build/SUSE:Products:SLE-BCI:15-SP4:$arch/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
+              osc -A https://api.suse.de/ api "/build/$PRJ/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
             done
 
   SLE_BCI_15SP5.RelPkgs:
@@ -272,21 +276,24 @@ pipelines:
         - SLE
         environment_variables:
           OSC_CONFIG: /home/go/config/oscrc-totest-manager
+          BCI_TOKEN: '{{SECRET:[opensuse.secrets][BCI_TOKEN]}}'
         resources:
         - staging-bot
         tasks:
         - script: |-
+            SPRJ=SUSE:SLE-15-SP5:Update:BCI
             for arch in aarch64 ppc64le s390x x86_64 ; do
-             SPRJ=SUSE:SLE-15-SP5:Update:BCI
              PKG="000product:SLE_BCI-ftp-POOL-$arch"
              PRJ="SUSE:Products:SLE-BCI:15-SP5:$arch"
-             osc -A https://api.suse.de api -X POST "/source/$SPRJ/$PKG?cmd=release&target_project=$PRJ&repository=images&target_repository=images"
+             # can't use osc command due to https://github.com/openSUSE/osc/issues/1194
+             curl -X POST -H "Authorization: Token $BCI_TOKEN" "https://api.suse.de/trigger/release?project=$SPRJ\&package=$PKG\&targetproject=$PRJ\&targetrepository=images\&filter_source_repository=\"images\""
             done
             for arch in aarch64 ppc64le s390x x86_64 ; do
               sleep 600
-              while (osc -A https://api.suse.de/ api "/build/SUSE:Products:SLE-BCI:15-SP5:$arch/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
+              while (osc -A https://api.suse.de/ api "/build/$PRJ/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
                   echo PENDING
                   sleep 600
               done
-              osc -A https://api.suse.de/ api "/build/SUSE:Products:SLE-BCI:15-SP5:$arch/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
+              osc -A https://api.suse.de/ api "/build/$PRJ/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
             done
+
