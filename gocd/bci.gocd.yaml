@@ -110,12 +110,12 @@ pipelines:
         resources:
         - staging-bot
         tasks:
+        # can't use osc command due to https://github.com/openSUSE/osc/issues/1194
         - script: |-
             SPRJ=SUSE:SLE-15-SP3:Update:BCI
             for arch in aarch64 ppc64le s390x x86_64 ; do
              PKG="000product:SLE_BCI-ftp-POOL-$arch"
              PRJ="SUSE:Products:SLE-BCI:15-SP3:$arch"
-             # can't use osc command due to https://github.com/openSUSE/osc/issues/1194
              curl -X POST -H "Authorization: Token $BCI_TOKEN" "https://api.suse.de/trigger/release?project=$SPRJ\&package=$PKG\&targetproject=$PRJ\&targetrepository=images\&filter_source_repository=\"images\""
             done
             for arch in aarch64 ppc64le s390x x86_64 ; do
@@ -195,12 +195,12 @@ pipelines:
         resources:
         - staging-bot
         tasks:
+        # can't use osc command due to https://github.com/openSUSE/osc/issues/1194
         - script: |-
             SPRJ=SUSE:SLE-15-SP4:Update:BCI
             for arch in aarch64 ppc64le s390x x86_64 ; do
              PKG="000product:SLE_BCI-ftp-POOL-$arch"
              PRJ="SUSE:Products:SLE-BCI:15-SP4:$arch"
-             # can't use osc command due to https://github.com/openSUSE/osc/issues/1194
              curl -X POST -H "Authorization: Token $BCI_TOKEN" "https://api.suse.de/trigger/release?project=$SPRJ\&package=$PKG\&targetproject=$PRJ\&targetrepository=images\&filter_source_repository=\"images\""
             done
             for arch in aarch64 ppc64le s390x x86_64 ; do
@@ -280,12 +280,12 @@ pipelines:
         resources:
         - staging-bot
         tasks:
+        # can't use osc command due to https://github.com/openSUSE/osc/issues/1194
         - script: |-
             SPRJ=SUSE:SLE-15-SP5:Update:BCI
             for arch in aarch64 ppc64le s390x x86_64 ; do
              PKG="000product:SLE_BCI-ftp-POOL-$arch"
              PRJ="SUSE:Products:SLE-BCI:15-SP5:$arch"
-             # can't use osc command due to https://github.com/openSUSE/osc/issues/1194
              curl -X POST -H "Authorization: Token $BCI_TOKEN" "https://api.suse.de/trigger/release?project=$SPRJ\&package=$PKG\&targetproject=$PRJ\&targetrepository=images\&filter_source_repository=\"images\""
             done
             for arch in aarch64 ppc64le s390x x86_64 ; do
