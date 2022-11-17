@@ -23,13 +23,13 @@ pipelines:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP4:Update:Products:Micro53:Staging:<%= letter %>
+                 --staging SUSE:SLE-15-SP4:Update:Products:Micro54:Staging:<%= letter %>
                  --only-release-packages --force
 <% end -%>
 <% stagings.each do |letter| %>
   SLE-Micro.Staging.<%= letter %>:
     environment_variables:
-      STAGING_PROJECT: SUSE:SLE-15-SP4:Update:Products:Micro53:Staging:<%= letter %>
+      STAGING_PROJECT: SUSE:SLE-15-SP4:Update:Products:Micro54:Staging:<%= letter %>
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
     group: MicroOS
@@ -40,7 +40,7 @@ pipelines:
         auto_update: true
         destination: repos
         whitelist:
-          - SUSE:SLE-15-SP4:Update:Products:Micro53:Staging:<%= letter %>_-_standard.yaml
+          - SUSE:SLE-15-SP4:Update:Products:Micro54:Staging:<%= letter %>_-_standard.yaml
       scripts:
         auto_update: true
         git: https://github.com/openSUSE/openSUSE-release-tools.git
@@ -66,7 +66,7 @@ pipelines:
               - repo-checker
             tasks:
               - script: |-
-                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP4:Update:Products:Micro53 -s $STAGING_PROJECT
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP4:Update:Products:Micro54 -s $STAGING_PROJECT
   
     - Update.000product:
         resources:
