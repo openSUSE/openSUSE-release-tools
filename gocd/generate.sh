@@ -2,10 +2,11 @@
 
 set -e
 
-if ! test -f yaml-config-plugin-0.9.0.jar; then
-  wget https://github.com/tomzo/gocd-yaml-config-plugin/releases/download/0.9.0/yaml-config-plugin-0.9.0.jar
+version=0.13.0
+if ! test -f yaml-config-plugin-$version.jar; then
+  wget https://github.com/tomzo/gocd-yaml-config-plugin/releases/download/$version/yaml-config-plugin-$version.jar
 fi
-sha1sum -c yaml-config-plugin-0.9.0.jar.sha1
+sha1sum -c yaml-config-plugin-$version.jar.sha1
 
 for file in *.erb; do
   erb -T - $file > $(basename $file .erb)
@@ -22,6 +23,6 @@ grep group: *.yaml | cut -d: -f3 | sort -u | while read group; do
 done
 
 for file in *.gocd.yaml; do
-  java -jar yaml-config-plugin-0.9.0.jar syntax $file
+  java -jar yaml-config-plugin-$version.jar syntax $file
 done
 
