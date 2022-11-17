@@ -116,7 +116,7 @@ pipelines:
             for arch in aarch64 ppc64le s390x x86_64 ; do
              PKG="000product:SLE_BCI-ftp-POOL-$arch"
              PRJ="SUSE:Products:SLE-BCI:15-<%= sp %>:$arch"
-             curl -X POST -H "Authorization: Token $BCI_TOKEN" "https://api.suse.de/trigger/release?project=${SPRJ}&package=${PKG}&targetproject=${PRJ}&targetrepository=images&filter_source_repository=\"images\""
+             curl -X POST -H "Authorization: Token $BCI_TOKEN" "https://api.suse.de/trigger/release?project=${SPRJ}&package=${PKG}&targetproject=${PRJ}&targetrepository=images&filter_source_repository=images"
             done
             for arch in aarch64 ppc64le s390x x86_64 ; do
               sleep 600
