@@ -113,7 +113,10 @@ class Project(object):
         for info in openqa_infos.values():
             xml = self.openqa_check_xml(info['url'], info['state'], 'openqa:' + info['name'])
             try:
-                http_POST(url, data=xml)
+                if self.listener.dryrun:
+                    print(f"Would POST to {url}: {xml}")
+                else:
+                    http_POST(url, data=xml)
             except HTTPError:
                 self.logger.error('failed to post status to ' + url)
 
@@ -160,11 +163,12 @@ class Project(object):
 
 
 class Listener(PubSubConsumer):
-    def __init__(self, amqp_prefix, openqa_url):
+    def __init__(self, amqp_prefix, openqa_url, dryrun):
         super(Listener, self).__init__(amqp_prefix, logging.getLogger(__name__))
         self.projects = []
         self.amqp_prefix = amqp_prefix
         self.openqa_url = openqa_url
+        self.dryrun = dryrun
         self.openqa = OpenQA_Client(server=openqa_url)
         self.projects_to_check = set()
 
@@ -209,6 +213,13 @@ class Listener(PubSubConsumer):
         self.check_some_projects()
         super(Listener, self).still_alive()
 
+    def is_production_job(self, job):
+        if '/' in job['settings'].get('BUILD', '/') or \
+           'Development' in job['group']:
+            return False
+
+        return True
+
     def jobs_for_iso(self, iso):
         values = {
             'iso': iso,
@@ -217,7 +228,7 @@ class Listener(PubSubConsumer):
         }
         jobs = self.openqa.openqa_request('GET', 'jobs', values)['jobs']
         # Ignore PR verification runs (and jobs without 'BUILD')
-        return [job for job in jobs if '/' not in job['settings'].get('BUILD', '/')]
+        return [job for job in jobs if self.is_production_job(job)]
 
     def get_step_url(self, testurl, modulename):
         failurl = testurl + '/modules/{!s}/fails'.format(quote_plus(modulename))
@@ -259,14 +270,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Bot to sync openQA status to OBS')
     parser.add_argument("--apiurl", '-A', type=str, help='API URL of OBS')
-    parser.add_argument('-s', '--staging', type=str, default=None,
-                        help='staging project letter')
-    parser.add_argument('-f', '--force', action='store_true', default=False,
-                        help='force the write of the comment')
-    parser.add_argument('-p', '--project', type=str, default='Factory',
-                        help='openSUSE version to make the check (Factory, 13.2)')
     parser.add_argument('-d', '--debug', action='store_true', default=False,
                         help='enable debug information')
+    parser.add_argument('--dry', action='store_true', default=False,
+                        help='do not perform changes')
 
     args = parser.parse_args()
 
@@ -284,7 +291,7 @@ if __name__ == '__main__':
 
     logging.basicConfig(level=logging.INFO)
 
-    listener = Listener(amqp_prefix, openqa_url)
+    listener = Listener(amqp_prefix, openqa_url, dryrun=args.dry)
     url = makeurl(apiurl, ['search', 'project', 'id'], {'match': 'attribute/@name="OSRT:OpenQAMapping"'})
     f = http_GET(url)
     root = ET.parse(f).getroot()
