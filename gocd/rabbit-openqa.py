@@ -113,7 +113,10 @@ class Project(object):
         for info in openqa_infos.values():
             xml = self.openqa_check_xml(info['url'], info['state'], 'openqa:' + info['name'])
             try:
-                http_POST(url, data=xml)
+                if self.listener.dryrun:
+                    print(f"Would POST to {url}: {xml}")
+                else:
+                    http_POST(url, data=xml)
             except HTTPError:
                 self.logger.error('failed to post status to ' + url)
 
@@ -160,11 +163,12 @@ class Project(object):
 
 
 class Listener(PubSubConsumer):
-    def __init__(self, amqp_prefix, openqa_url):
+    def __init__(self, amqp_prefix, openqa_url, dryrun):
         super(Listener, self).__init__(amqp_prefix, logging.getLogger(__name__))
         self.projects = []
         self.amqp_prefix = amqp_prefix
         self.openqa_url = openqa_url
+        self.dryrun = dryrun
         self.openqa = OpenQA_Client(server=openqa_url)
         self.projects_to_check = set()
 
@@ -261,6 +265,8 @@ if __name__ == '__main__':
     parser.add_argument("--apiurl", '-A', type=str, help='API URL of OBS')
     parser.add_argument('-d', '--debug', action='store_true', default=False,
                         help='enable debug information')
+    parser.add_argument('--dry', action='store_true', default=False,
+                        help='do not perform changes')
 
     args = parser.parse_args()
 
@@ -278,7 +284,7 @@ if __name__ == '__main__':
 
     logging.basicConfig(level=logging.INFO)
 
-    listener = Listener(amqp_prefix, openqa_url)
+    listener = Listener(amqp_prefix, openqa_url, dryrun=args.dry)
     url = makeurl(apiurl, ['search', 'project', 'id'], {'match': 'attribute/@name="OSRT:OpenQAMapping"'})
     f = http_GET(url)
     root = ET.parse(f).getroot()
