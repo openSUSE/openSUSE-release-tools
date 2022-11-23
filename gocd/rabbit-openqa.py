@@ -60,13 +60,24 @@ class Project(object):
         return stagingiso
 
     def gather_isos(self, name, repository):
+        ret = []
+
+        # Fetch /published/prj/repo/iso/*.iso
         url = self.api.makeurl(['published', name, repository, 'iso'])
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
-        ret = []
         for entry in root.findall('entry'):
-            if entry.get('name').endswith('iso'):
+            if entry.get('name').endswith('.iso'):
                 ret.append(self.map_iso(name, entry.get('name')))
+
+        # Fetch /published/prj/repo/iso/*.qcow2
+        url = self.api.makeurl(['published', name, repository])
+        f = self.api.retried_GET(url)
+        root = ET.parse(f).getroot()
+        for entry in root.findall('entry'):
+            filename = entry.get('name')
+            if filename.endswith('.qcow2') or filename.endswith('.raw.xz'):
+                ret.append(self.map_iso(name, filename))
 
         # Filter out isos which couldn't be mapped
         ret = [iso for iso in ret if iso]
@@ -231,12 +242,20 @@ class Listener(PubSubConsumer):
         return True
 
     def jobs_for_iso(self, iso):
+        # Try ISO= matching first
         values = {
             'iso': iso,
             'scope': 'current',
             'latest': '1',
         }
         jobs = self.openqa.openqa_request('GET', 'jobs', values)['jobs']
+
+        # If no matches, try HDD_1=
+        if len(jobs) == 0:
+            del values['iso']
+            values['hdd_1'] = iso
+            jobs = self.openqa.openqa_request('GET', 'jobs', values)['jobs']
+
         # Ignore PR verification runs (and jobs without 'BUILD')
         return [job for job in jobs if self.is_production_job(job)]
 
@@ -271,7 +290,10 @@ class Listener(PubSubConsumer):
             data = json.loads(body)
             if '/' in data.get('BUILD'):
                 return  # Ignore PR verification runs
-            self.on_openqa_job(data.get('ISO'))
+            if data.get('ISO'):
+                self.on_openqa_job(data.get('ISO'))
+            elif data.get('HDD_1'):
+                self.on_openqa_job(data.get('HDD_1'))
         else:
             self.logger.warning("unknown rabbitmq message {}".format(method.routing_key))
 
