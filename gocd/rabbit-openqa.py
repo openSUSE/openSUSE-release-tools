@@ -213,6 +213,13 @@ class Listener(PubSubConsumer):
         self.check_some_projects()
         super(Listener, self).still_alive()
 
+    def is_production_job(self, job):
+        if '/' in job['settings'].get('BUILD', '/') or \
+           'Development' in job['group']:
+            return False
+
+        return True
+
     def jobs_for_iso(self, iso):
         values = {
             'iso': iso,
@@ -221,7 +228,7 @@ class Listener(PubSubConsumer):
         }
         jobs = self.openqa.openqa_request('GET', 'jobs', values)['jobs']
         # Ignore PR verification runs (and jobs without 'BUILD')
-        return [job for job in jobs if '/' not in job['settings'].get('BUILD', '/')]
+        return [job for job in jobs if self.is_production_job(job)]
 
     def get_step_url(self, testurl, modulename):
         failurl = testurl + '/modules/{!s}/fails'.format(quote_plus(modulename))
