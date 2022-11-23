@@ -259,12 +259,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Bot to sync openQA status to OBS')
     parser.add_argument("--apiurl", '-A', type=str, help='API URL of OBS')
-    parser.add_argument('-s', '--staging', type=str, default=None,
-                        help='staging project letter')
-    parser.add_argument('-f', '--force', action='store_true', default=False,
-                        help='force the write of the comment')
-    parser.add_argument('-p', '--project', type=str, default='Factory',
-                        help='openSUSE version to make the check (Factory, 13.2)')
     parser.add_argument('-d', '--debug', action='store_true', default=False,
                         help='enable debug information')
 
