@@ -79,11 +79,10 @@ class Project(object):
         # collect job infos to pick names
         for job in openqa:
             print(staging, iso, job['id'], job['state'], job['result'],
-                  job['settings']['MACHINE'], job['settings']['TEST'])
+                  job['settings']['FLAVOR'], job['settings']['TEST'], job['settings']['MACHINE'])
             openqa_infos[job['id']] = {'url': self.listener.test_url(job)}
             openqa_infos[job['id']]['state'] = self.map_openqa_result(job)
-            openqa_infos[job['id']]['name'] = job['settings']['TEST']
-            openqa_infos[job['id']]['machine'] = job['settings']['MACHINE']
+            openqa_infos[job['id']]['name'] = f"{job['settings']['FLAVOR']}-{job['settings']['TEST']}@{job['settings']['MACHINE']}"
 
     def update_staging_status(self, staging):
         openqa_infos = dict()
@@ -102,12 +101,7 @@ class Project(object):
         for id in openqa_infos:
             name = openqa_infos[id]['name']
             if name in taken_names:
-                openqa_infos[id]['name'] = openqa_infos[id]['name'] + "@" + openqa_infos[id]['machine']
-                # the other id
-                oid = taken_names[name]
-                openqa_infos[oid]['name'] = openqa_infos[oid]['name'] + "@" + openqa_infos[oid]['machine']
-                if openqa_infos[id]['name'] == openqa_infos[oid]['name']:
-                    raise Exception(f'Names of job #{id} and #{oid} collide')
+                raise Exception(f'Names of job #{id} and #{taken_names[name]} collide: {name}')
             taken_names[name] = id
 
         for info in openqa_infos.values():
