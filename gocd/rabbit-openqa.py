@@ -6,6 +6,7 @@ import logging
 import json
 import osc
 import re
+from collections import defaultdict
 from osc.core import http_GET, http_POST, makeurl
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
@@ -100,11 +101,37 @@ class Project(object):
         # collect job infos to pick names
         for job in openqa:
             print(staging, iso, job['id'], job['state'], job['result'],
-                  job['settings']['MACHINE'], job['settings']['TEST'])
+                  job['settings']['FLAVOR'], job['settings']['TEST'], job['settings']['MACHINE'])
             openqa_infos[job['id']] = {'url': self.listener.test_url(job)}
             openqa_infos[job['id']]['state'] = self.map_openqa_result(job)
+            openqa_infos[job['id']]['flavor'] = job['settings']['FLAVOR']
             openqa_infos[job['id']]['name'] = job['settings']['TEST']
             openqa_infos[job['id']]['machine'] = job['settings']['MACHINE']
+
+    def check_name_combinations(openqa_info):
+        return [f"{openqa_info['name']}",
+                f"{openqa_info['name']}@{openqa_info['machine']}",
+                f"{openqa_info['flavor']}-{openqa_info['name']}@{openqa_info['machine']}"]
+
+    def make_unique_check_names(openqa_infos):
+        # Make a map of "possible name" -> [jobs]
+        map_name_jobs = defaultdict(list)
+        for id in openqa_infos:
+            for name in Project.check_name_combinations(openqa_infos[id]):
+                map_name_jobs[name].append(id)
+
+        # For each job, pick the shortest unique name
+        for id in openqa_infos:
+            found = False
+            for name in Project.check_name_combinations(openqa_infos[id]):
+                if len(map_name_jobs[name]) == 1:
+                    openqa_infos[id]['name'] = name
+                    found = True
+                    break
+            if found:
+                continue
+
+            raise Exception(f"Names of jobs {map_name_jobs[name]} collide: {name}")
 
     def update_staging_status(self, staging):
         openqa_infos = dict()
@@ -119,17 +146,7 @@ class Project(object):
         url = self.api.makeurl(['status_reports', 'published', staging, 'images', 'reports', buildid])
 
         # make sure the names are unique
-        taken_names = dict()
-        for id in openqa_infos:
-            name = openqa_infos[id]['name']
-            if name in taken_names:
-                openqa_infos[id]['name'] = openqa_infos[id]['name'] + "@" + openqa_infos[id]['machine']
-                # the other id
-                oid = taken_names[name]
-                openqa_infos[oid]['name'] = openqa_infos[oid]['name'] + "@" + openqa_infos[oid]['machine']
-                if openqa_infos[id]['name'] == openqa_infos[oid]['name']:
-                    raise Exception(f'Names of job #{id} and #{oid} collide')
-            taken_names[name] = id
+        Project.make_unique_check_names(openqa_infos)
 
         for info in openqa_infos.values():
             xml = self.openqa_check_xml(info['url'], info['state'], 'openqa:' + info['name'])
