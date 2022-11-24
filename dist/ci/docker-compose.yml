@@ -15,7 +15,7 @@ services:
     command: /usr/lib/mysql/mysql-systemd-helper start
   cache:
     <<: *obs
-    command: /usr/sbin/memcached -u memcached
+    command: /usr/bin/memcached -u memcached
   api:
     <<: *obs
     command: >
