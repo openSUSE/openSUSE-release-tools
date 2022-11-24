@@ -44,6 +44,13 @@ pipelines:
               - script: |
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM -s ring1 --only-release-packages --force
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM -s ring1
+          openSUSE_Factory_LegacyX86_target:
+            resources:
+            - repo-checker
+            tasks:
+              - script: |
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:LegacyX86 -s target --only-release-packages --force
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:LegacyX86 -s target
           openSUSE_Factory_PowerPC:
             resources:
             - repo-checker

@@ -20,6 +20,26 @@ pipelines:
           - script: |-
               echo "openSUSE:Factory"
               ./project-installcheck.py --debug check --add-comments --store openSUSE:Factory:Staging/dashboard openSUSE:Factory
+  Trigger.Rebuild.Factory.LegacyX86:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-factory-maintainer
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    timer:
+      spec: 0 0 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              echo "openSUSE:Factory:LegacyX86"
+              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds openSUSE:Factory:LegacyX86
   Trigger.Rebuild.Factory.Power:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
