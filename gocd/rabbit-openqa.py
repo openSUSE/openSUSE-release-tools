@@ -48,10 +48,16 @@ class Project(object):
         new = parts[2]
         new = new.replace('$LETTER', self.staging_letter(staging_project))
         try:
-            return re.compile(old).sub(new, iso)
+            stagingiso = re.compile(old).sub(new, iso)
         except re.error:
             self.logger.error(f"_MAP_ISO {self.replace_string} does not create valid regexps in {self.name}")
-            return iso
+            return None
+
+        if stagingiso == iso:
+            self.logger.info(f"{self.replace_string} did not map {iso} properly, ignoring")
+            return None
+
+        return stagingiso
 
     def gather_isos(self, name, repository):
         url = self.api.makeurl(['published', name, repository, 'iso'])
@@ -61,6 +67,10 @@ class Project(object):
         for entry in root.findall('entry'):
             if entry.get('name').endswith('iso'):
                 ret.append(self.map_iso(name, entry.get('name')))
+
+        # Filter out isos which couldn't be mapped
+        ret = [iso for iso in ret if iso]
+
         return ret
 
     def gather_buildid(self, name, repository):
