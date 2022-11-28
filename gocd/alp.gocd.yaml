@@ -22,12 +22,6 @@ pipelines:
             tasks:
             - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP -s target --only-release-packages --force
             - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP -s target
-          SUSE_ALP_ARM_target:
-            resources:
-            - repo-checker
-            tasks:
-            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP:ARM -s target --only-release-packages --force
-            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP:ARM -s target
           SUSE_ALP_PowerPC:
             resources:
             - repo-checker
