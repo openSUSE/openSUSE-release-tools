@@ -1,0 +1,35 @@
+format_version: 3
+pipelines:
+  Pkglistgen.ALP:
+    group: LEO
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    timer:
+      spec: 0 10 * ? * *
+      only_on_changes: false
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - pkglistgen:
+        approval:
+          type: manual
+        jobs:
+<% ['SUSE:ALP/target', 'SUSE:ALP:ARM/target', 'SUSE:ALP:PowerPC', 'SUSE:ALP:zSystems', 'SUSE:ALP:RISCV'].each do |project|
+  project=project.split('/')
+  name=project[0].gsub(':', '_')
+  if project.size > 1
+    options=" -s #{project[1]}"
+    name = name + "_#{project[1]}"
+  else
+    options=" -s target"
+  end
+  -%>
+          <%= name %>:
+            resources:
+            - repo-checker
+            tasks:
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %> --only-release-packages --force
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %>
+<% end -%>

@@ -1,24 +1,5 @@
 format_version: 3
 pipelines:
-  ALP.RelPkgs:
-    group: LEO
-    lock_behavior: unlockWhenFinished
-    timer:
-      spec: 0 10 * ? * *
-      only_on_changes: false
-    materials:
-      git:
-        git: https://github.com/openSUSE/openSUSE-release-tools.git
-    environment_variables:
-      OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    stages:
-    - Create.Release.Packages:
-        approval: manual
-        resources:
-        - repo-checker
-        tasks:
-        - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve -p SUSE:ALP -s target --only-release-packages --force
-
   Pkglistgen.ALP:
     group: LEO
     lock_behavior: unlockWhenFinished
@@ -35,8 +16,33 @@ pipelines:
         approval:
           type: manual
         jobs:
-          LEO_target:
+          SUSE_ALP_target:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP -s target
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP -s target --only-release-packages --force
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP -s target
+          SUSE_ALP_ARM_target:
+            resources:
+            - repo-checker
+            tasks:
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP:ARM -s target --only-release-packages --force
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP:ARM -s target
+          SUSE_ALP_PowerPC:
+            resources:
+            - repo-checker
+            tasks:
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP:PowerPC -s target --only-release-packages --force
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP:PowerPC -s target
+          SUSE_ALP_zSystems:
+            resources:
+            - repo-checker
+            tasks:
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP:zSystems -s target --only-release-packages --force
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP:zSystems -s target
+          SUSE_ALP_RISCV:
+            resources:
+            - repo-checker
+            tasks:
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP:RISCV -s target --only-release-packages --force
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP:RISCV -s target
