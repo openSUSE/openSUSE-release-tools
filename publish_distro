@@ -70,6 +70,10 @@ for arg do
         do_cleanup=1
         date="90 days ago"
         continue
+  elif [ "$arg" == '--now' ]; then
+	PUBLISH_DELAY=0
+        shift
+        continue
   else
         newargs+=("$arg")
   fi
