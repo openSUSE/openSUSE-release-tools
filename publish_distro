@@ -71,7 +71,7 @@ for arg do
         date="90 days ago"
         continue
   elif [ "$arg" == '--now' ]; then
-	PUBLISH_DELAY=0
+        PUBLISH_DELAY=0
         shift
         continue
   else
