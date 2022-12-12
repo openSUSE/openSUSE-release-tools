@@ -161,14 +161,16 @@ if __name__ == '__main__':
         fetcher.add('openSUSE:Factory:ARM:Live', nick='ARM Live')
         fetcher.add('openSUSE:Factory:ARM:Rings:0-Bootstrap', nick='ARM Ring 0')
         fetcher.add('openSUSE:Factory:ARM:Rings:1-MinimalX', nick='ARM Ring 1')
+        fetcher.add('openSUSE:Factory:LegacyX86', nick='Legacy X86',
+                    download_url='http://download.opensuse.org/ports/i586/tumbleweed/iso/')
         fetcher.add('openSUSE:Factory:PowerPC', nick='Power',
                     download_url='http://download.opensuse.org/ports/ppc/tumbleweed/iso/',
                     openqa_group='openSUSE Tumbleweed PowerPC', openqa_version='Tumbleweed', openqa_groupid=4)
+        fetcher.add('openSUSE:Factory:RISCV', nick='Risc V',
+                    download_url='http://download.opensuse.org/ports/riscv/tumbleweed/iso/')
         fetcher.add('openSUSE:Factory:zSystems', nick='System Z',
                     download_url='http://download.opensuse.org/ports/zsystems/tumbleweed/iso/',
                     openqa_group='openSUSE Tumbleweed s390x', openqa_version='Tumbleweed', openqa_groupid=34)
-        fetcher.add('openSUSE:Factory:RISCV', nick='Risc V',
-                    download_url='http://download.opensuse.org/ports/riscv/tumbleweed/iso/')
     else:
         fetcher.add('openSUSE:Leap:Micro:5.3', nick='Leap:Micro:5.3',
                     download_url='https://download.opensuse.org/distribution/leap-micro/5.3/product/iso',
