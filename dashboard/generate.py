@@ -162,7 +162,8 @@ if __name__ == '__main__':
         fetcher.add('openSUSE:Factory:ARM:Rings:0-Bootstrap', nick='ARM Ring 0')
         fetcher.add('openSUSE:Factory:ARM:Rings:1-MinimalX', nick='ARM Ring 1')
         fetcher.add('openSUSE:Factory:LegacyX86', nick='Legacy X86',
-                    download_url='http://download.opensuse.org/ports/i586/tumbleweed/iso/')
+                    download_url='http://download.opensuse.org/ports/i586/tumbleweed/iso/',
+                    openqa_group='openSUSE Tumbleweed Legacy x86', openqa_version='Tumbleweed', openqa_groupid=75)
         fetcher.add('openSUSE:Factory:PowerPC', nick='Power',
                     download_url='http://download.opensuse.org/ports/ppc/tumbleweed/iso/',
                     openqa_group='openSUSE Tumbleweed PowerPC', openqa_version='Tumbleweed', openqa_groupid=4)
