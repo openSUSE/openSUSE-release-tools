@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# vim:sw=4:ts=4:et:
 #
 # The script is executed periodically by cronjob
 # as part of ~mirror/bin/publish_factory_leap wrapper on pontifex
@@ -35,22 +36,22 @@ extra_repos=("source" "debug")
 isodir="iso"
 
 get_version() {
-	exit 1
+  exit 1
 }
 get_iso() {
-	exit 1
+  exit 1
 }
 get_iso_link() {
-	exit 1
+  exit 1
 }
 get_diff_url() {
-	exit 1
+  exit 1
 }
 get_mark_published_url() {
-	exit 1
+  exit 1
 }
 get_changes_filename() {
-	exit 1
+  exit 1
 }
 
 # --dry and --cleanup should not be passed to rsync through $@
@@ -89,26 +90,26 @@ stage="/srv/ftp-stage/pub/opensuse/$path"
 dest="/srv/ftp/pub/opensuse/$path"
 
 if [ ! -e "$stage" -o ! -e "$dest" ]; then
-	echo "stage ($stage) and/or dest ($dest) doesn't exist" >&2
-	exit 1
+  echo "stage ($stage) and/or dest ($dest) doesn't exist" >&2
+  exit 1
 fi
 
 if [ -n "$do_cleanup" ]; then
-	# find newest delete log of that day
-	deletelog=$(ls -1tr ${deletelog%/*}/*-deletes.log | tail -1)
-	test -n "$deletelog" || exit 1
-	(
-	df -h /srv
-	for i in $(awk '/\*deleting   .*/ { print $2}' $deletelog ); do
-		if [ -e "$stage/$i" ]; then
-			echo "WARNING: $i still exist in stage, not deleting"
-		else
-			$dryrun rm -rvf "$dest/$i"
-		fi
-	done
-	df -h /srv
-	) > $deletelog-deleted
-	exit 0
+  # find newest delete log of that day
+  deletelog=$(ls -1tr ${deletelog%/*}/*-deletes.log | tail -1)
+  test -n "$deletelog" || exit 1
+  (
+  df -h /srv
+  for i in $(awk '/\*deleting   .*/ { print $2}' $deletelog ); do
+    if [ -e "$stage/$i" ]; then
+      echo "WARNING: $i still exist in stage, not deleting"
+    else
+      $dryrun rm -rvf "$dest/$i"
+    fi
+  done
+  df -h /srv
+  ) > $deletelog-deleted
+  exit 0
 fi
 
 mkdir -p "${synclog%/*}" "${deletelog%/*}"
@@ -122,19 +123,19 @@ fi
 version=
 do_sync_isos=1
 for flavor in "${flavors[@]}"; do
-	get_version
+  get_version
 
-	get_iso
+  get_iso
 
-	get_diff_url
-	get_changes_filename
-	if [ -z "$force" -a -e "$dest/$isodir/$iso" ]; then
-		if [ -t 1 ]; then # only log to tty
-			echo "$iso already published, skipping isos"
-		fi
-		do_sync_isos=0
-		break
-	fi
+  get_diff_url
+  get_changes_filename
+  if [ -z "$force" -a -e "$dest/$isodir/$iso" ]; then
+    if [ -t 1 ]; then # only log to tty
+      echo "$iso already published, skipping isos"
+    fi
+    do_sync_isos=0
+    break
+  fi
         if [ -n "$changes" ]; then
                 if [ -d "$stage/$changes" ]; then
                        # new way, use the obs generated changelogs
@@ -157,65 +158,65 @@ for flavor in "${flavors[@]}"; do
                        fi
                 fi
         fi
-	if [ ! -e "$stage/$isodir/$iso" ]; then
-		echo "$flavor with $version doesn't exist, skipping isos" | tee -a $synclog
-		do_sync_isos=0
-		break
-	else
-		get_iso_link
-		if [ "`readlink $link`" != "$iso" ]; then
-			$dryrun ln -sf "$iso" "$link"
-			$dryrun ln -sf "$iso.sha256" "$link.sha256"
-		fi
-		if [ -z "$force" ]; then
-			if test `date -d "$PUBLISH_DELAY hours ago" +%s` -lt `stat -c "%Z" "$stage/$isodir/$iso"`; then
-				echo "$iso was created less than $PUBLISH_DELAY hours ago, delay publishing" | tee -a $synclog
-				do_sync_isos=0
-			fi
-		fi
-	fi
+  if [ ! -e "$stage/$isodir/$iso" ]; then
+    echo "$flavor with $version doesn't exist, skipping isos" | tee -a $synclog
+    do_sync_isos=0
+    break
+  else
+    get_iso_link
+    if [ "`readlink $link`" != "$iso" ]; then
+      $dryrun ln -sf "$iso" "$link"
+      $dryrun ln -sf "$iso.sha256" "$link.sha256"
+    fi
+    if [ -z "$force" ]; then
+      if test `date -d "$PUBLISH_DELAY hours ago" +%s` -lt `stat -c "%Z" "$stage/$isodir/$iso"`; then
+        echo "$iso was created less than $PUBLISH_DELAY hours ago, delay publishing" | tee -a $synclog
+        do_sync_isos=0
+      fi
+    fi
+  fi
 done
 
 # produce directories stamped with build number
 for r in "${repos[@]/#//repo/}"; do
-	for i in /suse/setup /boot; do
-		d="$stage$r$i"
-		[ -d "$d" ] || continue
-		if [ -e "$stage$r/media.1/build" ]; then
-			read build < "$stage$r/media.1/build"
-			stamp="${build#*Build}"
-			if [ "$build" = "$stamp" ]; then
-				echo "ERROR: build id not parsable: $build. not syncing"
-				do_sync_isos=0
-				break 2
-			fi
-		elif [ -e "$stage$r/media.1/media" ]; then
-			{ read dummy; read build; } < "$stage$r/media.1/media"
-			stamp="${build#*Build}"
-			if [ "$build" = "$stamp" ]; then
-				echo "ERROR: build id not parsable: $build. not syncing"
-				do_sync_isos=0
-				break 2
-			fi
-		else
-			echo "ERROR: repo $r is missing build id, not syncing"
-			do_sync_isos=0
-			break 2
-		fi
-		stamped="$stage$r${i%/*}/$stamp-${i##*/}"
-		if [ ! -L "$d" ]; then
-			$dryrun mv "$d" "$stamped"
-			$dryrun ln -s "${stamped##*/}" "$d"
-			echo "current $stamp" | $dryrun tee $stage/$r/.current.txt
-		fi
-	done
+  for i in /suse/setup /boot; do
+    d="$stage$r$i"
+    [ -d "$d" ] || continue
+    if [ -e "$stage$r/media.1/build" ]; then
+      read build < "$stage$r/media.1/build"
+      stamp="${build#*Build}"
+      if [ "$build" = "$stamp" ]; then
+        echo "ERROR: build id not parsable: $build. not syncing"
+        do_sync_isos=0
+        break 2
+      fi
+    elif [ -e "$stage$r/media.1/media" ]; then
+      { read dummy; read build; } < "$stage$r/media.1/media"
+      stamp="${build#*Build}"
+      if [ "$build" = "$stamp" ]; then
+        echo "ERROR: build id not parsable: $build. not syncing"
+        do_sync_isos=0
+        break 2
+      fi
+    else
+      echo "ERROR: repo $r is missing build id, not syncing"
+      do_sync_isos=0
+      break 2
+    fi
+    stamped="$stage$r${i%/*}/$stamp-${i##*/}"
+    if [ ! -L "$d" ]; then
+      $dryrun mv "$d" "$stamped"
+      $dryrun ln -s "${stamped##*/}" "$d"
+      echo "current $stamp" | $dryrun tee $stage/$r/.current.txt
+    fi
+  done
 done
 
 if [ "$do_sync_isos" = 0 ]; then
-	if [ -t 1 ]; then
-		echo "nothing to do"
-	fi
-	exit 0
+  if [ -t 1 ]; then
+    echo "nothing to do"
+  fi
+  exit 0
 fi
 
 # scan mirrors before making the files visible
@@ -223,13 +224,13 @@ fi
 
 TODO=()
 #if [ "$do_sync_isos" = 1 ]; then
-	TODO+=(iso)
-	echo "current $version" | $dryrun tee $stage/$isodir/.current.txt
+  TODO+=(iso)
+  echo "current $version" | $dryrun tee $stage/$isodir/.current.txt
 #fi
 
 if [ -n "$repos" ]; then
-	TODO+=(repo)
-	TODO+=(DELETE_repo)
+  TODO+=(repo)
+  TODO+=(DELETE_repo)
 fi
 
 # a single grep -v regexp performs awfully bad (needs at least 30x so long)
@@ -245,7 +246,7 @@ for i in "${TODO[@]}"; do
     iso) # ISOs we sync with delete
        log=$synclog
        dry_delete="--delete-after"
-	i="$isodir"
+  i="$isodir"
        ;;
     *)
         log=$synclog
@@ -264,16 +265,16 @@ done
 
 # also sync source and debug, not bind mounted for Leap
 for r in "${extra_repos[@]}"; do
-	stage="/srv/ftp-stage/pub/opensuse/$r/$path"
-	dest="/srv/ftp/pub/opensuse/$r/$path"
-	$dryrun rsync -avhiH $stage/ --link-dest=$stage \
+  stage="/srv/ftp-stage/pub/opensuse/$r/$path"
+  dest="/srv/ftp/pub/opensuse/$r/$path"
+  $dryrun rsync -avhiH $stage/ --link-dest=$stage \
                   $dest --delete-after "$@" | tee -a log
 done
 
 # mark published
 get_mark_published_url
 if [ -n "$url" ]; then
-	$dryrun curl -X POST -F "version=$version" "$url"
+  $dryrun curl -X POST -F "version=$version" "$url"
 fi
 
 #echo creating hashes
