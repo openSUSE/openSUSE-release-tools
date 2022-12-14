@@ -71,14 +71,18 @@ class TestCase(unittest.TestCase):
         with open(OSCRC, 'w+') as f:
             f.write('\n'.join([
                 '[general]',
-                'apiurl = http://api:3000',
+                'apiurl = {}'.format(APIURL),
                 'http_debug = false',
                 'debug = false',
                 'cookiejar = {}'.format(OSCCOOKIEJAR),
-                '[http://api:3000]',
+                '[{}]'.format(APIURL),
                 'user = {}'.format(userid),
                 'pass = opensuse',
                 'email = {}@example.com'.format(userid),
+                # allow plain http even if it is insecure; we're testing after all
+                'allow_http = 1',
+                # disable cert checking to allow self-signed certs
+                'sslcertck = 0',
                 '',
             ]))
 
@@ -87,8 +91,7 @@ class TestCase(unittest.TestCase):
         self.users.append(userid)
         self.oscrc(userid)
 
-        # Rather than modify userid and email, just re-parse entire config and
-        # reset authentication by clearing opener to avoid edge-cases.
+        # Rather than modify userid and email, just re-parse entire config
         self.oscParse()
 
     def osc_user_pop(self):
@@ -96,16 +99,12 @@ class TestCase(unittest.TestCase):
         self.osc_user(self.users.pop())
 
     def oscParse(self):
-        # Otherwise, will stick to first user for a given apiurl.
-        conf._build_opener.last_opener = (None, None)
-
         # Otherwise, will not re-parse same config file.
         if 'cp' in conf.get_configParser.__dict__:
             del conf.get_configParser.cp
 
         conf.get_config(override_conffile=OSCRC,
-                        override_no_keyring=True,
-                        override_no_gnome_keyring=True)
+                        override_no_keyring=True)
         os.environ['OSC_CONFIG'] = OSCRC
         os.environ['OSRT_DISABLE_CACHE'] = 'true'
 
@@ -310,8 +309,7 @@ class StagingWorkflow(ABC):
         memoize_session_reset()
 
         osc.core.conf.get_config(override_conffile=oscrc,
-                                 override_no_keyring=True,
-                                 override_no_gnome_keyring=True)
+                                 override_no_keyring=True)
         os.environ['OSC_CONFIG'] = oscrc
 
         if os.environ.get('OSC_DEBUG'):

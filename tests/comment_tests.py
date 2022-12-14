@@ -166,7 +166,7 @@ class TestCommentOBS(OBSLocal.TestCase):
         self.assertTrue(comment_count >= len(users))
 
         self.api.delete_from_where_user(users[0], project_name=PROJECT)
-        self.assertTrue(len(self.api.get_comments(project_name=PROJECT)) == comment_count - 1)
+        self.assertEqual(len(self.api.get_comments(project_name=PROJECT)), comment_count - 1)
 
         self.api.delete_from(project_name=PROJECT)
         self.assertFalse(len(self.api.get_comments(project_name=PROJECT)))
