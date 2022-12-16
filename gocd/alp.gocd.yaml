@@ -17,24 +17,28 @@ pipelines:
           type: manual
         jobs:
           SUSE_ALP_target:
+            timeout: 60
             resources:
             - repo-checker
             tasks:
             - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP -s target --only-release-packages --force
             - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP -s target
           SUSE_ALP_PowerPC:
+            timeout: 60
             resources:
             - repo-checker
             tasks:
             - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP:PowerPC -s target --only-release-packages --force
             - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP:PowerPC -s target
           SUSE_ALP_zSystems:
+            timeout: 60
             resources:
             - repo-checker
             tasks:
             - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP:zSystems -s target --only-release-packages --force
             - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP:zSystems -s target
           SUSE_ALP_RISCV:
+            timeout: 60
             resources:
             - repo-checker
             tasks:
