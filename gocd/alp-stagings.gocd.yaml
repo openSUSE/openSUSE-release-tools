@@ -61,7 +61,7 @@ pipelines:
             tasks:
               - script: |-
                   ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:ALP -s $STAGING_PROJECT
-  
+
     - Update.000product:
         resources:
           - repo-checker
@@ -78,11 +78,11 @@ pipelines:
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
 
   ALP.Staging.B:
     environment_variables:
@@ -118,7 +118,7 @@ pipelines:
             tasks:
               - script: |-
                   ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:ALP -s $STAGING_PROJECT
-  
+
     - Update.000product:
         resources:
           - repo-checker
@@ -135,8 +135,8 @@ pipelines:
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"

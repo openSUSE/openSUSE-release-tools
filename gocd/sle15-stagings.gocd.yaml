@@ -21,78 +21,78 @@ pipelines:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP5:GA:Staging:A
-                 --only-release-packages --force
+                  --staging SUSE:SLE-15-SP5:GA:Staging:A
+                  --only-release-packages --force
           SLE.15.SP5.Staging.B:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP5:GA:Staging:B
-                 --only-release-packages --force
+                  --staging SUSE:SLE-15-SP5:GA:Staging:B
+                  --only-release-packages --force
           SLE.15.SP5.Staging.C:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP5:GA:Staging:C
-                 --only-release-packages --force
+                  --staging SUSE:SLE-15-SP5:GA:Staging:C
+                  --only-release-packages --force
           SLE.15.SP5.Staging.D:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP5:GA:Staging:D
-                 --only-release-packages --force
+                  --staging SUSE:SLE-15-SP5:GA:Staging:D
+                  --only-release-packages --force
           SLE.15.SP5.Staging.E:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP5:GA:Staging:E
-                 --only-release-packages --force
+                  --staging SUSE:SLE-15-SP5:GA:Staging:E
+                  --only-release-packages --force
           SLE.15.SP5.Staging.F:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP5:GA:Staging:F
-                 --only-release-packages --force
+                  --staging SUSE:SLE-15-SP5:GA:Staging:F
+                  --only-release-packages --force
           SLE.15.SP5.Staging.G:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP5:GA:Staging:G
-                 --only-release-packages --force
+                  --staging SUSE:SLE-15-SP5:GA:Staging:G
+                  --only-release-packages --force
           SLE.15.SP5.Staging.H:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP5:GA:Staging:H
-                 --only-release-packages --force
+                  --staging SUSE:SLE-15-SP5:GA:Staging:H
+                  --only-release-packages --force
           SLE.15.SP5.Staging.S:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP5:GA:Staging:S
-                 --only-release-packages --force
+                  --staging SUSE:SLE-15-SP5:GA:Staging:S
+                  --only-release-packages --force
           SLE.15.SP5.Staging.V:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP5:GA:Staging:V
-                 --only-release-packages --force
+                  --staging SUSE:SLE-15-SP5:GA:Staging:V
+                  --only-release-packages --force
           SLE.15.SP5.Staging.Y:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                 --staging SUSE:SLE-15-SP5:GA:Staging:Y
-                 --only-release-packages --force
+                  --staging SUSE:SLE-15-SP5:GA:Staging:Y
+                  --only-release-packages --force
 
   SLE15.SP5.Staging.A:
     environment_variables:
@@ -134,7 +134,7 @@ pipelines:
             tasks:
               - script: |-
                   ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP5:GA -s $STAGING_PROJECT
-  
+
     - Update.000product:
         resources:
           - repo-checker
@@ -151,16 +151,16 @@ pipelines:
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   SLE15.SP5.Staging.B:
     environment_variables:
@@ -202,7 +202,7 @@ pipelines:
             tasks:
               - script: |-
                   ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP5:GA -s $STAGING_PROJECT
-  
+
     - Update.000product:
         resources:
           - repo-checker
@@ -219,16 +219,16 @@ pipelines:
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   SLE15.SP5.Staging.C:
     environment_variables:
@@ -270,7 +270,7 @@ pipelines:
             tasks:
               - script: |-
                   ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP5:GA -s $STAGING_PROJECT
-  
+
     - Update.000product:
         resources:
           - repo-checker
@@ -287,16 +287,16 @@ pipelines:
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   SLE15.SP5.Staging.D:
     environment_variables:
@@ -338,7 +338,7 @@ pipelines:
             tasks:
               - script: |-
                   ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP5:GA -s $STAGING_PROJECT
-  
+
     - Update.000product:
         resources:
           - repo-checker
@@ -355,16 +355,16 @@ pipelines:
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   SLE15.SP5.Staging.E:
     environment_variables:
@@ -406,7 +406,7 @@ pipelines:
             tasks:
               - script: |-
                   ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP5:GA -s $STAGING_PROJECT
-  
+
     - Update.000product:
         resources:
           - repo-checker
@@ -423,16 +423,16 @@ pipelines:
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   SLE15.SP5.Staging.F:
     environment_variables:
@@ -474,7 +474,7 @@ pipelines:
             tasks:
               - script: |-
                   ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP5:GA -s $STAGING_PROJECT
-  
+
     - Update.000product:
         resources:
           - repo-checker
@@ -491,16 +491,16 @@ pipelines:
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   SLE15.SP5.Staging.G:
     environment_variables:
@@ -542,7 +542,7 @@ pipelines:
             tasks:
               - script: |-
                   ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP5:GA -s $STAGING_PROJECT
-  
+
     - Update.000product:
         resources:
           - repo-checker
@@ -559,16 +559,16 @@ pipelines:
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   SLE15.SP5.Staging.H:
     environment_variables:
@@ -610,7 +610,7 @@ pipelines:
             tasks:
               - script: |-
                   ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP5:GA -s $STAGING_PROJECT
-  
+
     - Update.000product:
         resources:
           - repo-checker
@@ -627,16 +627,16 @@ pipelines:
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   SLE15.SP5.Staging.S:
     environment_variables:
@@ -678,7 +678,7 @@ pipelines:
             tasks:
               - script: |-
                   ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP5:GA -s $STAGING_PROJECT
-  
+
     - Update.000product:
         resources:
           - repo-checker
@@ -695,16 +695,16 @@ pipelines:
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   SLE15.SP5.Staging.V:
     environment_variables:
@@ -746,7 +746,7 @@ pipelines:
             tasks:
               - script: |-
                   ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP5:GA -s $STAGING_PROJECT
-  
+
     - Update.000product:
         resources:
           - repo-checker
@@ -763,16 +763,16 @@ pipelines:
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   SLE15.SP5.Staging.Y:
     environment_variables:
@@ -814,7 +814,7 @@ pipelines:
             tasks:
               - script: |-
                   ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLE-15-SP5:GA -s $STAGING_PROJECT
-  
+
     - Update.000product:
         resources:
           - repo-checker
@@ -831,13 +831,13 @@ pipelines:
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success

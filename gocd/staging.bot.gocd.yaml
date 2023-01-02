@@ -44,19 +44,19 @@ pipelines:
             - staging-bot
             tasks:
             - script: |-
-               set -e
-               tempdir=$(mktemp -d)
-               mkdir -p $tempdir/.osc-plugins
-               ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
-               ln -s $PWD/osclib $tempdir/.osc-plugins
-               export HOME=$tempdir
+                set -e
+                tempdir=$(mktemp -d)
+                mkdir -p $tempdir/.osc-plugins
+                ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
+                ln -s $PWD/osclib $tempdir/.osc-plugins
+                export HOME=$tempdir
 
-               osc -A https://api.opensuse.org staging -p openSUSE:Factory rebuild
-               osc -A https://api.opensuse.org staging -p openSUSE:Factory list --supersede
-               osc -A https://api.opensuse.org staging -p openSUSE:Factory adi
-               osc -A https://api.opensuse.org staging -p openSUSE:Factory unselect --cleanup
-               osc -A https://api.opensuse.org staging -p openSUSE:Factory repair --cleanup
-               rm -rf $tempdir
+                osc -A https://api.opensuse.org staging -p openSUSE:Factory rebuild
+                osc -A https://api.opensuse.org staging -p openSUSE:Factory list --supersede
+                osc -A https://api.opensuse.org staging -p openSUSE:Factory adi
+                osc -A https://api.opensuse.org staging -p openSUSE:Factory unselect --cleanup
+                osc -A https://api.opensuse.org staging -p openSUSE:Factory repair --cleanup
+                rm -rf $tempdir
   AdiChecker.Factory.NonFree:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
@@ -101,19 +101,19 @@ pipelines:
             - staging-bot
             tasks:
             - script: |-
-               set -e
-               tempdir=$(mktemp -d)
-               mkdir -p $tempdir/.osc-plugins
-               ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
-               ln -s $PWD/osclib $tempdir/.osc-plugins
-               export HOME=$tempdir
+                set -e
+                tempdir=$(mktemp -d)
+                mkdir -p $tempdir/.osc-plugins
+                ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
+                ln -s $PWD/osclib $tempdir/.osc-plugins
+                export HOME=$tempdir
 
-               osc -A https://api.opensuse.org staging -p openSUSE:Factory:NonFree rebuild
-               osc -A https://api.opensuse.org staging -p openSUSE:Factory:NonFree list --supersede
-               osc -A https://api.opensuse.org staging -p openSUSE:Factory:NonFree adi
-               osc -A https://api.opensuse.org staging -p openSUSE:Factory:NonFree unselect --cleanup
-               osc -A https://api.opensuse.org staging -p openSUSE:Factory:NonFree repair --cleanup
-               rm -rf $tempdir
+                osc -A https://api.opensuse.org staging -p openSUSE:Factory:NonFree rebuild
+                osc -A https://api.opensuse.org staging -p openSUSE:Factory:NonFree list --supersede
+                osc -A https://api.opensuse.org staging -p openSUSE:Factory:NonFree adi
+                osc -A https://api.opensuse.org staging -p openSUSE:Factory:NonFree unselect --cleanup
+                osc -A https://api.opensuse.org staging -p openSUSE:Factory:NonFree repair --cleanup
+                rm -rf $tempdir
   AdiChecker.Backports.SLE-15-SP5:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
@@ -158,19 +158,19 @@ pipelines:
             - staging-bot
             tasks:
             - script: |-
-               set -e
-               tempdir=$(mktemp -d)
-               mkdir -p $tempdir/.osc-plugins
-               ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
-               ln -s $PWD/osclib $tempdir/.osc-plugins
-               export HOME=$tempdir
+                set -e
+                tempdir=$(mktemp -d)
+                mkdir -p $tempdir/.osc-plugins
+                ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
+                ln -s $PWD/osclib $tempdir/.osc-plugins
+                export HOME=$tempdir
 
-               osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP5 rebuild
-               osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP5 list --supersede
-               osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP5 adi
-               osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP5 unselect --cleanup
-               osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP5 repair --cleanup
-               rm -rf $tempdir
+                osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP5 rebuild
+                osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP5 list --supersede
+                osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP5 adi
+                osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP5 unselect --cleanup
+                osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP5 repair --cleanup
+                rm -rf $tempdir
   AdiChecker.Leap.15.5:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
@@ -215,16 +215,16 @@ pipelines:
             - staging-bot
             tasks:
             - script: |-
-               set -e
-               tempdir=$(mktemp -d)
-               mkdir -p $tempdir/.osc-plugins
-               ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
-               ln -s $PWD/osclib $tempdir/.osc-plugins
-               export HOME=$tempdir
+                set -e
+                tempdir=$(mktemp -d)
+                mkdir -p $tempdir/.osc-plugins
+                ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
+                ln -s $PWD/osclib $tempdir/.osc-plugins
+                export HOME=$tempdir
 
-               osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.5 rebuild
-               osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.5 list --supersede
-               osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.5 adi
-               osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.5 unselect --cleanup
-               osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.5 repair --cleanup
-               rm -rf $tempdir
+                osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.5 rebuild
+                osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.5 list --supersede
+                osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.5 adi
+                osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.5 unselect --cleanup
+                osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.5 repair --cleanup
+                rm -rf $tempdir

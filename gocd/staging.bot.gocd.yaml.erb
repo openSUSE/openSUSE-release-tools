@@ -46,17 +46,17 @@ pipelines:
             - staging-bot
             tasks:
             - script: |-
-               set -e
-               tempdir=$(mktemp -d)
-               mkdir -p $tempdir/.osc-plugins
-               ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
-               ln -s $PWD/osclib $tempdir/.osc-plugins
-               export HOME=$tempdir
+                set -e
+                tempdir=$(mktemp -d)
+                mkdir -p $tempdir/.osc-plugins
+                ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
+                ln -s $PWD/osclib $tempdir/.osc-plugins
+                export HOME=$tempdir
 
-               osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> rebuild
-               osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> list --supersede
-               osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> adi
-               osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> unselect --cleanup
-               osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> repair --cleanup
-               rm -rf $tempdir
+                osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> rebuild
+                osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> list --supersede
+                osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> adi
+                osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> unselect --cleanup
+                osc -A https://api.opensuse.org staging -p openSUSE:<%= project %> repair --cleanup
+                rm -rf $tempdir
 <% end -%>

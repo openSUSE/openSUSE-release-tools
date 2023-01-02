@@ -18,12 +18,12 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
-             set -e
-             tempdir=$(mktemp -d)
-             mkdir -p $tempdir/.osc-plugins
-             ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
-             ln -s $PWD/osclib $tempdir/.osc-plugins
-             export HOME=$tempdir
+              set -e
+              tempdir=$(mktemp -d)
+              mkdir -p $tempdir/.osc-plugins
+              ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
+              ln -s $PWD/osclib $tempdir/.osc-plugins
+              export HOME=$tempdir
 
-             osc -A https://api.opensuse.org staging -p openSUSE:Factory unignore --cleanup
-             rm -r $tempdir
+              osc -A https://api.opensuse.org staging -p openSUSE:Factory unignore --cleanup
+              rm -r $tempdir
