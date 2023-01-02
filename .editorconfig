@@ -27,3 +27,18 @@ indent_style = tab
 [**.{pl,py}]
 indent_style = space
 indent_size = 4
+
+[staging_templates/create_new_staging]
+indent_style = tab
+
+[publish_distro_conf/*.config]
+indent_style = tab
+
+[osc-staging-workflow.dot]
+indent_size = 3
+
+[factory-package-news/rsyslog/factory-package-news.conf]
+indent_style = tab
+
+[data/repos.json]
+indent_size = 3

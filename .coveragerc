@@ -1,4 +1,4 @@
 [report]
 omit =
-     */site-packages/*
-     tests/*.py
+    */site-packages/*
+    tests/*.py

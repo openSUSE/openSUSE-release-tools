@@ -18,7 +18,7 @@ ci_node=$1
 
 for file in tests/*_tests.py; do
   if test -n "$ci_node"; then
-	  if test "$ci_node" == "Rest"; then
+    if test "$ci_node" == "Rest"; then
       if grep -q '# CI-Node' $file; then
         echo "Skipping $file in 'Rest'"
         continue
@@ -27,7 +27,7 @@ for file in tests/*_tests.py; do
       if ! grep -q "# CI-Node: $ci_node" $file; then
         continue
       fi
-	  fi
+    fi
   fi
   if ! test -f /code/.without-coverage; then
     COVER_ARGS="--cov=. --cov-append --cov-report=xml"

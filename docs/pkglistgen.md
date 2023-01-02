@@ -12,45 +12,52 @@ The generated release spec files are split into 000release-packages to avoid nee
 The package list generator reads several files. The most important are group*.yml (traditionally only groups.yml) within 000package-groups.
 
 ### supportstatus.txt
+
 The file lists the packages and their support level. It's only necessary to list packages here that have a different level than the default level specificied in the groups. The format is plain text: <package name> <level> - the level is handed over 1:1 to KIWI file. Currently used values are: unsupported, l2 and l3
 
 ### group*.yml
+
 The file is a list of package lists and the special hash 'OUTPUT'. OUTPUT contains an entry for every group file that needs to be written out. The group name of it needs to exist as package list as well. OUTPUT also contains flags for the groups.
 
 We currently support:
- * default-support
- Sets the support level in case there is no explicitly entry in [supportstatus.txt](#supportstatustxt), defaults to 'unsupported'
- * recommends
- If the solver should take recommends into account when solving the package list, defaults to false.
- * includes
- Adds package lists to the group to be solved. Allows to organize different topics into the same group. By default there are no package lists added - the package list with the group name is always there.
- * excludes
- Removes all packages from the __solved__ groups listed. Used to build addons to main products.
- * conflicts
- Sets package groups not to be part of the same product. Influences the [overlap calculation](#overlap-calculation) only.
+
+* **default-support**
+Sets the support level in case there is no explicitly entry in [supportstatus.txt](#supportstatustxt), defaults to 'unsupported'
+
+* **recommends**
+If the solver should take recommends into account when solving the package list, defaults to false.
+
+* **includes**
+Adds package lists to the group to be solved. Allows to organize different topics into the same group. By default there are no package lists added - the package list with the group name is always there.
+
+* **excludes**
+Removes all packages from the __solved__ groups listed. Used to build addons to main products.
+
+* **conflicts**
+Sets package groups not to be part of the same product. Influences the [overlap calculation](#overlap-calculation) only.
 
 Be aware that group names must not contain a '-'.
 
 You can also adapt the solving on a package level by putting a hash into the package list. Normally the package name is a string, in case it's a hash the key needs to be the package name and the value is a list of following modifiers:
 
- * recommended
- Evaluate also 'Recommends' in package to determine dependencies. Otherwise only 'required' are considered. Used mainly for patterns in SLE. It can not be combined with platforms, For architecture specific recommends, use patterns.
- * suggested
- Evaluate also 'Suggests' in package to determine dependencies. This implies recommended
- * architecture (e.g. x86_64,s390x,ppc64le,aarch64)
- Makes the entry specific to the listed architectures. Will get ignored if used in combination with 'recommended'.
- * locked
- Do not put the package into this group. Used to *force* certain packages into other modules
- * silent
- Use this package for dependency solving of groups "on top", but do not output the package for this group. Mainly to mark the product to use by adding release packages. Use with care, this breaks dependency chains!
- * required
- If the package is missing or is uninstallable, don't leave a comment but put the error as package entry for OBS to create unresolvable error to avoid building a DVD
+* **recommended**
+Evaluate also 'Recommends' in package to determine dependencies. Otherwise only 'required' are considered. Used mainly for patterns in SLE. It can not be combined with platforms, For architecture specific recommends, use patterns.
+* **suggested**
+Evaluate also 'Suggests' in package to determine dependencies. This implies recommended
+* **architecture (e.g. x86_64,s390x,ppc64le,aarch64)**
+Makes the entry specific to the listed architectures. Will get ignored if used in combination with 'recommended'.
+* **locked**
+Do not put the package into this group. Used to *force* certain packages into other modules
+* **silent**
+Use this package for dependency solving of groups "on top", but do not output the package for this group. Mainly to mark the product to use by adding release packages. Use with care, this breaks dependency chains!
+* **required**
+If the package is missing or is uninstallable, don't leave a comment but put the error as package entry for OBS to create unresolvable error to avoid building a DVD
 
 Note that you can write yaml lists in 2 ways. You can put the modifier lists as multiple lines starting with -, but it's recommended to put them as [M1,M2] behind the package name. See the difference between pkg4 and pkg5 in the example.
 
-#### Example:
+#### Example
 
-```
+```yaml
 OUTPUT:
   - group1:
     includes:
@@ -88,9 +95,11 @@ list2:
 ```
 
 ## Overlap calculation
- TODO
+
+TODO
 
 ## Handling in staging workflow
+
 If 000package-groups contains a file named summary-staging.txt, the bot will trigger a diff mode on staging projects.
 It will create an equal summary-staging.txt in 000product and create a comment with a human readable diff in the staging
 project. This comment can be replied to. If the reply starts with 'approve', staging accept will apply the diff to this

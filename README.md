@@ -142,7 +142,7 @@ def test_basic(self):
     # Keep the workflow in local scope so that ending the test case will destroy it.
     # Destroying the workflow will also delete all created projects and packages. The
     # created workflow has a target project, but most of the test assets need to be created
-    # as needed 
+    # as needed
     wf = OBSLocal.FactoryWorkflow()
     staging = wf.create_staging('A', freeze=True)
     wf.create_submit_request('devel:wine', 'wine')

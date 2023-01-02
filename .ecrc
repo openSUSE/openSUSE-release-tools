@@ -1,8 +1,8 @@
 {
   "Verbose": false,
   "IgnoreDefaults": false,
-  "Exclude": ["tests/fixtures", "LICENSE"],
-  "SpacesAfterTabs": false,
+  "Exclude": ["tests/fixtures", "LICENSE", "\\.py$", "publish_distro", "bs_copy"],
+  "SpacesAfterTabs": true,
   "Disable": {
     "EndOfLine": false,
     "Indentation": false,
