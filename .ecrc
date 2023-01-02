@@ -1,0 +1,14 @@
+{
+  "Verbose": false,
+  "IgnoreDefaults": false,
+  "Exclude": ["tests/fixtures", "LICENSE"],
+  "SpacesAfterTabs": false,
+  "Disable": {
+    "EndOfLine": false,
+    "Indentation": false,
+    "IndentSize": false,
+    "InsertFinalNewline": false,
+    "TrimTrailingWhitespace": false,
+    "MaxLineLength": false
+  }
+}
