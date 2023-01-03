@@ -13,13 +13,13 @@ for file in *.erb; do
 done
 
 grep group: *.yaml | cut -d: -f3 | sort -u | while read group; do
-   case $group in
-	   BCI|Factory|Leap|Admin|LEO|MicroOS|Monitors|openSUSE.Checkers|SLE15.Stagings|SLE15.Target|SLE.Checkers)
-		   ;;
-           *)
-		   echo "Do not create new groups without being admin and knowing the consequences - found $group"
-		   exit 1
-   esac
+  case $group in
+    BCI|Factory|Leap|Admin|LEO|MicroOS|Monitors|openSUSE.Checkers|SLE15.Stagings|SLE15.Target|SLE.Checkers)
+    ;;
+  *)
+    echo "Do not create new groups without being admin and knowing the consequences - found $group"
+    exit 1
+  esac
 done
 
 for file in *.gocd.yaml; do

@@ -20,113 +20,113 @@ pipelines:
                 - repo-checker
               tasks:
                 - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                   --staging openSUSE:Factory:Staging:A
-                   --only-release-packages --force
+                    --staging openSUSE:Factory:Staging:A
+                    --only-release-packages --force
             "Staging.B":
               resources:
                 - repo-checker
               tasks:
                 - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                   --staging openSUSE:Factory:Staging:B
-                   --only-release-packages --force
+                    --staging openSUSE:Factory:Staging:B
+                    --only-release-packages --force
             "Staging.C":
               resources:
                 - repo-checker
               tasks:
                 - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                   --staging openSUSE:Factory:Staging:C
-                   --only-release-packages --force
+                    --staging openSUSE:Factory:Staging:C
+                    --only-release-packages --force
             "Staging.D":
               resources:
                 - repo-checker
               tasks:
                 - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                   --staging openSUSE:Factory:Staging:D
-                   --only-release-packages --force
+                    --staging openSUSE:Factory:Staging:D
+                    --only-release-packages --force
             "Staging.E":
               resources:
                 - repo-checker
               tasks:
                 - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                   --staging openSUSE:Factory:Staging:E
-                   --only-release-packages --force
+                    --staging openSUSE:Factory:Staging:E
+                    --only-release-packages --force
             "Staging.F":
               resources:
                 - repo-checker
               tasks:
                 - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                   --staging openSUSE:Factory:Staging:F
-                   --only-release-packages --force
+                    --staging openSUSE:Factory:Staging:F
+                    --only-release-packages --force
             "Staging.G":
               resources:
                 - repo-checker
               tasks:
                 - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                   --staging openSUSE:Factory:Staging:G
-                   --only-release-packages --force
+                    --staging openSUSE:Factory:Staging:G
+                    --only-release-packages --force
             "Staging.H":
               resources:
                 - repo-checker
               tasks:
                 - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                   --staging openSUSE:Factory:Staging:H
-                   --only-release-packages --force
+                    --staging openSUSE:Factory:Staging:H
+                    --only-release-packages --force
             "Staging.I":
               resources:
                 - repo-checker
               tasks:
                 - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                   --staging openSUSE:Factory:Staging:I
-                   --only-release-packages --force
+                    --staging openSUSE:Factory:Staging:I
+                    --only-release-packages --force
             "Staging.J":
               resources:
                 - repo-checker
               tasks:
                 - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                   --staging openSUSE:Factory:Staging:J
-                   --only-release-packages --force
+                    --staging openSUSE:Factory:Staging:J
+                    --only-release-packages --force
             "Staging.K":
               resources:
                 - repo-checker
               tasks:
                 - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                   --staging openSUSE:Factory:Staging:K
-                   --only-release-packages --force
+                    --staging openSUSE:Factory:Staging:K
+                    --only-release-packages --force
             "Staging.L":
               resources:
                 - repo-checker
               tasks:
                 - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                   --staging openSUSE:Factory:Staging:L
-                   --only-release-packages --force
+                    --staging openSUSE:Factory:Staging:L
+                    --only-release-packages --force
             "Staging.M":
               resources:
                 - repo-checker
               tasks:
                 - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                   --staging openSUSE:Factory:Staging:M
-                   --only-release-packages --force
+                    --staging openSUSE:Factory:Staging:M
+                    --only-release-packages --force
             "Staging.N":
               resources:
                 - repo-checker
               tasks:
                 - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                   --staging openSUSE:Factory:Staging:N
-                   --only-release-packages --force
+                    --staging openSUSE:Factory:Staging:N
+                    --only-release-packages --force
             "Staging.O":
               resources:
                 - repo-checker
               tasks:
                 - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                   --staging openSUSE:Factory:Staging:O
-                   --only-release-packages --force
+                    --staging openSUSE:Factory:Staging:O
+                    --only-release-packages --force
             "Staging.Gcc7":
               resources:
                 - repo-checker
               tasks:
                 - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
-                   --staging openSUSE:Factory:Staging:Gcc7
-                   --only-release-packages --force
+                    --staging openSUSE:Factory:Staging:Gcc7
+                    --only-release-packages --force
 
   "Factory.Staging.A":
     environment_variables:
@@ -175,23 +175,23 @@ pipelines:
           - script: |-
               export PYTHONPATH=scripts
               if ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
-                 exit 1
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   "Factory.Staging.B":
     environment_variables:
@@ -240,23 +240,23 @@ pipelines:
           - script: |-
               export PYTHONPATH=scripts
               if ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
-                 exit 1
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   "Factory.Staging.C":
     environment_variables:
@@ -305,23 +305,23 @@ pipelines:
           - script: |-
               export PYTHONPATH=scripts
               if ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
-                 exit 1
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   "Factory.Staging.D":
     environment_variables:
@@ -370,23 +370,23 @@ pipelines:
           - script: |-
               export PYTHONPATH=scripts
               if ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
-                 exit 1
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   "Factory.Staging.E":
     environment_variables:
@@ -435,23 +435,23 @@ pipelines:
           - script: |-
               export PYTHONPATH=scripts
               if ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
-                 exit 1
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   "Factory.Staging.F":
     environment_variables:
@@ -500,23 +500,23 @@ pipelines:
           - script: |-
               export PYTHONPATH=scripts
               if ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
-                 exit 1
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   "Factory.Staging.G":
     environment_variables:
@@ -565,23 +565,23 @@ pipelines:
           - script: |-
               export PYTHONPATH=scripts
               if ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
-                 exit 1
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   "Factory.Staging.H":
     environment_variables:
@@ -630,23 +630,23 @@ pipelines:
           - script: |-
               export PYTHONPATH=scripts
               if ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
-                 exit 1
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   "Factory.Staging.I":
     environment_variables:
@@ -695,23 +695,23 @@ pipelines:
           - script: |-
               export PYTHONPATH=scripts
               if ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
-                 exit 1
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   "Factory.Staging.J":
     environment_variables:
@@ -760,23 +760,23 @@ pipelines:
           - script: |-
               export PYTHONPATH=scripts
               if ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
-                 exit 1
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   "Factory.Staging.K":
     environment_variables:
@@ -825,23 +825,23 @@ pipelines:
           - script: |-
               export PYTHONPATH=scripts
               if ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
-                 exit 1
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   "Factory.Staging.L":
     environment_variables:
@@ -890,23 +890,23 @@ pipelines:
           - script: |-
               export PYTHONPATH=scripts
               if ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
-                 exit 1
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   "Factory.Staging.M":
     environment_variables:
@@ -955,23 +955,23 @@ pipelines:
           - script: |-
               export PYTHONPATH=scripts
               if ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
-                 exit 1
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   "Factory.Staging.N":
     environment_variables:
@@ -1020,23 +1020,23 @@ pipelines:
           - script: |-
               export PYTHONPATH=scripts
               if ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
-                 exit 1
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   "Factory.Staging.O":
     environment_variables:
@@ -1085,23 +1085,23 @@ pipelines:
           - script: |-
               export PYTHONPATH=scripts
               if ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
-                 exit 1
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
   "Factory.Staging.Gcc7":
     environment_variables:
@@ -1150,21 +1150,21 @@ pipelines:
           - script: |-
               export PYTHONPATH=scripts
               if ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
-                 ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
-                 exit 1
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
               fi
 
     - Enable.images.repo:
-       resources:
-         - staging-bot
-       tasks:
-         - script: |-
-             osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
-             export PYTHONPATH=$PWD/scripts
-             while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
-               sleep 60
-             done
-             ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 

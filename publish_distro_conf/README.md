@@ -5,7 +5,7 @@
 configuration files in this repository are used by `../publish_distro`
 to publish content from ftp-stage to ftp-prod on the pontifex host
 
-Individual releases have its own section in 
+Individual releases have its own section in
 `pontifex.infra.opensuse.org:~mirror/bin/publish_factory_leap` which
 is triggered by a cronjob on a regular basis.
 

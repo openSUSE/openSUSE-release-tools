@@ -153,7 +153,7 @@ while(<FL>) {
       $prv = 0;
       next;
     }
-    s/ .*//;	# no version stuff;
+    s/ .*//;        # no version stuff;
     push @{$whatprovides{$_}}, $pkg;
     next;
   }
@@ -162,7 +162,7 @@ while(<FL>) {
       $con = 0;
       next;
     }
-    s/ .*//;	# no version stuff;
+    s/ .*//;        # no version stuff;
     s/^otherproviders\((.*)\)$/$1/;
     push @{$con{$pkg}}, $_;
     next;
@@ -172,7 +172,7 @@ while(<FL>) {
       $obs= 0;
       next;
     }
-    s/ .*//;	# no version stuff;
+    s/ .*//;        # no version stuff;
     push @{$obs{$pkg}}, $_;
     next;
   }
@@ -282,7 +282,7 @@ print STDERR "now ".@dirs." directories\n";
 
 if (@implicit_conflicts) {
   print STDERR "have implicit conflicts, calculating dir owners\n";
-  my @pdirs;	# parent dirs
+  my @pdirs;        # parent dirs
   for (@dirs) {
     next unless /^(.*\/)(.*?)\/$/;
     $pdirs[$dirs{$_}] = $dirs{$1};
@@ -322,7 +322,7 @@ if (@implicit_conflicts) {
   }
 }
 
-%files = ();	# free mem
+%files = ();        # free mem
 
 # reduce all-dir conflicts and trivial multiarch conflicts
 print STDERR "reducing trivial conflicts\n";
@@ -363,7 +363,7 @@ my %pkgneeded;
 my %tocheck;
 my %tocheck_files;
 for my $f (sort keys %filesc) {
-  my @p = sort(@{$filesc{$f}});	# normalize
+  my @p = sort(@{$filesc{$f}});        # normalize
   $filesc{$f} = [ @p ];
   s/\/.*// for @p;
   $pkgneeded{$_} = 1 for @p;
@@ -419,28 +419,28 @@ for my $tc (sort keys %tocheck) {
       next if $conflicts{"$p1\n$p2"};
       my @con;
       for my $f (@{$tocheck_files{$tc}}) {
-	my @pp = grep {s/^(?:\Q$p1\E|\Q$p2\E)\///} map {$_} @{$filesc{$f}};
-	next unless @pp;
-	# ignore if (all directories or all ghosts or all links) and all same mode;
-	my %allm = map {$_ => 1} @pp;
-	my $info = '';
-	if (keys(%allm) == 1) {
-	  my $m = (keys(%allm))[0];
-	  # all modes/flags are the same
-	  # no conflict if all dirs or all ghosts or all links
-	  next if $modes_type[$m] == 040000 || $modes_type[$m] == 0120000 || $modes_ghost[$m] == 0100;
-	} else {
-	  # don't report mode mismatches for files/symlinks that are not ghosts
-	  for my $m (keys %allm) {
-	    if (($modes_type[$m] != 0100000 && $modes_type[$m] != 0120000) || $modes_ghost[$m] == 0100) {
-	      $info = ' [mode mismatch: '.join(', ', map {beautify_mode($_)} @pp).']';
-	      last;
-	    }
-	  }
-	}
-	# got one!
-	$f =~ /^(\d+)\/(.*)/;
-	push @con, "$dirs[$1]$2$info" unless "$dirs[$1]$2" =~ m{/etc/uefi/certs/.*crt};
+        my @pp = grep {s/^(?:\Q$p1\E|\Q$p2\E)\///} map {$_} @{$filesc{$f}};
+        next unless @pp;
+        # ignore if (all directories or all ghosts or all links) and all same mode;
+        my %allm = map {$_ => 1} @pp;
+        my $info = '';
+        if (keys(%allm) == 1) {
+          my $m = (keys(%allm))[0];
+          # all modes/flags are the same
+          # no conflict if all dirs or all ghosts or all links
+          next if $modes_type[$m] == 040000 || $modes_type[$m] == 0120000 || $modes_ghost[$m] == 0100;
+        } else {
+          # don't report mode mismatches for files/symlinks that are not ghosts
+          for my $m (keys %allm) {
+            if (($modes_type[$m] != 0100000 && $modes_type[$m] != 0120000) || $modes_ghost[$m] == 0100) {
+              $info = ' [mode mismatch: '.join(', ', map {beautify_mode($_)} @pp).']';
+              last;
+            }
+          }
+        }
+        # got one!
+        $f =~ /^(\d+)\/(.*)/;
+        push @con, "$dirs[$1]$2$info" unless "$dirs[$1]$2" =~ m{/etc/uefi/certs/.*crt};
       }
       next unless @con;
       my @sp1 = split(' ', $p1);

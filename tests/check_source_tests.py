@@ -381,7 +381,8 @@ class TestCheckSource(OBSLocal.TestCase):
 
         # not declined but not accepted either
         review = self.assertReview(req_id, by_user=(self.bot_user, 'new'))
-        self.assertIn("Source URLs are not valid. Try `osc service runall download_files`.\nblowfish-1.tar.gz", review.comment)
+        self.assertIn("Source URLs are not valid. Try `osc service runall download_files`.", review.comment)
+        self.assertIn("ERROR: Failed to download \"https://example.com/blowfish-1.tar.gz\"", review.comment)
 
     @pytest.mark.usefixtures("default_config")
     def test_existing_source_urls(self):

@@ -105,22 +105,22 @@ pipelines:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
-     spec: 0 */3 * ? * *
+      spec: 0 */3 * ? * *
     environment_variables:
-     OSC_CONFIG: /home/go/config/oscrc-staging-bot
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
     materials:
-     git:
-       git: https://github.com/openSUSE/openSUSE-release-tools.git
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
     stages:
     - Run:
-       approval:
-         type: manual
-       jobs:
-         Run:
-           resources:
-           - staging-bot
-           tasks:
-           - script: ./staging-report.py --debug -A https://api.opensuse.org -p openSUSE:Factory
+        approval:
+          type: manual
+        jobs:
+          Run:
+            resources:
+            - staging-bot
+            tasks:
+            - script: ./staging-report.py --debug -A https://api.opensuse.org -p openSUSE:Factory
   OS.Origin.Manager:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
@@ -157,7 +157,7 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
-             ./openqa-maintenance.py --group qam-openqa --review-mode=accept-onpass --debug --openqa https://openqa.opensuse.org  --apiurl https://api.opensuse.org review
+              ./openqa-maintenance.py --group qam-openqa --review-mode=accept-onpass --debug --openqa https://openqa.opensuse.org  --apiurl https://api.opensuse.org review
   openSUSE.Devel.Reminder:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished

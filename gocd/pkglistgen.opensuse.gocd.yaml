@@ -92,22 +92,22 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-             - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory
+              - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory
           openSUSE_Factory_ARM:
             resources:
             - repo-checker
             tasks:
-             - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:ARM
+              - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:ARM
           openSUSE_Factory_PowerPC:
             resources:
             - repo-checker
             tasks:
-             - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:PowerPC
+              - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:PowerPC
           openSUSE_Factory_RISCV:
             resources:
             - repo-checker
             tasks:
-             - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:RISCV
+              - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:RISCV
   Pkglistgen.openSUSE_Leap_15.5:
     group: Leap
     lock_behavior: unlockWhenFinished
@@ -194,7 +194,7 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.5
+              - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.5
   Update.Repos.Leap.openSUSE_Leap_15.4_Images:
     group: Leap
     lock_behavior: unlockWhenFinished
@@ -215,7 +215,7 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.4:Images
+              - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.4:Images
   Update.Repos.Leap.openSUSE_Leap_15.3_Update_Respin:
     group: Leap
     lock_behavior: unlockWhenFinished
@@ -236,4 +236,4 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-             - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.3:Update:Respin
+              - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.3:Update:Respin

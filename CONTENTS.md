@@ -35,7 +35,7 @@ incomplete.
 
 ### Command Line Tools
 
- Usually, the executables are renamed as `osrt-NAME` (e.g., `osrt-announcer`).
+Usually, the executables are renamed as `osrt-NAME` (e.g., `osrt-announcer`).
 
 #### announcer
 

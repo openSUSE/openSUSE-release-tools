@@ -1,8 +1,8 @@
 <!doctype html>
 {% block head %}
-	<title>{% block title %}{% endblock %}</title>
-	<meta charset=utf-8>
-	<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+        <title>{% block title %}{% endblock %}</title>
+        <meta charset=utf-8>
+        <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
         <link rel="stylesheet" href="https://static.opensuse.org/themes/bento/css/style.fluid.css" media="screen" />
 {% endblock %}
 {% for message in get_flashed_messages() %}

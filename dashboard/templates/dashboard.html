@@ -74,37 +74,37 @@
         </td>
         {% endif %}
         <td>
-	  {% if project.ttm_version %}
-	    <a href="https://build.opensuse.org/package/show/{{ project.name }}/000product">{{ project.ttm_version }}</a>
-	  {% else %}
-	    n.a.
-	  {% endif %}
+        {% if project.ttm_version %}
+          <a href="https://build.opensuse.org/package/show/{{ project.name }}/000product">{{ project.ttm_version }}</a>
+        {% else %}
+          n.a.
+        {% endif %}
         </td>
         <td>
-          {% set ttm_testing = project.ttm_status.get('testing') %}
-          {% if ttm_testing %}
-	    {% if project.openqa_version %}
-	      <a href='https://openqa.opensuse.org/tests/overview?version={{ project.openqa_version }}&groupid={{ project.openqa_id }}'>{{ ttm_testing }}</a>
-	    {% else %}
-	      {{ ttm_testing }}
-	    {% endif %}
-	  {% else %}
-	    n.a.
-	  {% endif %}
-        </td>
-        <td>
-	  {% set ttm_published = project.ttm_status.get('published', None) %}
-	  {% if ttm_published %}
-	    <a href="{{ project.download_url }}">{{ ttm_published }}</a>
+        {% set ttm_testing = project.ttm_status.get('testing') %}
+        {% if ttm_testing %}
+          {% if project.openqa_version %}
+            <a href='https://openqa.opensuse.org/tests/overview?version={{ project.openqa_version }}&groupid={{ project.openqa_id }}'>{{ ttm_testing }}</a>
           {% else %}
-	     n.a.
-	  {% endif %}
+            {{ ttm_testing }}
+          {% endif %}
+        {% else %}
+          n.a.
+        {% endif %}
         </td>
         <td>
-          {% set openqa_summary = project.openqa_summary() %}
-          {% for state in openqa_summary.keys() %}
-            {{ state }}: {{ openqa_summary[state]|length }}
-          {% endfor %}
+        {% set ttm_published = project.ttm_status.get('published', None) %}
+        {% if ttm_published %}
+          <a href="{{ project.download_url }}">{{ ttm_published }}</a>
+              {% else %}
+            n.a.
+        {% endif %}
+        </td>
+        <td>
+        {% set openqa_summary = project.openqa_summary() %}
+        {% for state in openqa_summary.keys() %}
+          {{ state }}: {{ openqa_summary[state]|length }}
+        {% endfor %}
         </td>
       </tr>
       {% endfor %}

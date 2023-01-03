@@ -27,11 +27,11 @@ jobs:
     - name: Run tests
       run: docker-compose -f dist/ci/docker-compose.yml run test
       env:
-         # Specifies how many jobs you would like to run in parallel,
-         # used for partitioning
-         CI_NODE_TOTAL: ${{ matrix.ci_node_total }}
-         # Use the index from matrix as an environment variable
-         CI_NODE_INDEX: ${{ matrix.ci_node_index }}
+        # Specifies how many jobs you would like to run in parallel,
+        # used for partitioning
+        CI_NODE_TOTAL: ${{ matrix.ci_node_total }}
+        # Use the index from matrix as an environment variable
+        CI_NODE_INDEX: ${{ matrix.ci_node_index }}
 
     - name: Submit coverage report to Codecov
       uses: codecov/codecov-action@v1.5.2

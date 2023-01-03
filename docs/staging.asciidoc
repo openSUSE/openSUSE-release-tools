@@ -88,24 +88,24 @@ are:
 * *accept* Accept all requests assigned to a staging project.
 
 * *check* Check the status of the different request inside the staging
-   project, including the status in openQA.
+  project, including the status in openQA.
 
 * *cleanup_rings* Check the status of the different rings in Factory.
 
 * *rebase* Freeze the packages that are not affected in a staging project.
-   In the past, this command used to be called 'freeze', which is still
-   a valid alias.
+  In the past, this command used to be called 'freeze', which is still
+  a valid alias.
 
 * *list* Accept all the requests from packages that are not in any
-   ring, detect request that supersede the current ones that are
-   actually tracked in staging projects, and list the remaining
-   requests.
+  ring, detect request that supersede the current ones that are
+  actually tracked in staging projects, and list the remaining
+  requests.
 
 * *select* Move a request (or a list of requests) to a staging
-   project, or move requests between staging projects.
+  project, or move requests between staging projects.
 
 * *unselect* Remove a request from a staging project, and publish it
-   again into the backlog.
+  again into the backlog.
 
 
 List

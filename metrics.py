@@ -291,7 +291,7 @@ def walk_points(points, target):
     final = []
     time_last = None
     wrote = 0
-    for point in sorted(points, key=lambda l: l.time):
+    for point in sorted(points, key=lambda p: p.time):
         if point.measurement not in measurements:
             # Wait until just before writing to drop measurement.
             client.drop_measurement(point.measurement)

@@ -10,7 +10,7 @@ digraph staging {
    review  [ label="Review team", shape=ellipse, style=dashed ];
    factory [ label="openSUSE Factory" ];
    staging [ label="Staging project" ];
-      
+
    devel -> review    [ label="Developer submits fixes from staging repo" ];
    devel -> review    [ label="Developer submits packages" ];
    review -> review   [ label="Initial grouping of requests" ];
