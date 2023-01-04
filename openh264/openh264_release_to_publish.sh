@@ -18,8 +18,8 @@ echo
 echo "Pres Enter to proceed or ctrl+c to cancel."
 read
 
-osc -A https://build.opensuse.org release --no-delay $SOURCE_PROJ
-osc -A https://build.opensuse.org prjresults $SOURCE_PROJ
+osc -A https://api.opensuse.org release --no-delay $SOURCE_PROJ
+osc -A https://api.opensuse.org prjresults $SOURCE_PROJ
 
 echo
 echo "Done"

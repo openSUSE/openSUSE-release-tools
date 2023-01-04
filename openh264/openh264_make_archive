@@ -27,7 +27,7 @@ mkdir $checkoutdr
 
 pushd $checkoutdr
 # Checkout only metadata to speed it up
-osc -A https://build.opensuse.org co -M $PROJ
+osc -A https://api.opensuse.org co -M $PROJ
 pushd $PROJ:POST
 
 # Get binaries for all repos / arches
