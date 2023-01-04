@@ -1,0 +1,54 @@
+#!/bin/bash
+
+#
+# Archive last build of openh264 to :POST and make a zip file from its contents
+#
+# Contact openSUSE Release Team for more information or contacts
+# https://en.opensuse.org/openSUSE:Release_team
+#
+# More details about OpenH264 in openSUSE at https://en.opensuse.org/OpenH264"
+
+PROJ="openSUSE:Factory:openh264:POST"
+
+echo
+echo "This tool will make zip archive with binaries from $PROJ"
+echo "This zip archive can be then sent over to Cisco for extraction at ciscobinary.openh264.org."
+echo
+echo "Please make sure that you've made snapshot of data (release_to_post.sh) prior proceeding."
+echo
+echo "Pres Enter to proceed or ctrl+c to cancel."
+read
+
+tempdr=`mktemp -d /tmp/cisco-binary-opensuse-XXXX`
+bindr="$tempdr/cisco-openh264-rpms-opensuse"
+checkoutdr="$tempdr/checkout"
+mkdir $bindr
+mkdir $checkoutdr
+
+pushd $checkoutdr
+# Checkout only metadata to speed it up
+osc -A https://build.opensuse.org co -M $PROJ
+pushd $PROJ:POST
+
+# Get binaries for all repos / arches
+for pkg in *; do
+  pushd $pkg
+  for repo in `osc repos | awk '{ print $1 }' | sort | uniq`; do
+    osc getbinaries $repo -d $bindr
+  done
+  popd
+done
+
+pushd $tempdr
+# make zip only of rpms, skip logs and metadata
+archive="`basename $bindr`"
+zip "$archive.zip" -i "*.rpm" -r "$archive"
+rm -rf $checkoutdr
+rm -rf $bindr
+
+echo
+echo
+echo "Please send email with $tempdr/$archive.zip via to Cisco to get it extracted at ciscobinary.openh264.org."
+echo
+echo "Execute publish_repodata_openh264.sh !ONLY! once you get confirmation that data was extracted at ciscobinary.openh264.org."
+
