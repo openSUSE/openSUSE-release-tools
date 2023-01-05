@@ -20,4 +20,4 @@ osc -A https://api.opensuse.org release --no-delay $SOURCE_PROJ
 osc -A https://api.opensuse.org prjresults $SOURCE_PROJ
 
 echo
-echo "Please proceed by running 'make_archive.sh' once the data was released."
+echo "Please proceed by running 'openh264_make_archive' once the data was released."
