@@ -1,0 +1,25 @@
+#!/bin/bash
+
+#
+# Make a snapshot of data prior to sending archive with rpms to Cisco
+#
+# Contact openSUSE Release Team for more information or contacts
+# https://en.opensuse.org/openSUSE:Release_team
+#
+# More details about OpenH264 in openSUSE at https://en.opensuse.org/OpenH264"
+
+set -e
+
+SOURCE_PROJ="openSUSE:Factory:openh264"
+PROJ="openSUSE:Factory:openh264:POST"
+
+echo "This script will release data from $SOURCE_PROJ into $PROJ."
+echo
+echo "Press Enter to proceed or ctrl+c to cancel."
+read
+
+osc -A https://api.opensuse.org release --no-delay $SOURCE_PROJ
+osc -A https://api.opensuse.org prjresults $SOURCE_PROJ
+
+echo
+echo "Please proceed by running 'openh264_make_archive' once the data was released."

@@ -21,6 +21,8 @@ Apart from these tools, the repository includes:
 * Several [systemd](systemd) units: the Metrics instance makes use of them.
 * publish_distro tool and related configuration in publish_distro_conf
   to rsync content from OBS to ftp-stage/ftp-prod on pontifex host
+* Tools and [docs](https://github.com/openSUSE/openSUSE-release-tools/blob/master/openh264/README.md)
+  for a manual release pipeline of [OpenH264](https://en.opensuse.org/OpenH264) in openh264 directory.
 
 ## Tools
 
