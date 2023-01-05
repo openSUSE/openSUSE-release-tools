@@ -20,7 +20,7 @@ echo "Press Enter to proceed or ctrl+c to cancel."
 read
 
 tempdr=`mktemp -d /tmp/cisco-binary-opensuse-XXXX`
-bindr="$tempdr/cisco-openh264-rpms-opensuse-`date '+%Y-%M-%d'`"
+bindr="$tempdr/cisco-openh264-rpms-opensuse-`date '+%Y-%m-%d'`"
 checkoutdr="$tempdr/checkout"
 mkdir $bindr
 mkdir $checkoutdr
