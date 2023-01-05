@@ -20,7 +20,7 @@ echo "Press Enter to proceed or ctrl+c to cancel."
 read
 
 tempdr=`mktemp -d /tmp/cisco-binary-opensuse-XXXX`
-bindr="$tempdr/cisco-openh264-rpms-opensuse"
+bindr="$tempdr/cisco-openh264-rpms-opensuse-`date '+%Y-%M-%d'`"
 checkoutdr="$tempdr/checkout"
 mkdir $bindr
 mkdir $checkoutdr
@@ -28,7 +28,7 @@ mkdir $checkoutdr
 pushd $checkoutdr
 # Checkout only metadata to speed it up
 osc -A https://api.opensuse.org co -M $PROJ
-pushd $PROJ:POST
+pushd $PROJ
 
 # Get binaries for all repos / arches
 for pkg in *; do
