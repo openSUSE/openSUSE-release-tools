@@ -8,6 +8,8 @@
 #
 # More details about OpenH264 in openSUSE at https://en.opensuse.org/OpenH264"
 
+set -e
+
 PROJ="openSUSE:Factory:openh264:POST"
 
 echo
@@ -18,6 +20,7 @@ echo "Please make sure that you've made snapshot of data (release_to_post.sh) pr
 echo
 echo "Press Enter to proceed or ctrl+c to cancel."
 read
+
 
 tempdr=`mktemp -d /tmp/cisco-binary-opensuse-XXXX`
 bindr="$tempdr/cisco-openh264-rpms-opensuse-`date '+%Y-%m-%d'`"
