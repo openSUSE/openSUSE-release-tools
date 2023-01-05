@@ -15,7 +15,7 @@ echo "This script will release data from $SOURCE_PROJ into $PROJ."
 echo "This step is expected to be executed only after"
 echo "confirmation that archive with openh264 rpms was published at ciscobinary.openh264.org"
 echo
-echo "Pres Enter to proceed or ctrl+c to cancel."
+echo "Press Enter to proceed or ctrl+c to cancel."
 read
 
 osc -A https://api.opensuse.org release --no-delay $SOURCE_PROJ

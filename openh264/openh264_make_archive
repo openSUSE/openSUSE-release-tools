@@ -16,7 +16,7 @@ echo "This zip archive can be then sent over to Cisco for extraction at ciscobin
 echo
 echo "Please make sure that you've made snapshot of data (release_to_post.sh) prior proceeding."
 echo
-echo "Pres Enter to proceed or ctrl+c to cancel."
+echo "Press Enter to proceed or ctrl+c to cancel."
 read
 
 tempdr=`mktemp -d /tmp/cisco-binary-opensuse-XXXX`
@@ -48,7 +48,7 @@ rm -rf $bindr
 
 echo
 echo
-echo "Please send email with $tempdr/$archive.zip via to Cisco to get it extracted at ciscobinary.openh264.org."
+echo "Please send email with $tempdr/$archive.zip to Cisco to get it extracted at ciscobinary.openh264.org."
 echo
 echo "Execute publish_repodata_openh264.sh !ONLY! once you get confirmation that data was extracted at ciscobinary.openh264.org."
 
