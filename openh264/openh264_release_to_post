@@ -8,6 +8,8 @@
 #
 # More details about OpenH264 in openSUSE at https://en.opensuse.org/OpenH264"
 
+set -e
+
 SOURCE_PROJ="openSUSE:Factory:openh264"
 PROJ="openSUSE:Factory:openh264:POST"
 
