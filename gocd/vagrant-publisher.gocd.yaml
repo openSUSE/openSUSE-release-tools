@@ -51,18 +51,6 @@ pipelines:
             tasks:
               - script: |
                   ruby obs-to-vagrantcloud.rb --url https://download.opensuse.org/ports/aarch64/tumbleweed/appliances/boxes/openSUSE-MicroOS.aarch64-ContainerHost-Vagrant.json --organization opensuse --new-box-name MicroOS-ContainerHost.aarch64
-          publish_Leap-15_3_x86_64:
-            resources:
-            - staging-bot
-            tasks:
-              - script: |
-                  ruby obs-to-vagrantcloud.rb --url https://download.opensuse.org/distribution/leap/15.3/appliances/boxes/Leap-15.3.x86_64.json --organization opensuse --new-box-name Leap-15.3.x86_64
-          publish_Leap-15_3_aarch64:
-            resources:
-            - staging-bot
-            tasks:
-              - script: |
-                  ruby obs-to-vagrantcloud.rb --url https://download.opensuse.org/distribution/leap/15.3/appliances/boxes/Leap-15.3.aarch64-libvirt_aarch64.json --organization opensuse --new-box-name Leap-15.3.aarch64
           publish_Leap-15_4_x86_64:
             resources:
             - staging-bot

@@ -19,7 +19,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Setup path
       run: sed -i -e "s,../..:,$PWD:," dist/ci/docker-compose.yml
@@ -34,7 +34,7 @@ jobs:
         CI_NODE_INDEX: ${{ matrix.ci_node_index }}
 
     - name: Submit coverage report to Codecov
-      uses: codecov/codecov-action@v1.5.2
+      uses: codecov/codecov-action@v3
       with:
         fail_ci_if_error: true
 
@@ -47,7 +47,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Validate gocd config
       run: cd gocd && sh generate.sh && git diff --exit-code

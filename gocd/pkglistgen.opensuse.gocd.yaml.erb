@@ -88,37 +88,6 @@ pipelines:
             - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o openSUSE:Leap:15.5 -s SUSE:SLE-15-SP5:GA
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %>
 <% end -%>
-  Pkglistgen.openSUSE_Leap_15.3_Update_Respin:
-    group: Leap
-    lock_behavior: unlockWhenFinished
-    environment_variables:
-      OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    timer:
-      spec: 0 40 * ? * *
-      only_on_changes: false
-    materials:
-      git:
-        git: https://github.com/openSUSE/openSUSE-release-tools.git
-    stages:
-    - pkglistgen:
-        approval:
-          type: manual
-        jobs:
-<% ['openSUSE:Leap:15.3:Update:Respin/target'].each do |project|
-  project=project.split('/')
-  name=project[0].gsub(':', '_')
-  if project.size > 1
-    options=" -s #{project[1]}"
-    name = name + "_#{project[1]}"
-  end
-  -%>
-          <%= name %>:
-            resources:
-            - repo-checker
-            tasks:
-            - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o openSUSE:Leap:15.3:Update:Respin -t openSUSE:Leap:15.3:Update -s SUSE:SLE-15-SP3:Update
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %>
-<% end -%>
   Pkglistgen.openSUSE_Leap_15.4_CR:
     group: Leap
     lock_behavior: unlockWhenFinished
@@ -150,7 +119,7 @@ pipelines:
             - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o openSUSE:Leap:15.4:Images -t openSUSE:Leap:15.4:Update -s SUSE:SLE-15-SP4:Update
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %>
 <% end -%>
-<% %w(openSUSE:Leap:15.5 openSUSE:Leap:15.4:Images openSUSE:Leap:15.3:Update:Respin).each do |project| -%>
+<% %w(openSUSE:Leap:15.5 openSUSE:Leap:15.4:Images).each do |project| -%>
   Update.Repos.Leap.<%= project.gsub(':', '_') %>:
     group: Leap
     lock_behavior: unlockWhenFinished

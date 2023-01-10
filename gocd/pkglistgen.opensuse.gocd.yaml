@@ -130,28 +130,6 @@ pipelines:
             tasks:
             - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o openSUSE:Leap:15.5 -s SUSE:SLE-15-SP5:GA
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.5 -s target
-  Pkglistgen.openSUSE_Leap_15.3_Update_Respin:
-    group: Leap
-    lock_behavior: unlockWhenFinished
-    environment_variables:
-      OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    timer:
-      spec: 0 40 * ? * *
-      only_on_changes: false
-    materials:
-      git:
-        git: https://github.com/openSUSE/openSUSE-release-tools.git
-    stages:
-    - pkglistgen:
-        approval:
-          type: manual
-        jobs:
-          openSUSE_Leap_15.3_Update_Respin_target:
-            resources:
-            - repo-checker
-            tasks:
-            - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o openSUSE:Leap:15.3:Update:Respin -t openSUSE:Leap:15.3:Update -s SUSE:SLE-15-SP3:Update
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.3:Update:Respin -s target
   Pkglistgen.openSUSE_Leap_15.4_CR:
     group: Leap
     lock_behavior: unlockWhenFinished
@@ -216,24 +194,3 @@ pipelines:
             - repo-checker
             tasks:
               - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.4:Images
-  Update.Repos.Leap.openSUSE_Leap_15.3_Update_Respin:
-    group: Leap
-    lock_behavior: unlockWhenFinished
-    environment_variables:
-      OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    timer:
-      spec: 0 0 0 */3 * ?
-      only_on_changes: false
-    materials:
-      git:
-        git: https://github.com/openSUSE/openSUSE-release-tools.git
-    stages:
-    - Update:
-        approval:
-          type: manual
-        jobs:
-          openSUSE_Leap_15.3_Update_Respin:
-            resources:
-            - repo-checker
-            tasks:
-              - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.3:Update:Respin
