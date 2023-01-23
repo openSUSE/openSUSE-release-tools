@@ -53,14 +53,15 @@ def _full_project_name(self, project):
     if project.startswith(('openSUSE', 'SUSE')):
         return project
 
-    if 'Factory' in project or 'openSUSE' in project:
+    if project.startswith('Factory'):
         return 'openSUSE:%s' % project
 
-    if 'SLE' in project:
+    if project.startswith('SLE') or project.startswith('ALP'):
         return 'SUSE:%s' % project
 
     # If we can't guess, raise a Warning
-    warnings.warn('%s project not recognized.' % project)
+    if (':' not in project):
+        warnings.warn('%s project not recognized.' % project)
     return project
 
 
