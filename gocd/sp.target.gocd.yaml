@@ -164,3 +164,50 @@ pipelines:
           - staging-bot
         tasks:
           - script: osc -A https://api.suse.de release SUSE:SLE-15-SP5:GA:TEST
+
+  SLE15.SP5.ReleaseScc:
+    parameters:
+      product: sle15sp5
+      target: MyTarget
+      build: "0.0"
+    materials:
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    # "ratt" is an alias for the internal IP of the API, only available on botmaster.
+    - Release.Images.Update:
+        approval: manual
+        roles:
+          - SLE
+        resources:
+          - staging-bot
+        tasks:
+          - script: curl --verbose --max-time 3600 "http://ratt:5000/update?product=#{product}&target=#{target}&build=#{build}"
+    - Release.Images.Rename:
+        approval: manual
+        roles:
+          - SLE
+        resources:
+          - staging-bot
+        tasks:
+          - script: curl --verbose --max-time 3600 "http://ratt:5000/rename?product=#{product}&target=#{target}"
+    - Release.Images.Update:
+        approval: manual
+        roles:
+          - SLE
+        resources:
+          - staging-bot
+        tasks:
+          - script: curl --verbose --max-time 3600 "http://ratt:5000/sync?product=#{product}&target=#{target}"
+    - Release.Images.Update:
+        approval: manual
+        roles:
+          - SLE
+        resources:
+          - staging-bot
+        tasks:
+          - script: curl --verbose --max-time 3600 "http://ratt:5000/release?product=#{product}"
