@@ -55,7 +55,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
     # check if pkgname was submitted by the correct maintainer. If not, set
     # self.needs_maintainer_review
     def _check_maintainer_review_needed(self, req, a):
-        author = req.get_creator()
+        author = req.creator
         if a.type == 'maintenance_incident':
             # check if there is a link and use that or the real package
             # name as src_packge may end with something like
