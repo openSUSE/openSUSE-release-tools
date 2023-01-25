@@ -19,6 +19,7 @@ from osc.core import get_commitlog
 import osclib.conf
 from osclib.cache import Cache
 from osclib.conf import Config
+from osclib.core import get_request_list_with_history
 from osclib.core import project_pseudometa_package
 from osclib.stagingapi import StagingAPI
 
@@ -102,9 +103,8 @@ def timestamp(datetime):
 
 
 def ingest_requests(api, project):
-    requests = get_request_list(api.apiurl, project,
-                                req_state=('accepted', 'revoked', 'superseded'),
-                                withfullhistory=True)
+    requests = get_request_list_with_history(
+        api.apiurl, project, req_state=('accepted', 'revoked', 'superseded'))
     for request in requests:
         if request.find('action').get('type') not in ('submit', 'delete'):
             # TODO Handle non-stageable requests via different flow.
