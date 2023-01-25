@@ -4,6 +4,8 @@ import sys
 
 import osc.conf
 import osc.core
+
+from osclib.core import get_request_list_with_history
 from lxml import etree as ET
 from urllib.error import HTTPError, URLError
 
@@ -72,7 +74,7 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
                         project = project[len(prefix):]
                         sr = srprefix
                         break
-            requests = osc.core.get_request_list(apiurl, project, package, None, ['new', 'review'], 'submit')
+            requests = get_request_list_with_history(apiurl, project, package, None, ['new', 'review'], 'submit')
         except (HTTPError, URLError):
             self.logger.error("caught exception while checking %s/%s", project, package)
             return None

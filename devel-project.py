@@ -7,7 +7,6 @@ from lxml import etree as ET
 
 import osc.conf
 from osc.core import HTTPError
-from osc.core import get_request_list
 from osc.core import get_review_list
 from osc.core import show_package_meta
 from osc.core import show_project_meta
@@ -15,6 +14,7 @@ from osclib.comments import CommentAPI
 from osclib.conf import Config
 from osclib.core import devel_project_fallback
 from osclib.core import entity_email
+from osclib.core import get_request_list_with_history
 from osclib.core import package_list_kind_filtered
 from osclib.core import request_age
 from osclib.stagingapi import StagingAPI
@@ -163,10 +163,9 @@ def requests(args):
     # Disable including source project in get_request_list() query.
     osc.conf.config['include_request_from_project'] = False
     for devel_project in devel_projects:
-        requests = get_request_list(apiurl, devel_project,
-                                    req_state=('new', 'review'),
-                                    req_type='submit',
-                                    withfullhistory=True)
+        requests = get_request_list_with_history(
+            apiurl, devel_project, req_state=('new', 'review'),
+            req_type='submit')
         for request in requests:
             action = request.actions[0]
             age = request_age(request).days
