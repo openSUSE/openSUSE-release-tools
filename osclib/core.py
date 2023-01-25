@@ -12,13 +12,13 @@ from osc.core import create_submit_request
 from osc.core import get_binarylist
 from osc.core import get_commitlog
 from osc.core import get_dependson
-from osc.core import get_request_list
 from osc.core import http_DELETE
 from osc.core import http_GET
 from osc.core import http_POST
 from osc.core import http_PUT
 from osc.core import makeurl
 from osc.core import owner
+from osc.core import search as osc_core_search
 from osc.core import Request
 from osc.core import Action
 from osc.core import show_package_meta
@@ -56,10 +56,52 @@ def groups_members(apiurl, groups):
 
     return members
 
-# osc uses xml.etree while we rely on lxml
+
+def get_request_list_with_history(
+        apiurl, project='', package='', req_who='', req_state=('new', 'review', 'declined'),
+        req_type=None, exclude_target_projects=[]):
+    """using an xpath search to get full request history. deprecated copy of old code from osc 0.x."""
+    xpath = ''
+    if 'all' not in req_state:
+        for state in req_state:
+            xpath = xpath_join(xpath, 'state/@name=\'%s\'' % state, inner=True)
+    if req_who:
+        xpath = xpath_join(xpath, '(state/@who=\'%(who)s\' or history/@who=\'%(who)s\')' % {'who': req_who}, op='and')
+
+    # XXX: we cannot use the '|' in the xpath expression because it is not supported
+    #      in the backend
+    todo = {}
+    if project:
+        todo['project'] = project
+    if package:
+        todo['package'] = package
+    for kind, val in todo.items():
+        xpath_base = 'action/target/@%(kind)s=\'%(val)s\''
+        if conf.config['include_request_from_project']:
+            xpath_base = xpath_join(xpath_base, 'action/source/@%(kind)s=\'%(val)s\'', op='or', inner=True)
+        xpath = xpath_join(xpath, xpath_base % {'kind': kind, 'val': val}, op='and', nexpr_parentheses=True)
+
+    if req_type:
+        xpath = xpath_join(xpath, 'action/@type=\'%s\'' % req_type, op='and')
+    for i in exclude_target_projects:
+        xpath = xpath_join(xpath, '(not(action/target/@project=\'%(prj)s\'))' % {'prj': i}, op='and')
+
+    if conf.config['verbose'] > 1:
+        print('[ %s ]' % xpath)
+    queries = {}
+    queries['request'] = {'withfullhistory': '1'}
+    res = osc_core_search(apiurl, queries=queries, request=xpath)
+    collection = res['request']
+    requests = []
+    for root in collection.findall('request'):
+        r = Request()
+        r.read(root)
+        requests.append(r)
+    return requests
 
 
 def convert_from_osc_et(xml):
+    """osc uses xml.etree while we rely on lxml."""
     from xml.etree import ElementTree as oscET
     return ET.fromstring(oscET.tostring(xml))
 
@@ -1085,7 +1127,7 @@ def request_action_simple_list(apiurl, project, package, states, request_type):
     # Disable including source project in get_request_list() query.
     before = conf.config['include_request_from_project']
     conf.config['include_request_from_project'] = False
-    requests = get_request_list(apiurl, project, package, None, states, request_type, withfullhistory=True)
+    requests = get_request_list_with_history(apiurl, project, package, None, states, request_type)
     conf.config['include_request_from_project'] = before
 
     for request in requests:
