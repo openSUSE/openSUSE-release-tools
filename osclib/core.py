@@ -61,6 +61,14 @@ def get_request_list_with_history(
         apiurl, project='', package='', req_who='', req_state=('new', 'review', 'declined'),
         req_type=None, exclude_target_projects=[]):
     """using an xpath search to get full request history. deprecated copy of old code from osc 0.x."""
+
+    import warnings
+    warnings.warn(
+        "get_request_list_with_history() uses an xpath search, which is slow. consider porting to"
+        "use osc.core.get_request_collection() instead.",
+        DeprecationWarning
+    )
+
     xpath = ''
     if 'all' not in req_state:
         for state in req_state:
