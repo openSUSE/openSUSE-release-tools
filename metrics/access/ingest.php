@@ -1,7 +1,7 @@
 #!/usr/bin/php
 <?php
 
-const REGEX_LINE = '/\S+ \S+ \S+ \[([^:]+:\d+:\d+:\d+ [^\]]+)\] "(\S+)(?: (\S+) \S+)?" (\S+) (\S+) "[^"]*" "[^"]*" .* size:(\S+) \S+(?: +"?(\S+-\S+-\S+-\S+-[^\s"]+|-)"? "?(dvd|ftp|mini|usb-[^"]*|livecd-[^"]*|appliance-?[^"]*|-)"?)?/';
+const REGEX_LINE = '/\S+ \S+ \S+ \[([^:]+:\d+:\d+:\d+ [^\]]+)\] "(\S+)(?: (\S+) \S+)?" (\S+) (\S+) "[^"]*" "[^"]*" .* (?:size:|want:- give:- \d+ )(\S+) \S+(?: +"?(\S+-\S+-\S+-\S+-[^\s"]+|-)"? "?(dvd|ftp|mini|usb-[^"]*|livecd-[^"]*|appliance-?[^"]*|-)"?)?/';
 const REGEX_PRODUCT = '#/(?:(tumbleweed)|distribution/(?:leap/)?(\d+\.\d+)|openSUSE(?:_|:/)(?:leap(?:_|:/))?(factory|tumbleweed|\d+\.\d+))#i';
 const REGEX_IMAGE = '#(?:/(?:iso|live)/[^/]+-(DVD|NET|GNOME-Live|KDE-Live|Rescue-CD|Kubic-DVD)-[^/]+\.iso(?:\.torrent)?|/jeos/[^/]+-(JeOS)\.[^/]+\.(?:qcow2|vhdx|vmdk|vmx)$)#';
 
