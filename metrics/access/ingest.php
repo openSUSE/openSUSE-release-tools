@@ -1,7 +1,7 @@
 #!/usr/bin/php
 <?php
 
-const REGEX_LINE = '/\S+ \S+ \S+ \[([^:]+:\d+:\d+:\d+ [^\]]+)\] "(\S+)(?: (\S+) \S+)?" (\S+) (\S+) "[^"]*" "[^"]*" .* want:-\ give:-\ (\S+) (\S+)\s+\S+(?: +"?(\S+-\S+-\S+-\S+-[^\s"]+|-)"? "?(dvd|ftp|mini|usb-[^"]*|livecd-[^"]*|appliance-?[^"]*|-)"?)?/';
+const REGEX_LINE = '/\S+ \S+ \S+ \[([^:]+:\d+:\d+:\d+ [^\]]+)\] "(\S+)(?: (\S+) \S+)?" (\S+) (\S+) "[^"]*" "[^"]*" .* (?:size:|want:- give:- \d+ )(\S+) \S+(?: +"?(\S+-\S+-\S+-\S+-[^\s"]+|-)"? "?(dvd|ftp|mini|usb-[^"]*|livecd-[^"]*|appliance-?[^"]*|-)"?)?/';
 const REGEX_PRODUCT = '#/(?:(tumbleweed)|distribution/(?:leap/)?(\d+\.\d+)|openSUSE(?:_|:/)(?:leap(?:_|:/))?(factory|tumbleweed|\d+\.\d+))#i';
 const REGEX_IMAGE = '#(?:/(?:iso|live)/[^/]+-(DVD|NET|GNOME-Live|KDE-Live|Rescue-CD|Kubic-DVD)-[^/]+\.iso(?:\.torrent)?|/jeos/[^/]+-(JeOS)\.[^/]+\.(?:qcow2|vhdx|vmdk|vmx)$)#';
 
@@ -36,8 +36,8 @@ while (($line = fgets($handle)) !== false) {
   if (!isset($total_product[$product])) $total_product[$product] = 0;
   $total_product[$product] += 1;
 
-  if (count($match) == 10 && $match[8] != '-') {
-    $uuid = $match[8];
+  if (count($match) == 9 && $match[7] != '-') {
+    $uuid = $match[7];
     if (!isset($unique_product[$product])) $unique_product[$product] = [];
     if (!isset($unique_product[$product][$uuid])) $unique_product[$product][$uuid] = 0;
     $unique_product[$product][$uuid] += 1;
