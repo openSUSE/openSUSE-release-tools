@@ -11,6 +11,7 @@ from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from lxml import etree as ET
 from openqa_client.client import OpenQA_Client
+from packaging import version
 from urllib.error import HTTPError
 from urllib.parse import quote_plus
 
@@ -103,7 +104,36 @@ class Project(object):
                   job['settings']['FLAVOR'], job['settings']['TEST'], job['settings']['MACHINE'])
             openqa_infos[job['id']] = {'url': self.listener.test_url(job)}
             openqa_infos[job['id']]['state'] = self.map_openqa_result(job)
+            openqa_infos[job['id']]['build'] = job['settings']['BUILD']
             openqa_infos[job['id']]['name'] = f"{job['settings']['FLAVOR']}-{job['settings']['TEST']}@{job['settings']['MACHINE']}"
+
+    def compare_simple_builds(build1, build2):
+        """Simple build number comparison"""
+        ver1 = version.parse(build1)
+        ver2 = version.parse(build2)
+        if ver1 < ver2:
+            return -1
+        if ver1 > ver2:
+            return 1
+        return 0
+
+    def compare_composite_builds(build1, build2):
+        """Compare BUILD numbers consisting of multiple _-separated components."""
+        components1 = build1.split('_')
+        components2 = build2.split('_')
+        if len(components1) != len(components2):
+            raise Exception(f'Failed to compare {build1} and {build2}: Different format')
+
+        component_cmps = [Project.compare_simple_builds(components1[i], components2[i]) for i in range(0, len(components1))]
+        less = -1 in component_cmps
+        greater = 1 in component_cmps
+        if less and greater:
+            raise Exception(f'Failed to compare {build1} and {build2}: Not ordered')
+        if less:
+            return -1
+        if greater:
+            return 1
+        return 0
 
     def update_staging_status(self, staging):
         openqa_infos = dict()
@@ -118,12 +148,35 @@ class Project(object):
         url = self.api.makeurl(['status_reports', 'published', staging, 'images', 'reports', buildid])
 
         # make sure the names are unique
+        obsolete_jobs = []
         taken_names = dict()
         for id in openqa_infos:
             name = openqa_infos[id]['name']
             if name in taken_names:
+                # There are multiple jobs with that specific FLAVOR-TEST@MACHINE.
+                # In SLE Micro, jobs currently use BUILD=(dvdbuild)_(image_build),
+                # so if the dvd is rebuilt, new image jobs are triggered for the
+                # same binary. The openQA ?latest=1 filter doesn't look at that,
+                # so we have to figure out which of those is the most recent one.
+                build1 = openqa_infos[taken_names[name]]['build']
+                build2 = openqa_infos[id]['build']
+                if '_' in build1 and '_' in build2 and build1 != build2:
+                    # Use the more recent build
+                    buildcmp = Project.compare_composite_builds(build1, build2)
+                    self.logger.info(f'Multiple builds for {name}, {build1} and {build2}. Comparison: {buildcmp}')
+                    if buildcmp < 0:  # Drop the previous one
+                        obsolete_jobs.append(taken_names[name])
+                        taken_names[name] = id
+                        continue
+                    elif buildcmp > 0:  # Drop this one
+                        obsolete_jobs.append(id)
+                        continue
+
                 raise Exception(f'Names of job #{id} and #{taken_names[name]} collide: {name}')
             taken_names[name] = id
+
+        for id in obsolete_jobs:
+            del openqa_infos[id]
 
         for info in openqa_infos.values():
             xml = self.openqa_check_xml(info['url'], info['state'], 'openqa:' + info['name'])
