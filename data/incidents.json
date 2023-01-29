@@ -1,16 +1,4 @@
 {
-  "openSUSE:Leap:15.3:Update": {
-    "DISTRI": "opensuse",
-    "FLAVOR": "DVD-Incidents",
-    "VERSION": "15.3",
-    "ARCH": "x86_64"
-  },
-  "openSUSE:Backports:SLE-15-SP3:Update": {
-    "DISTRI": "opensuse",
-    "FLAVOR": "DVD-Backports-Incidents",
-    "VERSION": "15.3",
-    "ARCH": "x86_64"
-  },
   "openSUSE:Leap:15.4:Update": {
     "DISTRI": "opensuse",
     "FLAVOR": "DVD-Incidents",
