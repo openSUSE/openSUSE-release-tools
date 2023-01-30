@@ -167,6 +167,7 @@ pipelines:
           - script: osc -A https://api.suse.de release SUSE:SLE-15-SP5:GA:TEST
 
   SLE15.SP5.ReleaseScc:
+    group: SLE15.Target
     parameters:
       product: sle15sp5
       target: MyTarget
@@ -196,7 +197,7 @@ pipelines:
           - staging-bot
         tasks:
           - script: curl --verbose --max-time 3600 "http://ratt:5000/rename?product=#{product}&target=#{target}"
-    - Release.Images.Update:
+    - Release.Images.Sync:
         approval: manual
         roles:
           - SLE
@@ -204,7 +205,7 @@ pipelines:
           - staging-bot
         tasks:
           - script: curl --verbose --max-time 3600 "http://ratt:5000/sync?product=#{product}&target=#{target}"
-    - Release.Images.Update:
+    - Release.Images.Release:
         approval: manual
         roles:
           - SLE
