@@ -385,7 +385,7 @@ class ReviewBot(object):
         return self.devel_project_review_add(request, project, package, message)
 
     def devel_project_review_needed(self, request, project, package):
-        author = request.get_creator()
+        author = request.creator
         maintainers = set(maintainers_get(self.apiurl, project, package))
 
         if author in maintainers:
