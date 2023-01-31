@@ -63,7 +63,7 @@ pipelines:
                 sleep 600
             done
             osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP5:GA:TEST/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
-    
+
     - Release.Images.To.Test.New:
         approval: manual
         roles:
