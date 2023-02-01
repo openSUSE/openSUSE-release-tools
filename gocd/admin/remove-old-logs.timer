@@ -1,0 +1,9 @@
+[Unit]
+Description=Remove Old gocd logs
+After=local-fs.target
+
+[Timer]
+OnCalendar=*-*-* 01:07:00
+
+[Install]
+WantedBy=timers.target
