@@ -10,6 +10,7 @@ import psycopg2
 
 token = open("gocd_api.token").read().strip()
 api_prefix = "http://localhost:8153/go/api"
+container_image = "registry.opensuse.org/opensuse/tools/images/containers_tumbleweed/gocd-agent-release-tools"
 # api_prefix = 'https://botmaster.suse.de/go/api'
 
 
@@ -123,12 +124,23 @@ def cleanup_old_pipelines():
 
 
 def main():
+    # Make a tag of the preivous image
+    subprocess.run(
+        [
+            "docker",
+            "tag",
+            container_image + ":latest",
+            container_image + ":previous",
+        ],
+        check=True,
+    )
+
     # pull new image - if registry is down, better stop here
     subprocess.run(
         [
             "docker",
             "pull",
-            "registry.opensuse.org/opensuse/tools/images/containers_tumbleweed/gocd-agent-release-tools:latest",
+            container_image + ":latest",
         ],
         check=True,
     )
