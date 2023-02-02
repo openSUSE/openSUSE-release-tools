@@ -44,6 +44,8 @@ class SkippkgFinder(object):
         self.skiplist_supplement_regex = set(config.get('skippkg-finder-skiplist-supplement-regex', '').split(' '))
         # drops off RPM from a list of the supplement RPMs due to regex
         self.skiplist_supplement_ignores = set(config.get('skippkg-finder-skiplist-supplement-ignores', '').split(' '))
+        # conditional support scenario
+        self.skiplist_conditionals = set(config.get('skippkg-finder-conditional-scenarios', '').split(' '))
 
     def is_sle_specific(self, package):
         """
@@ -244,6 +246,20 @@ class SkippkgFinder(object):
             return True
         return False
 
+    def create_group(self, group, conditional, packages=[]):
+        if not (group and conditional):
+            return ''
+        group_tree = ET.Element('group', {'name': group})
+        ET.SubElement(group_tree, 'conditional', {'name': conditional})
+        packagelist = ET.SubElement(group_tree, 'packagelist', {'relationship': 'requires'})
+        for pkg in sorted(packages):
+            if not self.print_only and self.verbose:
+                print(pkg)
+            attr = {'name': pkg}
+            ET.SubElement(packagelist, 'package', attr)
+
+        return ET.tostring(group_tree, pretty_print=True, encoding='unicode')
+
     def crawl(self):
         """Main method"""
 
@@ -325,21 +341,26 @@ class SkippkgFinder(object):
                         binary not in self.skiplist_supplement_ignores:
                     obsoleted.append(binary)
 
-        skip_list = ET.Element('group', {'name': 'NON_FTP_PACKAGES'})
-        ET.SubElement(skip_list, 'conditional', {'name': 'drop_from_ftp'})
-        packagelist = ET.SubElement(skip_list, 'packagelist', {'relationship': 'requires'})
-        for pkg in sorted(obsoleted):
-            if not self.print_only and self.verbose:
-                print(pkg)
-            attr = {'name': pkg}
-            ET.SubElement(packagelist, 'package', attr)
+        skip_list = self.create_group('NON_FTP_PACKAGES', 'drop_from_ftp', obsoleted)
+
+        # Handle the conditionals
+        cond_list = {}
+        for item in self.skiplist_conditionals:
+            # node[0] is the condition, node[1] is the package
+            # an example of the format: only_x86_64:glibc-32bit
+            node = item.split(':')
+            if node[0] not in cond_list:
+                cond_list[node[0]] = []
+            cond_list[node[0]].append(node[1])
+        for cond in cond_list.keys():
+            group = self.create_group('NON_FTP_PACKAGES_' + cond, cond, cond_list[cond])
+            skip_list += group
+
         if not self.print_only:
             source_file_ensure(self.apiurl, self.upload_project, META_PACKAGE, 'NON_FTP_PACKAGES.group',
-                               ET.tostring(skip_list, pretty_print=True, encoding='unicode'),
-                               'Update the skip list')
+                               skip_list, 'Update the skip list')
         else:
-            print(ET.tostring(skip_list, pretty_print=True,
-                  encoding='unicode'))
+            print(skip_list)
 
 
 def main(args):
