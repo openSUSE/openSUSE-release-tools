@@ -1,0 +1,8 @@
+[Unit]
+Description=Remove old gocd logs
+After=local-fs.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/admin
+ExecStart=/usr/bin/python3 cleanup.py
