@@ -173,11 +173,11 @@ if __name__ == '__main__':
                     download_url='http://download.opensuse.org/ports/zsystems/tumbleweed/iso/',
                     openqa_group='openSUSE Tumbleweed s390x', openqa_version='Tumbleweed', openqa_groupid=34)
     else:
-        fetcher.add('openSUSE:Leap:Micro:5.3', nick='Leap:Micro:5.3',
-                    download_url='https://download.opensuse.org/distribution/leap-micro/5.3/product/iso',
-                    openqa_group='openSUSE Leap Micro 5.3', openqa_version='5.3', openqa_groupid=102)
-        fetcher.add('openSUSE:Leap:Micro:5.3:Images', nick='Leap:Micro:5.3:Images',
-                    openqa_group='openSUSE Leap Micro 5.3 Image', openqa_version='5.3', openqa_groupid=101)
+        fetcher.add('openSUSE:Leap:Micro:5.4', nick='Leap:Micro:5.4',
+                    download_url='https://download.opensuse.org/distribution/leap-micro/5.4/product/iso',
+                    openqa_group='openSUSE Leap Micro 5.4', openqa_version='5.4', openqa_groupid=102)
+        fetcher.add('openSUSE:Leap:Micro:5.4:Images', nick='Leap:Micro:5.4:Images',
+                    openqa_group='openSUSE Leap Micro 5.4 Image', openqa_version='5.4', openqa_groupid=101)
         fetcher.add('openSUSE:Leap:15.5', nick='Leap:15.5',
                     download_url='https://download.opensuse.org/distribution/leap/15.5/iso',
                     openqa_group='openSUSE Leap 15', openqa_version='15.5', openqa_groupid=50)
