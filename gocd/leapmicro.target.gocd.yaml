@@ -17,7 +17,7 @@ pipelines:
         resources:
         - repo-checker
         tasks:
-          - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:Micro:5.2 -s target --only-release-packages
+          - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:Micro:5.4 -s target --only-release-packages
 
   LeapMicro.Package.Lists:
     group: Leap
