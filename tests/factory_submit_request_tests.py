@@ -3,7 +3,7 @@ import os
 
 # Needed to mock LegalAuto
 from osc.core import change_review_state
-from mock import MagicMock
+from unittest.mock import MagicMock
 
 # Import the involved staging commands
 from osclib.freeze_command import FreezeCommand
