@@ -6,7 +6,7 @@ from osclib.comments import CommentAPI
 from osclib.core import package_list
 from osc.core import get_request
 
-from mock import MagicMock
+from unittest.mock import MagicMock
 from . import OBSLocal
 
 # CI-Node: Long2

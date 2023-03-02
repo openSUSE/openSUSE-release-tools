@@ -8,7 +8,7 @@ from osclib.ignore_command import IgnoreCommand
 from osclib.core import source_file_load
 from urllib.error import HTTPError
 from lxml import etree as ET
-from mock import MagicMock
+from unittest.mock import MagicMock
 from . import OBSLocal
 
 # CI-Node: Long1

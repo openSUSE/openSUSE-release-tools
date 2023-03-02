@@ -3,7 +3,7 @@ import unittest
 from osclib.check_command import CheckCommand
 
 from lxml import etree
-from mock import MagicMock
+from unittest.mock import MagicMock
 from . import OBSLocal
 
 H_REPORT = """
