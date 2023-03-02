@@ -221,10 +221,13 @@ class CheckSource(ReviewBot.ReviewBot):
 
         new_info = self.package_source_parse(source_project, source_package, source_revision, target_package)
         filename = new_info.get('filename', '')
-        if not (filename.endswith('.kiwi') or filename == 'Dockerfile') and new_info['name'] != target_package:
+        expected_name = target_package
+        if filename == '_preinstallimage':
+            expected_name = 'preinstallimage'
+        if not (filename.endswith('.kiwi') or filename == 'Dockerfile') and new_info['name'] != expected_name:
             shutil.rmtree(dir)
             self.review_messages['declined'] = "A package submitted as %s has to build as 'Name: %s' - found Name '%s'" % (
-                target_package, target_package, new_info['name'])
+                target_package, expected_name, new_info['name'])
             return False
 
         if not self.check_service_file(target_package):
