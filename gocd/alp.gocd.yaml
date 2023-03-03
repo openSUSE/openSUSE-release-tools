@@ -44,3 +44,17 @@ pipelines:
             tasks:
             - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP:RISCV -s target --only-release-packages --force
             - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP:RISCV -s target
+          SUSE_ALP_Products_Micro_0.1:
+            timeout: 60
+            resources:
+            - repo-checker
+            tasks:
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP:Products:Micro:0.1 -s target --only-release-packages --force
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP:Products:Micro:0.1 -s target
+          SUSE_ALP_Products_Bedrock_0.1:
+            timeout: 60
+            resources:
+            - repo-checker
+            tasks:
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP:Products:Bedrock:0.1 -s target --only-release-packages --force
+            - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p SUSE:ALP:Products:Bedrock:0.1 -s target

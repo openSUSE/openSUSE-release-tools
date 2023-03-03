@@ -16,7 +16,7 @@ pipelines:
         approval:
           type: manual
         jobs:
-<% ['SUSE:ALP/target', 'SUSE:ALP:PowerPC', 'SUSE:ALP:zSystems', 'SUSE:ALP:RISCV'].each do |project|
+<% ['SUSE:ALP/target', 'SUSE:ALP:PowerPC', 'SUSE:ALP:zSystems', 'SUSE:ALP:RISCV', 'SUSE:ALP:Products:Micro:0.1', 'SUSE:ALP:Products:Bedrock:0.1'].each do |project|
   project=project.split('/')
   name=project[0].gsub(':', '_')
   if project.size > 1
