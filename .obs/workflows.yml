@@ -13,10 +13,10 @@ pr:
           - target_project: openSUSE:Factory
             target_repository: snapshot
         architectures: [ x86_64 ]
-      - name: '15.3'
+      - name: '15.4'
         paths:
           - target_project: openSUSE:Tools
-            target_repository: '15.3'
+            target_repository: '15.4'
         architectures: [ x86_64 ]
   filters:
     event: pull_request
