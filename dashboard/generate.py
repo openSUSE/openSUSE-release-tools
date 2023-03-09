@@ -183,10 +183,10 @@ if __name__ == '__main__':
                     openqa_group='openSUSE Leap 15', openqa_version='15.5', openqa_groupid=50)
         fetcher.add('openSUSE:Backports:SLE-15-SP5', nick='Backports:SLE-15-SP5')
         fetcher.add('openSUSE:Leap:15.5:Images', nick='Leap:15.5:Images', openqa_group='openSUSE Leap 15.5 Images',
-                    openqa_version='15.5', openqa_groupid=105)
+                    openqa_version='15.5', openqa_groupid=103)
         fetcher.add('openSUSE:Leap:15.5:ARM', nick='Leap:15.5:ARM',
                     download_url='https://download.opensuse.org/ports/armv7hl/distribution/leap/15.5/iso',
-                    openqa_group='openSUSE Leap 15.5 ARMv7', openqa_version='15.5', openqa_groupid=79)
+                    openqa_group='openSUSE Leap 15.5 ARMv7', openqa_version='15.5', openqa_groupid=106)
         fetcher.add('openSUSE:Leap:15.5:ARM:Images', nick='Leap:15.5:ARM:Images',
                     openqa_group='openSUSE Leap 15.5 ARMv7 Images', openqa_version='15.5', openqa_groupid=104)
         fetcher.add('openSUSE:Leap:15.4:Images', nick='Leap:15.4:Images', openqa_group='openSUSE Leap 15.4 Images',
