@@ -74,7 +74,13 @@ def parse_repomd(repo, baseurl):
     root = ET.fromstring(repomd.content)
     primary_element = root.find('.//r:data[@type="primary"]', ns)
     location = primary_element.find('r:location', ns).get('href')
-    sha256_expected = primary_element.find('r:checksum[@type="sha256"]', ns).text
+    sha256_or_512 = 0
+    try:
+        sha_expected = primary_element.find('r:checksum[@type="sha512"]', ns).text
+        sha256_or_512 = 512
+    except AttributeError:
+        sha_expected = primary_element.find('r:checksum[@type="sha256"]', ns).text
+        sha256_or_512 = 256
 
     f = tempfile.TemporaryFile()
     f.write(repomd.content)
@@ -85,9 +91,13 @@ def parse_repomd(repo, baseurl):
     with requests.get(url, stream=True) as primary:
         if primary.status_code != requests.codes.ok:
             raise Exception(url + ' does not exist')
-        sha256 = hashlib.sha256(primary.content).hexdigest()
-        if sha256 != sha256_expected:
-            raise Exception('checksums do not match {} != {}'.format(sha256, sha256_expected))
+        if sha256_or_512 == 512:
+            sha = hashlib.sha512(primary.content).hexdigest()
+        else:
+            sha = hashlib.sha256(primary.content).hexdigest()
+
+        if sha != sha_expected:
+            raise Exception('checksums do not match {} != {}'.format(sha, sha_expected))
 
         content = gzip.GzipFile(fileobj=io.BytesIO(primary.content))
         os.lseek(f.fileno(), 0, os.SEEK_SET)
