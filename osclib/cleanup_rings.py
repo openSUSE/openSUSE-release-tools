@@ -118,7 +118,10 @@ class CleanupRings(object):
         return True
 
     def check_image_bdeps(self, project, arch):
-        for dvd in ('000product:openSUSE-dvd5-dvd-{}'.format(arch), 'Test-DVD-{}'.format(arch)):
+        url = makeurl(self.api.apiurl, ['build', project, '_result'])
+        root = ET.parse(http_GET(url)).getroot()
+        for image in root.xpath(f"result[@repository = 'images' and @arch = '{arch}']/status[@code != 'excluded' and @code != 'disabled']"):
+            dvd = image.get('package')
             try:
                 url = makeurl(self.api.apiurl, ['build', project, 'images', arch, dvd, '_buildinfo'])
                 root = ET.parse(http_GET(url)).getroot()
@@ -126,6 +129,8 @@ class CleanupRings(object):
                 if e.code == 404:
                     continue
                 raise
+            # Don't delete the image itself
+            self.pkgdeps[dvd.split(':')[0]] = 'MYdvd{}'.format(self.api.rings.index(project))
             for bdep in root.findall('bdep'):
                 if 'name' not in bdep.attrib:
                     continue
@@ -135,7 +140,6 @@ class CleanupRings(object):
                     continue
                 b = self.bin2src[b]
                 self.pkgdeps[b] = 'MYdvd{}'.format(self.api.rings.index(project))
-            break
 
     def check_buildconfig(self, project):
         url = makeurl(self.api.apiurl, ['build', project, 'standard', '_buildconfig'])
