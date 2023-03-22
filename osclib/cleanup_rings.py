@@ -19,6 +19,18 @@ class CleanupRings(object):
             # Must remain in ring-1 with other kernel packages to keep matching
             # build number, but is required by virtualbox in ring-2.
             'kernel-syms',
+            # buildtime services aren't visible in _buildinfo
+            'obs-service-recompress',
+            'obs-service-set_version',
+            'obs-service-tar_scm',
+            # Used by ARM only, but part of oS:F ring 1 in general
+            'u-boot',
+            'raspberrypi-firmware-dt',
+            'raspberrypi-firmware-config',
+            # Says "QA", must be important
+            'kernel-obs-qa',
+            # Added manually to notice failures early
+            'vagrant',
         ]
 
     def perform(self):
