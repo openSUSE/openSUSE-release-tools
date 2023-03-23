@@ -61,7 +61,7 @@ class CleanupRings(object):
                 if dprj != self.api.project:
                     if not dprj.startswith(self.api.crings):
                         print("#{} not linking to base {} but {}".format(pkg, self.api.project, dprj))
-                    self.links[dpkg] = pkg
+                    self.links[pkg] = dpkg
                 # multi spec package must link to ring
                 elif len(links) > 1:
                     mainpkg = links[1].get('package')
@@ -78,7 +78,7 @@ class CleanupRings(object):
                         else:
                             if pkg != 'glibc.i686':  # FIXME: ugly exception
                                 print("osc linkpac -f {}/{} {}/{}".format(destring, mainpkg, prj, pkg))
-                                self.links[mainpkg] = pkg
+                                self.links[pkg] = mainpkg
 
     def fill_pkgdeps(self, prj, repo, arch):
         root = builddepinfo(self.api.apiurl, prj, repo, arch)
