@@ -5,8 +5,6 @@ from osclib.core import fileinfo_ext_all
 from osclib.core import builddepinfo
 from osclib.memoize import memoize
 
-from urllib.error import HTTPError
-
 
 class CleanupRings(object):
     def __init__(self, api):
@@ -118,13 +116,8 @@ class CleanupRings(object):
         root = ET.parse(http_GET(url)).getroot()
         for image in root.xpath(f"result[@repository = 'images' and @arch = '{arch}']/status[@code != 'excluded' and @code != 'disabled']"):
             dvd = image.get('package')
-            try:
-                url = makeurl(self.api.apiurl, ['build', project, 'images', arch, dvd, '_buildinfo'])
-                root = ET.parse(http_GET(url)).getroot()
-            except HTTPError as e:
-                if e.code == 404:
-                    continue
-                raise
+            url = makeurl(self.api.apiurl, ['build', project, 'images', arch, dvd, '_buildinfo'])
+            root = ET.parse(http_GET(url)).getroot()
             # Don't delete the image itself
             self.pkgdeps[dvd.split(':')[0]] = 'MYdvd{}'.format(self.api.rings.index(project))
             for bdep in root.findall('bdep'):
