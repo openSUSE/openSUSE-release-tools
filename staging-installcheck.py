@@ -21,6 +21,7 @@ from osclib.core import (builddepinfo, depends_on, duplicated_binaries_in_repo,
 
 from osclib.repochecks import installcheck, mirror
 from osclib.stagingapi import StagingAPI
+from osclib.memoize import memoize
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 CheckResult = namedtuple('CheckResult', ('success', 'comment'))
@@ -69,20 +70,33 @@ class InstallChecker(object):
         comments.append('Error: missing alternative provides for {}'.format(provide))
         return False
 
+    @memoize(session=True)
+    def pkg_with_multibuild_flavors(self, package):
+        ret = set([package])
+        # Add all multibuild flavors
+        mainprjresult = ET.fromstringlist(osc.core.show_results_meta(self.api.apiurl, self.api.project, multibuild=True))
+        for pkg in mainprjresult.xpath(f"result/status[starts-with(@package,'{package}:')]"):
+            ret.add(pkg.get('package'))
+
+        return ret
+
     def check_delete_request(self, req, to_ignore, to_delete, comments):
         package = req.get('package')
         if package in to_ignore or self.ignore_deletes:
             self.logger.info('Delete request for package {} ignored'.format(package))
             return True
 
+        pkg_flavors = self.pkg_with_multibuild_flavors(package)
+
         built_binaries = set()
         file_infos = []
-        for fileinfo in fileinfo_ext_all(self.api.apiurl, self.api.project, self.api.cmain_repo, 'x86_64', package):
-            built_binaries.add(fileinfo.find('name').text)
-            file_infos.append(fileinfo)
+        for flavor in pkg_flavors:
+            for fileinfo in fileinfo_ext_all(self.api.apiurl, self.api.project, self.api.cmain_repo, 'x86_64', flavor):
+                built_binaries.add(fileinfo.find('name').text)
+                file_infos.append(fileinfo)
         # extend the others - this asks for a refactoring, but we don't handle tons of delete requests often
         for ptd in to_delete:
-            if package == ptd:
+            if ptd in pkg_flavors:
                 continue
             for fileinfo in fileinfo_ext_all(self.api.apiurl, self.api.project, self.api.cmain_repo, 'x86_64', ptd):
                 built_binaries.add(fileinfo.find('name').text)
@@ -93,7 +107,7 @@ class InstallChecker(object):
                 for requiredby in provides.findall('requiredby[@name]'):
                     result = result and self.check_required_by(fileinfo, provides, requiredby, built_binaries, comments)
 
-        what_depends_on = depends_on(api.apiurl, api.project, api.cmain_repo, [package], True)
+        what_depends_on = depends_on(api.apiurl, api.project, api.cmain_repo, pkg_flavors, True)
 
         # filter out packages to be deleted
         for ptd in to_delete:
@@ -174,7 +188,7 @@ class InstallChecker(object):
         to_delete = set()
         for req in status.findall('staged_requests/request'):
             if req.get('type') == 'delete':
-                to_delete.add(req.get('package'))
+                to_delete |= self.pkg_with_multibuild_flavors(req.get('package'))
 
         for req in status.findall('staged_requests/request'):
             if req.get('type') == 'delete':
