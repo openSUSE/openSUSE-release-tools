@@ -3,6 +3,7 @@ from osc.core import makeurl
 from osc.core import http_GET
 from osclib.core import fileinfo_ext_all
 from osclib.core import builddepinfo
+from osclib.memoize import memoize
 
 from urllib.error import HTTPError
 
@@ -16,10 +17,11 @@ class CleanupRings(object):
         self.links = {}
         self.commands = []
         self.whitelist = [
-            # Must remain in ring-1 with other kernel packages to keep matching
-            # build number, but is required by virtualbox in ring-2.
-            'kernel-syms',
-            # buildtime services aren't visible in _buildinfo
+            # Keep this in ring 1, even though ring 0 builds the main flavor
+            # and ring 1 has that disabled.
+            'automake:testsuite',
+            'meson:test',
+            # buildtime services aren't visible in _builddepinfo
             'obs-service-recompress',
             'obs-service-set_version',
             'obs-service-tar_scm',
@@ -27,8 +29,6 @@ class CleanupRings(object):
             'u-boot',
             'raspberrypi-firmware-dt',
             'raspberrypi-firmware-config',
-            # Says "QA", must be important
-            'kernel-obs-qa',
             # Added manually to notice failures early
             'vagrant',
         ]
@@ -80,17 +80,11 @@ class CleanupRings(object):
                                 print("osc linkpac -f {}/{} {}/{}".format(destring, mainpkg, prj, pkg))
                                 self.links[pkg] = mainpkg
 
-    def fill_pkgdeps(self, prj, repo, arch):
+    def fill_pkginfo(self, prj, repo, arch):
         root = builddepinfo(self.api.apiurl, prj, repo, arch)
 
         for package in root.findall('package'):
-            # use main package name for multibuild. We can't just ignore
-            # multibuild as eg installation-images has no results for the main
-            # package itself
-            # https://github.com/openSUSE/open-build-service/issues/4198
-            name = package.attrib['name'].split(':')[0]
-            if name.startswith('preinstall'):
-                continue
+            name = package.attrib['name']
 
             self.sources.add(name)
 
@@ -100,18 +94,8 @@ class CleanupRings(object):
                     if self.bin2src[subpkg] == name:
                         # different archs
                         continue
-                    print('# Binary {} is defined twice: {}/{}'.format(subpkg, prj, name))
+                    print('# Binary {} is defined twice: {} {}+{}'.format(subpkg, prj, name, self.bin2src[subpkg]))
                 self.bin2src[subpkg] = name
-
-        for package in root.findall('package'):
-            name = package.attrib['name'].split(':')[0]
-            for pkg in package.findall('pkgdep'):
-                if pkg.text not in self.bin2src:
-                    if not pkg.text.startswith('texlive-'):  # XXX: texlive bullshit packaging
-                        print('Package {} not found in place'.format(pkg.text))
-                    continue
-                b = self.bin2src[pkg.text]
-                self.pkgdeps[b] = name
 
     def repo_state_acceptable(self, project):
         url = makeurl(self.api.apiurl, ['build', project, '_result'])
@@ -164,48 +148,123 @@ class CleanupRings(object):
                     b = self.bin2src[prein]
                     self.pkgdeps[b] = 'MYinstall'
 
-    def check_requiredby(self, project, package):
-        # Prioritize x86_64 bit.
-        for arch in reversed(self.api.cstaging_archs):
-            for fileinfo in fileinfo_ext_all(self.api.apiurl, project, 'standard', arch, package):
-                for requiredby in fileinfo.findall('provides_ext/requiredby[@name]'):
-                    b = self.bin2src[requiredby.get('name')]
-                    if b == package:
-                        # A subpackage depending on self.
-                        continue
-                    self.pkgdeps[package] = b
-                    return True
-        return False
+    @memoize(session=True)
+    def package_get_requiredby(self, project, package, repo, arch):
+        "For a given package, return which source packages it provides runtime deps for."
+        ret = set()
+        for fileinfo in fileinfo_ext_all(self.api.apiurl, project, repo, arch, package):
+            for requiredby in fileinfo.findall('provides_ext/requiredby[@name]'):
+                ret.add(self.bin2src[requiredby.get('name')])
+
+        return ret
 
     def check_depinfo_ring(self, prj, nextprj):
         if not self.repo_state_acceptable(prj):
             return False
 
+        # Dict of linking package -> linked package
+        self.links = {}
         self.find_inner_ring_links(prj)
-        for arch in self.api.cstaging_archs:
-            self.fill_pkgdeps(prj, 'standard', arch)
-
-        if self.api.rings.index(prj) == 0:
-            self.check_buildconfig(prj)
-        else:
-            for arch in self.api.cstaging_archs:
-                self.check_image_bdeps(prj, arch)
-
-        for source in self.sources:
-            if (source not in self.pkgdeps and
-                source not in self.links and
-                    source not in self.whitelist):
-                if source.startswith('texlive-specs-'):  # XXX: texlive bullshit packaging
-                    continue
-                # Expensive check so left until last.
-                if self.check_requiredby(prj, source):
-                    continue
-
-                print('# - {}'.format(source))
-                self.commands.append('osc rdelete -m cleanup {} {}'.format(prj, source))
-                if nextprj:
-                    self.commands.append('osc linkpac {} {} {}'.format(self.api.project, source, nextprj))
 
         # Only loop through sources once from their origin ring to ensure single
         # step moving to allow check_requiredby() to see result in each ring.
         self.sources = set()
+        all_needed_sources = set()
+
+        # For each arch, collect needed source packages.
+        # Prioritize x86_64.
+        for arch in reversed(self.api.cstaging_archs):
+            print(f"Arch {arch}")
+
+            # Dict of needed source pkg -> reason why it's needed
+            self.pkgdeps = {}
+            # Note: bin2src is not cleared, that way ring1 pkgs can depend
+            # on binaries from ring0.
+            self.fill_pkginfo(prj, 'standard', arch)
+
+            # 1. No images built, just for bootstrapping the rpm buildenv.
+            # 2. Treat multibuild flavors as independent packages
+            is_ring0 = self.api.rings.index(prj) == 0
+
+            # Collect directly needed packages:
+            # For ring 0, prjconf (Preinstall). For ring 1, images.
+            if is_ring0:
+                self.check_buildconfig(prj)
+            else:
+                self.check_image_bdeps(prj, arch)
+
+            # Keep all preinstallimages
+            for pkg in self.sources:
+                if pkg.startswith("preinstallimage"):
+                    self.pkgdeps[pkg] = "preinstallimage"
+
+            # Treat all binaries in the whitelist as needed
+            for pkg in self.whitelist:
+                if pkg in self.sources:
+                    self.pkgdeps[pkg] = "whitelist"
+
+            to_visit = set(self.pkgdeps)
+            # print("Directly needed: ", to_visit)
+
+            url = makeurl(self.api.apiurl, ['build', prj, 'standard', arch, '_builddepinfo'], {"view": "pkgnames"})
+            root = ET.parse(http_GET(url)).getroot()
+
+            while len(to_visit) > 0:
+                new_deps = {}
+                for pkg in to_visit:
+                    if not is_ring0:
+                        # Outside of ring0, if one multibuild flavor is needed, add all of them
+                        mainpkg = pkg.split(":")[0]
+                        for src in self.sources:
+                            if src.startswith(f"{mainpkg}:"):
+                                new_deps[src] = pkg
+
+                        # Same for link groups
+                        for ldst, lsrc in self.links.items():
+                            if lsrc == mainpkg:
+                                new_deps[ldst] = pkg
+                            elif ldst == mainpkg:
+                                new_deps[lsrc] = pkg
+
+                    # Add all packages which this package depends on
+                    for dep in root.xpath(f"package[@name='{pkg}']/pkgdep"):
+                        new_deps[dep.text] = pkg
+
+                # Filter out already visited deps
+                to_visit = set(new_deps).difference(set(self.pkgdeps))
+                for pkg, reason in new_deps.items():
+                    self.pkgdeps[pkg] = reason
+
+                all_needed_sources |= set(self.pkgdeps)
+
+                # _builddepinfo only takes care of build deps. runtime deps are handled by
+                # fileinfo_ext_all, but that's really expensive. Thus the "obvious" algorithm
+                # of walking from needed packages to their deps would be too slow. Instead,
+                # walk from possibly unneeded packages (much fewer than needed) and check whether
+                # they satisfy runtime deps of needed packages.
+                # Do this after each batch of buildtime deps were resolved to minimize lookups.
+                if len(to_visit) != 0:
+                    continue
+
+                # Technically this should be self.pkgdeps, but on i586 pretty much nothing
+                # is needed (no built images) so we continue where x86_64 left off
+                maybe_unneeded = self.sources.difference(all_needed_sources)
+                for pkg in sorted(maybe_unneeded):
+                    requiredby = self.package_get_requiredby(prj, pkg, 'standard', arch)
+                    requiredby = requiredby.intersection(all_needed_sources)
+                    # Required by needed packages?
+                    if len(requiredby):
+                        print(f"# {pkg} needed by {requiredby}")
+                        # Include it and also resolve its build deps
+                        self.pkgdeps[pkg] = requiredby
+                        to_visit.add(pkg)
+
+        self.commands.append(f"# For {prj}:")
+        for source in sorted(self.sources):
+            if source not in all_needed_sources:
+                if ":" in source:
+                    self.commands.append(f"# Multibuild flavor {source} not needed")
+                else:
+                    self.commands.append('osc rdelete -m cleanup {} {}'.format(prj, source))
+                    if nextprj:
+                        self.commands.append('osc linkpac {} {} {}'.format(self.api.project, source, nextprj))
