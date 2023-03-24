@@ -356,6 +356,10 @@ def fileinfo_ext_all(apiurl, project, repo, arch, package):
         filename = binary.get('filename')
         if not filename.endswith('.rpm'):
             continue
+        if filename.endswith('.src.rpm'):
+            continue
+        if '-debuginfo-' in filename or '-debugsource-' in filename:
+            continue
 
         yield fileinfo_ext(apiurl, project, repo, arch, package, filename)
 
