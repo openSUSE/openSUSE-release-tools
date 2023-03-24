@@ -68,7 +68,7 @@ def _full_project_name(self, project):
 def lock_needed(cmd, opts):
     return not (
         cmd in ('check', 'check_duplicate_binaries', 'check_local_links',
-                'frozenage', 'rebuild', 'unlock', 'setprio') or
+                'frozenage', 'rebuild', 'unlock', 'setprio', 'cleanup_rings') or
         (cmd == 'list' and not opts.supersede)
     )
 
