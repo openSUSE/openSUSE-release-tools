@@ -298,6 +298,7 @@ function merge(&$data1, $data2)
   }
 
   merge_product_plus_key($data1['unique_product'], $data2['unique_product']);
+  $data1['unique_product_flavor'] = array_merge($data1['unique_product_flavor'], $data2['unique_product_flavor']);
   merge_product_plus_key($data1['total_image_product'], $data2['total_image_product']);
 
   $data1['total_invalid'] += $data2['total_invalid'];
@@ -347,6 +348,16 @@ function summarize($data)
       // A UUID should be unique to a product, as such this should provide an
       // accurate count of total unique across all products.
       $summary['-']['unique'] += $summary_product['unique'];
+      if (isset($data['unique_product_flavor'][$product])) {
+        $unique_flavors = $data['unique_product_flavor'][$product]));
+        $flavors = array_unique(array_values($unique_flavors));
+        $summary_product += [ 'flavors' => [], ];
+        foreach ($flavors as $flavor) {
+          $summary_product['flavors'] += [
+            $flavor => count(array_keys($unique_flavors, $flavor)),
+          ];
+        }
+      }
     } else {
       $summary_product += [
         'unique' => 0,
