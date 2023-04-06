@@ -171,6 +171,15 @@ Scripts and templates to create staging projects.
 * Package: --
 * Usage: ?
 
+#### repo2fileprovides.py
+
+Script to generate necessary FileProvides lines needed by OBS from repo data.
+
+* Sources: [repo2fileprovides.py](repo2fileprovides.py)
+* Documentation: --
+* Package: --
+* Usage: repo2fileprovides.py primary.xml(.gz)
+
 ### Bots
 
 #### check_maintenance_incidents
