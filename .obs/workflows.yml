@@ -1,23 +1,10 @@
 ---
 pr:
   steps:
-  - link_package:
-      source_project: openSUSE:Tools
+  - branch_package:
+      source_project: openSUSE:Tools:OSRT:TestGithub
       source_package: openSUSE-release-tools
       target_project: openSUSE:Tools:OSRT:TestGithub
-  - configure_repositories:
-      project: openSUSE:Tools:OSRT:TestGithub
-      repositories:
-      - name: openSUSE_Tumbleweed
-        paths:
-          - target_project: openSUSE:Factory
-            target_repository: snapshot
-        architectures: [ x86_64 ]
-      - name: '15.4'
-        paths:
-          - target_project: openSUSE:Tools
-            target_repository: '15.4'
-        architectures: [ x86_64 ]
   filters:
     event: pull_request
 
