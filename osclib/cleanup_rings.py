@@ -29,6 +29,8 @@ class CleanupRings(object):
             'raspberrypi-firmware-config',
             # Added manually to notice failures early
             'vagrant',
+            # https://github.com/openSUSE/open-build-service/issues/14129
+            'snobol4',
         ]
 
     def perform(self):
