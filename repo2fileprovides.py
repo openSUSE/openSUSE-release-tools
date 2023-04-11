@@ -42,6 +42,15 @@ for pkg in repodata.iterfind('/md:package', namespaces=NS):
 requiredfiles = set(repodata.xpath("/md:metadata/md:package/md:format/rpm:requires/rpm:entry[starts-with(@name, '/')]/@name",
                                    namespaces=NS))
 
+# Split up boolean deps
+booleandeps = set(repodata.xpath("/md:metadata/md:package/md:format/rpm:requires/rpm:entry"
+                                 "[starts-with(@name, '(') and contains(@name, '/')]/@name",
+                                 namespaces=NS))
+for dep in booleandeps:
+    for capability in dep.replace('(', ' ').replace(')', ' ').split():
+        if capability[0] == '/':
+            requiredfiles.add(capability)
+
 # Step 3: For all provided files which are also required, print "FileProvides"
 # lines
 for filename in sorted(providedfiles.intersection(requiredfiles)):
