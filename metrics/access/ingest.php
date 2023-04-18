@@ -9,6 +9,7 @@ $total = 0;
 $total_invalid = 0;
 $total_product = [];
 $unique_product = [];
+$unique_product_flavor = [];
 $total_image_product = [];
 
 $file = $argc == 2 ? $argv[1] : 'php://stdin';
@@ -43,6 +44,12 @@ while (($line = fgets($handle)) !== false) {
     if (!isset($unique_product[$product])) $unique_product[$product] = [];
     if (!isset($unique_product[$product][$uuid])) $unique_product[$product][$uuid] = 0;
     $unique_product[$product][$uuid] += 1;
+
+    if ($match[8] != '-') {
+      $flavor = $match[8];
+      if (!isset($unique_product_flavor[$product])) $unique_product_flavor[$product] = [];
+      $unique_product_flavor[$product][$uuid] = $flavor;
+    }
   }
 
   if (preg_match(REGEX_IMAGE, $match[3], $match_image)) {
@@ -63,11 +70,13 @@ error_log('found ' . number_format($total) . ' requests across ' .
 
 ksort($total_product);
 ksort($unique_product);
+ksort($unique_product_flavor);
 if ($position) {
   echo json_encode([
     'total' => $total,
     'total_product' => $total_product,
     'unique_product' => $unique_product,
+    'unique_product_flavor' => $unique_product_flavor,
     'total_image_product' => $total_image_product,
     'total_invalid' => $total_invalid,
     'bytes' => $position,

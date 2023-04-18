@@ -351,11 +351,8 @@ function summarize($data)
       if (isset($data['unique_product_flavor'][$product])) {
         $unique_flavors = $data['unique_product_flavor'][$product]));
         $flavors = array_unique(array_values($unique_flavors));
-        $summary_product += [ 'flavors' => [], ];
         foreach ($flavors as $flavor) {
-          $summary_product['flavors'] += [
-            $flavor => count(array_keys($unique_flavors, $flavor)),
-          ];
+          $summary_product[$flavor] = count(array_keys($unique_flavors, $flavor));
         }
       }
     } else {
