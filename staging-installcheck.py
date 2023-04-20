@@ -49,6 +49,17 @@ class InstallChecker(object):
     def check_required_by(self, fileinfo, provides, requiredby, built_binaries, comments):
         if requiredby.get('name') in built_binaries:
             return True
+
+        result = True
+
+        # In some cases (boolean deps?) it's possible that fileinfo_ext for A
+        # shows that A provides cap needed by B, but fileinfo_ext for B does
+        # not list cap or A at all... In that case better error out and ask for
+        # human intervention.
+        dep_found = False
+        # In case the dep was not found, give a hint what OBS might have meant.
+        possible_dep = None
+
         # extract >= and the like
         provide = provides.get('dep')
         provide = provide.split(' ')[0]
@@ -57,18 +68,44 @@ class InstallChecker(object):
         url = api.makeurl(['build', api.project, api.cmain_repo, 'x86_64', '_repository', requiredby.get('name') + '.rpm'],
                           {'view': 'fileinfo_ext'})
         reverse_fileinfo = ET.parse(osc.core.http_GET(url)).getroot()
+
         for require in reverse_fileinfo.findall('requires_ext'):
             # extract >= and the like here too
             dep = require.get('dep').split(' ')[0]
             if dep != provide:
+                if provide in require.get('dep'):
+                    possible_dep = require.get('dep')
                 continue
+            dep_found = True
+            # Whether this is provided by something being deleted
+            provided_found = False
+            # Whether this is provided by something not being deleted
+            alternative_found = False
             for provided_by in require.findall('providedby'):
                 if provided_by.get('name') in built_binaries:
-                    continue
-                comments.append('  also provided by {} -> ignoring'.format(provided_by.get('name')))
-                return True
-        comments.append('Error: missing alternative provides for {}'.format(provide))
-        return False
+                    provided_found = True
+                else:
+                    comments.append('  also provided by {} -> ignoring'.format(provided_by.get('name')))
+                    alternative_found = True
+
+            if not alternative_found:
+                result = False
+
+            if not provided_found:
+                comments.append("  OBS doesn't see this in the reverse resolution though. Not sure what to do.")
+                result = False
+
+        if not dep_found:
+            comments.append("  OBS doesn't see this dep in reverse though. Not sure what to do.")
+            if possible_dep is not None:
+                comments.append(f'  Might be required by {possible_dep}')
+            return False
+
+        if result:
+            return True
+        else:
+            comments.append('Error: missing alternative provides for {}'.format(provide))
+            return False
 
     @memoize(session=True)
     def pkg_with_multibuild_flavors(self, package):
