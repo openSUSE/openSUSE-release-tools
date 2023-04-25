@@ -234,9 +234,19 @@ function aggregate($intervals, &$merged, $date, $date_previous, $data, $tags = [
         if ($prefix == 'protocol') {
           $summary = ['-' => $summary['-']];
         }
+        $flavors = []
+        foreach ($summary as $product => $details) {
+          if (isset($details['flavors'])) {
+            $flavors[$product] = $details['flavors'];
+            unset($summary[$product]['flavors']);
+          }
+        }
 
         if (isset($value_previous) and $value != $value_previous) {
           $count = write_summary($interval, $date_previous, $summary, $tags, $prefix);
+          if (isset($flavors)) {
+            $count += write_flavors($interval, $date_previous, $flavors);
+          }
 
           if ($prefix == 'access') {
             $summary = summarize_product_plus_key($merged[$interval]['data']['total_image_product']);
@@ -351,8 +361,9 @@ function summarize($data)
       if (isset($data['unique_product_flavor'][$product])) {
         $unique_flavors = $data['unique_product_flavor'][$product]));
         $flavors = array_unique(array_values($unique_flavors));
+        $summary_product['flavors'] = [];
         foreach ($flavors as $flavor) {
-          $summary_product[$flavor] = count(array_keys($unique_flavors, $flavor));
+          $summary_product['flavors'][$flavor] = count(array_keys($unique_flavors, $flavor));
         }
       }
     } else {
@@ -426,6 +437,20 @@ function write_summary($interval, DateTime $value, $summary, $tags = [], $prefix
   foreach ($summary as $product => $fields) {
     $points[] = new Point($measurement, null,
       ['product' => $product] + $tags, $fields, $value->getTimestamp());
+  }
+  write($points);
+  return count($points);
+}
+
+function write_flavors($interval, DateTime $value, $flavors)
+{
+  $measurement = 'access_' . $interval;
+  $points = [];
+  foreach ($flavors as $product => $unique_flavors) {
+    foreach($unique_flavors as $flavor => $unique_count) {
+      $tags = ['product' => $product, 'flavor' => $flavor];
+      $points = new Point($measurement, $unique_count, $tags, null, $value->getTimestamp());
+    }
   }
   write($points);
   return count($points);
