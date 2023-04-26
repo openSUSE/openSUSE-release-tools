@@ -234,7 +234,7 @@ function aggregate($intervals, &$merged, $date, $date_previous, $data, $tags = [
         if ($prefix == 'protocol') {
           $summary = ['-' => $summary['-']];
         }
-        $flavors = []
+        $flavors = [];
         foreach ($summary as $product => $details) {
           if (isset($details['flavors'])) {
             $flavors[$product] = $details['flavors'];
@@ -308,7 +308,7 @@ function merge(&$data1, $data2)
   }
 
   merge_product_plus_key($data1['unique_product'], $data2['unique_product']);
-  $data1['unique_product_flavor'] = array_merge($data1['unique_product_flavor'], $data2['unique_product_flavor']);
+  merge_product_plus_key_string($data1['unique_product_flavor'], $data2['unique_product_flavor'])
   merge_product_plus_key($data1['total_image_product'], $data2['total_image_product']);
 
   $data1['total_invalid'] += $data2['total_invalid'];
@@ -326,6 +326,20 @@ function merge_product_plus_key(&$data1, $data2)
         $data1[$product][$key] = 0;
 
       $data1[$product][$key] += $data2[$product][$key];
+    }
+  }
+}
+
+function merge_product_plus_key_string(&$data1, $data2)
+{
+  if (isset($data2)) {
+    if (isset($data1)) {
+      foreach ($data2 as $product => $pairs) {
+        if (empty($data1[$product]))
+          $data1[$product] = [];
+        $data1[$product] += $data2[$product];
+    } else {
+      $data1 = $data2;
     }
   }
 }
@@ -359,7 +373,7 @@ function summarize($data)
       // accurate count of total unique across all products.
       $summary['-']['unique'] += $summary_product['unique'];
       if (isset($data['unique_product_flavor'][$product])) {
-        $unique_flavors = $data['unique_product_flavor'][$product]));
+        $unique_flavors = $data['unique_product_flavor'][$product];
         $flavors = array_unique(array_values($unique_flavors));
         $summary_product['flavors'] = [];
         foreach ($flavors as $flavor) {
@@ -449,7 +463,7 @@ function write_flavors($interval, DateTime $value, $flavors)
   foreach ($flavors as $product => $unique_flavors) {
     foreach($unique_flavors as $flavor => $unique_count) {
       $tags = ['product' => $product, 'flavor' => $flavor];
-      $points = new Point($measurement, $unique_count, $tags, null, $value->getTimestamp());
+      $points[] = new Point($measurement, $unique_count, $tags, [], $value->getTimestamp());
     }
   }
   write($points);
