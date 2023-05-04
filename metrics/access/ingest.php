@@ -22,9 +22,9 @@ while (($line = fgets($handle)) !== false) {
   }
 
   // Only interested in GET or HEAD requests, others are invalid.
-  if ($match[2] != 'GET' && $match[2] != 'HEAD') continue;
+  if ($match[3] != 'GET' && $match[3] != 'HEAD') continue;
   // Not interested on errors.
-  if ($match[4] >= '400') continue;
+  if ($match[5] >= '400') continue;
   $total++;
 
   // Attempt to determine for which product was the request.
