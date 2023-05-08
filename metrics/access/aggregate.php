@@ -199,7 +199,7 @@ function aggregate_all($period)
   }
 
   // Write out any remaining data by simulating a date beyond all intervals.
-  error_log('write remaining data');
+  /*error_log('write remaining data');
   $date = clone $date;
   $date->add(date_interval_create_from_date_string('1 year'));
 
@@ -207,7 +207,7 @@ function aggregate_all($period)
     aggregate($intervals, $merged_protocol[$protocol], $date, $date_previous, null,
       ['protocol' => $protocol], 'protocol');
   }
-  aggregate($intervals, $merged, $date, $date_previous, null);
+  aggregate($intervals, $merged, $date, $date_previous, null);*/
 }
 
 function aggregate($intervals, &$merged, $date, $date_previous, $data, $tags = [], $prefix = 'access')
@@ -492,8 +492,8 @@ function write($points)
 
   if (!$database) {
     $database = InfluxDB\Client::fromDSN('influxdb://0.0.0.0:8086/osrt_access');
-    $database->drop();
-    $database->create();
+    // $database->drop();
+    // $database->create();
   }
 
   if (!$database->writePoints($points, Database::PRECISION_SECONDS)) die('failed to write points');
