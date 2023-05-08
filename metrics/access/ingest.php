@@ -9,7 +9,6 @@ $total = 0;
 $total_invalid = 0;
 $total_product = [];
 $unique_product = [];
-$unique_product_flavor = [];
 $total_image_product = [];
 
 $file = $argc == 2 ? $argv[1] : 'php://stdin';
@@ -70,7 +69,6 @@ error_log('found ' . number_format($total) . ' requests across ' .
 
 ksort($total_product);
 ksort($unique_product);
-ksort($unique_product_flavor);
 if ($position) {
   echo json_encode([
     'total' => $total,
