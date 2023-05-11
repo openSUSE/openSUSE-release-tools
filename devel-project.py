@@ -190,6 +190,10 @@ def reviews(args):
     for devel_project in devel_projects:
         requests = get_review_list(apiurl, byproject=devel_project)
         for request in requests:
+            # get_review_list() behavior has been changed in osc
+            # https://github.com/openSUSE/osc/commit/00decd25d1a2c775e455f8865359e0d21872a0a5
+            if request.state.name != 'review':
+                continue
             action = request.actions[0]
             if action.type != 'submit':
                 continue
