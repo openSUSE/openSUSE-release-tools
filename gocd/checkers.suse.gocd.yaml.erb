@@ -169,6 +169,40 @@ pipelines:
                 osc -A https://api.suse.de staging -p SUSE:SLE-15-SP4:Update:Products:Micro54 unselect --cleanup
                 osc -A https://api.suse.de staging -p SUSE:SLE-15-SP4:Update:Products:Micro54 repair --cleanup
                 rm -rf $tempdir
+  ALP.IBS.Staging.Bot.Regular:
+    group: SLE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 0 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            timeout: 30
+            resources:
+            - staging-bot
+            tasks:
+            - script: |-
+                set -e
+                tempdir=$(mktemp -d)
+                mkdir -p $tempdir/.osc-plugins
+                ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
+                ln -s $PWD/osclib $tempdir/.osc-plugins
+                export HOME=$tempdir
+
+                osc -A https://api.suse.de staging -p SUSE:ALP:Products:Server:1.0 rebuild
+                osc -A https://api.suse.de staging -p SUSE:ALP:Products:Server:1.0 list --supersede
+                osc -A https://api.suse.de staging -p SUSE:ALP:Products:Server:1.0 select --non-interactive --merge --try-strategies
+                osc -A https://api.suse.de staging -p SUSE:ALP:Products:Server:1.0 unselect --cleanup
+                osc -A https://api.suse.de staging -p SUSE:ALP:Products:Server:1.0 repair --cleanup
+                rm -rf $tempdir
   S15.SP5.Staging.Bot.Report:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
@@ -211,6 +245,27 @@ pipelines:
             - staging-bot
             tasks:
             - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:SLE-15-SP4:Update:Products:Micro54
+  ALP.IBS.Staging.Bot.Report:
+    group: SLE.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 */3 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            timeout: 30
+            resources:
+            - staging-bot
+            tasks:
+            - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:ALP:Products:Server:1.0
   SLE.Source.Check:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
