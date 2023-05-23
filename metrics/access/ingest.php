@@ -1,7 +1,7 @@
 #!/usr/bin/php
 <?php
 
-const REGEX_LINE = '/\S+ \S+ \S+ \[([^:]+:\d+:\d+:\d+ [^\]]+)\] "(\S+)(?: (\S+) \S+)?" (\S+) (\S+) "[^"]*" "[^"]*" .* (?:size:|want:- give:- \d+ )(\S+) \S+(?: +"?(\S+-\S+-\S+-\S+-[^\s"]+|-)"? "?(dvd|ftp|mini|usb-[^"]*|livecd-[^"]*|appliance-?[^"]*|-)"?)?/';
+const REGEX_LINE = '/(\S+) \S+ \S+ \[([^:]+:\d+:\d+:\d+ [^\]]+)\] "(\S+)(?: (\S+) \S+)?" (\S+) (\S+) "[^"]*" "[^"]*" .* (?:size:|want:- give:- \d+ )(\S+) \S+(?: +"?(\S+-\S+-\S+-\S+-[^\s"]+|-)"? "?(dvd|ftp|mini|usb-[^"]*|livecd-[^"]*|appliance-?[^"]*|-)"?)?/';
 const REGEX_PRODUCT = '#/(?:(tumbleweed)|distribution/(?:leap/)?(\d+\.\d+)|openSUSE(?:_|:/)(?:leap(?:_|:/))?(factory|tumbleweed|\d+\.\d+))#i';
 const REGEX_IMAGE = '#(?:/(?:iso|live)/[^/]+-(DVD|NET|GNOME-Live|KDE-Live|Rescue-CD|Kubic-DVD)-[^/]+\.iso(?:\.torrent)?|/jeos/[^/]+-(JeOS)\.[^/]+\.(?:qcow2|vhdx|vmdk|vmx)$)#';
 
@@ -21,13 +21,13 @@ while (($line = fgets($handle)) !== false) {
   }
 
   // Only interested in GET or HEAD requests, others are invalid.
-  if ($match[2] != 'GET' && $match[2] != 'HEAD') continue;
+  if ($match[3] != 'GET' && $match[3] != 'HEAD') continue;
   // Not interested on errors.
-  if ($match[4] >= '400') continue;
+  if ($match[5] >= '400') continue;
   $total++;
 
   // Attempt to determine for which product was the request.
-  if (!preg_match(REGEX_PRODUCT, $match[3], $match_product)) {
+  if (!preg_match(REGEX_PRODUCT, $match[4], $match_product)) {
     continue;
   }
 
@@ -38,14 +38,20 @@ while (($line = fgets($handle)) !== false) {
   if (!isset($total_product[$product])) $total_product[$product] = 0;
   $total_product[$product] += 1;
 
-  if (count($match) == 9 && $match[7] != '-') {
-    $uuid = $match[7];
+  if (count($match) == 10 && $match[8] != '-') {
+    $uuid = $match[8];
     if (!isset($unique_product[$product])) $unique_product[$product] = [];
-    if (!isset($unique_product[$product][$uuid])) $unique_product[$product][$uuid] = 0;
-    $unique_product[$product][$uuid] += 1;
+    if (!isset($unique_product[$product][$uuid])) {
+      $unique_product[$product][$uuid] = [
+        'count' => 0,
+        'flavor' => $match[9],
+        'ip' => $match[1],
+      ];
+    }
+    $unique_product[$product][$uuid]['count'] += 1;
   }
 
-  if (preg_match(REGEX_IMAGE, $match[3], $match_image)) {
+  if (preg_match(REGEX_IMAGE, $match[4], $match_image)) {
     // Remove empty match groups and select non-all match.
     $values = array_filter($match_image);
     $image = next($values);

@@ -199,7 +199,7 @@ function aggregate_all($period)
   }
 
   // Write out any remaining data by simulating a date beyond all intervals.
-  error_log('write remaining data');
+  /*error_log('write remaining data');
   $date = clone $date;
   $date->add(date_interval_create_from_date_string('1 year'));
 
@@ -207,7 +207,7 @@ function aggregate_all($period)
     aggregate($intervals, $merged_protocol[$protocol], $date, $date_previous, null,
       ['protocol' => $protocol], 'protocol');
   }
-  aggregate($intervals, $merged, $date, $date_previous, null);
+  aggregate($intervals, $merged, $date, $date_previous, null);*/
 }
 
 function aggregate($intervals, &$merged, $date, $date_previous, $data, $tags = [], $prefix = 'access')
@@ -234,9 +234,19 @@ function aggregate($intervals, &$merged, $date, $date_previous, $data, $tags = [
         if ($prefix == 'protocol') {
           $summary = ['-' => $summary['-']];
         }
+        $flavors = [];
+        foreach ($summary as $product => $details) {
+          if (isset($details['flavors'])) {
+            $flavors[$product] = $details['flavors'];
+            unset($summary[$product]['flavors']);
+          }
+        }
 
         if (isset($value_previous) and $value != $value_previous) {
           $count = write_summary($interval, $date_previous, $summary, $tags, $prefix);
+          if (isset($flavors)) {
+            $count += write_flavors($interval, $date_previous, $flavors);
+          }
 
           if ($prefix == 'access') {
             $summary = summarize_product_plus_key($merged[$interval]['data']['total_image_product']);
@@ -284,6 +294,15 @@ function normalize(&$data)
   if (!isset($data['total_image_product'])) {
     $data['total_image_product'] = [];
   }
+  $first_product = reset($data['unique_product']);
+  $first_key = reset($first_product);
+  if (is_int($first_key)) {
+    foreach ($data['unique_product'] as $product => $pairs) {
+      foreach ($pairs as $key => $count) {
+        $data['unique_product'][$product][$key] = ['count' => $count];
+      }
+    }
+  }
 }
 
 function merge(&$data1, $data2)
@@ -297,7 +316,7 @@ function merge(&$data1, $data2)
     $data1['total_product'][$product] += $data2['total_product'][$product];
   }
 
-  merge_product_plus_key($data1['unique_product'], $data2['unique_product']);
+  merge_unique_products($data1['unique_product'], $data2['unique_product']);
   merge_product_plus_key($data1['total_image_product'], $data2['total_image_product']);
 
   $data1['total_invalid'] += $data2['total_invalid'];
@@ -315,6 +334,23 @@ function merge_product_plus_key(&$data1, $data2)
         $data1[$product][$key] = 0;
 
       $data1[$product][$key] += $data2[$product][$key];
+    }
+  }
+}
+
+function merge_unique_products(&$data1, $data2)
+{
+  foreach ($data2 as $product => $arrays) {
+    if (empty($data1[$product]))
+      $data1[$product] = [];
+
+    foreach ($arrays as $key => $array) {
+      if (empty($data1[$product][$key]))
+        $data1[$product][$key] = ['count' => 0];
+
+      $data1[$product][$key]['count'] += $array['count'];
+      if (isset($array['flavor'])) $data1[$product][$key]['flavor'] = $array['flavor'];
+      if (isset($array['ip'])) $data1[$product][$key]['ip'] = $array['ip'];
     }
   }
 }
@@ -339,20 +375,21 @@ function summarize($data)
     ];
     if (isset($data['unique_product'][$product])) {
       $unique_product = $data['unique_product'][$product];
-      $summary_product += [
-        'unique' => count($unique_product),
-        'unqiue_average' => (float) (array_sum($unique_product) / count($unique_product)),
-        'unqiue_max' => max($unique_product),
-      ];
+      $summary_product += [ 'unique' => count($unique_product) ];
       // A UUID should be unique to a product, as such this should provide an
       // accurate count of total unique across all products.
       $summary['-']['unique'] += $summary_product['unique'];
+      $first_key = reset($data['unique_product'][$product]);
+      if (isset($first_key['flavor'])) {
+        $unique_flavors = array_column($data['unique_product'][$product], 'flavor');
+        $flavors = array_unique($unique_flavors);
+        $summary_product['flavors'] = [];
+        foreach ($flavors as $flavor) {
+          $summary_product['flavors'][$flavor] = count(array_keys($unique_flavors, $flavor));
+        }
+      }
     } else {
-      $summary_product += [
-        'unique' => 0,
-        'unqiue_average' => (float) 0,
-        'unqiue_max' => 0,
-      ];
+      $summary_product += [ 'unique' => 0 ];
     }
     $summary[$product] = $summary_product;
 
@@ -366,8 +403,6 @@ function summarize($data)
     $summary[$product] = [
       'total' => 0,
       'unique' => 0,
-      'unqiue_average' => (float) 0,
-      'unqiue_max' => 0,
     ];
   }
 
@@ -423,6 +458,20 @@ function write_summary($interval, DateTime $value, $summary, $tags = [], $prefix
   return count($points);
 }
 
+function write_flavors($interval, DateTime $value, $flavors)
+{
+  $measurement = 'access_' . $interval;
+  $points = [];
+  foreach ($flavors as $product => $unique_flavors) {
+    foreach($unique_flavors as $flavor => $unique_count) {
+      $tags = ['product' => $product, 'flavor' => $flavor];
+      $points[] = new Point($measurement, $unique_count, $tags, [], $value->getTimestamp());
+    }
+  }
+  write($points);
+  return count($points);
+}
+
 function write_summary_product_plus_key($interval, DateTime $date, $summary, $prefix)
 {
   $measurement = $prefix . '_' . $interval;
@@ -443,8 +492,8 @@ function write($points)
 
   if (!$database) {
     $database = InfluxDB\Client::fromDSN('influxdb://0.0.0.0:8086/osrt_access');
-    $database->drop();
-    $database->create();
+    // $database->drop();
+    // $database->create();
   }
 
   if (!$database->writePoints($points, Database::PRECISION_SECONDS)) die('failed to write points');
