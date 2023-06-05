@@ -6,7 +6,6 @@ from flask import make_response
 
 import re
 import os
-from urllib.parse import urlparse
 
 digits_re = re.compile('^[0-9.]+$')
 
@@ -15,13 +14,15 @@ BASE_DIR = '/var/lib'
 app = Flask(__name__)
 
 
-def get_dir(url):
-    return os.path.join(BASE_DIR, urlparse(url).path.lstrip('/'))
+def get_dir(path):
+    data_path = os.path.join(BASE_DIR, path.lstrip('/'))
+    assert os.path.realpath(data_path).startswith(os.path.join(BASE_DIR, 'snapshot-changes'))
+    return data_path
 
 
-@app.route('/')
-def list():
-    _dir = get_dir(request.url_root)
+@app.route('/<path:dirpath>/')
+def list(dirpath):
+    _dir = get_dir(dirpath)
     fn = os.path.join(_dir, 'current')
     current = None
     if os.path.exists(fn):
@@ -38,9 +39,9 @@ def list():
     return ret
 
 
-@app.route('/current', methods=['GET', 'POST'])
-def current():
-    _dir = get_dir(request.url_root)
+@app.route('/<path:dirpath>/current', methods=['GET', 'POST'])
+def current(dirpath):
+    _dir = get_dir(dirpath)
     fn = os.path.join(_dir, 'current')
     if request.method == 'POST':
         if 'version' not in request.form:
@@ -63,9 +64,9 @@ def current():
         return os.readlink(fn)
 
 
-@app.route('/diff/<version>')
-def diff(version):
-    _dir = get_dir(request.url_root)
+@app.route('/<path:dirpath>/diff/<version>')
+def diff(dirpath, version):
+    _dir = get_dir(dirpath)
     fn = os.path.join(_dir, 'current')
     if not os.path.exists(fn):
         return "current version doesn't exist", 404
