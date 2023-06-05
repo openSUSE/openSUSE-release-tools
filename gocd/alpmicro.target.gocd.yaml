@@ -199,7 +199,7 @@ pipelines:
         tasks:
           - script: osc -A https://api.suse.de release SUSE:ALP:Products:Micro:1.0:ToTest
 
-  SLE15.SP5.ReleaseScc:
+  ALP.Micro.ReleaseScc:
     group: ALP.Target
     parameters:
       product: alp-micro-1.0
