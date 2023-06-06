@@ -29,6 +29,36 @@
             "http://download.opensuse.org/update/leap/15.4/backports/",
             "http://download.opensuse.org/update/leap/15.4/sle/"
          ]
+      },
+      "openSUSE:Leap:15.5:Update": {
+         "settings": {
+            "OS_TEST_ISSUES": "",
+            "FLAVOR": "DVD-Updates",
+            "DISTRI": "opensuse",
+            "VERSION": "15.5",
+            "ARCH": "x86_64"
+         },
+         "test": "textmode",
+         "repos": [
+            "http://download.opensuse.org/update/leap/15.5/oss/",
+            "http://download.opensuse.org/update/leap/15.5/non-oss/",
+            "http://download.opensuse.org/update/leap/15.5/backports/",
+            "http://download.opensuse.org/update/leap/15.5/sle/"
+         ]
+      },
+      "openSUSE:Backports:SLE-15-SP5:Update": {
+         "settings": {
+            "OS_TEST_ISSUES": "",
+            "FLAVOR": "DVD-Backports-Incidents",
+            "DISTRI": "opensuse",
+            "VERSION": "15.5",
+            "ARCH": "x86_64"
+         },
+         "test": "textmode",
+         "repos": [
+            "http://download.opensuse.org/update/leap/15.5/backports/",
+            "http://download.opensuse.org/update/leap/15.5/sle/"
+         ]
       }
    }
 }
