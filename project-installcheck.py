@@ -240,10 +240,14 @@ class RepoChecker():
 
         per_source = dict()
 
+        ignore_conflicts = Config.get(self.apiurl, project).get('installcheck-ignore-conflicts', '').split(' ')
+
         for package, entry in parsed.items():
             source = "{}/{}/{}/{}".format(project, repository, arch, entry['source'])
-            per_source.setdefault(source, {'output': [], 'buildresult': buildresult.get(entry['source'], 'gone')})
+            per_source.setdefault(source, {'output': [], 'buildresult': buildresult.get(entry['source'], 'gone'), 'ignored': True})
             per_source[source]['output'].extend(entry['output'])
+            if package not in ignore_conflicts:
+                per_source[source]['ignored'] = False
 
         rebuilds = set()
 
@@ -253,6 +257,9 @@ class RepoChecker():
             self.logger.debug("{} builds: {}".format(source, per_source[source]['buildresult']))
             self.logger.debug("  " + "\n  ".join(per_source[source]['output']))
             if per_source[source]['buildresult'] != 'succeeded':  # nothing we can do
+                continue
+            if per_source[source]['ignored']:
+                self.logger.debug("All binaries failing the check are ignored")
                 continue
             old_output = oldstate['check'].get(source, {}).get('problem', [])
             if sorted(old_output) == sorted(per_source[source]['output']):
