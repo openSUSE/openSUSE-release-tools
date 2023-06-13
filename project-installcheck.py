@@ -204,7 +204,7 @@ class RepoChecker():
                 # so if some other perl error happens, we don't continue
                 raise CorruptRepos
 
-            target_packages = []
+            target_packages = {}
             with open(os.path.join(dir, 'catalog.yml')) as file:
                 catalog = yaml.safe_load(file)
                 if catalog is not None:
