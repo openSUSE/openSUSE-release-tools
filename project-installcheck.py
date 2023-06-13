@@ -211,20 +211,21 @@ class RepoChecker():
                     target_packages = catalog.get(directories[0], [])
 
             parsed = parsed_installcheck([pfile] + primaryxmls, arch, target_packages, [])
-            for package in parsed:
-                parsed[package]['output'] = "\n".join(parsed[package]['output'])
 
-            # let's risk a N*N algorithm in the hope that we have a limited N
-            for package1 in parsed:
-                output = parsed[package1]['output']
-                for package2 in parsed:
-                    if package1 == package2:
-                        continue
-                    output = output.replace(parsed[package2]['output'], 'FOLLOWUP(' + package2 + ')')
-                parsed[package1]['output'] = output
+        for package in parsed:
+            parsed[package]['output'] = "\n".join(parsed[package]['output'])
 
-            for package in parsed:
-                parsed[package]['output'] = self._split_and_filter(parsed[package]['output'])
+        # let's risk a N*N algorithm in the hope that we have a limited N
+        for package1 in parsed:
+            output = parsed[package1]['output']
+            for package2 in parsed:
+                if package1 == package2:
+                    continue
+                output = output.replace(parsed[package2]['output'], 'FOLLOWUP(' + package2 + ')')
+            parsed[package1]['output'] = output
+
+        for package in parsed:
+            parsed[package]['output'] = self._split_and_filter(parsed[package]['output'])
 
         url = makeurl(self.apiurl, ['build', project, '_result'], {'repository': repository, 'arch': arch})
         root = ET.parse(http_GET(url)).getroot()
