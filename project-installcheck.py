@@ -204,27 +204,28 @@ class RepoChecker():
                 # so if some other perl error happens, we don't continue
                 raise CorruptRepos
 
-            target_packages = []
+            target_packages = {}
             with open(os.path.join(dir, 'catalog.yml')) as file:
                 catalog = yaml.safe_load(file)
                 if catalog is not None:
                     target_packages = catalog.get(directories[0], [])
 
             parsed = parsed_installcheck([pfile] + primaryxmls, arch, target_packages, [])
-            for package in parsed:
-                parsed[package]['output'] = "\n".join(parsed[package]['output'])
 
-            # let's risk a N*N algorithm in the hope that we have a limited N
-            for package1 in parsed:
-                output = parsed[package1]['output']
-                for package2 in parsed:
-                    if package1 == package2:
-                        continue
-                    output = output.replace(parsed[package2]['output'], 'FOLLOWUP(' + package2 + ')')
-                parsed[package1]['output'] = output
+        for package in parsed:
+            parsed[package]['output'] = "\n".join(parsed[package]['output'])
 
-            for package in parsed:
-                parsed[package]['output'] = self._split_and_filter(parsed[package]['output'])
+        # let's risk a N*N algorithm in the hope that we have a limited N
+        for package1 in parsed:
+            output = parsed[package1]['output']
+            for package2 in parsed:
+                if package1 == package2:
+                    continue
+                output = output.replace(parsed[package2]['output'], 'FOLLOWUP(' + package2 + ')')
+            parsed[package1]['output'] = output
+
+        for package in parsed:
+            parsed[package]['output'] = self._split_and_filter(parsed[package]['output'])
 
         url = makeurl(self.apiurl, ['build', project, '_result'], {'repository': repository, 'arch': arch})
         root = ET.parse(http_GET(url)).getroot()
@@ -239,10 +240,14 @@ class RepoChecker():
 
         per_source = dict()
 
+        ignore_conflicts = Config.get(self.apiurl, project).get('installcheck-ignore-conflicts', '').split(' ')
+
         for package, entry in parsed.items():
             source = "{}/{}/{}/{}".format(project, repository, arch, entry['source'])
-            per_source.setdefault(source, {'output': [], 'buildresult': buildresult.get(entry['source'], 'gone')})
+            per_source.setdefault(source, {'output': [], 'buildresult': buildresult.get(entry['source'], 'gone'), 'ignored': True})
             per_source[source]['output'].extend(entry['output'])
+            if package not in ignore_conflicts:
+                per_source[source]['ignored'] = False
 
         rebuilds = set()
 
@@ -252,6 +257,9 @@ class RepoChecker():
             self.logger.debug("{} builds: {}".format(source, per_source[source]['buildresult']))
             self.logger.debug("  " + "\n  ".join(per_source[source]['output']))
             if per_source[source]['buildresult'] != 'succeeded':  # nothing we can do
+                continue
+            if per_source[source]['ignored']:
+                self.logger.debug("All binaries failing the check are ignored")
                 continue
             old_output = oldstate['check'].get(source, {}).get('problem', [])
             if sorted(old_output) == sorted(per_source[source]['output']):
