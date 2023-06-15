@@ -2,7 +2,7 @@
 FROM opensuse/tumbleweed
 
 # make sure we see osc regressions earlier than it hitting tumbleweed
-RUN zypper -n ar http://download.opensuse.org/repositories/openSUSE:/Tools/openSUSE_Factory/ openSUSE:Tools
+RUN zypper -n ar http://download.opensuse.org/repositories/openSUSE:/Tools/openSUSE_Tumbleweed/ openSUSE:Tools
 RUN zypper --gpg-auto-import-keys ref
 
 RUN zypper in -y osc python3-pytest python3-httpretty python3-pyxdg python3-PyYAML \
