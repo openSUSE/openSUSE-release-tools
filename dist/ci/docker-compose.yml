@@ -1,7 +1,7 @@
 version: "3.4"
 
 x-obs: &obs
-  image: registry.opensuse.org/opensuse/tools/images/containers154/osrt_miniobs:latest
+  image: registry.opensuse.org/opensuse/tools/images/containers155/osrt_miniobs:latest
 
 x-testenv: &testenv
   image: registry.opensuse.org/opensuse/tools/images/containers_tumbleweed/osrt_testenv_tumbleweed:latest
