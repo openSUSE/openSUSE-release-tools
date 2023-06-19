@@ -38,14 +38,14 @@ class SkippkgFinder(object):
         # binary rpms of packages from `skippkg-finder-skiplist-ignores`
         # be found in the `package_binaries` thus format must to be like
         # SUSE:SLE-15:Update_libcdio.12032, PROJECT-NAME_PACKAGE-NAME
-        self.skiplist_ignored = set(config.get('skippkg-finder-skiplist-ignores', '').split(' '))
+        self.skiplist_ignored = set(config.get('skippkg-finder-skiplist-ignores', '').split())
 
         # supplement RPMs for skipping from the ftp-tree
-        self.skiplist_supplement_regex = set(config.get('skippkg-finder-skiplist-supplement-regex', '').split(' '))
+        self.skiplist_supplement_regex = set(config.get('skippkg-finder-skiplist-supplement-regex', '').split())
         # drops off RPM from a list of the supplement RPMs due to regex
-        self.skiplist_supplement_ignores = set(config.get('skippkg-finder-skiplist-supplement-ignores', '').split(' '))
+        self.skiplist_supplement_ignores = set(config.get('skippkg-finder-skiplist-supplement-ignores', '').split())
         # conditional support scenario
-        self.skiplist_conditionals = set(config.get('skippkg-finder-conditional-scenarios', '').split(' '))
+        self.skiplist_conditionals = set(config.get('skippkg-finder-conditional-scenarios', '').split())
 
     def is_sle_specific(self, package):
         """
