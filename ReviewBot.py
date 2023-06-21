@@ -4,7 +4,7 @@ import os
 import sys
 import re
 import logging
-from typing import List
+from typing import Generator, List, Optional, Tuple, Union
 import cmdln
 from collections import namedtuple
 from collections import OrderedDict
@@ -219,7 +219,7 @@ class ReviewBot(object):
         return return_value
 
     @memoize(session=True)
-    def request_override_check_users(self, project):
+    def request_override_check_users(self, project: str) -> List[str]:
         """Determine users allowed to override review in a comment command."""
         config = Config.get(self.apiurl, project)
 
@@ -235,7 +235,7 @@ class ReviewBot(object):
 
         return users
 
-    def request_override_check(self, force=False):
+    def request_override_check(self, force: bool = False) -> Optional[bool]:
         """Check for a comment command requesting review override."""
         if not force and not self.override_allow:
             return None
@@ -251,8 +251,8 @@ class ReviewBot(object):
                 self.review_messages['declined'] = message
                 return False
 
-    def request_commands(self, command, who_allowed=None, request=None, action=None,
-                         include_description=True):
+    def request_commands(self, command: str, who_allowed=None, request=None, action=None,
+                         include_description=True) -> Generator[Tuple[List[str], Optional[str]], None, None]:
         if not request:
             request = self.request
         if not action:
@@ -545,7 +545,7 @@ class ReviewBot(object):
         self.review_messages['accepted'] += ': ' + message
         return self.request_default_return
 
-    def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
+    def check_source_submission(self, src_project: str, src_package: str, src_rev: str, target_project: str, target_package: str) -> None:
         """ default implemention does nothing """
         self.logger.info("%s/%s@%s -> %s/%s" % (src_project, src_package, src_rev, target_project, target_package))
         return None
@@ -812,7 +812,12 @@ class ReviewBot(object):
 
         return False
 
-    def request_age_wait(self, age_min=None, request=None, target_project=None):
+    def request_age_wait(
+            self,
+            age_min: Optional[Union[str, int, float]] = None,
+            request=None,
+            target_project: Optional[str] = None
+    ) -> bool:
         if not request:
             request = self.request
 

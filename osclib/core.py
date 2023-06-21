@@ -4,18 +4,18 @@ from dateutil.parser import parse as date_parse
 import re
 import socket
 import logging
+from typing import List, Literal, Optional, Tuple, Union
 from lxml import etree as ET
 from urllib.error import HTTPError
-from typing import Optional
 
-from osc.core import create_submit_request
+from osc.core import ReviewState, create_submit_request
 from osc.core import get_binarylist
 from osc.core import get_commitlog
 from osc.core import get_dependson
-from osc.core import http_DELETE
-from osc.core import http_GET
-from osc.core import http_POST
-from osc.core import http_PUT
+from osc.connection import http_DELETE
+from osc.connection import http_GET
+from osc.connection import http_POST
+from osc.connection import http_PUT
 from osc.core import makeurl
 from osc.core import owner
 from osc.core import search as osc_core_search
@@ -279,7 +279,13 @@ def binary_src_debug(binary):
 
 
 @memoize(session=True)
-def devel_project_get(apiurl: str, target_project: str, target_package: str):
+def devel_project_get(apiurl: str, target_project: str, target_package: str) -> Union[Tuple[str, str], Tuple[Literal[None], Literal[None]]]:
+    """Fetch the devel project & package name of the supplied ``target_project``
+    and ``target_package`` and return the devel project and devel package name
+    as a tuple. If no devel project has been defined, then return ``None,
+    None``.
+
+    """
     try:
         meta = ET.fromstringlist(show_package_meta(apiurl, target_project, target_package))
         node = meta.find('devel')
@@ -468,7 +474,22 @@ def package_list_kind_filtered(apiurl, project, kinds_allowed=['source']):
         yield package
 
 
-def attribute_value_load(apiurl: str, project: str, name: str, namespace='OSRT', package: Optional[str] = None):
+def attribute_value_load(
+        apiurl: str,
+        project: str,
+        name: str,
+        namespace: str = 'OSRT',
+        package: Optional[str] = None) -> Optional[Union[str, Literal[True]]]:
+    """Fetch an attribute from the OBS instance with the given ``apiurl`` for
+    the given ``project`` (and optionally for a package if a package name is
+    provided). The attribute is expected to have the name ``$namespace:$name``,
+    with the namespace defaulting to ``OSRT``.
+
+    Attributes are stored as xml and can be either strings or are interpreted as
+    ``True`` if only the element is present but has no other children or
+    entries.
+
+    """
     path = list(filter(None, ['source', project, package, '_attribute', namespace + ':' + name]))
     url = makeurl(apiurl, path)
 
@@ -506,7 +527,7 @@ def attribute_value_save(
     value: str,
     namespace='OSRT',
     package: Optional[str] = None
-):
+) -> None:
     root = ET.Element('attributes')
 
     attribute = ET.SubElement(root, 'attribute')
@@ -525,7 +546,7 @@ def attribute_value_save(
         raise e
 
 
-def attribute_value_delete(apiurl: str, project: str, name: str, namespace='OSRT', package: Optional[str] = None):
+def attribute_value_delete(apiurl: str, project: str, name: str, namespace='OSRT', package: Optional[str] = None) -> None:
     http_DELETE(makeurl(
         apiurl, list(filter(None, ['source', project, package, '_attribute', namespace + ':' + name]))))
 
@@ -661,7 +682,12 @@ def package_source_age(apiurl, project, package):
     return datetime.utcnow() - package_source_changed(apiurl, project, package)
 
 
-def entity_exists(apiurl, project, package=None):
+def entity_exists(apiurl: str, project: str, package: Optional[str] = None) -> bool:
+    """Check whether the project or the project/package exists on the OBS
+    instance behind the supplied apiurl and return True if it exists or False
+    otherwise.
+
+    """
     try:
         http_GET(makeurl(apiurl, list(filter(None, ['source', project, package])) + ['_meta']))
     except HTTPError as e:
@@ -673,7 +699,9 @@ def entity_exists(apiurl, project, package=None):
     return True
 
 
-def package_kind(apiurl, project, package):
+def package_kind(
+        apiurl, project, package
+) -> Optional[Literal['meta', 'multibuild_subpackage', 'patchinfo', 'maintenance_update', 'multispec_subpackage', 'source']]:
     if package.startswith('00') or package.startswith('_'):
         return 'meta'
 
@@ -900,7 +928,7 @@ def review_find_last(request, user, states=['all']):
     return None
 
 
-def reviews_remaining(request, incident_psuedo=False):
+def reviews_remaining(request: Request, incident_psuedo=False) -> List[ReviewState]:
     reviews = []
     for review in request.reviews:
         if review.state != 'accepted':
@@ -939,7 +967,7 @@ def issue_trackers(apiurl):
     return trackers
 
 
-def issue_tracker_by_url(apiurl, tracker_url):
+def issue_tracker_by_url(apiurl: str, tracker_url: str) -> Optional[str]:
     url = makeurl(apiurl, ['issue_trackers'])
     root = ET.parse(http_GET(url)).getroot()
     if not tracker_url.endswith('/'):
@@ -952,7 +980,7 @@ def issue_tracker_label_apply(tracker, identifier):
     return tracker.find('label').text.replace('@@@', identifier)
 
 
-def request_remote_identifier(apiurl, apiurl_remote, request_id):
+def request_remote_identifier(apiurl: str, apiurl_remote: str, request_id: str) -> str:
     if apiurl_remote == apiurl:
         return 'request#{}'.format(request_id)
 
@@ -1007,7 +1035,7 @@ def action_is_patchinfo(action):
         action.src_package == 'patchinfo' or action.src_package.startswith('patchinfo.')))
 
 
-def request_action_key(action):
+def request_action_key(action: Action) -> str:
     identifier = []
 
     if action.type in ['add_role', 'change_devel', 'maintenance_release', 'set_bugowner', 'submit']:

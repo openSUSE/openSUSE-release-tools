@@ -1,6 +1,7 @@
 from copy import deepcopy
 from collections import namedtuple
 import logging
+from typing import Any, Dict, Generator, List, Literal, NamedTuple, Optional, Tuple, TypedDict, Union
 from osclib.conf import Config
 from osclib.conf import str2bool
 from osclib.core import attribute_value_load
@@ -38,7 +39,26 @@ DEFAULTS = {
     'fallback-group': '<config:origin-manager-fallback-group>',
     'fallback-workaround': {},
 }
-POLICY_DEFAULTS = {
+
+
+class Policy(TypedDict):
+    additional_reviews: List[Any]
+    automatic_updates: bool
+    automatic_updates_initial: bool
+    automatic_updates_supersede: bool
+    automatic_updates_delay: int
+    automatic_updates_frequency: int
+    maintainer_review_always: bool
+    maintainer_review_initial: bool
+    pending_submission_allow: bool
+    pending_submission_consider: bool
+    pending_submission_allowed_reviews: List[str]
+    # Submit pending requests with a set of allowed reviews, but still wait for
+    # the above reviews before being accepted.
+    pending_submission_allowed_reviews_update: List[str]
+
+
+POLICY_DEFAULTS: Policy = {
     'additional_reviews': [],
     'automatic_updates': True,
     'automatic_updates_initial': False,
@@ -84,7 +104,13 @@ def config_load(apiurl, project):
     return config_resolve(apiurl, project, yaml.safe_load(config))
 
 
-def config_origin_generator(origins, apiurl=None, project=None, package=None, skip_workarounds=False):
+def config_origin_generator(
+        origins,
+        apiurl: Optional[str] = None,
+        project: Optional[str] = None,
+        package: Optional[str] = None,
+        skip_workarounds=False
+) -> Generator[Tuple[str, Any], None, None]:
     for origin_item in origins:
         for origin, values in origin_item.items():
             is_workaround = origin_workaround_check(origin)
@@ -103,7 +129,7 @@ def config_origin_generator(origins, apiurl=None, project=None, package=None, sk
             break  # Only support single value inside list item.
 
 
-def config_resolve(apiurl, project, config):
+def config_resolve(apiurl: str, project: str, config):
     defaults = POLICY_DEFAULTS.copy()
     defaults_workarounds = POLICY_DEFAULTS.copy()
 
@@ -222,17 +248,17 @@ def config_resolve_apply(config, values_apply, key=None, workaround=False, until
         values.update(values_apply)
 
 
-def origin_workaround_check(origin):
+def origin_workaround_check(origin: str) -> bool:
     return origin.endswith('~')
 
 
-def origin_workaround_ensure(origin):
+def origin_workaround_ensure(origin: str) -> str:
     if not origin_workaround_check(origin):
         return origin + '~'
     return origin
 
 
-def origin_workaround_strip(origin):
+def origin_workaround_strip(origin: str) -> str:
     if origin_workaround_check(origin):
         return origin[:-1]
     return origin
