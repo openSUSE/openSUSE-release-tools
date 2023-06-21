@@ -171,7 +171,7 @@ class ReviewBot(object):
     @review_mode.setter
     def review_mode(self, value: ReviewChoices):
         if value not in self.REVIEW_CHOICES:
-            raise Exception("invalid review option: %s" % value)
+            raise ValueError("invalid review option: %s" % value)
         self._review_mode = value
 
     def set_request_ids(self, ids):
