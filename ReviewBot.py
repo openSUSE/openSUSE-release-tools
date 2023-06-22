@@ -4,6 +4,7 @@ import os
 import sys
 import re
 import logging
+from typing import List
 import cmdln
 from collections import namedtuple
 from collections import OrderedDict
@@ -95,7 +96,7 @@ class ReviewBot(object):
         self.logger = logger
         self.review_user = user
         self.review_group = group
-        self.requests = []
+        self.requests: List[osc.core.Request] = []
         self.review_messages = ReviewBot.DEFAULT_REVIEW_MESSAGES
         self._review_mode = 'normal'
         self.fallback_user = None
@@ -398,7 +399,7 @@ class ReviewBot(object):
 
         return True
 
-    def check_one_request(self, req):
+    def check_one_request(self, req: osc.core.Request):
         """
         check all actions in one request.
 
@@ -427,11 +428,12 @@ class ReviewBot(object):
 
         overall = True
         for a in req.actions:
+            a: osc.core.Action
             if self.multiple_actions:
                 self.review_messages = self.DEFAULT_REVIEW_MESSAGES.copy()
 
             # Store in-case sub-classes need direct access to original values.
-            self.action = a
+            self.action: osc.core.Action = a
             key = request_action_key(a)
 
             override = self.request_override_check()
@@ -462,7 +464,7 @@ class ReviewBot(object):
 
         return overall
 
-    def action_method(self, action):
+    def action_method(self, action: osc.core.Action):
         method_prefix = 'check_action'
         method_type = action.type
         method_suffix = None
@@ -511,7 +513,7 @@ class ReviewBot(object):
         return self.check_source_submission(a.src_project, a.src_package, a.src_rev,
                                             a.tgt_releaseproject, tgt_package)
 
-    def check_action_maintenance_release(self, req, a):
+    def check_action_maintenance_release(self, req: osc.core.Request, a: osc.core.Action):
         pkgname = a.src_package
         if action_is_patchinfo(a):
             self.logger.debug('ignoring patchinfo action')
@@ -530,7 +532,7 @@ class ReviewBot(object):
             pkgname = linkpkg
         return self.check_source_submission(a.src_project, a.src_package, None, a.tgt_project, pkgname)
 
-    def check_action_submit(self, req, a):
+    def check_action_submit(self, req: osc.core.Request, a: osc.core.Action):
         return self.check_source_submission(a.src_project, a.src_package, a.src_rev, a.tgt_project, a.tgt_package)
 
     def check_action__default(self, req, a):
