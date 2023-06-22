@@ -132,7 +132,7 @@ def config_origin_generator(
                 break
 
             if (origin == '<devel>' or origin == '<devel>~') and apiurl and project and package:
-                devel_project, devel_package = origin_devel_project(apiurl, project, package)
+                devel_project, _ = origin_devel_project(apiurl, project, package)
                 if not devel_project:
                     break
                 origin = devel_project
