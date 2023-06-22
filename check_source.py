@@ -21,7 +21,7 @@ from osclib.core import group_members
 from osclib.core import package_kind
 from osclib.core import create_add_role_request
 from osclib.core import maintainers_get
-from osc.core import show_project_meta
+from osc.core import show_package_meta, show_project_meta
 from osc.core import get_request_list
 from urllib.error import HTTPError
 
@@ -62,6 +62,7 @@ class CheckSource(ReviewBot.ReviewBot):
         self.allow_valid_source_origin = str2bool(config.get('check-source-allow-valid-source-origin', 'False'))
         self.valid_source_origins = set(config.get('check-source-valid-source-origins', '').split(' '))
         self.add_devel_project_review = str2bool(config.get('check-source-add-devel-project-review', 'False'))
+        self.allowed_scm_submission_sources = set(config.get('allowed-scm-submission-sources', '').split(' '))
 
         if self.action.type == 'maintenance_incident':
             # The workflow effectively enforces the names to match and the
@@ -150,12 +151,25 @@ class CheckSource(ReviewBot.ReviewBot):
             self.logger.info('checking if target package exists and has devel project')
             devel_project, devel_package = devel_project_get(self.apiurl, target_project, target_package)
             if devel_project:
-                if ((source_project != devel_project or source_package != devel_package) and
-                   not (source_project == target_project and source_package == target_package)):
-                    # Not from proper devel project/package and not self-submission.
-                    self.review_messages['declined'] = 'Expected submission from devel package %s/%s' % (
-                        devel_project, devel_package)
-                    return False
+                if (
+                        (source_project != devel_project or source_package != devel_package)
+                        and not (source_project == target_project and source_package == target_package)):
+                    # check if the devel project & package are using scmsync & match the allowed prj prefix
+                    # => waive the devel project source submission requirement
+                    meta = ET.fromstringlist(show_package_meta(self.apiurl, devel_project, devel_package))
+                    scm_sync = meta.find('scmsync')
+                    if (
+                            not scm_sync or
+                            (
+                                scm_sync and
+                                not scm_sync.text.startswith(f"https://src.opensuse.org/pool/{source_package}")
+                                and all(not source_project.startswith(allowed_src) for allowed_src in self.allowed_scm_submission_sources)
+                            )
+                    ):
+                        # Not from proper devel project/package and not self-submission and not scmsync.
+                        self.review_messages['declined'] = 'Expected submission from devel package %s/%s' % (
+                            devel_project, devel_package)
+                        return False
             else:
                 # Check to see if other packages exist with the same source project
                 # which indicates that the project has already been used as devel.
