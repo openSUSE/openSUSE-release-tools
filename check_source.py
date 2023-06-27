@@ -159,9 +159,9 @@ class CheckSource(ReviewBot.ReviewBot):
                     meta = ET.fromstringlist(show_package_meta(self.apiurl, devel_project, devel_package))
                     scm_sync = meta.find('scmsync')
                     if (
-                            not scm_sync or
+                            (scm_sync is None) or
                             (
-                                scm_sync and
+                                (scm_sync is not None) and
                                 not scm_sync.text.startswith(f"https://src.opensuse.org/pool/{source_package}")
                                 and all(not source_project.startswith(allowed_src) for allowed_src in self.allowed_scm_submission_sources)
                             )
