@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from contextlib import suppress
 import difflib
 import glob
 import os
@@ -62,7 +63,7 @@ class CheckSource(ReviewBot.ReviewBot):
         self.allow_valid_source_origin = str2bool(config.get('check-source-allow-valid-source-origin', 'False'))
         self.valid_source_origins = set(config.get('check-source-valid-source-origins', '').split(' '))
         self.add_devel_project_review = str2bool(config.get('check-source-add-devel-project-review', 'False'))
-        self.allowed_scm_submission_sources = set(config.get('allowed-scm-submission-sources', '').split(' '))
+        self.allowed_scm_submission_sources = config.get('allowed-scm-submission-sources', '').split()
 
         if self.action.type == 'maintenance_incident':
             # The workflow effectively enforces the names to match and the
@@ -142,7 +143,7 @@ class CheckSource(ReviewBot.ReviewBot):
 
         if self.ensure_source_exist_in_baseproject and self.devel_baseproject:
             if not entity_exists(self.apiurl, self.devel_baseproject, target_package) and source_project not in self.valid_source_origins:
-                self.review_messages['declined'] = "Per our development policy, please submit to %s first." % self.devel_baseproject
+                self.review_messages['declined'] = f"Per our development policy, please submit to {self.devel_baseproject} first."
                 return False
 
         inair_renamed = target_package != source_package
@@ -158,18 +159,22 @@ class CheckSource(ReviewBot.ReviewBot):
                     # => waive the devel project source submission requirement
                     meta = ET.fromstringlist(show_package_meta(self.apiurl, devel_project, devel_package))
                     scm_sync = meta.find('scmsync')
-                    if (
-                            (scm_sync is None) or
-                            (
-                                (scm_sync is not None) and
-                                not scm_sync.text.startswith(f"https://src.opensuse.org/pool/{source_package}")
-                                and all(not source_project.startswith(allowed_src) for allowed_src in self.allowed_scm_submission_sources)
-                            )
-                    ):
+                    if scm_sync is None:
                         # Not from proper devel project/package and not self-submission and not scmsync.
                         self.review_messages['declined'] = 'Expected submission from devel package %s/%s' % (
                             devel_project, devel_package)
                         return False
+
+                    scm_pool_repository = f"https://src.opensuse.org/pool/{source_package}"
+                    if not scm_sync.text.startswith(scm_pool_repository):
+                        # devel project uses scm sync not from the trusted src location
+                        self.review_message['declined'] = f"Expected a devel project scm sync from {scm_pool_repository}"
+                        return False
+                    if not self.source_is_scm_staging_submission(source_project):
+                        # Not a submission coming from the scm-sync bot
+                        self.review_message['declined'] = "Expected a submitrequest coming from scm-sync project"
+                        return False
+
             else:
                 # Check to see if other packages exist with the same source project
                 # which indicates that the project has already been used as devel.
@@ -192,7 +197,9 @@ class CheckSource(ReviewBot.ReviewBot):
                 if match:
                     inair_renamed = target_package != match.group(1)
 
-        if not self.source_has_correct_maintainers(source_project):
+        # TODO(dmllr): ensure requird maintainers are set in the temporary project that is created
+        # by the scm-staging bot
+        if not self.source_is_scm_staging_submission(source_project) and not self.source_has_required_maintainers(source_project):
             declined_msg = (
                 'This request cannot be accepted unless %s is a maintainer of %s.' %
                 (self.required_maintainer, source_project)
@@ -210,15 +217,15 @@ class CheckSource(ReviewBot.ReviewBot):
             return False
 
         # Checkout and see if renaming package screws up version parsing.
-        dir = os.path.expanduser('~/co/%s' % self.request.reqid)
-        if os.path.exists(dir):
-            self.logger.warning('directory %s already exists' % dir)
-            shutil.rmtree(dir)
-        os.makedirs(dir)
-        os.chdir(dir)
+        copath = os.path.expanduser('~/co/%s' % self.request.reqid)
+        if os.path.exists(copath):
+            self.logger.warning('directory %s already exists' % copath)
+            shutil.rmtree(copath)
+        os.makedirs(copath)
+        os.chdir(copath)
 
         try:
-            CheckSource.checkout_package(self.apiurl, target_project, target_package, pathname=dir,
+            CheckSource.checkout_package(self.apiurl, target_project, target_package, pathname=copath,
                                          server_service_files=True, expand_link=True)
             shutil.rmtree(os.path.join(target_package, '.osc'))
             os.rename(target_package, '_old')
@@ -229,20 +236,25 @@ class CheckSource(ReviewBot.ReviewBot):
                 raise e
 
         CheckSource.checkout_package(self.apiurl, source_project, source_package, revision=source_revision,
-                                     pathname=dir, server_service_files=True, expand_link=True)
+                                     pathname=copath, server_service_files=True, expand_link=True)
         os.rename(source_package, target_package)
         shutil.rmtree(os.path.join(target_package, '.osc'))
+        # TODO(dmllr): Fix in the source checker
+        with suppress(FileNotFoundError):
+            os.remove(os.path.join(target_package, '.gitattributes'))
 
         new_info = self.package_source_parse(source_project, source_package, source_revision, target_package)
         filename = new_info.get('filename', '')
         expected_name = target_package
         if filename == '_preinstallimage':
             expected_name = 'preinstallimage'
-        if not (filename.endswith('.kiwi') or filename == 'Dockerfile') and new_info['name'] != expected_name:
-            shutil.rmtree(dir)
-            self.review_messages['declined'] = "A package submitted as %s has to build as 'Name: %s' - found Name '%s'" % (
-                target_package, expected_name, new_info['name'])
-            return False
+        # TODO(dmllr): self.package_source_parse cannot handle scm_sync submissions, so skip the check for now
+        if not self.source_is_scm_staging_submission(source_project):
+            if not (filename.endswith('.kiwi') or filename == 'Dockerfile') and new_info['name'] != expected_name:
+                shutil.rmtree(copath)
+                self.review_messages['declined'] = "A package submitted as %s has to build as 'Name: %s' - found Name '%s'" % (
+                    target_package, expected_name, new_info['name'])
+                return False
 
         if not self.check_service_file(target_package):
             return False
@@ -271,7 +283,7 @@ class CheckSource(ReviewBot.ReviewBot):
                                          by_user=self.review_user, message=self.review_messages['new'])
             return None
 
-        shutil.rmtree(dir)
+        shutil.rmtree(copath)
         self.review_messages['accepted'] = 'Check script succeeded'
 
         if self.skip_add_reviews:
@@ -425,7 +437,12 @@ class CheckSource(ReviewBot.ReviewBot):
 
         return True
 
-    def source_has_correct_maintainers(self, source_project):
+    def source_is_scm_staging_submission(self, source_project):
+        """Checks whether the source project is a scm_submission source project"""
+
+        return any(source_project.startswith(allowed_src) for allowed_src in self.allowed_scm_submission_sources)
+
+    def source_has_required_maintainers(self, source_project):
         """Checks whether the source project has the required maintainer
 
         If a 'required-source-maintainer' is set, it checks whether it is a
@@ -686,7 +703,7 @@ class CheckSource(ReviewBot.ReviewBot):
         if not npatches and not opatches:
             return True
 
-        patches_to_mention = dict()
+        patches_to_mention = {}
         for p in opatches:
             patches_to_mention[p] = 'old'
         for p in npatches:
