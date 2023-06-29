@@ -256,9 +256,18 @@ class Listener(PubSubConsumer):
         # initial state
         self.projects_to_check = set()
         for project in self.projects:
-            self.logger.info('Fetching ISOs of %s', project.name)
-            for sproj in project.init():
-                self.projects_to_check.add((project, sproj))
+            try:
+                self.logger.info('Fetching ISOs of %s', project.name)
+                for sproj in project.init():
+                    self.projects_to_check.add((project, sproj))
+            except HTTPError as e:
+                if e.code == 404:
+                    # No staging workflow? Have to protect against "rogue" projects
+                    self.logger.error('Failed to load staging projects')
+                    continue
+                else:
+                    raise
+
         self.logger.info('Finished fetching initial ISOs, listening')
         super(Listener, self).start_consuming()
 
