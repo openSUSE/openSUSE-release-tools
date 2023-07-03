@@ -117,15 +117,6 @@ Mirrors repositories from the build service to a local directory.
 * Package: openSUSE-release-tools
 * Usage: Used by other tools like `pkglistgen` or `repocheck`
 
-#### biarchtool
-
-Manages biarch packages
-
-* Source: [biarchtool.py](biarchtool.py)
-* Documentation: --
-* Package: openSUSE-release-tools
-* Usage: ?
-
 #### build-fail-reminder
 
 Sends e-mails about packages failing to build for a long time.
