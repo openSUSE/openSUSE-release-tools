@@ -18,6 +18,13 @@ class Cleanup32bit(ToolBase.ToolBase):
 
         cr.fill_pkginfo(prj, "standard", arch)
 
+        # _builddepinfo only has builddeps which might trigger a rebuild,
+        # but Preinstall, Support and service packages don't. Look at the
+        # actual builddep of a randomly chosen (tm) package to get the former,
+        # check_depinfo handles obs-service-*.
+        for bdep in cr.package_get_bdeps(prj, "glibc", "standard", arch):
+            cr.whitelist.add(bdep)
+
         # Make sure those pkgs are also installable
         for wppra in [("openSUSE:Factory:NonFree", "steam", "standard", "x86_64")]:
             (wprj, wpkg, wrepo, warch) = wppra

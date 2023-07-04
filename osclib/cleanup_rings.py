@@ -109,24 +109,30 @@ class CleanupRings(object):
                     return False
         return True
 
+    def package_get_bdeps(self, prj, pkg, repo, arch):
+        "For a given package, return which source packages it has as build deps."
+        ret = set()
+        url = makeurl(self.api.apiurl, ['build', prj, repo, arch, pkg, '_buildinfo'])
+        root = ET.parse(http_GET(url)).getroot()
+        # Keep the package itself
+        ret.add(pkg.split(':')[0])
+        for bdep in root.findall('bdep'):
+            if 'name' not in bdep.attrib:
+                continue
+            b = bdep.attrib['name']
+            if b not in self.bin2src:
+                print("{} not found in bin2src".format(b))
+                continue
+            ret.add(self.bin2src[b])
+
+        return ret
+
     def check_image_bdeps(self, project, arch):
         url = makeurl(self.api.apiurl, ['build', project, '_result'])
         root = ET.parse(http_GET(url)).getroot()
         for image in root.xpath(f"result[@repository = 'images' and @arch = '{arch}']/status[@code != 'excluded' and @code != 'disabled']"):
-            dvd = image.get('package')
-            url = makeurl(self.api.apiurl, ['build', project, 'images', arch, dvd, '_buildinfo'])
-            root = ET.parse(http_GET(url)).getroot()
-            # Don't delete the image itself
-            self.pkgdeps[dvd.split(':')[0]] = 'MYdvd{}'.format(self.api.rings.index(project))
-            for bdep in root.findall('bdep'):
-                if 'name' not in bdep.attrib:
-                    continue
-                b = bdep.attrib['name']
-                if b not in self.bin2src:
-                    print("{} not found in bin2src".format(b))
-                    continue
-                b = self.bin2src[b]
-                self.pkgdeps[b] = 'MYdvd{}'.format(self.api.rings.index(project))
+            for bdep in self.package_get_bdeps(project, image.get('package'), 'images', arch):
+                self.pkgdeps[bdep] = dvd
 
     def check_buildconfig(self, project):
         url = makeurl(self.api.apiurl, ['build', project, 'standard', '_buildconfig'])
