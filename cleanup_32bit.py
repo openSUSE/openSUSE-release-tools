@@ -32,7 +32,7 @@ class Cleanup32bit(ToolBase.ToolBase):
                 for providedby in fileinfo.findall('requires_ext/providedby[@name]'):
                     name = providedby.get('name')
                     # Those are not built as i586
-                    if "libgcc" in name or "libstdc++" in name:
+                    if name.startswith("libgcc") or name.startswith("libstdc++"):
                         continue
 
                     if name.endswith("-32bit"):
