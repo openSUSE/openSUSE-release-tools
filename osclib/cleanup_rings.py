@@ -234,18 +234,18 @@ class CleanupRings(object):
                     mainpkg = pkg.split(":")[0]
                     for src in self.sources:
                         if src.startswith(f"{mainpkg}:"):
-                            new_deps[src] = pkg
+                            new_deps[src] = mainpkg
 
                     # Same for link groups
                     for ldst, lsrc in self.links.items():
                         if lsrc == mainpkg:
-                            new_deps[ldst] = pkg
+                            new_deps[ldst] = mainpkg
                         elif ldst == mainpkg:
-                            new_deps[lsrc] = pkg
+                            new_deps[lsrc] = mainpkg
 
                 # Add all packages which this package depends on
                 for dep in root.xpath(f"package[@name='{pkg}']/pkgdep"):
-                    new_deps[dep.text] = pkg
+                    new_deps[dep.text] = f"Builddep of {pkg}"
 
             # Filter out already visited deps
             to_visit = set(new_deps).difference(set(self.pkgdeps))
@@ -273,7 +273,8 @@ class CleanupRings(object):
                 # Required by needed packages?
                 if len(requiredby):
                     # Include it and also resolve its build deps
-                    self.pkgdeps[pkg] = requiredby
-                    to_visit.add(pkg)
+                    if pkg not in self.pkgdeps:
+                        self.pkgdeps[pkg] = f"Runtime dep of {requiredby}"
+                        to_visit.add(pkg)
 
-        return all_needed_sources
+        return self.pkgdeps

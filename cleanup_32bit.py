@@ -39,10 +39,15 @@ class Cleanup32bit(ToolBase.ToolBase):
                         name = name[:-len("-32bit")]
                         cr.whitelist.add(cr.bin2src[name])
 
-        all_needed_sources = cr.check_depinfo(prj, "i586", True)
+        pkgdeps = cr.check_depinfo(prj, "i586", True)
 
         print("Not needed:")
-        print("\n".join([src for src in sorted(cr.sources) if src not in all_needed_sources]))
+        print("\n".join([src for src in sorted(cr.sources) if src not in pkgdeps]))
+
+        print("List of onlybuilds:")
+        print("%ifarch %ix86\n",
+        "\n".join([f"# {pkgdeps[src]}\nBuildFlags: onlybuild:{src}" for src in sorted(pkgdeps)]),
+        "\n%endif")
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
     def get_optparser(self):
