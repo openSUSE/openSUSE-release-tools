@@ -19,10 +19,6 @@ class CleanupRings(object):
             # and ring 1 has that disabled.
             'automake:testsuite',
             'meson:test',
-            # buildtime services aren't visible in _builddepinfo
-            'obs-service-recompress',
-            'obs-service-set_version',
-            'obs-service-tar_scm',
             # Used by ARM only, but part of oS:F ring 1 in general
             'u-boot',
             'raspberrypi-firmware-dt',
@@ -205,10 +201,13 @@ class CleanupRings(object):
         # on binaries from ring0.
         self.fill_pkginfo(prj, 'standard', arch)
 
-        # Keep all preinstallimages
         for pkg in self.sources:
             if pkg.startswith("preinstallimage"):
+                # Keep all preinstallimages
                 self.pkgdeps[pkg] = "preinstallimage"
+            elif pkg.startswith("obs-service-"):
+                # buildtime services aren't visible in _builddepinfo
+                self.pkgdeps[pkg] = "OBS service"
 
         # Treat all binaries in the whitelist as needed
         for pkg in self.whitelist:
