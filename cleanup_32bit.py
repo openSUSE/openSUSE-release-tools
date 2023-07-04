@@ -11,9 +11,19 @@ class Cleanup32bit(ToolBase.ToolBase):
     def run(self, prj: str, arch: str):
         Config(self.apiurl, prj)
         cr = CleanupRings(StagingAPI(self.apiurl, prj))
-        cr.whitelist = set(["wine", "wine-nine-standalone", "wine:staging"])
+        cr.whitelist = set(["wine", "wine-nine-standalone", "wine:staging",
+                            # https://bugzilla.suse.com/show_bug.cgi?id=1210244
+                            "gstreamer", "gstreamer-plugins-base",
+                            "gstreamer-plugins-bad", "gstreamer-plugins-good",
+                            "gstreamer-plugins-ugly", "gstreamer-plugins-libav",
+                            # http://bugzilla.opensuse.org/show_bug.cgi?id=1210199
+                            "mangohud", "gamemode",
+                            # http://bugzilla.opensuse.org/show_bug.cgi?id=1210304
+                            "alsa-plugins",
+                            # https://bugzilla.suse.com/show_bug.cgi?id=1210145
+                            "Mesa-demo", "vulkan-tools", "xf86-video-intel"])
         # -32bit flavors only needed if pam-32bit is installed
-        cr.whitelist.add("gnome-keyring-pam")
+        cr.whitelist.add("gnome-keyring")
         cr.whitelist.add("pam_kwallet")
 
         cr.fill_pkginfo(prj, "standard", arch)
