@@ -21,7 +21,11 @@ class Cleanup32bit(ToolBase.ToolBase):
                             # http://bugzilla.opensuse.org/show_bug.cgi?id=1210304
                             "alsa-plugins",
                             # https://bugzilla.suse.com/show_bug.cgi?id=1210145
-                            "Mesa-demo", "vulkan-tools", "xf86-video-intel"])
+                            "Mesa-demo", "vulkan-tools", "xf86-video-intel",
+                            # Creates grub2-i386-efi for x86_64
+                            "grub2",
+                            # File deps: some texlive stuff needs python2 and snobol4
+                            "python:python-base", "snobol4"])
         # -32bit flavors only needed if pam-32bit is installed
         cr.whitelist.add("gnome-keyring")
         cr.whitelist.add("pam_kwallet")
