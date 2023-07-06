@@ -8,9 +8,8 @@ Introduction
 ------------
 [id="intro"]
 
-The staging plugin is used to enable the new
-https://progress.opensuse.org/workflow/factory-proposal.html[factory
-workflow] to work with staging projects.  This plugin implements some
+The staging plugin is used to enable the new factory
+workflow to work with staging projects.  This plugin implements some
 functionality that some day will be directly implemented in OBS
 itself.  Meanwhile this plugin is used as a playground field to
 explore these new concepts and operations.
@@ -229,10 +228,9 @@ Actually we have identified three rings:
 
 * https://build.opensuse.org/project/show/openSUSE:Factory:Rings:0-Bootstrap[openSUSE:Factory:Rings:0-Bootstrap]
 * https://build.opensuse.org/project/show/openSUSE:Factory:Rings:1-MinimalX[openSUSE:Factory:Rings:1-MinimalX]
-* https://build.opensuse.org/project/show/openSUSE:Factory:Rings:2-TestDVD[openSUSE:Factory:Rings:2-TestDVD]
 
-And you can find a better description in the
-https://www.youtube.com/watch?v=K-wTVGqKFR8[talk conference]
+And you can find a better description in this
+https://www.youtube.com/watch?v=K-wTVGqKFR8[very old presentation] from a conference
 celebrated in 2014 in Dubrovnik, Croatia.
 
 This command is used to check the current status of the rings and to
