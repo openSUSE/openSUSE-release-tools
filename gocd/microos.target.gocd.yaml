@@ -17,7 +17,7 @@ pipelines:
         resources:
         - repo-checker
         tasks:
-        - script: ./pkglistgen.py -A https://api.suse.de update_and_solve -p SUSE:SLE-15-SP4:Update:Products:Micro54 -s target --only-release-packages --force
+        - script: ./pkglistgen.py -A https://api.suse.de update_and_solve -p SUSE:SLE-15-SP5:Update:Products:Micro55 -s target --only-release-packages --force
 
   SLE-Micro.Package.Lists:
     group: MicroOS
@@ -28,7 +28,7 @@ pipelines:
         auto_update: true
         destination: repos
         whitelist:
-          - SUSE:SLE-15-SP4:Update:Products:Micro54_-_standard.yaml
+          - SUSE:SLE-15-SP5:Update:Products:Micro55_-_standard.yaml
       scripts:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
         auto_update: true
@@ -42,7 +42,7 @@ pipelines:
         resources:
         - repo-checker
         tasks:
-        - script: ./scripts/pkglistgen.py -A https://api.suse.de --debug update_and_solve -p SUSE:SLE-15-SP4:Update:Products:Micro54 -s target --force
+        - script: ./scripts/pkglistgen.py -A https://api.suse.de --debug update_and_solve -p SUSE:SLE-15-SP5:Update:Products:Micro55 -s target --force
 
   SLE-Micro.Images:
     group: MicroOS
@@ -52,7 +52,7 @@ pipelines:
         git: git://botmaster.suse.de/suse-repos.git
         auto_update: true
         whitelist:
-          - SUSE:SLE-15-SP4:Update:Products:Micro54_-_images.yaml
+          - SUSE:SLE-15-SP5:Update:Products:Micro55_-_images.yaml
         destination: repos
       scripts:
         auto_update: true
@@ -69,7 +69,7 @@ pipelines:
         tasks:
         - script: |
             export PYTHONPATH=scripts
-            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP4:Update:Products:Micro54 -r images
+            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP5:Update:Products:Micro55 -r images
 
     - Release.Images.To.Test:
         approval: manual
@@ -82,7 +82,7 @@ pipelines:
         tasks:
         - script: |-
             for product in 000product SLE-Micro; do
-              osc -A https://api.suse.de release SUSE:SLE-15-SP4:Update:Products:Micro54 $product
+              osc -A https://api.suse.de release SUSE:SLE-15-SP5:Update:Products:Micro55 $product
             done
 
     - Release.Images.To.Publish:
@@ -94,4 +94,4 @@ pipelines:
         resources:
         - staging-bot
         tasks:
-        - script: osc -A https://api.suse.de release SUSE:SLE-15-SP4:Update:Products:Micro54:TEST
+        - script: osc -A https://api.suse.de release SUSE:SLE-15-SP5:Update:Products:Micro55:TEST
