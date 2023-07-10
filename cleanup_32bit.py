@@ -20,6 +20,10 @@ class Cleanup32bit(ToolBase.ToolBase):
                             "mangohud", "gamemode",
                             # http://bugzilla.opensuse.org/show_bug.cgi?id=1210304
                             "alsa-plugins",
+                            # https://bugzilla.opensuse.org/show_bug.cgi?id=1210137
+                            "alsa-oss",
+                            # https://bugzilla.opensuse.org/show_bug.cgi?id=1210305
+                            "apitrace",
                             # https://bugzilla.suse.com/show_bug.cgi?id=1210145
                             "Mesa-demo", "vulkan-tools", "xf86-video-intel",
                             # Creates grub2-i386-efi for x86_64
