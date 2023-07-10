@@ -82,7 +82,7 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-            - script: ./project-installcheck.py -A https://api.suse.de --debug check --store SUSE:SLE-15-SP4:Update:Products:Micro54:Staging/dashboard --no-rebuild SUSE:SLE-15-SP4:Update:Products:Micro54
+            - script: ./project-installcheck.py -A https://api.suse.de --debug check --store SUSE:SLE-15-SP5:Update:Products:Micro55:Staging/dashboard --no-rebuild SUSE:SLE-15-SP5:Update:Products:Micro55
   SLE.Origin.Manager:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
@@ -163,11 +163,11 @@ pipelines:
                 ln -s $PWD/osclib $tempdir/.osc-plugins
                 export HOME=$tempdir
 
-                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP4:Update:Products:Micro54 rebuild
-                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP4:Update:Products:Micro54 list --supersede
-                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP4:Update:Products:Micro54 select --non-interactive --merge --try-strategies
-                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP4:Update:Products:Micro54 unselect --cleanup
-                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP4:Update:Products:Micro54 repair --cleanup
+                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP5:Update:Products:Micro55 rebuild
+                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP5:Update:Products:Micro55 list --supersede
+                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP5:Update:Products:Micro55 select --non-interactive --merge --try-strategies
+                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP5:Update:Products:Micro55 unselect --cleanup
+                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP5:Update:Products:Micro55 repair --cleanup
                 rm -rf $tempdir
   S15.SP6.Staging.Bot.Report:
     group: SLE.Checkers
@@ -210,7 +210,7 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:SLE-15-SP4:Update:Products:Micro54
+            - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:SLE-15-SP5:Update:Products:Micro55
   SLE.Source.Check:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
