@@ -1,12 +1,31 @@
 from datetime import datetime
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Literal, Optional, Tuple, TypedDict, Union
 from dateutil.parser import parse as date_parse
 import re
-from lxml import etree as ET
+if TYPE_CHECKING:
+    import xml.etree.ElementTree as ET
+else:
+    from lxml import etree as ET
 
-from osc.core import http_DELETE
-from osc.core import http_GET
-from osc.core import http_POST
+from osc.connection import http_DELETE
+from osc.connection import http_GET
+from osc.connection import http_POST
 from osc.core import makeurl
+
+
+class _BaseComment(TypedDict):
+    who: Optional[str]
+    when: datetime
+    parent: Optional[Any]
+    comment: Optional[str]
+
+
+class Comment(_BaseComment):
+    id: Optional[str]
+
+
+class RequestAsComment(_BaseComment):
+    id: Literal['-1']
 
 
 class CommentAPI(object):
@@ -15,14 +34,16 @@ class CommentAPI(object):
     def __init__(self, apiurl):
         self.apiurl = apiurl
 
-    def _prepare_url(self, request_id=None, project_name=None,
-                     package_name=None, query=None):
+    def _prepare_url(self, request_id=None, project_name: Optional[str] = None,
+                     package_name: Optional[str] = None,
+                     query: Optional[Union[List[str], Dict[str, str]]] = None
+                     ) -> str:
         """Prepare the URL to get/put comments in OBS.
 
         :param request_id: Request where to refer the comment.
         :param project_name: Project name where to refer comment.
         :param package_name: Package name where to refer the comment.
-        :returns: Formated URL for the request.
+        :returns: Formatted URL for the request.
         """
         url = None
         if request_id:
@@ -36,21 +57,20 @@ class CommentAPI(object):
             raise ValueError('Please, set request_id, project_name or / and package_name to add a comment.')
         return url
 
-    def _comment_as_dict(self, comment_element):
+    def _comment_as_dict(self, comment_element: ET.Element) -> Comment:
         """Convert an XML element comment into a dictionary.
         :param comment_element: XML element that store a comment.
         :returns: A Python dictionary object.
         """
-        comment = {
+        return {
             'who': comment_element.get('who'),
-            'when': datetime.strptime(comment_element.get('when'), '%Y-%m-%d %H:%M:%S %Z'),
+            'when': datetime.strptime(comment_element.get('when', ''), '%Y-%m-%d %H:%M:%S %Z'),
             'id': comment_element.get('id'),
             'parent': comment_element.get('parent', None),
             'comment': comment_element.text,
         }
-        return comment
 
-    def request_as_comment_dict(self, request):
+    def request_as_comment_dict(self, request) -> RequestAsComment:
         return {
             'who': request.creator,
             'when': date_parse(request.statehistory[0].when),
@@ -60,7 +80,7 @@ class CommentAPI(object):
         }
 
     def get_comments(self, request_id=None, project_name=None,
-                     package_name=None):
+                     package_name=None) -> Dict[str, Comment]:
         """Get the list of comments of an object in OBS.
 
         :param request_id: Request where to get comments.
@@ -106,7 +126,13 @@ class CommentAPI(object):
                 return c, info
         return None, None
 
-    def command_find(self, comments, user, command=None, who_allowed=None):
+    def command_find(
+            self,
+            comments: Dict[str, Comment],
+            user: str,
+            command: Optional[str] = None,
+            who_allowed=None
+    ) -> Generator[Tuple[List[str], Optional[str]], None, None]:
         """
         Find comment commands with the optional conditions.
 

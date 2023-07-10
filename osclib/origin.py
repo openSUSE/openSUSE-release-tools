@@ -1,6 +1,8 @@
 from copy import deepcopy
-from collections import namedtuple
 import logging
+from typing import Any, Dict, Generator, List, Literal, NamedTuple, Optional, Tuple, TypedDict, Union
+
+from osc.core import ReviewState
 from osclib.conf import Config
 from osclib.conf import str2bool
 from osclib.core import attribute_value_load
@@ -38,7 +40,26 @@ DEFAULTS = {
     'fallback-group': '<config:origin-manager-fallback-group>',
     'fallback-workaround': {},
 }
-POLICY_DEFAULTS = {
+
+
+class Policy(TypedDict):
+    additional_reviews: List[Any]
+    automatic_updates: bool
+    automatic_updates_initial: bool
+    automatic_updates_supersede: bool
+    automatic_updates_delay: int
+    automatic_updates_frequency: int
+    maintainer_review_always: bool
+    maintainer_review_initial: bool
+    pending_submission_allow: bool
+    pending_submission_consider: bool
+    pending_submission_allowed_reviews: List[str]
+    # Submit pending requests with a set of allowed reviews, but still wait for
+    # the above reviews before being accepted.
+    pending_submission_allowed_reviews_update: List[str]
+
+
+POLICY_DEFAULTS: Policy = {
     'additional_reviews': [],
     'automatic_updates': True,
     'automatic_updates_initial': False,
@@ -63,9 +84,22 @@ POLICY_DEFAULTS = {
     ],
 }
 
-OriginInfo = namedtuple('OriginInfo', ['project', 'pending'])
-PendingRequestInfo = namedtuple('PendingRequestInfo', ['identifier', 'reviews_remaining'])
-PolicyResult = namedtuple('PolicyResult', ['wait', 'accept', 'reviews', 'comments'])
+
+class PendingRequestInfo(NamedTuple):
+    identifier: str
+    reviews_remaining: List[ReviewState]
+
+
+class OriginInfo(NamedTuple):
+    project: str
+    pending: PendingRequestInfo
+
+
+class PolicyResult(NamedTuple):
+    wait: bool
+    accept: bool
+    reviews: Dict[str, str]
+    comments: List[str]
 
 
 def origin_info_str(self):
@@ -84,7 +118,13 @@ def config_load(apiurl, project):
     return config_resolve(apiurl, project, yaml.safe_load(config))
 
 
-def config_origin_generator(origins, apiurl=None, project=None, package=None, skip_workarounds=False):
+def config_origin_generator(
+        origins,
+        apiurl: Optional[str] = None,
+        project: Optional[str] = None,
+        package: Optional[str] = None,
+        skip_workarounds=False
+) -> Generator[Tuple[str, Any], None, None]:
     for origin_item in origins:
         for origin, values in origin_item.items():
             is_workaround = origin_workaround_check(origin)
@@ -92,7 +132,7 @@ def config_origin_generator(origins, apiurl=None, project=None, package=None, sk
                 break
 
             if (origin == '<devel>' or origin == '<devel>~') and apiurl and project and package:
-                devel_project, devel_package = origin_devel_project(apiurl, project, package)
+                devel_project, _ = origin_devel_project(apiurl, project, package)
                 if not devel_project:
                     break
                 origin = devel_project
@@ -103,7 +143,7 @@ def config_origin_generator(origins, apiurl=None, project=None, package=None, sk
             break  # Only support single value inside list item.
 
 
-def config_resolve(apiurl, project, config):
+def config_resolve(apiurl: str, project: str, config):
     defaults = POLICY_DEFAULTS.copy()
     defaults_workarounds = POLICY_DEFAULTS.copy()
 
@@ -222,17 +262,17 @@ def config_resolve_apply(config, values_apply, key=None, workaround=False, until
         values.update(values_apply)
 
 
-def origin_workaround_check(origin):
+def origin_workaround_check(origin: str) -> bool:
     return origin.endswith('~')
 
 
-def origin_workaround_ensure(origin):
+def origin_workaround_ensure(origin: str) -> str:
     if not origin_workaround_check(origin):
         return origin + '~'
     return origin
 
 
-def origin_workaround_strip(origin):
+def origin_workaround_strip(origin: str) -> str:
     if origin_workaround_check(origin):
         return origin[:-1]
     return origin
@@ -240,7 +280,7 @@ def origin_workaround_strip(origin):
 
 @memoize(session=True)
 def origin_find(apiurl, target_project, package, source_hash=None, current=False,
-                pending_allow=True, fallback=True):
+                pending_allow=True, fallback=True) -> Optional[OriginInfo]:
     config = config_load(apiurl, target_project)
 
     if not source_hash:
@@ -290,7 +330,7 @@ def project_source_contain(apiurl, project, package, source_hash):
     return False
 
 
-def project_source_pending(apiurl, project, package, source_hash):
+def project_source_pending(apiurl, project, package, source_hash) -> Union[PendingRequestInfo, Literal[False]]:
     apiurl_remote, project_remote = project_remote_apiurl(apiurl, project)
     request_actions = request_action_list_source(apiurl_remote, project_remote, package,
                                                  states=['new', 'review'], include_release=True)
@@ -409,7 +449,7 @@ def origin_find_highest(apiurl, project, package):
 
 def policy_evaluate(apiurl, project, package,
                     origin_info_new, origin_info_old,
-                    source_hash_new, source_hash_old):
+                    source_hash_new, source_hash_old) -> PolicyResult:
     if origin_info_new is None:
         config = config_load(apiurl, project)
         origins = config_origin_list(config, apiurl, project, package, True)
@@ -510,7 +550,7 @@ def policy_input_calculate(apiurl, project, package,
     return inputs
 
 
-def policy_input_evaluate(policy, inputs):
+def policy_input_evaluate(policy, inputs) -> PolicyResult:
     result = PolicyResult(False, True, {}, [])
 
     if inputs['new_package']:

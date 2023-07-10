@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from typing import Literal, Optional, Tuple, Union
 from osclib.core import devel_project_get
 from osclib.core import package_source_hash
 from osclib.core import package_kind
@@ -77,7 +78,7 @@ class OriginManager(ReviewBot.ReviewBot):
 
         return True
 
-    def check_source_submission(self, src_project, src_package, src_rev, tgt_project, tgt_package):
+    def check_source_submission(self, src_project, src_package, src_rev, tgt_project, tgt_package) -> Optional[bool]:
         kind = package_kind(self.apiurl, tgt_project, tgt_package)
         if not (kind is None or kind == 'source'):
             self.review_messages['accepted'] = 'skipping {} package since not source'.format(kind)
@@ -118,7 +119,16 @@ class OriginManager(ReviewBot.ReviewBot):
                                  source_hash_new, source_hash_old)
         return self.policy_result_handle(tgt_project, tgt_package, origin_info_new, origin_info_old, result)
 
-    def config_validate(self, target_project):
+    def config_validate(self, target_project: str) -> Tuple[bool, bool]:
+        """Check the settings ``OSRT:OriginConfig`` of the target project and
+        return a tuple of booleans. The first boolean indicates whether the
+        action should proceed and the second whether the config is valid.
+
+        This function checks whether the value
+        ``OSRT:OriginConfig.fallback-group`` is present and whether
+        ``OSRT:OriginConfig.review-user`` matches the configured review_user.
+
+        """
         config = config_load(self.apiurl, target_project)
         if not config:
             # No perfect solution for lack of a config. For normal projects a
@@ -138,7 +148,11 @@ class OriginManager(ReviewBot.ReviewBot):
 
         return True, True
 
-    def devel_project_simulate_check(self, source_project, target_project):
+    def devel_project_simulate_check(
+            self,
+            source_project: str,
+            target_project: str
+    ) -> Union[Tuple[str, str], Tuple[Literal[False], Literal[None]]]:
         config = config_load(self.apiurl, target_project)
         origin_list = config_origin_list(config, self.apiurl, target_project, skip_workarounds=True)
 
@@ -157,7 +171,11 @@ class OriginManager(ReviewBot.ReviewBot):
 
         return False, None
 
-    def devel_project_simulate_check_command(self, source_project, target_project):
+    def devel_project_simulate_check_command(
+            self,
+            source_project: str,
+            target_project: str
+    ) -> Union[Tuple[str, Optional[str]], Tuple[Literal[False], Literal[None]]]:
         who_allowed = self.request_override_check_users(target_project)
         if self.request.creator not in who_allowed:
             who_allowed.append(self.request.creator)
@@ -168,7 +186,7 @@ class OriginManager(ReviewBot.ReviewBot):
 
         return False, None
 
-    def policy_result_handle(self, project, package, origin_info_new, origin_info_old, result):
+    def policy_result_handle(self, project, package, origin_info_new, origin_info_old, result: PolicyResult) -> Optional[bool]:
         if result.wait and not result.accept:
             result.comments.append(f'Decision may be overridden via `@{self.review_user} override`.')
 

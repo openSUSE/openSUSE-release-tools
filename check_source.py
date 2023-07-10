@@ -9,6 +9,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from typing import Optional, Set
+from cmdln import CmdlnOptionParser
 
 from lxml import etree as ET
 
@@ -42,12 +44,12 @@ class CheckSource(ReviewBot.ReviewBot):
 
         self.skip_add_reviews = False
 
-    def target_project_config(self, project):
+    def target_project_config(self, project: str) -> None:
         # Load project config and allow for remote entries.
         config = Config.get(self.apiurl, project)
 
         self.single_action_require = str2bool(config.get('check-source-single-action-require', 'False'))
-        self.ignore_devel = not str2bool(config.get('devel-project-enforce', 'False'))
+        self.ignore_devel: bool = not str2bool(config.get('devel-project-enforce', 'False'))
         self.in_air_rename_allow = str2bool(config.get('check-source-in-air-rename-allow', 'False'))
         self.add_review_team = str2bool(config.get('check-source-add-review-team', 'True'))
         self.review_team = config.get('review-team')
@@ -57,11 +59,11 @@ class CheckSource(ReviewBot.ReviewBot):
         self.devel_whitelist = config.get('devel-whitelist', '').split()
         self.skip_add_reviews = False
         self.ensure_source_exist_in_baseproject = str2bool(config.get('check-source-ensure-source-exist-in-baseproject', 'False'))
-        self.devel_baseproject = config.get('check-source-devel-baseproject', '')
+        self.devel_baseproject: str = config.get('check-source-devel-baseproject', '')
         self.allow_source_in_sle = str2bool(config.get('check-source-allow-source-in-sle', 'True'))
         self.sle_project_to_check = config.get('check-source-sle-project', '')
         self.allow_valid_source_origin = str2bool(config.get('check-source-allow-valid-source-origin', 'False'))
-        self.valid_source_origins = set(config.get('check-source-valid-source-origins', '').split(' '))
+        self.valid_source_origins: Set[str] = set(config.get('check-source-valid-source-origins', '').split(' '))
         self.add_devel_project_review = str2bool(config.get('check-source-add-devel-project-review', 'False'))
         self.allowed_scm_submission_sources = config.get('allowed-scm-submission-sources', '').split()
 
@@ -78,7 +80,7 @@ class CheckSource(ReviewBot.ReviewBot):
             # It might make sense to supersede maintbot, but for now.
             self.skip_add_reviews = True
 
-    def is_good_name(self, package, target_package):
+    def is_good_name(self, package: Optional[str], target_package: Optional[str]) -> bool:
         self.logger.debug(f"is_good_name {package} <-> {target_package}")
         if target_package is None:
             # if the name doesn't matter, existance is all
@@ -114,7 +116,14 @@ class CheckSource(ReviewBot.ReviewBot):
 
         return ret
 
-    def check_source_submission(self, source_project, source_package, source_revision, target_project, target_package):
+    def check_source_submission(
+            self,
+            source_project: str,
+            source_package: str,
+            source_revision: str,
+            target_project: str,
+            target_package: str
+    ) -> bool:
         super(CheckSource, self).check_source_submission(source_project,
                                                          source_package, source_revision, target_project, target_package)
         self.target_project_config(target_project)
@@ -762,7 +771,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         ReviewBot.CommandLineInterface.__init__(self, args, kwargs)
         self.clazz = CheckSource
 
-    def get_optparser(self):
+    def get_optparser(self) -> CmdlnOptionParser:
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
 
         parser.add_option('--skip-add-reviews', action='store_true', default=False,

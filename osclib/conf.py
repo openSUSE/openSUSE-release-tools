@@ -1,4 +1,4 @@
-from __future__ import print_function
+from typing import Dict, Optional
 
 from osc import OscConfigParser
 from collections import OrderedDict
@@ -172,14 +172,17 @@ DEFAULT = {
 #
 
 
-def str2bool(v):
+def str2bool(v: Optional[str]) -> bool:
     return (v is not None and v.lower() in ("yes", "true", "t", "1"))
 
 
 class Config(object):
-    """Helper class to configuration file."""
+    """Helper class for reading the osc configuration file and fetching the
+    remote config from the ``OSRT:config`` attribute in the target project.
 
-    def __init__(self, apiurl, project):
+    """
+
+    def __init__(self, apiurl: str, project: str) -> None:
         self.project = project
         self.remote_values = self.fetch_remote(apiurl)
 
@@ -191,7 +194,7 @@ class Config(object):
 
     @staticmethod
     @memoize(session=True)  # Allow reset by memoize_session_reset() for ReviewBot.
-    def get(apiurl, project):
+    def get(apiurl: str, project: str):
         """Cached version for directly accessing project config."""
         # Properly handle loading the config for interconnect projects.
         from osclib.core import project_remote_apiurl
@@ -204,7 +207,7 @@ class Config(object):
     def conf(self):
         return conf
 
-    def populate_conf(self):
+    def populate_conf(self) -> None:
         """Add sane default into the configuration and layer (defaults, remote, ~/.oscrc)."""
         defaults = {}
         default_ordered = OrderedDict(sorted(DEFAULT.items(), key=lambda i: int(i[1].get('_priority', 99))))
@@ -244,12 +247,16 @@ class Config(object):
         else:
             return defaults
 
-    def fetch_remote(self, apiurl):
+    def fetch_remote(self, apiurl: str) -> Optional[Dict[str, str]]:
+        """Fetch the configuration from the ``OSRT`` attribute namespace for the
+        current project from the OBS instance with the given apiurl.
+
+        """
         from osclib.core import attribute_value_load
         config = attribute_value_load(apiurl, self.project, 'Config')
         if config:
             cp = OscConfigParser.OscConfigParser()
-            config = u'[remote]\n' + config
+            config = u'[remote]\n' + str(config)
             cp.read_string(config)
             return dict(cp.items('remote'))
 
