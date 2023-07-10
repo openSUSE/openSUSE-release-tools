@@ -14,20 +14,17 @@ class CleanupRings(object):
         self.api = api
         self.links = {}
         self.commands = []
-        self.whitelist = [
+        self.force_required = {
             # Keep this in ring 1, even though ring 0 builds the main flavor
             # and ring 1 has that disabled.
-            'automake:testsuite',
-            'meson:test',
-            # Used by ARM only, but part of oS:F ring 1 in general
-            'u-boot',
-            'raspberrypi-firmware-dt',
-            'raspberrypi-firmware-config',
-            # Added manually to notice failures early
-            'vagrant',
-            # https://github.com/openSUSE/open-build-service/issues/14129
-            'snobol4',
-        ]
+            'automake:testsuite': 'Keep in Ring 1',
+            'meson:test': 'Keep in Ring 1',
+            'u-boot': 'ARM Ring1',
+            'raspberrypi-firmware-dt': 'ARM Ring1',
+            'raspberrypi-firmware-config': 'ARM Ring1',
+            'vagrant': 'Added manually to notice failures early',
+            'snobol4': 'https://github.com/openSUSE/open-build-service/issues/14129'
+        }
 
     def perform(self):
         for index, ring in enumerate(self.api.rings):
@@ -215,10 +212,10 @@ class CleanupRings(object):
                 # buildtime services aren't visible in _builddepinfo
                 self.pkgdeps[pkg] = "OBS service"
 
-        # Treat all binaries in the whitelist as needed
-        for pkg in self.whitelist:
+        # Include all force required packages
+        for pkg in self.force_required:
             if pkg in self.sources:
-                self.pkgdeps[pkg] = "whitelist"
+                self.pkgdeps[pkg] = "Forced: " + self.force_required[pkg]
 
         to_visit = set(self.pkgdeps)
         # print("Directly needed: ", to_visit)
@@ -274,7 +271,7 @@ class CleanupRings(object):
                 if len(requiredby):
                     # Include it and also resolve its build deps
                     if pkg not in self.pkgdeps:
-                        self.pkgdeps[pkg] = f"Runtime dep of {requiredby}"
+                        self.pkgdeps[pkg] = f"Runtime dep of {', '.join(requiredby)}"
                         to_visit.add(pkg)
 
         return self.pkgdeps

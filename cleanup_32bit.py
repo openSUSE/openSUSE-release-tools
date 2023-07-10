@@ -11,28 +11,29 @@ class Cleanup32bit(ToolBase.ToolBase):
     def run(self, prj: str, arch: str, verbose: bool=False):
         Config(self.apiurl, prj)
         cr = CleanupRings(StagingAPI(self.apiurl, prj))
-        cr.whitelist = set(["wine", "wine-nine-standalone", "wine:staging",
-                            # https://bugzilla.suse.com/show_bug.cgi?id=1210244
-                            "gstreamer", "gstreamer-plugins-base",
-                            "gstreamer-plugins-bad", "gstreamer-plugins-good",
-                            "gstreamer-plugins-ugly", "gstreamer-plugins-libav",
-                            # http://bugzilla.opensuse.org/show_bug.cgi?id=1210199
-                            "mangohud", "gamemode",
-                            # http://bugzilla.opensuse.org/show_bug.cgi?id=1210304
-                            "alsa-plugins",
-                            # https://bugzilla.opensuse.org/show_bug.cgi?id=1210137
-                            "alsa-oss",
-                            # https://bugzilla.opensuse.org/show_bug.cgi?id=1210305
-                            "apitrace",
-                            # https://bugzilla.suse.com/show_bug.cgi?id=1210145
-                            "Mesa-demo", "vulkan-tools", "xf86-video-intel",
-                            # Creates grub2-i386-efi for x86_64
-                            "grub2",
-                            # File deps: some texlive stuff needs python2 and snobol4
-                            "python:python-base", "snobol4"])
-        # -32bit flavors only needed if pam-32bit is installed
-        cr.whitelist.add("gnome-keyring")
-        cr.whitelist.add("pam_kwallet")
+        cr.force_required = {
+            "wine": "wine", "wine-nine-standalone": "wine",
+            "wine:staging": "wine",
+            "gstreamer": "boo#1210244",
+            "gstreamer-plugins-base": "boo#1210244",
+            "gstreamer-plugins-bad": "boo#1210244",
+            "gstreamer-plugins-good": "boo#1210244",
+            "gstreamer-plugins-ugly": "boo#1210244",
+            "gstreamer-plugins-libav": "boo#1210244",
+            "mangohud": "boo#1210199",
+            "gamemode": "boo#1210199",
+            "alsa-plugins": "boo#1210304",
+            "alsa-oss": "boo#1210137",
+            "apitrace": "boo#1210305",
+            "Mesa-demo": "boo#1210145",
+            "vulkan-tools": "boo#1210145",
+            "xf86-video-intel": "boo#1210145",
+            "grub2": "Creates grub2-i386-efi for x86_64",
+            "python:python-base": "File deps: some texlive stuff needs python2 and snobol4",
+            "snobol4": "File deps: some texlive stuff needs python2 and snobol4",
+            "gnome-keyring": "32bit PAM stack",
+            "pam_kwallet": "32bit PAM stack"
+        }
 
         cr.fill_pkginfo(prj, "standard", arch)
 
@@ -41,7 +42,8 @@ class Cleanup32bit(ToolBase.ToolBase):
         # actual builddep of a randomly chosen (tm) package to get the former,
         # check_depinfo handles obs-service-*.
         for bdep in cr.package_get_bdeps(prj, "glibc", "standard", arch):
-            cr.whitelist.add(bdep)
+            if bdep not in cr.force_required:
+                cr.force_required[bdep] = "bdep of glibc"
 
         # Make sure those pkgs are also installable
         for wppra in [("openSUSE:Factory:NonFree", "steam", "standard", "x86_64")]:
@@ -55,7 +57,7 @@ class Cleanup32bit(ToolBase.ToolBase):
 
                     if name.endswith("-32bit"):
                         name = name[:-len("-32bit")]
-                        cr.whitelist.add(cr.bin2src[name])
+                        cr.force_required[cr.bin2src[name]] = "Runtime dep of" + wpkg
 
         pkgdeps = cr.check_depinfo(prj, "i586", True)
 
