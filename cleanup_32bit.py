@@ -8,7 +8,7 @@ from osclib.stagingapi import StagingAPI
 from osclib.cleanup_rings import CleanupRings
 
 class Cleanup32bit(ToolBase.ToolBase):
-    def run(self, prj: str, arch: str):
+    def run(self, prj: str, arch: str, verbose: bool=False):
         Config(self.apiurl, prj)
         cr = CleanupRings(StagingAPI(self.apiurl, prj))
         cr.whitelist = set(["wine", "wine-nine-standalone", "wine:staging",
@@ -63,9 +63,13 @@ class Cleanup32bit(ToolBase.ToolBase):
         print("\n".join([src for src in sorted(cr.sources) if src not in pkgdeps]))
 
         print("List of onlybuilds:")
-        print("%ifarch %ix86\n",
-        "\n".join([f"# {pkgdeps[src]}\nBuildFlags: onlybuild:{src}" for src in sorted(pkgdeps)]),
-        "\n%endif")
+        print("%ifarch %ix86")
+        if verbose:
+            print("\n".join([f"# {pkgdeps[src]}\nBuildFlags: onlybuild:{src}" for src in sorted(pkgdeps)]))
+        else:
+            print("\n".join([f"BuildFlags: onlybuild:{src}" for src in sorted(pkgdeps)]))
+
+        print("%endif")
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
     def get_optparser(self):
@@ -89,7 +93,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_usage}
         ${cmd_option_list}
         """
-        self.tool.run(self.options.project, self.options.arch)
+        self.tool.run(self.options.project, self.options.arch, verbose=self.options.verbose)
 
 if __name__ == "__main__":
     app = CommandLineInterface()
