@@ -169,10 +169,11 @@ class ReviewBot(object):
         return self._review_mode
 
     @review_mode.setter
-    def review_mode(self, value: ReviewChoices):
-        if value not in self.REVIEW_CHOICES:
-            raise ValueError("invalid review option: %s" % value)
-        self._review_mode = value
+    def review_mode(self, value: Union[ReviewChoices, str]) -> None:
+        val = ReviewChoices(value)
+        if val not in self.REVIEW_CHOICES:
+            raise ValueError("invalid review option: %s" % val)
+        self._review_mode = val
 
     def set_request_ids(self, ids):
         for rqid in ids:
@@ -218,16 +219,16 @@ class ReviewBot(object):
                 traceback.print_exc()
                 return_value = 1
 
-            if self.review_mode == 'no':
+            if self.review_mode == ReviewChoices.NO:
                 good = None
-            elif self.review_mode == 'accept':
+            elif self.review_mode == ReviewChoices.ACCEPT:
                 good = True
 
             if good is None:
                 self.logger.info("%s ignored" % req.reqid)
             elif good:
                 self._set_review(req, 'accepted')
-            elif self.review_mode != 'accept-onpass':
+            elif self.review_mode != ReviewChoices.ACCEPT_ONPASS:
                 self._set_review(req, 'declined')
 
         return return_value
@@ -295,12 +296,12 @@ class ReviewBot(object):
         self.logger.info("%s %s: %s" % (req.reqid, state, msg))
 
         if state == 'declined':
-            if self.review_mode == 'fallback-onfail':
+            if self.review_mode == ReviewChoices.FALLBACK_ONFAIL:
                 self.logger.info("%s needs fallback reviewer" % req.reqid)
                 self.add_review(req, by_group=by_group, by_user=by_user,
                                 msg="Automated review failed. Needs fallback reviewer.")
                 newstate = 'accepted'
-        elif self.review_mode == 'fallback-always':
+        elif self.review_mode == ReviewChoices.FALLBACK_ALWAYS:
             self.add_review(req, by_group=by_group, by_user=by_user, msg='Adding fallback reviewer')
 
         if doit:
@@ -875,7 +876,7 @@ class CommandLineInterface(cmdln.Cmdln):
         parser.add_option("--debug", action="store_true", help="debug output")
         parser.add_option("--osc-debug", action="store_true", help="osc debug output")
         parser.add_option("--verbose", action="store_true", help="verbose")
-        parser.add_option("--review-mode", dest='review_mode', choices=ReviewBot.REVIEW_CHOICES, help="review behavior")
+        parser.add_option("--review-mode", dest='review_mode', choices=[c.value for c in ReviewBot.REVIEW_CHOICES], help="review behavior")
         parser.add_option("--fallback-user", dest='fallback_user', metavar='USER', help="fallback review user")
         parser.add_option("--fallback-group", dest='fallback_group', metavar='GROUP', help="fallback review group")
         parser.add_option('-c', '--config', dest='config', metavar='FILE', help='read config file FILE')
