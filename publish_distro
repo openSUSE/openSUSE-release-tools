@@ -59,7 +59,7 @@ for arg; do
   shift
   if [ "$arg" == '--force' ]; then
     force=1
-    newargs+=("$arg")
+    # newargs+=("$arg")
     shift
     continue
   elif [ "$arg" == '--dry' ]; then
@@ -88,8 +88,10 @@ set -- "${newargs[@]}"
 }
 shift
 
-stage="/srv/ftp-stage/pub/opensuse/$path"
-dest="/srv/ftp/pub/opensuse/$path"
+base="${PUBLISH_DISTRO_BASE:-/srv/}"
+
+stage="${base}ftp-stage/pub/opensuse/$path"
+dest="${base}ftp/pub/opensuse/$path"
 
 if [ ! -e "$stage" -o ! -e "$dest" ]; then
   echo "stage ($stage) and/or dest ($dest) doesn't exist" >&2
@@ -101,7 +103,7 @@ if [ -n "$do_cleanup" ]; then
   deletelog=$(ls -1tr ${deletelog%/*}/*-deletes.log | tail -1)
   test -n "$deletelog" || exit 1
   (
-    df -h /srv
+    df -h $base
     for i in $(awk '/\*deleting   .*/ { print $2}' $deletelog); do
       if [ -e "$stage/$i" ]; then
         echo "WARNING: $i still exist in stage, not deleting"
@@ -109,7 +111,7 @@ if [ -n "$do_cleanup" ]; then
         $dryrun rm -rvf "$dest/$i"
       fi
     done
-    df -h /srv
+    df -h $base
   ) >$deletelog-deleted
   exit 0
 fi
@@ -171,7 +173,7 @@ for flavor in "${flavors[@]}"; do
       $dryrun ln -sf "$iso.sha256" "$link.sha256"
     fi
     if [ -z "$force" ]; then
-      if test $(date -d "$PUBLISH_DELAY hours ago" +%s) -lt $(stat -c "%Z" "$stage/$isodir/$iso"); then
+      if test $(date -d "$PUBLISH_DELAY hours ago" +%s) -lt "$(stat -c "%Z" "$stage/$isodir/$iso")"; then
         echo "$iso was created less than $PUBLISH_DELAY hours ago, delay publishing" | tee -a $synclog
         do_sync_isos=0
       fi
@@ -270,8 +272,8 @@ done
 
 # also sync source and debug, not bind mounted for Leap
 for r in "${extra_repos[@]}"; do
-  stage="/srv/ftp-stage/pub/opensuse/$r/$path"
-  dest="/srv/ftp/pub/opensuse/$r/$path"
+  stage="${base}ftp-stage/pub/opensuse/$r/$path"
+  dest="${base}ftp/pub/opensuse/$r/$path"
   $dryrun rsync -avhiH $stage/ --link-dest=$stage \
     $dest --delete-after "$@" | tee -a log
 done
@@ -282,12 +284,3 @@ if [ -n "$url" ]; then
   $dryrun curl -X POST -F "version=$version" "$url"
 fi
 
-#echo creating hashes
-#metalink-hasher update -t /srv/metalink-hashes/srv/ftp/pub/opensuse/tumbleweed \
-#                       -b /srv/ftp/pub/opensuse/tumbleweed \
-#                          /srv/ftp/pub/opensuse/tumbleweed
-
-# mb makehaskes is not needed by mirrorcache (replaced mirrorbrain)
-#$dryrun /usr/bin/mb makehashes -b /srv/ftp/pub/opensuse \
-#                       -t /srv/metalink-hashes/srv/ftp/pub/opensuse \
-#                       $dest
