@@ -1,0 +1,285 @@
++ PUBLISH_DELAY=2
++ force=
++ date=20230101
++ dryrun=
++ do_cleanup=
++ changes=
++ diff_url_base=https://openqa.opensuse.org/snapshot-changes/opensuse
++ changes_dir_base=/srv/www-local/snapshot-changes
++ repos=("oss" "non-oss")
++ extra_repos=("source" "debug")
++ isodir=iso
++ for arg in "$@"
++ shift
++ '[' --dry == --force ']'
++ '[' --dry == --dry ']'
++ dryrun=echo
++ shift
++ continue
++ for arg in "$@"
++ shift
++ '[' --force == --force ']'
++ force=1
++ shift
++ continue
++ for arg in "$@"
++ shift
++ '[' publish_distro_conf/publish_leap155.config == --force ']'
++ '[' publish_distro_conf/publish_leap155.config == --dry ']'
++ '[' publish_distro_conf/publish_leap155.config == --cleanup ']'
++ '[' publish_distro_conf/publish_leap155.config == --now ']'
++ newargs+=("$arg")
++ set -- publish_distro_conf/publish_leap155.config
++ set -ue
++ . publish_distro_conf/publish_leap155.config
+++ leap_version=15.5
+++ qu=
++++ date -d 20230101 +%Y/%m/%d/%H%M
+++ logfile_base=/home/an/publish_logs/15.5/2023/01/01/0000
+++ synclog=/home/an/publish_logs/15.5/2023/01/01/0000.log
+++ deletelog=/home/an/publish_logs/15.5/2023/01/01/0000-deletes.log
+++ path=/distribution/leap/15.5
+++ flavors=(DVD-x86_64 NET-x86_64 DVD-aarch64 NET-aarch64 DVD-ppc64le NET-ppc64le DVD-s390x NET-s390x)
++ shift
++ base=t/tmp/
++ stage=t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5
++ dest=t/tmp/ftp/pub/opensuse//distribution/leap/15.5
++ '[' '!' -e t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5 -o '!' -e t/tmp/ftp/pub/opensuse//distribution/leap/15.5 ']'
++ '[' -n '' ']'
++ test echo == echo
++ deletelog=/dev/stdout
++ synclog=/dev/stdout
++ version=
++ do_sync_isos=1
++ for flavor in "${flavors[@]}"
++ get_version
++ '[' -z '' ']'
+++ echo t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-x86_64-Build111.11-Media.iso
++ version=t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-x86_64-Build111.11-Media.iso
++ version=111.11-Media.iso
++ version=111.11
++ '[' -z 111.11 ']'
++ get_iso
++ iso=openSUSE-Leap-15.5-DVD-x86_64-Build111.11-Media.iso
++ get_diff_url
++ url=https://openqa.opensuse.org/snapshot-changes/opensuse/15.5/diff/111.11
++ get_changes_filename
++ :
++ '[' -z 1 -a -e t/tmp/ftp/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-x86_64-Build111.11-Media.iso ']'
++ '[' -n '' ']'
++ '[' '!' -e t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-x86_64-Build111.11-Media.iso ']'
++ get_iso_link
++ link=t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-x86_64-Current.iso
+++ readlink t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-x86_64-Current.iso
++ '[' '' '!=' openSUSE-Leap-15.5-DVD-x86_64-Build111.11-Media.iso ']'
++ echo ln -sf openSUSE-Leap-15.5-DVD-x86_64-Build111.11-Media.iso t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-x86_64-Current.iso
++ echo ln -sf openSUSE-Leap-15.5-DVD-x86_64-Build111.11-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-x86_64-Current.iso.sha256
++ '[' -z 1 ']'
++ for flavor in "${flavors[@]}"
++ get_version
++ '[' -z 111.11 ']'
++ get_iso
++ iso=openSUSE-Leap-15.5-NET-x86_64-Build111.11-Media.iso
++ get_diff_url
++ url=https://openqa.opensuse.org/snapshot-changes/opensuse/15.5/diff/111.11
++ get_changes_filename
++ :
++ '[' -z 1 -a -e t/tmp/ftp/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-x86_64-Build111.11-Media.iso ']'
++ '[' -n '' ']'
++ '[' '!' -e t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-x86_64-Build111.11-Media.iso ']'
++ get_iso_link
++ link=t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-x86_64-Current.iso
+++ readlink t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-x86_64-Current.iso
++ '[' '' '!=' openSUSE-Leap-15.5-NET-x86_64-Build111.11-Media.iso ']'
++ echo ln -sf openSUSE-Leap-15.5-NET-x86_64-Build111.11-Media.iso t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-x86_64-Current.iso
++ echo ln -sf openSUSE-Leap-15.5-NET-x86_64-Build111.11-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-x86_64-Current.iso.sha256
++ '[' -z 1 ']'
++ for flavor in "${flavors[@]}"
++ get_version
++ '[' -z 111.11 ']'
++ get_iso
++ iso=openSUSE-Leap-15.5-DVD-aarch64-Build111.11-Media.iso
++ get_diff_url
++ url=https://openqa.opensuse.org/snapshot-changes/opensuse/15.5/diff/111.11
++ get_changes_filename
++ :
++ '[' -z 1 -a -e t/tmp/ftp/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-aarch64-Build111.11-Media.iso ']'
++ '[' -n '' ']'
++ '[' '!' -e t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-aarch64-Build111.11-Media.iso ']'
++ get_iso_link
++ link=t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-aarch64-Current.iso
+++ readlink t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-aarch64-Current.iso
++ '[' '' '!=' openSUSE-Leap-15.5-DVD-aarch64-Build111.11-Media.iso ']'
++ echo ln -sf openSUSE-Leap-15.5-DVD-aarch64-Build111.11-Media.iso t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-aarch64-Current.iso
++ echo ln -sf openSUSE-Leap-15.5-DVD-aarch64-Build111.11-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-aarch64-Current.iso.sha256
++ '[' -z 1 ']'
++ for flavor in "${flavors[@]}"
++ get_version
++ '[' -z 111.11 ']'
++ get_iso
++ iso=openSUSE-Leap-15.5-NET-aarch64-Build111.11-Media.iso
++ get_diff_url
++ url=https://openqa.opensuse.org/snapshot-changes/opensuse/15.5/diff/111.11
++ get_changes_filename
++ :
++ '[' -z 1 -a -e t/tmp/ftp/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-aarch64-Build111.11-Media.iso ']'
++ '[' -n '' ']'
++ '[' '!' -e t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-aarch64-Build111.11-Media.iso ']'
++ get_iso_link
++ link=t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-aarch64-Current.iso
+++ readlink t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-aarch64-Current.iso
++ '[' '' '!=' openSUSE-Leap-15.5-NET-aarch64-Build111.11-Media.iso ']'
++ echo ln -sf openSUSE-Leap-15.5-NET-aarch64-Build111.11-Media.iso t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-aarch64-Current.iso
++ echo ln -sf openSUSE-Leap-15.5-NET-aarch64-Build111.11-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-aarch64-Current.iso.sha256
++ '[' -z 1 ']'
++ for flavor in "${flavors[@]}"
++ get_version
++ '[' -z 111.11 ']'
++ get_iso
++ iso=openSUSE-Leap-15.5-DVD-ppc64le-Build111.11-Media.iso
++ get_diff_url
++ url=https://openqa.opensuse.org/snapshot-changes/opensuse/15.5/diff/111.11
++ get_changes_filename
++ :
++ '[' -z 1 -a -e t/tmp/ftp/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-ppc64le-Build111.11-Media.iso ']'
++ '[' -n '' ']'
++ '[' '!' -e t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-ppc64le-Build111.11-Media.iso ']'
++ get_iso_link
++ link=t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-ppc64le-Current.iso
+++ readlink t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-ppc64le-Current.iso
++ '[' '' '!=' openSUSE-Leap-15.5-DVD-ppc64le-Build111.11-Media.iso ']'
++ echo ln -sf openSUSE-Leap-15.5-DVD-ppc64le-Build111.11-Media.iso t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-ppc64le-Current.iso
++ echo ln -sf openSUSE-Leap-15.5-DVD-ppc64le-Build111.11-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-ppc64le-Current.iso.sha256
++ '[' -z 1 ']'
++ for flavor in "${flavors[@]}"
++ get_version
++ '[' -z 111.11 ']'
++ get_iso
++ iso=openSUSE-Leap-15.5-NET-ppc64le-Build111.11-Media.iso
++ get_diff_url
++ url=https://openqa.opensuse.org/snapshot-changes/opensuse/15.5/diff/111.11
++ get_changes_filename
++ :
++ '[' -z 1 -a -e t/tmp/ftp/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-ppc64le-Build111.11-Media.iso ']'
++ '[' -n '' ']'
++ '[' '!' -e t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-ppc64le-Build111.11-Media.iso ']'
++ get_iso_link
++ link=t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-ppc64le-Current.iso
+++ readlink t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-ppc64le-Current.iso
++ '[' '' '!=' openSUSE-Leap-15.5-NET-ppc64le-Build111.11-Media.iso ']'
++ echo ln -sf openSUSE-Leap-15.5-NET-ppc64le-Build111.11-Media.iso t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-ppc64le-Current.iso
++ echo ln -sf openSUSE-Leap-15.5-NET-ppc64le-Build111.11-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-ppc64le-Current.iso.sha256
++ '[' -z 1 ']'
++ for flavor in "${flavors[@]}"
++ get_version
++ '[' -z 111.11 ']'
++ get_iso
++ iso=openSUSE-Leap-15.5-DVD-s390x-Build111.11-Media.iso
++ get_diff_url
++ url=https://openqa.opensuse.org/snapshot-changes/opensuse/15.5/diff/111.11
++ get_changes_filename
++ :
++ '[' -z 1 -a -e t/tmp/ftp/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-s390x-Build111.11-Media.iso ']'
++ '[' -n '' ']'
++ '[' '!' -e t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-s390x-Build111.11-Media.iso ']'
++ get_iso_link
++ link=t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-s390x-Current.iso
+++ readlink t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-s390x-Current.iso
++ '[' '' '!=' openSUSE-Leap-15.5-DVD-s390x-Build111.11-Media.iso ']'
++ echo ln -sf openSUSE-Leap-15.5-DVD-s390x-Build111.11-Media.iso t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-s390x-Current.iso
++ echo ln -sf openSUSE-Leap-15.5-DVD-s390x-Build111.11-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-s390x-Current.iso.sha256
++ '[' -z 1 ']'
++ for flavor in "${flavors[@]}"
++ get_version
++ '[' -z 111.11 ']'
++ get_iso
++ iso=openSUSE-Leap-15.5-NET-s390x-Build111.11-Media.iso
++ get_diff_url
++ url=https://openqa.opensuse.org/snapshot-changes/opensuse/15.5/diff/111.11
++ get_changes_filename
++ :
++ '[' -z 1 -a -e t/tmp/ftp/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-s390x-Build111.11-Media.iso ']'
++ '[' -n '' ']'
++ '[' '!' -e t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-s390x-Build111.11-Media.iso ']'
++ get_iso_link
++ link=t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-s390x-Current.iso
+++ readlink t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-s390x-Current.iso
++ '[' '' '!=' openSUSE-Leap-15.5-NET-s390x-Build111.11-Media.iso ']'
++ echo ln -sf openSUSE-Leap-15.5-NET-s390x-Build111.11-Media.iso t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-s390x-Current.iso
++ echo ln -sf openSUSE-Leap-15.5-NET-s390x-Build111.11-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-s390x-Current.iso.sha256
++ '[' -z 1 ']'
++ for r in "${repos[@]/#//repo/}"
++ for i in /suse/setup /boot
++ d=t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/repo/oss/suse/setup
++ '[' -d t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/repo/oss/suse/setup ']'
++ continue
++ for i in /suse/setup /boot
++ d=t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/repo/oss/boot
++ '[' -d t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/repo/oss/boot ']'
++ continue
++ for r in "${repos[@]/#//repo/}"
++ for i in /suse/setup /boot
++ d=t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/repo/non-oss/suse/setup
++ '[' -d t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/repo/non-oss/suse/setup ']'
++ continue
++ for i in /suse/setup /boot
++ d=t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/repo/non-oss/boot
++ '[' -d t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/repo/non-oss/boot ']'
++ continue
++ '[' 1 = 0 ']'
++ TODO=()
++ TODO+=(iso)
++ echo 'current 111.11'
++ echo tee t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/.current.txt
++ '[' -n oss ']'
++ TODO+=(repo)
++ TODO+=(DELETE_repo)
++ for i in "${TODO[@]}"
++ case $i in
++ log=/dev/stdout
++ dry_delete=--delete-after
++ i=iso
++ echo ========== iso --delete-after ===========
++ echo rsync -avvhiH t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso --link-dest=t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5 t/tmp/ftp/pub/opensuse//distribution/leap/15.5 --delete-after
++ LC_ALL=C
++ grep -v '^\.[fdL]      '
++ LC_ALL=C
++ grep -v '^\(sending\|delta\)'
++ tee -a /dev/stdout
++ for i in "${TODO[@]}"
++ case $i in
++ log=/dev/stdout
++ dry_delete=
++ echo ========== repo ===========
++ echo rsync -avvhiH t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/repo --link-dest=t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5 t/tmp/ftp/pub/opensuse//distribution/leap/15.5
++ LC_ALL=C
++ grep -v '^\.[fdL]      '
++ LC_ALL=C
++ grep -v '^\(sending\|delta\)'
++ tee -a /dev/stdout
++ for i in "${TODO[@]}"
++ case $i in
++ i=repo
++ log=/dev/stdout
++ dry_delete='--delete -n'
++ echo ========== repo --delete -n ===========
++ echo rsync -avvhiH t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/repo --link-dest=t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5 t/tmp/ftp/pub/opensuse//distribution/leap/15.5 --delete -n
++ LC_ALL=C
++ grep -v '^\.[fdL]      '
++ LC_ALL=C
++ grep -v '^\(sending\|delta\)'
++ tee -a /dev/stdout
++ for r in "${extra_repos[@]}"
++ stage=t/tmp/ftp-stage/pub/opensuse/source//distribution/leap/15.5
++ dest=t/tmp/ftp/pub/opensuse/source//distribution/leap/15.5
++ echo rsync -avhiH t/tmp/ftp-stage/pub/opensuse/source//distribution/leap/15.5/ --link-dest=t/tmp/ftp-stage/pub/opensuse/source//distribution/leap/15.5 t/tmp/ftp/pub/opensuse/source//distribution/leap/15.5 --delete-after
++ tee -a /dev/stdout
++ for r in "${extra_repos[@]}"
++ stage=t/tmp/ftp-stage/pub/opensuse/debug//distribution/leap/15.5
++ dest=t/tmp/ftp/pub/opensuse/debug//distribution/leap/15.5
++ echo rsync -avhiH t/tmp/ftp-stage/pub/opensuse/debug//distribution/leap/15.5/ --link-dest=t/tmp/ftp-stage/pub/opensuse/debug//distribution/leap/15.5 t/tmp/ftp/pub/opensuse/debug//distribution/leap/15.5 --delete-after
++ tee -a /dev/stdout
++ get_mark_published_url
++ url=https://openqa.opensuse.org/snapshot-changes/opensuse/15.5/current
++ '[' -n https://openqa.opensuse.org/snapshot-changes/opensuse/15.5/current ']'
++ echo curl -X POST -F version=111.11 https://openqa.opensuse.org/snapshot-changes/opensuse/15.5/current

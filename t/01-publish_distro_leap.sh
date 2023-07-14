@@ -26,5 +26,5 @@ done
 )
 
 
-PUBLISH_DISTRO_BASE=$work/ bash ./publish_distro --dry --force publish_distro_conf/publish_leap155.config
+PUBLISH_DISTRO_BASE=$work/ PUBLISH_DISTRO_DATE='20230101' bash -x ./publish_distro --dry --force publish_distro_conf/publish_leap155.config
 

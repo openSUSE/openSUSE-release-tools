@@ -19,13 +19,15 @@ PUBLISH_DELAY=2
 force=
 
 # used for cleanup
-date='now'
+date=${PUBLISH_DISTRO_DATE-now}
 
 # set to echo for dry run
 dryrun=
 
 # cleanup instead of sync
 do_cleanup=
+
+changes=
 
 # url with snapshot changes app
 diff_url_base="https://openqa.opensuse.org/snapshot-changes/opensuse"
@@ -82,6 +84,8 @@ done
 # set newargs as $@
 set -- "${newargs[@]}"
 
+set -ue
+
 . "$1" || {
   echo "need to specify config file" >&2
   exit 1
@@ -116,12 +120,17 @@ if [ -n "$do_cleanup" ]; then
   exit 0
 fi
 
-mkdir -p "${synclog%/*}" "${deletelog%/*}"
-if test -f $synclog; then
-  old $synclog
-fi
-if test -f $deletelog; then
-  old $deletelog
+if test "$dryrun" == echo; then
+  deletelog=/dev/stdout
+  synclog=/dev/stdout
+else
+  mkdir -p "${synclog%/*}" "${deletelog%/*}"
+  if test -f $synclog; then
+    old $synclog
+  fi
+  if test -f $deletelog; then
+    old $deletelog
+  fi
 fi
 
 version=
@@ -275,7 +284,7 @@ for r in "${extra_repos[@]}"; do
   stage="${base}ftp-stage/pub/opensuse/$r/$path"
   dest="${base}ftp/pub/opensuse/$r/$path"
   $dryrun rsync -avhiH $stage/ --link-dest=$stage \
-    $dest --delete-after "$@" | tee -a log
+    $dest --delete-after "$@" | tee -a $log
 done
 
 # mark published

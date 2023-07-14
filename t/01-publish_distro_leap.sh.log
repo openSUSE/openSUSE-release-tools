@@ -24,3 +24,4 @@ rsync -avvhiH t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/repo --link-d
 rsync -avhiH t/tmp/ftp-stage/pub/opensuse/source//distribution/leap/15.5/ --link-dest=t/tmp/ftp-stage/pub/opensuse/source//distribution/leap/15.5 t/tmp/ftp/pub/opensuse/source//distribution/leap/15.5 --delete-after
 rsync -avhiH t/tmp/ftp-stage/pub/opensuse/debug//distribution/leap/15.5/ --link-dest=t/tmp/ftp-stage/pub/opensuse/debug//distribution/leap/15.5 t/tmp/ftp/pub/opensuse/debug//distribution/leap/15.5 --delete-after
 curl -X POST -F version=111.11 https://openqa.opensuse.org/snapshot-changes/opensuse/15.5/current
+stage/pub/opensuse/debug//distribution/leap/15.5 t/tmp/ftp/pub/opensuse/debug//distribution/leap/15.5 --delete-after
