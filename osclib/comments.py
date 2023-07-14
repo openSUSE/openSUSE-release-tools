@@ -1,5 +1,10 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Generator, List, Literal, Optional, Tuple, TypedDict, Union
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple, Union
+try:
+    from typing import Literal, TypedDict
+except ImportError:
+    from typing_extensions import Literal, TypedDict
+
 from dateutil.parser import parse as date_parse
 import re
 if TYPE_CHECKING:

@@ -4,7 +4,12 @@ from dateutil.parser import parse as date_parse
 import re
 import socket
 import logging
-from typing import List, Literal, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
 from lxml import etree as ET
 from urllib.error import HTTPError
 

@@ -1,6 +1,11 @@
 #!/usr/bin/python3
 
-from typing import Literal, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
 from osclib.core import devel_project_get
 from osclib.core import package_source_hash
 from osclib.core import package_kind
