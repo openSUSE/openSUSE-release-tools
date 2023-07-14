@@ -58,6 +58,10 @@ Requires:       python3-pycurl
 Requires:       python3-python-dateutil
 Requires:       python3-pyxdg
 Requires:       python3-requests
+# typing extensions are needed on SLE & Leap
+%if 0%{?suse_version} <= 1500
+Requires:       python3-typing_extensions
+%endif
 
 # bs_mirrorfull
 Requires:       perl-Net-SSLeay
