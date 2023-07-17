@@ -9,11 +9,8 @@ cd $work
 mkdir ftp-stage
 mkdir -p ftp/pub/opensuse/distribution/leap/15.5/iso
 
-
 mkdir -p ftp/pub/opensuse/distribution/leap/15.5/repo/oss
 mkdir -p ftp/pub/opensuse/distribution/leap/15.5/repo/non-oss
-
-
 
 cp -r ftp/pub ftp-stage/
 
@@ -25,6 +22,5 @@ for arch in x86_64 aarch64 ppc64le s390x; do
 done
 )
 
-
-PUBLISH_DISTRO_BASE=$work/ PUBLISH_DISTRO_DATE='20230101' bash -x ./publish_distro --dry --force publish_distro_conf/publish_leap155.config
+PUBLISH_DISTRO_BASE=$work/ PUBLISH_DISTRO_DATE='20230101' . ./publish_distro --dry --force publish_distro_conf/publish_leap155.config
 

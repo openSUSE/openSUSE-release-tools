@@ -57,28 +57,20 @@ get_changes_filename() {
 
 # --dry and --cleanup should not be passed to rsync through $@
 # config file and possibly other opts including --force need to be
-for arg; do
-  shift
-  if [ "$arg" == '--force' ]; then
+while (("$#")); do
+  if [ "$1" == '--force' ]; then
     force=1
-    # newargs+=("$arg")
-    shift
-    continue
-  elif [ "$arg" == '--dry' ]; then
+  elif [ "$1" == '--dry' ]; then
     dryrun=echo
-    shift
-    continue
-  elif [ "$arg" == '--cleanup' ]; then
+  elif [ "$1" == '--cleanup' ]; then
     do_cleanup=1
     date="90 days ago"
-    continue
-  elif [ "$arg" == '--now' ]; then
+  elif [ "$1" == '--now' ]; then
     PUBLISH_DELAY=0
-    shift
-    continue
   else
-    newargs+=("$arg")
+    newargs+=("$1")
   fi
+  shift
 done
 
 # set newargs as $@
@@ -121,8 +113,8 @@ if [ -n "$do_cleanup" ]; then
 fi
 
 if test "$dryrun" == echo; then
-  deletelog=/dev/stdout
-  synclog=/dev/stdout
+  deletelog=/dev/stderr
+  synclog=/dev/stderr
 else
   mkdir -p "${synclog%/*}" "${deletelog%/*}"
   if test -f $synclog; then
@@ -135,6 +127,7 @@ fi
 
 version=
 do_sync_isos=1
+changes_done=0 # we need changes done only once in this loop
 for flavor in "${flavors[@]}"; do
   get_version
 
@@ -149,7 +142,8 @@ for flavor in "${flavors[@]}"; do
     do_sync_isos=0
     break
   fi
-  if [ -n "$changes" ]; then
+  if [ -n "$changes" ] && [ 0 == "$changes_done" ] ; then
+    changes_done=1
     if [ -d "$stage/$changes" ]; then
       # new way, use the obs generated changelogs
       $dryrun rsync -avvhiH $stage/$changes \
@@ -162,8 +156,7 @@ for flavor in "${flavors[@]}"; do
       # old way (already broken?)
       if [ ! -s "$changes" ]; then
         echo "generating $changes" | tee -a $synclog
-        [ -z "$dryrun" ] || changes=/dev/stdout
-        $dryrun curl -sf "$url" >$changes
+        $dryrun curl -sf "$url" -o "$changes"
       fi
       if [ ! -e $stage/$isodir/$changes ]; then
         $dryrun cp -v $changes $stage/$isodir | tee -a $synclog
