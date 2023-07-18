@@ -1,6 +1,6 @@
 format_version: 3
 pipelines:
-  ALP.Micro.Images:
+  Dolomite.Images:
     group: ALP.Target
     lock_behavior: unlockWhenFinished
     materials:
@@ -8,7 +8,7 @@ pipelines:
         git: git://botmaster.suse.de/suse-repos.git
         auto_update: true
         whitelist:
-          - SUSE:ALP:Products:Micro:1.0_-_images.yaml
+          - SUSE:ALP:Products:Dolomite:1.0_-_images.yaml
         destination: repos
       scripts:
         auto_update: true
@@ -26,7 +26,7 @@ pipelines:
         - script: |
             export PYTHONPATH=scripts
             set -e
-            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:ALP:Products:Micro:1.0 -r images
+            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:ALP:Products:Dolomite:1.0 -r images
 
     - Release.Images.To.Test:
         approval: manual
@@ -39,19 +39,19 @@ pipelines:
         tasks:
         - script: |-
             set -e
-            PRODUCTS=$(osc -A https://api.suse.de ls SUSE:ALP:Products:Micro:1.0 | grep "^ALP-Micro" | grep -v release | grep -v : ||:)
+            PRODUCTS=$(osc -A https://api.suse.de ls SUSE:ALP:Products:Dolomite:1.0 | grep "^Dolomite" | grep -v release | grep -v : ||:)
             if [ -z "${PRODUCTS}" ]; then
               echo "[WARNNING] There is no image to be released"
             fi
             for product in 000product $PRODUCTS; do
-              osc -A https://api.suse.de release SUSE:ALP:Products:Micro:1.0 $product
+              osc -A https://api.suse.de release SUSE:ALP:Products:Dolomite:1.0 $product
             done
             sleep 600
-            while (osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Micro:1.0:ToTest/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
+            while (osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Dolomite:1.0:ToTest/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
                 echo PENDING
                 sleep 600
             done
-            osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Micro:1.0:ToTest/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
+            osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Dolomite:1.0:ToTest/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
 
     - Release.Images.To.Publish:
         approval: manual
@@ -63,20 +63,20 @@ pipelines:
         - staging-bot
         tasks:
         - script: |-
-            osc -A https://api.suse.de release SUSE:ALP:Products:Micro:1.0:ToTest
+            osc -A https://api.suse.de release SUSE:ALP:Products:Dolomite:1.0:ToTest
             sleep 600
-            while (osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Micro:1.0:PUBLISH/_result?view=summary&repository=containers" | grep "result project" | grep -v 'code="published" state="published">'); do
+            while (osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Dolomite:1.0:PUBLISH/_result?view=summary&repository=containers" | grep "result project" | grep -v 'code="published" state="published">'); do
                 echo PENDING
                 sleep 600
             done
-            osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Micro:1.0:PUBLISH/_result?view=summary&repository=containers" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
-            while (osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Micro:1.0:PUBLISH/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
+            osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Dolomite:1.0:PUBLISH/_result?view=summary&repository=containers" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
+            while (osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Dolomite:1.0:PUBLISH/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
                 echo PENDING
                 sleep 600
             done
-            osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Micro:1.0:PUBLISH/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
+            osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Dolomite:1.0:PUBLISH/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
 
-  ALP.Micro.Images.NEW:
+  Dolomite.Images.NEW:
     group: ALP.Target
     lock_behavior: unlockWhenFinished
     materials:
@@ -84,7 +84,7 @@ pipelines:
         git: git://botmaster.suse.de/suse-repos.git
         auto_update: true
         whitelist:
-          - SUSE:ALP:Products:Micro:1.0_-_images.yaml
+          - SUSE:ALP:Products:Dolomite:1.0_-_images.yaml
         destination: repos
       scripts:
         auto_update: true
@@ -102,8 +102,8 @@ pipelines:
         - script: |
             export PYTHONPATH=scripts
             set -e
-            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:ALP:Products:Micro:1.0 -r containerfile
-            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:ALP:Products:Micro:1.0 -r images
+            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:ALP:Products:Dolomite:1.0 -r containerfile
+            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:ALP:Products:Dolomite:1.0 -r images
 
     - Release.Images.To.Test:
         approval: manual
@@ -117,7 +117,7 @@ pipelines:
         - staging-bot
         tasks:
         - script: |-
-            sle-prjmgr-tools --jira-instance $JIRA_INSTANCE --osc-config $OSC_CONFIG ibs_to_jira --jira-pat $JIRA_PAT -p SUSE:ALP:Products:Micro:1.0
+            sle-prjmgr-tools --jira-instance $JIRA_INSTANCE --osc-config $OSC_CONFIG ibs_to_jira --jira-pat $JIRA_PAT -p SUSE:ALP:Products:Dolomite:1.0
 
     - Release.Images.To.Publish:
         approval: manual
@@ -129,20 +129,20 @@ pipelines:
         - staging-bot
         tasks:
         - script: |-
-            osc -A https://api.suse.de release SUSE:ALP:Products:Micro:1.0:ToTest
+            osc -A https://api.suse.de release SUSE:ALP:Products:Dolomite:1.0:ToTest
             sleep 600
-            while (osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Micro:1.0:PUBLISH/_result?view=summary&repository=containers" | grep "result project" | grep -v 'code="published" state="published">'); do
+            while (osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Dolomite:1.0:PUBLISH/_result?view=summary&repository=containers" | grep "result project" | grep -v 'code="published" state="published">'); do
                 echo PENDING
                 sleep 600
             done
-            osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Micro:1.0:PUBLISH/_result?view=summary&repository=containers" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
-            while (osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Micro:1.0:PUBLISH/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
+            osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Dolomite:1.0:PUBLISH/_result?view=summary&repository=containers" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
+            while (osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Dolomite:1.0:PUBLISH/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
                 echo PENDING
                 sleep 600
             done
-            osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Micro:1.0:PUBLISH/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
+            osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Dolomite:1.0:PUBLISH/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
 
-  ALP.Micro.ImagesManual:
+  Dolomite.ImagesManual:
     group: ALP.Target
     lock_behavior: unlockWhenFinished
     materials:
@@ -150,7 +150,7 @@ pipelines:
         git: git://botmaster.suse.de/suse-repos.git
         auto_update: true
         whitelist:
-          - SUSE:ALP:Products:Micro:1.0_-_images.yaml
+          - SUSE:ALP:Products:Dolomite:1.0_-_images.yaml
         destination: repos
       scripts:
         auto_update: true
@@ -172,7 +172,7 @@ pipelines:
             tasks:
               - script: |
                   export PYTHONPATH=scripts
-                  while (! ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:ALP:Products:Micro:1.0 -r images); do
+                  while (! ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:ALP:Products:Dolomite:1.0 -r images); do
                     sleep 300
                   done
           Release.To.Test:
@@ -183,9 +183,9 @@ pipelines:
             tasks:
               - script: |-
                   set -e
-                  PRODUCTS=$(osc -A https://api.suse.de ls SUSE:ALP:Products:Micro:1.0 | grep "^ALP-Micro" | grep -v release)
+                  PRODUCTS=$(osc -A https://api.suse.de ls SUSE:ALP:Products:Dolomite:1.0 | grep "^Dolomite" | grep -v release)
                   for product in 000product $PRODUCTS; do
-                    osc -A https://api.suse.de release SUSE:ALP:Products:Micro:1.0 $product
+                    osc -A https://api.suse.de release SUSE:ALP:Products:Dolomite:1.0 $product
                   done
 
     - Release.Images.To.Publish:
@@ -197,12 +197,12 @@ pipelines:
         resources:
           - staging-bot
         tasks:
-          - script: osc -A https://api.suse.de release SUSE:ALP:Products:Micro:1.0:ToTest
+          - script: osc -A https://api.suse.de release SUSE:ALP:Products:Dolomite:1.0:ToTest
 
-  ALP.Micro.ReleaseScc:
+  Dolomite.ReleaseScc:
     group: ALP.Target
     parameters:
-      product: alp-micro-1.0
+      product: dolomite-1.0
       target: MyTarget
       build: "0.0"
     materials:
