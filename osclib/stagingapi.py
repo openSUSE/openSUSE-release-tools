@@ -5,11 +5,11 @@ import dateutil.parser
 import logging
 import textwrap
 from urllib.error import HTTPError, URLError
+from inspect import signature
 
 import time
 import re
 from lxml import etree as ET
-
 
 from osc import conf
 from osc import oscerr
@@ -1533,6 +1533,10 @@ class StagingAPI(object):
             return
 
         try:
-            delete_project(self.apiurl, project, force=True)
+            sig = signature(delete_project)
+            if "recursive=" in str(sig):
+                delete_project(self.apiurl, project, force=True, recursive=True)
+            else:
+                delete_project(self.apiurl, project, force=True)
         except HTTPError as e:
             print(e)
