@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-from contextlib import suppress
 import difflib
 import glob
 import os
@@ -248,22 +247,17 @@ class CheckSource(ReviewBot.ReviewBot):
                                      pathname=copath, server_service_files=True, expand_link=True)
         os.rename(source_package, target_package)
         shutil.rmtree(os.path.join(target_package, '.osc'))
-        # TODO(dmllr): Fix in the source checker
-        with suppress(FileNotFoundError):
-            os.remove(os.path.join(target_package, '.gitattributes'))
 
         new_info = self.package_source_parse(source_project, source_package, source_revision, target_package)
         filename = new_info.get('filename', '')
         expected_name = target_package
         if filename == '_preinstallimage':
             expected_name = 'preinstallimage'
-        # TODO(dmllr): self.package_source_parse cannot handle scm_sync submissions, so skip the check for now
-        if not self.source_is_scm_staging_submission(source_project):
-            if not (filename.endswith('.kiwi') or filename == 'Dockerfile') and new_info['name'] != expected_name:
-                shutil.rmtree(copath)
-                self.review_messages['declined'] = "A package submitted as %s has to build as 'Name: %s' - found Name '%s'" % (
-                    target_package, expected_name, new_info['name'])
-                return False
+        if not (filename.endswith('.kiwi') or filename == 'Dockerfile') and new_info['name'] != expected_name:
+            shutil.rmtree(copath)
+            self.review_messages['declined'] = "A package submitted as %s has to build as 'Name: %s' - found Name '%s'" % (
+                target_package, expected_name, new_info['name'])
+            return False
 
         if not self.check_service_file(target_package):
             return False
