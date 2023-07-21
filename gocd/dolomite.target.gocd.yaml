@@ -39,7 +39,7 @@ pipelines:
         tasks:
         - script: |-
             set -e
-            PRODUCTS=$(osc -A https://api.suse.de ls SUSE:ALP:Products:Dolomite:1.0 | grep "^Dolomite" | grep -v release | grep -v : ||:)
+            PRODUCTS=$(osc -A https://api.suse.de ls SUSE:ALP:Products:Dolomite:1.0 | grep "^ALP-Dolomite" | grep -v release | grep -v : ||:)
             if [ -z "${PRODUCTS}" ]; then
               echo "[WARNNING] There is no image to be released"
             fi
@@ -183,7 +183,7 @@ pipelines:
             tasks:
               - script: |-
                   set -e
-                  PRODUCTS=$(osc -A https://api.suse.de ls SUSE:ALP:Products:Dolomite:1.0 | grep "^Dolomite" | grep -v release)
+                  PRODUCTS=$(osc -A https://api.suse.de ls SUSE:ALP:Products:Dolomite:1.0 | grep "^ALP-Dolomite" | grep -v release)
                   for product in 000product $PRODUCTS; do
                     osc -A https://api.suse.de release SUSE:ALP:Products:Dolomite:1.0 $product
                   done
