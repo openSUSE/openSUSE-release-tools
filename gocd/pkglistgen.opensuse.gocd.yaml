@@ -129,7 +129,7 @@ pipelines:
             - repo-checker
             tasks:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:16.0 -s target
-  Pkglistgen.openSUSE_Leap_15.5:
+  Pkglistgen.openSUSE_Leap_15.6:
     group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -145,12 +145,12 @@ pipelines:
         approval:
           type: manual
         jobs:
-          openSUSE_Leap_15.5_target:
+          openSUSE_Leap_15.6_target:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o openSUSE:Leap:15.5 -s SUSE:SLE-15-SP5:GA
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.5 -s target
+            - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o openSUSE:Leap:15.6 -s SUSE:SLE-15-SP6:GA
+            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.6 -s target
   Pkglistgen.openSUSE_Leap_15.4_CR:
     group: Leap
     lock_behavior: unlockWhenFinished
@@ -173,7 +173,7 @@ pipelines:
             tasks:
             - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o openSUSE:Leap:15.4:Images -t openSUSE:Leap:15.4:Update -s SUSE:SLE-15-SP4:Update
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.4:Images -s target
-  Update.Repos.Leap.openSUSE_Leap_15.5:
+  Update.Repos.Leap.openSUSE_Leap_15.6:
     group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -189,11 +189,11 @@ pipelines:
         approval:
           type: manual
         jobs:
-          openSUSE_Leap_15.5:
+          openSUSE_Leap_15.6:
             resources:
             - repo-checker
             tasks:
-              - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.5
+              - script: python3 ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:15.6
   Update.Repos.Leap.openSUSE_Leap_15.4_Images:
     group: Leap
     lock_behavior: unlockWhenFinished

@@ -87,7 +87,7 @@ pipelines:
             tasks:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %>
 <% end -%>
-  Pkglistgen.openSUSE_Leap_15.5:
+  Pkglistgen.openSUSE_Leap_15.6:
     group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -103,7 +103,7 @@ pipelines:
         approval:
           type: manual
         jobs:
-<% ['openSUSE:Leap:15.5/target'].each do |project|
+<% ['openSUSE:Leap:15.6/target'].each do |project|
   project=project.split('/')
   name=project[0].gsub(':', '_')
   if project.size > 1
@@ -115,7 +115,7 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o openSUSE:Leap:15.5 -s SUSE:SLE-15-SP5:GA
+            - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o openSUSE:Leap:15.6 -s SUSE:SLE-15-SP6:GA
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %>
 <% end -%>
   Pkglistgen.openSUSE_Leap_15.4_CR:
@@ -149,7 +149,7 @@ pipelines:
             - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o openSUSE:Leap:15.4:Images -t openSUSE:Leap:15.4:Update -s SUSE:SLE-15-SP4:Update
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %>
 <% end -%>
-<% %w(openSUSE:Leap:15.5 openSUSE:Leap:15.4:Images).each do |project| -%>
+<% %w(openSUSE:Leap:15.6 openSUSE:Leap:15.4:Images).each do |project| -%>
   Update.Repos.Leap.<%= project.gsub(':', '_') %>:
     group: Leap
     lock_behavior: unlockWhenFinished
