@@ -42,6 +42,50 @@ jobs:
       if: always()
       run: docker-compose -f dist/ci/docker-compose.yml down
 
+  smoke-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - registry.opensuse.org/opensuse/tumbleweed:latest
+          - registry.opensuse.org/opensuse/leap:15.5
+
+    container: ${{ matrix.image }}
+    steps:
+      - name: install git to checkout the repo
+        run: zypper -n in git
+
+      - uses: actions/checkout@v3
+
+      - name: fix the file permissions of the repository
+        run: chown -R $(id -un):$(id -gn) .
+
+      - name: add the openSUSE:Tools repository for Tumbleweed
+        if: ${{ contains(matrix.image, 'tumbleweed') }}
+        run: zypper -n ar https://download.opensuse.org/repositories/openSUSE:/Tools/openSUSE_Tumbleweed/openSUSE:Tools.repo
+
+      - name: add the openSUSE:Tools repository for Leap
+        if: ${{ contains(matrix.image, '15.5') }}
+        run: zypper -n ar https://download.opensuse.org/repositories/openSUSE:/Tools/15.5/openSUSE:Tools.repo
+
+      - name: install the build & runtime dependencies of openSUSE-release-tool
+        run: |
+          zypper -n --gpg-auto-import-keys refresh
+          zypper -n source-install openSUSE-release-tools
+          zypper -n install openSUSE-release-tools
+
+      - name: FIXME, install missing dependencies
+        run: |
+          zypper -n in python3-typing_extensions python3-solv python3-pika python3-openqa_client build python3-influxdb python3-bugzilla
+
+      - name: run a simple smoke test whether --help actually works
+        run: |
+          for f in $(find . -maxdepth 1 -type f -executable -print); do
+              # skip completely broken scripts or those without --help
+              [[ " ./checknewer.py ./repo2fileprovides.py ./openqa-maintenance.py ./docker_publisher.py ./publish_distro ./bs_mirrorfull ./findfileconflicts ./write_repo_susetags_file.pl ./issue-diff.py " =~ "$f" ]] || "$f" --help
+          done
+
   linters:
     runs-on: ubuntu-latest
 

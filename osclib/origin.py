@@ -1,6 +1,10 @@
 from copy import deepcopy
 import logging
-from typing import Any, Dict, Generator, List, Literal, NamedTuple, Optional, Tuple, TypedDict, Union
+from typing import Any, Dict, Generator, List, NamedTuple, Optional, Tuple, Union
+try:
+    from typing import Literal, TypedDict
+except ImportError:
+    from typing_extensions import Literal, TypedDict
 
 from osc.core import ReviewState
 from osclib.conf import Config
