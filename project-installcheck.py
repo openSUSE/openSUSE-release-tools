@@ -260,6 +260,8 @@ class RepoChecker():
                 continue
             if per_source[source]['ignored']:
                 self.logger.debug("All binaries failing the check are ignored")
+                if source in oldstate['check']:
+                    del oldstate['check'][source]
                 continue
             old_output = oldstate['check'].get(source, {}).get('problem', [])
             if sorted(old_output) == sorted(per_source[source]['output']):
