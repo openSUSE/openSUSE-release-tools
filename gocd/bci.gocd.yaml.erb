@@ -130,6 +130,9 @@ pipelines:
   SLE_BCI_15<%= sp %>.RepoPublisher:
     group: BCI
     lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 23 9 ? * *
+      only_on_changes: false
     materials:
       git:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
