@@ -133,6 +133,7 @@ pipelines:
     materials:
       git:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
+        destination: scripts
     environment_variables:
         OSC_CONFIG: /home/go/config/oscrc-totest-manager
         BCI_TOKEN: '{{SECRET:[opensuse.secrets][BCI_TOKEN]}}'
