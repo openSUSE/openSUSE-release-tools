@@ -18,6 +18,15 @@ data_version = 3
 changelog_max_lines = 100  # maximum number of changelog lines per package
 
 
+# rpm's python bindings changed in version 4.15 [0] so that they actually return
+# utf-8 strings. Leap 15 ships an older version, so this is needed to
+# keep this script working there too.
+#
+# [0] https://github.com/rpm-software-management/rpm/commit/84920f898315d09a57a3f1067433eaeb7de5e830
+def forcestr(content):
+    return str(content, 'utf-8') if isinstance(content, bytes) else content
+
+
 class ChangeLogger(cmdln.Cmdln):
     def __init__(self, *args, **kwargs):
         cmdln.Cmdln.__init__(self, args, kwargs)
@@ -51,12 +60,12 @@ class ChangeLogger(cmdln.Cmdln):
         changelogs = dict()
 
         def _getdata(h):
-            srpm = str(h['sourcerpm'], 'utf-8')
-            binrpm = str(h['name'], 'utf-8')
+            srpm = forcestr(h['sourcerpm'])
+            binrpm = forcestr(h['name'])
 
             evr = dict()
             for tag in ['name', 'version', 'release', 'sourcerpm']:
-                evr[tag] = str(h[tag], 'utf-8')
+                evr[tag] = forcestr(h[tag])
             pkgdata[binrpm] = evr
 
             # dirty hack to reduce kernel spam
@@ -80,7 +89,7 @@ class ChangeLogger(cmdln.Cmdln):
             ):
                 srpm = '%s-%s-%s.src.rpm' % ('kernel-source', m.group('version'), m.group('release'))
                 pkgdata[binrpm]['sourcerpm'] = srpm
-                print("%s -> %s" % (str(h['sourcerpm'], 'utf-8'), srpm))
+                print("%s -> %s" % (forcestr(h['sourcerpm']), srpm))
 
             if srpm in changelogs:
                 changelogs[srpm]['packages'].append(binrpm)
@@ -89,7 +98,7 @@ class ChangeLogger(cmdln.Cmdln):
                 data['changelogtime'] = h['changelogtime']
                 data['changelogtext'] = h['changelogtext']
                 for (t, txt) in enumerate(data['changelogtext']):
-                    data['changelogtext'][t] = str(txt, 'utf-8')
+                    data['changelogtext'][t] = forcestr(txt)
                 changelogs[srpm] = data
 
         for arg in args:
