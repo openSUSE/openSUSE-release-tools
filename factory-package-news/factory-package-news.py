@@ -23,7 +23,7 @@ changelog_max_lines = 100  # maximum number of changelog lines per package
 # keep this script working there too.
 #
 # [0] https://github.com/rpm-software-management/rpm/commit/84920f898315d09a57a3f1067433eaeb7de5e830
-def forcestr(content):
+def utf8str(content):
     return str(content, 'utf-8') if isinstance(content, bytes) else content
 
 
@@ -60,12 +60,12 @@ class ChangeLogger(cmdln.Cmdln):
         changelogs = dict()
 
         def _getdata(h):
-            srpm = forcestr(h['sourcerpm'])
-            binrpm = forcestr(h['name'])
+            srpm = utf8str(h['sourcerpm'])
+            binrpm = utf8str(h['name'])
 
             evr = dict()
             for tag in ['name', 'version', 'release', 'sourcerpm']:
-                evr[tag] = forcestr(h[tag])
+                evr[tag] = utf8str(h[tag])
             pkgdata[binrpm] = evr
 
             # dirty hack to reduce kernel spam
@@ -89,7 +89,7 @@ class ChangeLogger(cmdln.Cmdln):
             ):
                 srpm = '%s-%s-%s.src.rpm' % ('kernel-source', m.group('version'), m.group('release'))
                 pkgdata[binrpm]['sourcerpm'] = srpm
-                print("%s -> %s" % (forcestr(h['sourcerpm']), srpm))
+                print("%s -> %s" % (utf8str(h['sourcerpm']), srpm))
 
             if srpm in changelogs:
                 changelogs[srpm]['packages'].append(binrpm)
@@ -98,7 +98,7 @@ class ChangeLogger(cmdln.Cmdln):
                 data['changelogtime'] = h['changelogtime']
                 data['changelogtext'] = h['changelogtext']
                 for (t, txt) in enumerate(data['changelogtext']):
-                    data['changelogtext'][t] = forcestr(txt)
+                    data['changelogtext'][t] = utf8str(txt)
                 changelogs[srpm] = data
 
         for arg in args:
