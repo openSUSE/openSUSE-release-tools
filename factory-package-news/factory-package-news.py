@@ -101,6 +101,25 @@ class ChangeLogger(cmdln.Cmdln):
                     data['changelogtext'][t] = utf8str(txt)
                 changelogs[srpm] = data
 
+        def _walk_through_iso_image(iso, path="/"):
+            file_stats = iso.readdir(path)
+            if file_stats is None:
+                raise Exception("Unable to find directory %s inside the iso image" % path)
+
+            for stat in file_stats:
+                filename = stat[0]
+                LSN = stat[1]
+                is_directory = (stat[4] == 2)  # 2 --> directory
+
+                if path == "/boot" or filename in ['.', '..']:
+                    continue
+                elif is_directory:
+                    yield from _walk_through_iso_image(iso, path=os.path.join(path, filename))
+                elif filename.endswith('.rpm'):
+                    yield filename, LSN
+
+            return None
+
         for arg in args:
             if arg.endswith('.iso'):
                 import pycdio
@@ -111,21 +130,10 @@ class ChangeLogger(cmdln.Cmdln):
                 if not iso.is_open() or fd is None:
                     raise Exception("Could not open %s as an ISO-9660 image." % arg)
 
-                # On Tumbleweed, there is no '/suse' prefix
-                for path in ['/suse/x86_64', '/suse/noarch', '/suse/aarch64',
-                             '/suse/s390x', '/x86_64', '/noarch', '/aarch64', '/s390x']:
-                    file_stats = iso.readdir(path)
-                    if file_stats is None:
-                        continue
-
-                    for stat in file_stats:
-                        filename = stat[0]
-                        LSN = stat[1]
-
-                        if (filename.endswith('.rpm')):
-                            os.lseek(fd, LSN * pycdio.ISO_BLOCKSIZE, io.SEEK_SET)
-                            h = self.ts.hdrFromFdno(fd)
-                            _getdata(h)
+                for filename, LSN in _walk_through_iso_image(iso):
+                    os.lseek(fd, LSN * pycdio.ISO_BLOCKSIZE, io.SEEK_SET)
+                    h = self.ts.hdrFromFdno(fd)
+                    _getdata(h)
 
                 os.close(fd)
 
