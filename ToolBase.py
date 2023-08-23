@@ -59,7 +59,7 @@ class ToolBase(object):
         except URLError as e:
             logging.error('%s: "%s - %s" %s', e, e.reason, type(e.reason), url)
             # connection timeout
-            if type(e.reason) == TimeoutError:
+            if isinstance(e.reason, TimeoutError):
                 print('Retrying {}'.format(url))
                 time.sleep(1)
                 return self.retried_GET(url)
