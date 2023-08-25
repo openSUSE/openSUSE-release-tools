@@ -1,0 +1,56 @@
+format_version: 3
+pipelines:
+  ALP.Source.Standard.1_0.Staging.Bot.Regular:
+    group: ALP.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 0 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            timeout: 30
+            resources:
+            - staging-bot
+            tasks:
+            - script: |-
+                set -e
+                tempdir=$(mktemp -d)
+                mkdir -p $tempdir/.osc-plugins
+                ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
+                ln -s $PWD/osclib $tempdir/.osc-plugins
+                export HOME=$tempdir
+
+                osc -A https://api.suse.de staging -p SUSE:ALP:Source:Standard:1.0 rebuild
+                osc -A https://api.suse.de staging -p SUSE:ALP:Source:Standard:1.0 list --supersede
+                osc -A https://api.suse.de staging -p SUSE:ALP:Source:Standard:1.0 unselect --cleanup
+                osc -A https://api.suse.de staging -p SUSE:ALP:Source:Standard:1.0 repair --cleanup
+                rm -rf $tempdir
+  ALP.Source.Standard.1_0.Staging.Bot.Report:
+    group: ALP.Checkers
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 */3 * ? * *
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Run:
+        approval:
+          type: manual
+        jobs:
+          Run:
+            timeout: 30
+            resources:
+            - staging-bot
+            tasks:
+            - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:ALP:Source:Standard:1.0
