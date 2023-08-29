@@ -31,6 +31,8 @@ class CleanupRings(object):
             'vagrant',
             # https://github.com/openSUSE/open-build-service/issues/14129
             'snobol4',
+            # https://github.com/os-autoinst/os-autoinst-distri-opensuse/pull/17637
+            'docker-buildx',
         ]
 
     def perform(self):
