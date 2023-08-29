@@ -122,7 +122,7 @@ def convert_from_osc_et(xml):
 @memoize(session=True)
 def owner_fallback(apiurl, project, package):
     root = owner(apiurl, package, project=project)
-    entry = root.find('owner')
+    entry = root.find('owner') if root else None
     if not entry or project.startswith(entry.get('project')):
         # Fallback to global (ex Factory) maintainer.
         root = owner(apiurl, package)
