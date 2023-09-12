@@ -120,6 +120,14 @@ class BCIRepoPublisher(ToolBase.ToolBase):
             self.logger.info('Current build already published, nothing to do.')
             return
 
+        # If the last published build is less than a day old, don't publish
+        newest_published_mtime = max([int(pkg['published_mtime']) for pkg in packages])
+        published_build_age_hours = int(time.time() - newest_published_mtime) // (60 * 60)
+        if published_build_age_hours < 24:
+            self.logger.info('Current published build less than a day old '
+                             f'({published_build_age_hours}h).')
+            return
+
         # Check openQA results
         openqa_passed = True
         for pkg in packages:

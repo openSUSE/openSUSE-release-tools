@@ -131,7 +131,7 @@ pipelines:
     group: BCI
     lock_behavior: unlockWhenFinished
     timer:
-      spec: 0 23 9 ? * *
+      spec: 0 23 * ? * *
       only_on_changes: false
     materials:
       git:
@@ -239,7 +239,7 @@ pipelines:
     group: BCI
     lock_behavior: unlockWhenFinished
     timer:
-      spec: 0 23 9 ? * *
+      spec: 0 23 * ? * *
       only_on_changes: false
     materials:
       git:
@@ -347,7 +347,7 @@ pipelines:
     group: BCI
     lock_behavior: unlockWhenFinished
     timer:
-      spec: 0 23 9 ? * *
+      spec: 0 23 * ? * *
       only_on_changes: false
     materials:
       git:
@@ -455,7 +455,7 @@ pipelines:
     group: BCI
     lock_behavior: unlockWhenFinished
     timer:
-      spec: 0 23 9 ? * *
+      spec: 0 23 * ? * *
       only_on_changes: false
     materials:
       git:
