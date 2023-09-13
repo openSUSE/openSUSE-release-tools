@@ -25,7 +25,7 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
 
     def __init__(self, *args, **kwargs):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
-        self.factory = ["openSUSE:Factory"]
+        self.factory = ["openSUSE:Factory", "openSUSE.org:openSUSE:Factory"]
         self.review_messages = {'accepted': 'ok', 'declined': 'the package needs to be accepted in Factory first'}
         self.history_limit = 5
 
@@ -150,7 +150,7 @@ class TagChecker(ReviewBot.ReviewBot):
 
     def __init__(self, *args, **kwargs):
         super(TagChecker, self).__init__(*args, **kwargs)
-        self.factory = ["openSUSE:Factory"]
+        self.factory = ["openSUSE:Factory", "openSUSE.org:openSUSE:Factory"]
         self.review_messages['declined'] = """
 (This is a script, so report bugs)
 
