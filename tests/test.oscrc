@@ -12,3 +12,10 @@ user=dummy
 pass=dummy
 overridden-by-local = local
 
+# IBS links the build.opensuse.org project space
+# into openSUSE.org:
+[openSUSE.org:openSUSE:Factory]
+# https://github.com/openSUSE/osc/issues/667
+user=dummy
+pass=dummy
+overridden-by-local = local
