@@ -19,6 +19,8 @@ sys.path.append(".")
 APIURL = 'http://maintenancetest.example.com'
 FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures')
 
+AVAILABLE_FACTORIES = ["openSUSE:Factory", "openSUSE.org:openSUSE:Factory"]
+
 
 class TestTagChecker(OBSLocal.TestCase):
 
@@ -145,37 +147,49 @@ Pico text editor while also offering a few enhancements.</description>
   <devel project="editors" package="nano"/>
 </package>"""
 
-    def _run_with_data(self, accept, exists_in_factory, issues_data):
-        # exists_in_factory: whether the package is exists in factory
+    def _run_with_data(self, accept, issues_data, factories=[]):
+        # factories: the factories to check on
         httpretty.register_uri(httpretty.POST, APIURL + '/source/editors/nano', body=issues_data)
         httpretty.register_uri(httpretty.GET, APIURL + '/source/editors/nano',
                                body="""<sourceinfo package="nano" rev="25" vrev="35" srcmd5="aa7cce4956a86aee36c3f38aa37eee2b"
                                lsrcmd5="c26618f949f5869cabcd6f989fb040ca" verifymd5="fc6b5b47f112848a1eb6fb8660b7800b">
                                <filename>nano.spec</filename><linked project="openSUSE:Factory" package="nano" /></sourceinfo>""")
 
-        if exists_in_factory is True:
+        for factory in factories:
+            if factory not in AVAILABLE_FACTORIES:
+                # We could in theory let go of this requirement, but having the
+                # known factories in AVAILABLE_FACTORIES allows us to properly
+                # handle 404s.
+                raise Exception("Factory %s not mocked up" % factory)
+
             httpretty.register_uri(httpretty.GET,
-                                   osc.core.makeurl(APIURL, ['source', "openSUSE:Factory", "nano", '_meta'], {}),
+                                   osc.core.makeurl(APIURL, ['source', factory, "nano", '_meta'], {}),
                                    match_querystring=True,
                                    body=self._nano_meta)
             httpretty.register_uri(httpretty.GET,
-                                   osc.core.makeurl(APIURL, ['source', "openSUSE:Factory", "nano"], {'view': 'info'}),
+                                   osc.core.makeurl(APIURL, ['source', factory, "nano"], {'view': 'info'}),
                                    match_querystring=True,
                                    body="""<sourceinfo package="nano" rev="25" vrev="35"
                                    srcmd5="aa7cce4956a86aee36c3f38aa37eee2b" lsrcmd5="c26618f949f5869cabcd6f989fb040ca"
                                    verifymd5="fc6b5b47f112848a1eb6fb8660b7800b"><filename>nano.spec</filename>
                                    <linked project="openSUSE:Factory" package="nano" /></sourceinfo>""")
-        else:
+
+        for factory in AVAILABLE_FACTORIES:
             httpretty.register_uri(httpretty.GET,
-                                   osc.core.makeurl(APIURL, ['source', "openSUSE:Factory", "nano", '_meta'], {}),
-                                   status=404,
-                                   match_querystring=True,
-                                   body="")
-            httpretty.register_uri(httpretty.GET,
-                                   osc.core.makeurl(APIURL, ['source', "openSUSE:Factory", "nano"], {'view': 'info'}),
-                                   status=404,
-                                   match_querystring=True,
-                                   body="")
+                                   osc.core.makeurl(APIURL, ['source', factory, "00Meta", 'lookup.yml'], {}),
+                                   status=404)
+
+            if factory not in factories:
+                httpretty.register_uri(httpretty.GET,
+                                       osc.core.makeurl(APIURL, ['source', factory, "nano", '_meta'], {}),
+                                       status=404,
+                                       match_querystring=True,
+                                       body="")
+                httpretty.register_uri(httpretty.GET,
+                                       osc.core.makeurl(APIURL, ['source', factory, "nano"], {'view': 'info'}),
+                                       status=404,
+                                       match_querystring=True,
+                                       body="")
 
         httpretty.register_uri(httpretty.GET,
                                APIURL + '/request/293129',
@@ -188,10 +202,6 @@ Pico text editor while also offering a few enhancements.</description>
         httpretty.register_uri(httpretty.GET,
                                APIURL + '/search/request',
                                body='<collection matches="0"></collection>')
-
-        httpretty.register_uri(httpretty.GET,
-                               APIURL + "/source/openSUSE:Factory/00Meta/lookup.yml",
-                               status=404)
 
         result = {'state_accepted': None}
 
@@ -215,7 +225,7 @@ Pico text editor while also offering a few enhancements.</description>
 
     def test_1_issue_accept(self):
         # a new package and has issues
-        self._run_with_data(True, False, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
+        self._run_with_data(True, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
   <old project="home:snwint:sle12-sp1" package="perl-Bootloader" rev="4" srcmd5="bb554c82d62186fa4c4440ba36651028" />
   <new project="SUSE:SLE-12-SP1:GA" package="perl-Bootloader" rev="23" srcmd5="231d457675a9fca041b22d84df9d4464" />
   <files />
@@ -223,12 +233,12 @@ Pico text editor while also offering a few enhancements.</description>
     <issue state="changed" tracker="bnc" name="151877" label="boo#151877"
            url="https://bugzilla.suse.com/show_bug.cgi?id=151877" />
   </issues>
-</sourcediff>""")
+</sourcediff>""", factories=[])
 
     def test_3_issues_accept(self):
         # not a new package and has issues
         # changes already in Factory
-        self._run_with_data(True, True, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
+        self._run_with_data(True, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
   <old project="home:snwint:sle12-sp1" package="perl-Bootloader" rev="4" srcmd5="bb554c82d62186fa4c4440ba36651028" />
   <new project="SUSE:SLE-12-SP1:GA" package="perl-Bootloader" rev="23" srcmd5="231d457675a9fca041b22d84df9d4464" />
   <files />
@@ -237,43 +247,69 @@ Pico text editor while also offering a few enhancements.</description>
     <issue state="changed" tracker="fate" name="110038" label="fate#110038" url="https://fate.suse.com/110038" />
     <issue state="deleted" tracker="bnc" name="831791" label="boo#831791" url="https://bugzilla.suse.com/show_bug.cgi?id=831791" />
   </issues>
-</sourcediff>""")
+</sourcediff>""", factories=["openSUSE:Factory"])
+
+    def test_3_issues_accept_ibs_obs(self):
+        # not a new package and has issues
+        # changes already in Factory
+        # specified factories are both IBS (openSUSE.org:openSUSE:Factory)
+        # and OBS (openSUSE:Factory)
+        self._run_with_data(True, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
+  <old project="home:snwint:sle12-sp1" package="perl-Bootloader" rev="4" srcmd5="bb554c82d62186fa4c4440ba36651028" />
+  <new project="SUSE:SLE-12-SP1:GA" package="perl-Bootloader" rev="23" srcmd5="231d457675a9fca041b22d84df9d4464" />
+  <files />
+  <issues>
+    <issue state="changed" tracker="bnc" name="151877" label="boo#151877" url="https://bugzilla.suse.com/show_bug.cgi?id=151877" />
+    <issue state="changed" tracker="fate" name="110038" label="fate#110038" url="https://fate.suse.com/110038" />
+    <issue state="deleted" tracker="bnc" name="831791" label="boo#831791" url="https://bugzilla.suse.com/show_bug.cgi?id=831791" />
+  </issues>
+</sourcediff>""", factories=["openSUSE.org:openSUSE:Factory", "openSUSE:Factory"])
 
     def test_no_issues_decline(self):
         # a new package and has without issues
-        self._run_with_data(False, False, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
+        self._run_with_data(False, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
   <old project="home:snwint:sle12-sp1" package="perl-Bootloader" rev="4" srcmd5="bb554c82d62186fa4c4440ba36651028" />
   <new project="SUSE:SLE-12-SP1:GA" package="perl-Bootloader" rev="23" srcmd5="231d457675a9fca041b22d84df9d4464" />
   <files />
   <issues/>
-</sourcediff>""")
+</sourcediff>""", factories=[])
 
     def test_no_issues_tag_decline(self):
         # a new package and has without issues tag
-        self._run_with_data(False, False, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
+        self._run_with_data(False, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
   <old project="home:snwint:sle12-sp1" package="perl-Bootloader" rev="4" srcmd5="bb554c82d62186fa4c4440ba36651028" />
   <new project="SUSE:SLE-12-SP1:GA" package="perl-Bootloader" rev="23" srcmd5="231d457675a9fca041b22d84df9d4464" />
   <files />
-</sourcediff>""")
+</sourcediff>""", factories=[])
 
     def test_no_issues_accept(self):
         # not a new package and has without issues
         # changes already in Factory
-        self._run_with_data(True, True, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
+        self._run_with_data(True, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
   <old project="home:snwint:sle12-sp1" package="perl-Bootloader" rev="4" srcmd5="bb554c82d62186fa4c4440ba36651028" />
   <new project="SUSE:SLE-12-SP1:GA" package="perl-Bootloader" rev="23" srcmd5="231d457675a9fca041b22d84df9d4464" />
   <files />
   <issues/>
-</sourcediff>""")
+</sourcediff>""", factories=["openSUSE:Factory"])
 
     def test_no_issues_tag_accept(self):
         # not a new package and has without issues tag
         # changes already in Factory
-        self._run_with_data(True, True, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
+        self._run_with_data(True, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
   <old project="home:snwint:sle12-sp1" package="perl-Bootloader" rev="4" srcmd5="bb554c82d62186fa4c4440ba36651028" />
   <new project="SUSE:SLE-12-SP1:GA" package="perl-Bootloader" rev="23" srcmd5="231d457675a9fca041b22d84df9d4464" />
   <files />
-</sourcediff>""")
+</sourcediff>""", factories=["openSUSE:Factory"])
+
+    def test_no_issues_tag_accept_ibs_linked(self):
+        # not a new package and has without issues tag
+        # changes already in Factory
+        # specified factory is the linked one from IBS
+        self._run_with_data(True, """<sourcediff key="4ecfa5c08d7765060b4fa248aab3c7e7">
+  <old project="home:snwint:sle12-sp1" package="perl-Bootloader" rev="4" srcmd5="bb554c82d62186fa4c4440ba36651028" />
+  <new project="SUSE:SLE-12-SP1:GA" package="perl-Bootloader" rev="23" srcmd5="231d457675a9fca041b22d84df9d4464" />
+  <files />
+</sourcediff>""", factories=["openSUSE.org:openSUSE:Factory"])
 
 
 if __name__ == '__main__':
