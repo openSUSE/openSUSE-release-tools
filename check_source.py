@@ -266,17 +266,13 @@ class CheckSource(ReviewBot.ReviewBot):
             return False
 
         specs = [os.path.basename(x) for x in glob.glob(os.path.join(target_package, "*.spec"))]
-        if not specs:
-            # package without spec files e.g kiwi only
-            return True
-
-        if not self.check_spec_policy('_old', target_package, specs):
+        if specs and not self.check_spec_policy('_old', target_package, specs):
             return False
 
         if not self.run_source_validator('_old', target_package):
             return False
 
-        if not self.detect_mentioned_patches('_old', target_package, specs):
+        if specs and not self.detect_mentioned_patches('_old', target_package, specs):
             return False
 
         if not self.check_urls('_old', target_package, specs):
