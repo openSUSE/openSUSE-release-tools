@@ -220,6 +220,11 @@ class ToTestReleaser(ToTestManager):
                 if not self.package_ok(self.project.name, product.package, self.project.product_repo, arch):
                     return False
 
+        for product in self.project.containerfile_products:
+            for arch in product.archs:
+                if not self.package_ok(self.project.name, product.package, 'containerfile', arch):
+                    return False
+
         if len(self.project.livecd_products):
             if not self.all_repos_done('%s:Live' % self.project.name):
                 return False
