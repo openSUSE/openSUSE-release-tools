@@ -158,7 +158,7 @@ class ToTestReleaser(ToTestManager):
             for image_product in self.project.containerfile_products:
                 products[image_product.package] = image_product.archs
 
-            all_found = all_found and self.verify_package_list_complete('containerfile', products)
+            all_found = self.verify_package_list_complete('containerfile', products) and all_found
 
         return all_found
 
