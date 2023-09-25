@@ -158,7 +158,7 @@ class ToTestReleaser(ToTestManager):
             for image_product in self.project.containerfile_products:
                 products[image_product.package] = image_product.archs
 
-            all_found = all_found and self.verify_package_list_complete('containerfile', products)
+            all_found = self.verify_package_list_complete('containerfile', products) and all_found
 
         return all_found
 
@@ -218,6 +218,11 @@ class ToTestReleaser(ToTestManager):
         for product in self.project.image_products + self.project.container_products:
             for arch in product.archs:
                 if not self.package_ok(self.project.name, product.package, self.project.product_repo, arch):
+                    return False
+
+        for product in self.project.containerfile_products:
+            for arch in product.archs:
+                if not self.package_ok(self.project.name, product.package, 'containerfile', arch):
                     return False
 
         if len(self.project.livecd_products):
