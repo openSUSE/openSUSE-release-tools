@@ -154,7 +154,7 @@ function subprocess_count()
 function aggregate_all($period)
 {
   global $CACHE_DIR;
-  $intervals = ['day' => 'Y-m-d', 'week' => 'Y-W', 'month' => 'Y-m', 'FQ' => null, 'FY' => null];
+  $intervals = ['day' => 'Y-m-d', 'week' => 'Y-W', 'month' => 'Y-m', 'FQ' => null];
   $merged = [];
   $merged_protocol = [];
   $date_previous = null;
