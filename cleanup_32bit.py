@@ -32,7 +32,8 @@ class Cleanup32bit(ToolBase.ToolBase):
             "python:python-base": "File deps: some texlive stuff needs python2 and snobol4",
             "snobol4": "File deps: some texlive stuff needs python2 and snobol4",
             "gnome-keyring": "32bit PAM stack",
-            "pam_kwallet": "32bit PAM stack"
+            "pam_kwallet": "32bit PAM stack",
+            "libnvidia-egl-wayland": "boo#1214917",
         }
 
         cr.fill_pkginfo(prj, "standard", arch)
