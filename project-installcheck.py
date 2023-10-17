@@ -240,7 +240,8 @@ class RepoChecker():
 
         per_source = dict()
 
-        ignore_conflicts = Config.get(self.apiurl, project).get('installcheck-ignore-conflicts', '').split(' ')
+        ignore_conflicts = config.get('installcheck-ignore-conflicts', '').split() + \
+            config.get(f'installcheck-ignore-conflicts-{arch}', '').split()
 
         for package, entry in parsed.items():
             source = "{}/{}/{}/{}".format(project, repository, arch, entry['source'])
