@@ -89,7 +89,17 @@ class BCIRepoPublisher(ToolBase.ToolBase):
 
         return True
 
-    def run(self, version, token=None):
+    def run(self, version: _SLE_VERSION_T, token: Optional[str]=None) -> None:
+
+        class Package(TypedDict):
+            arch: str
+            name: str
+            build_prj: str
+            publish_prj: str
+            built_version: str
+            built_mtime: int
+            published_mtime: int
+
         build_prj = f'SUSE:SLE-{version}:Update:BCI'
 
         if not self.is_repo_published(build_prj, 'images', 'local'):
@@ -97,29 +107,26 @@ class BCIRepoPublisher(ToolBase.ToolBase):
             return
 
         # Build the list of packages with metainfo
-        packages = []
+        packages: List[Package] = []
         # List of packages that have passed openQA
-        openqa_passed_packages = []
+        openqa_passed_packages: List[Package] = []
         # As long as it's the same everywhere, hardcoding this list here
         # is easier and safer than trying to derive it from the package list.
         for arch in ('aarch64', 'ppc64le', 's390x', 'x86_64'):
+            name = f'000product:SLE_BCI-ftp-POOL-{arch}'
+            publish_prj = f'SUSE:Products:SLE-BCI:{version}:{arch}'
             packages.append({
                 'arch': arch,
-                'name': f'000product:SLE_BCI-ftp-POOL-{arch}',
+                'name': name,
                 'build_prj': build_prj,
-                'publish_prj': f'SUSE:Products:SLE-BCI:{version}:{arch}'
+                'publish_prj': publish_prj,
+                # Fetch the build numbers of built products.
+                # After release, the BuildXXX part vanishes, so the mtime has to be
+                # used instead for comparing built and published binaries.
+                'built_version': self.version_of_product(build_prj, name, 'images', 'local'),
+                'built_mtime': self.mtime_of_product(build_prj, name, 'images', 'local'),
+                'published_mtime': self.mtime_of_product(publish_prj, name, 'images', 'local')
             })
-
-        # Fetch the build numbers of built products.
-        # After release, the BuildXXX part vanishes, so the mtime has to be
-        # used instead for comparing built and published binaries.
-        for pkg in packages:
-            pkg['built_version'] = self.version_of_product(pkg['build_prj'], pkg['name'],
-                                                           'images', 'local')
-            pkg['built_mtime'] = self.mtime_of_product(pkg['build_prj'], pkg['name'],
-                                                       'images', 'local')
-            pkg['published_mtime'] = self.mtime_of_product(pkg['publish_prj'], pkg['name'],
-                                                           'images', 'local')
 
         # Verify that the builds for all archs are in sync
         built_versions = {pkg['built_version'] for pkg in packages}
