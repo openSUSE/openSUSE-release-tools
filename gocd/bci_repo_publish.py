@@ -49,7 +49,9 @@ class BCIRepoPublisher(ToolBase.ToolBase):
         url = makeurl(self.apiurl, ['build', project, repo, arch, package])
         root = ET.parse(http_GET(url)).getroot()
         mtime = root.xpath('/binarylist/binary[@filename = "_buildenv"]/@mtime')
-        return mtime[0]
+        if not mtime:
+            raise RuntimeError(f"Failed to get mtime of {project}/{package}")
+        return int(mtime[0])
 
     def openqa_jobs_for_product(self, arch, version, build):
         """Query openQA for all relevant jobs"""
