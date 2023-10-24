@@ -26,6 +26,7 @@ class BCIRepoPublisher(ToolBase.ToolBase):
         ToolBase.ToolBase.__init__(self)
         self.logger = logging.getLogger(__name__)
         self.openqa = OpenQA_Client(server='https://openqa.suse.de')
+        self.last_publish_mtime = 0
 
     def version_of_product(self, project, package, repo, arch):
         """Get the build version of the given product build, based on the binary name."""
@@ -43,7 +44,7 @@ class BCIRepoPublisher(ToolBase.ToolBase):
         url = makeurl(self.apiurl, ['build', project, repo, arch, package])
         root = ET.parse(http_GET(url)).getroot()
         mtime = root.xpath('/binarylist/binary[@filename = "_buildenv"]/@mtime')
-        return mtime[0]
+        return int(mtime[0])
 
     def openqa_jobs_for_product(self, arch, version, build):
         """Query openQA for all relevant jobs"""
@@ -76,12 +77,12 @@ class BCIRepoPublisher(ToolBase.ToolBase):
 
         return True
 
-    def run(self, version, token=None):
+    def publish_if_possible(self, version, token=None):
+        """If the OBS project is finished and the built binaries are newer than
+        the ones in the publish location, check openQA for results. If they pass,
+        use the given token to release the builds into the target project.
+        The mtime of the last published build is written to self.last_publish_mtime."""
         build_prj = f'SUSE:SLE-{version}:Update:BCI'
-
-        if not self.is_repo_published(build_prj, 'images'):
-            self.logger.info(f'{build_prj}/images not successfully built')
-            return
 
         # Build the list of packages with metainfo
         packages = []
@@ -95,6 +96,13 @@ class BCIRepoPublisher(ToolBase.ToolBase):
                 'publish_prj': f'SUSE:Products:SLE-BCI:{version}:{arch}'
             })
 
+        if not self.is_repo_published(build_prj, 'images'):
+            self.logger.info(f'{build_prj}/images not successfully built')
+            pkg = packages[0]
+            self.last_publish_mtime = \
+                self.mtime_of_product(pkg['publish_prj'], pkg['name'], 'images', 'local')
+            return
+
         # Fetch the build numbers of built products.
         # After release, the BuildXXX part vanishes, so the mtime has to be
         # used instead for comparing built and published binaries.
@@ -105,6 +113,7 @@ class BCIRepoPublisher(ToolBase.ToolBase):
                                                        'images', 'local')
             pkg['published_mtime'] = self.mtime_of_product(pkg['publish_prj'], pkg['name'],
                                                            'images', 'local')
+            self.last_publish_mtime = max(self.last_publish_mtime, pkg['published_mtime'])
 
         # Verify that the builds for all archs are in sync
         built_versions = {pkg['built_version'] for pkg in packages}
@@ -114,7 +123,7 @@ class BCIRepoPublisher(ToolBase.ToolBase):
             return
 
         # Compare versions
-        newer_version_available = [int(pkg['built_mtime']) > int(pkg['published_mtime'])
+        newer_version_available = [pkg['built_mtime'] > pkg['published_mtime']
                                    for pkg in packages]
         if not any(newer_version_available):
             self.logger.info('Current build already published, nothing to do.')
@@ -155,6 +164,7 @@ class BCIRepoPublisher(ToolBase.ToolBase):
         # Trigger publishing
         if token is None:
             self.logger.warning('Would publish now, but no token specified')
+            self.last_publish_mtime = packages[0]['built_mtime']
             return
 
         for pkg in packages:
@@ -170,11 +180,29 @@ class BCIRepoPublisher(ToolBase.ToolBase):
             if req.status_code != 200:
                 raise RuntimeError(f'Releasing failed: {req.text}')
 
+        # As sanity check fetch the mtime from the publish prj
+        pkg = packages[0]
+        self.last_publish_mtime = \
+            self.mtime_of_product(pkg['publish_prj'], pkg['name'], 'images', 'local')
+
         self.logger.info('Waiting for publishing to finish')
         for pkg in packages:
             while not self.is_repo_published(pkg['publish_prj'], 'images'):
                 self.logger.debug(f'Waiting for {pkg["publish_prj"]}')
                 time.sleep(20)
+
+    def run(self, version, token=None):
+        """Try a publish. Return failure if the last publish was >7d ago."""
+        self.publish_if_possible(version, token)
+
+        last_publish_diff_secs = time.time() - self.last_publish_mtime
+        last_publish_diff_days = last_publish_diff_secs / 60 / 60 / 24
+        self.logger.info(f'Published build {last_publish_diff_days:.2f} days old')
+        if last_publish_diff_days > 7:
+            self.logger.error('Last published build too old!')
+            return 1
+
+        return 0
 
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
@@ -199,7 +227,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_option_list}
         """
 
-        self.tool.run(project, token=opts.token)
+        return self.tool.run(project, token=opts.token)
 
 
 if __name__ == "__main__":
