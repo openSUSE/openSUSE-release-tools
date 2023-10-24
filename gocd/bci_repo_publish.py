@@ -9,6 +9,8 @@
 # * Uses a token for releasing to the publishing project
 
 
+from typing import List, Optional
+from typing_extensions import Literal, TypedDict
 import cmdln
 import logging
 import ToolBase
@@ -18,8 +20,11 @@ import time
 import re
 from lxml import etree as ET
 from openqa_client.client import OpenQA_Client
-from osc.core import http_GET, makeurl
+from osc.core import makeurl
+from osc.connection import http_GET
 from random import randint
+
+_SLE_VERSION_T = Literal['15-SP3', '15-SP4', '15-SP5', '15-SP6']
 
 
 class BCIRepoPublisher(ToolBase.ToolBase):
@@ -28,7 +33,7 @@ class BCIRepoPublisher(ToolBase.ToolBase):
         self.logger = logging.getLogger(__name__)
         self.openqa = OpenQA_Client(server='https://openqa.suse.de')
 
-    def version_of_product(self, project, package, repo, arch):
+    def version_of_product(self, project: str, package: str, repo: str, arch: str) -> str:
         """Get the build version of the given product build, based on the binary name."""
         url = makeurl(self.apiurl, ['build', project, repo, arch, package])
         root = ET.parse(http_GET(url)).getroot()
@@ -39,7 +44,7 @@ class BCIRepoPublisher(ToolBase.ToolBase):
 
         raise RuntimeError(f"Failed to get version of {project}/{package}")
 
-    def mtime_of_product(self, project, package, repo, arch):
+    def mtime_of_product(self, project: str, package: str, repo: str, arch: str) -> int:
         """Get the build time stamp of the given product, based on _buildenv."""
         url = makeurl(self.apiurl, ['build', project, repo, arch, package])
         root = ET.parse(http_GET(url)).getroot()
@@ -59,9 +64,12 @@ class BCIRepoPublisher(ToolBase.ToolBase):
         }
         return self.openqa.openqa_request('GET', 'jobs', values)['jobs']
 
-    def is_repo_published(self, project, repo, arch=None):
+    def is_repo_published(self, project: str, repo: str, arch: Optional[str] = None) -> bool:
         """Validate that the given prj/repo is fully published and all builds
-        have succeeded."""
+        have succeeded. If an architecture is provided, then only that
+        architecture is considered for checking the publishing & build state.
+
+        """
         result_filter = {'view': 'summary', 'repository': repo}
         if arch:
             result_filter['arch'] = arch
