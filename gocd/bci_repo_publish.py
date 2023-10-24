@@ -89,7 +89,13 @@ class BCIRepoPublisher(ToolBase.ToolBase):
 
         return True
 
-    def run(self, version: _SLE_VERSION_T, token: Optional[str]=None) -> None:
+    def fetch_package_names_in_project(self, apiurl: str, prj_name: str) -> List[str]:
+        url = makeurl(apiurl, ['source', prj_name])
+        root = ET.parse(http_GET(url)).getroot()
+        return [elem.get("name") for elem in root]
+
+    def run(self, version: _SLE_VERSION_T, publish_token: Optional[str] = None,
+            rebuild_token: Optional[str] = None) -> None:
 
         class Package(TypedDict):
             arch: str
@@ -101,6 +107,8 @@ class BCIRepoPublisher(ToolBase.ToolBase):
             published_mtime: int
 
         build_prj = f'SUSE:SLE-{version}:Update:BCI'
+        devel_prj = f'devel:BCI:SLE-{version}'
+        _DEVEL_PRJ_APIURL = "https://api.opensuse.org"
 
         if not self.is_repo_published(build_prj, 'images', 'local'):
             self.logger.info(f'{build_prj}/images not successfully built')
@@ -174,8 +182,16 @@ class BCIRepoPublisher(ToolBase.ToolBase):
                 return
             openqa_passed_packages.append(pkg)
 
+        if rebuild_token:
+            for pkg in self.fetch_package_names_in_project(_DEVEL_PRJ_APIURL, devel_prj):
+                url = makeurl(_DEVEL_PRJ_APIURL, ['trigger', 'rebuild'], {'project': devel_prj, 'package': pkg})
+                req = requests.post(url, headers={'Authorization': f'Token {rebuild_token}'})
+                req.raise_for_status()
+        else:
+            self.logger.warning('Would rebuild %s now, but no token specified', devel_prj)
+
         # Trigger publishing
-        if token is None:
+        if publish_token is None:
             self.logger.warning(f'Would publish {[pkg["name"] for pkg in openqa_passed_packages]}, but no token specified')
             return
 
@@ -188,9 +204,8 @@ class BCIRepoPublisher(ToolBase.ToolBase):
             }
             url = makeurl(self.apiurl, ['trigger', 'release'], params)
             # No bindings for using tokens yet, so do the request manually
-            req = requests.post(url, headers={'Authorization': f'Token {token}'})
-            if req.status_code != 200:
-                raise RuntimeError(f'Releasing failed: {req.text}')
+            req = requests.post(url, headers={'Authorization': f'Token {publish_token}'})
+            req.raise_for_status()
 
         self.logger.info('Waiting for publishing to finish')
         for pkg in openqa_passed_packages:
@@ -212,7 +227,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         return tool
 
-    @cmdln.option('--token', help='The token for publishing. Does a dry run if not given.')
+    @cmdln.option('--publish-token', help='The token for publishing. Does a dry run if not given.')
+    @cmdln.option('--rebuild-token', help='The token for rebuilding devel:BCI, no rebuild is triggered if omitted.')
     def do_run(self, subcmd, opts, project):
         """${cmd_name}: run BCI repo publisher for the project, e.g. 15-SP5.
 
@@ -220,7 +236,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_option_list}
         """
 
-        self.tool.run(project, token=opts.token)
+        self.tool.run(project, publish_token=opts.publish_token, rebuild_token=opts.rebuild_token)
 
 
 if __name__ == "__main__":

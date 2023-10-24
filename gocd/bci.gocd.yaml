@@ -140,6 +140,7 @@ pipelines:
     environment_variables:
         OSC_CONFIG: /home/go/config/oscrc-totest-manager
         BCI_TOKEN: '{{SECRET:[opensuse.secrets][BCI_TOKEN]}}'
+        DEVEL_BCI_REBUILD_TOKEN: '{{SECRET:[opensuse.secrets][DEVEL_BCI_REBUILD_TOKEN]}}'
     stages:
     - Run:
         approval: manual
@@ -148,7 +149,7 @@ pipelines:
         tasks:
         - script: |
             export PYTHONPATH=scripts
-            ./scripts/gocd/bci_repo_publish.py -A https://api.suse.de --verbose --debug run "--token=$BCI_TOKEN" 15-SP3
+            ./scripts/gocd/bci_repo_publish.py -A https://api.suse.de --verbose --debug run "--publish-token=$BCI_TOKEN" "--rebuild-token=$DEVEL_BCI_REBUILD_TOKEN" 15-SP3
 
   SLE_BCI_15SP4.RelPkgs:
     group: BCI
@@ -248,6 +249,7 @@ pipelines:
     environment_variables:
         OSC_CONFIG: /home/go/config/oscrc-totest-manager
         BCI_TOKEN: '{{SECRET:[opensuse.secrets][BCI_TOKEN]}}'
+        DEVEL_BCI_REBUILD_TOKEN: '{{SECRET:[opensuse.secrets][DEVEL_BCI_REBUILD_TOKEN]}}'
     stages:
     - Run:
         approval: manual
@@ -256,7 +258,7 @@ pipelines:
         tasks:
         - script: |
             export PYTHONPATH=scripts
-            ./scripts/gocd/bci_repo_publish.py -A https://api.suse.de --verbose --debug run "--token=$BCI_TOKEN" 15-SP4
+            ./scripts/gocd/bci_repo_publish.py -A https://api.suse.de --verbose --debug run "--publish-token=$BCI_TOKEN" "--rebuild-token=$DEVEL_BCI_REBUILD_TOKEN" 15-SP4
 
   SLE_BCI_15SP5.RelPkgs:
     group: BCI
@@ -356,6 +358,7 @@ pipelines:
     environment_variables:
         OSC_CONFIG: /home/go/config/oscrc-totest-manager
         BCI_TOKEN: '{{SECRET:[opensuse.secrets][BCI_TOKEN]}}'
+        DEVEL_BCI_REBUILD_TOKEN: '{{SECRET:[opensuse.secrets][DEVEL_BCI_REBUILD_TOKEN]}}'
     stages:
     - Run:
         approval: manual
@@ -364,7 +367,7 @@ pipelines:
         tasks:
         - script: |
             export PYTHONPATH=scripts
-            ./scripts/gocd/bci_repo_publish.py -A https://api.suse.de --verbose --debug run "--token=$BCI_TOKEN" 15-SP5
+            ./scripts/gocd/bci_repo_publish.py -A https://api.suse.de --verbose --debug run "--publish-token=$BCI_TOKEN" "--rebuild-token=$DEVEL_BCI_REBUILD_TOKEN" 15-SP5
 
   SLE_BCI_15SP6.RelPkgs:
     group: BCI
@@ -464,6 +467,7 @@ pipelines:
     environment_variables:
         OSC_CONFIG: /home/go/config/oscrc-totest-manager
         BCI_TOKEN: '{{SECRET:[opensuse.secrets][BCI_TOKEN]}}'
+        DEVEL_BCI_REBUILD_TOKEN: '{{SECRET:[opensuse.secrets][DEVEL_BCI_REBUILD_TOKEN]}}'
     stages:
     - Run:
         approval: manual
@@ -472,5 +476,5 @@ pipelines:
         tasks:
         - script: |
             export PYTHONPATH=scripts
-            ./scripts/gocd/bci_repo_publish.py -A https://api.suse.de --verbose --debug run "--token=$BCI_TOKEN" 15-SP6
+            ./scripts/gocd/bci_repo_publish.py -A https://api.suse.de --verbose --debug run "--publish-token=$BCI_TOKEN" "--rebuild-token=$DEVEL_BCI_REBUILD_TOKEN" 15-SP6
 
