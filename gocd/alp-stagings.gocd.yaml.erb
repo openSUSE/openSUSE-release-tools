@@ -26,7 +26,8 @@ pipelines:
                   --staging SUSE:ALP:Source:Standard:1.0:Staging:<%= letter %>
                   --only-release-packages --force
 <% end -%>
-<% stagings.each do |letter| %>
+<% fullstagings = %w(H) -%>
+<% fullstagings.each do |letter| %>
   ALP.Source.Standard.1_0.Staging.<%= letter %>:
     environment_variables:
       STAGING_PROJECT: SUSE:ALP:Source:Standard:1.0:Staging:<%= letter %>
@@ -82,6 +83,53 @@ pipelines:
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
+
+    - Enable.images.repo:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+<% end -%>
+<% tmpstagings = %w(A B C D E F G S V Y) -%>
+<% tmpstagings.each do |letter| %>
+  ALP.Source.Standard.1_0.Staging.<%= letter %>:
+    environment_variables:
+      STAGING_PROJECT: SUSE:ALP:Source:Standard:1.0:Staging:<%= letter %>
+      STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: ALP.Stagings
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:ALP:Source:Standard:1.0:Staging:<%= letter %>_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
     - Enable.images.repo:
         resources:
