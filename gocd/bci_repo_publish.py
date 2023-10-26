@@ -60,7 +60,7 @@ class BCIRepoPublisher(ToolBase.ToolBase):
         return self.openqa.openqa_request('GET', 'jobs', values)['jobs']
 
     def is_repo_published(self, project, repo, arch=None):
-        """Validates that the given prj/repo is fully published and all builds
+        """Validate that the given prj/repo is fully published and all builds
         have succeeded."""
         result_filter = {'view': 'summary', 'repository': repo}
         if arch:
@@ -197,8 +197,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
     @cmdln.option('--token', help='The token for publishing. Does a dry run if not given.')
     def do_run(self, subcmd, opts, project):
-        """${cmd_name}: run the BCI repo publisher for the specified project,
-        e.g. 15-SP3
+        """${cmd_name}: run BCI repo publisher for the project, e.g. 15-SP5.
 
         ${cmd_usage}
         ${cmd_option_list}
