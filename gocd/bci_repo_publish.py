@@ -19,6 +19,7 @@ import re
 from lxml import etree as ET
 from openqa_client.client import OpenQA_Client
 from osc.core import http_GET, makeurl
+from random import randint
 
 
 class BCIRepoPublisher(ToolBase.ToolBase):
@@ -178,7 +179,7 @@ class BCIRepoPublisher(ToolBase.ToolBase):
         for pkg in openqa_passed_packages:
             while not self.is_repo_published(pkg['publish_prj'], 'images'):
                 self.logger.debug(f'Waiting for {pkg["publish_prj"]}')
-                time.sleep(20)
+                time.sleep(randint(10, 30))
 
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
