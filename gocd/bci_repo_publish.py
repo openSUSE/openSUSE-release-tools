@@ -58,11 +58,13 @@ class BCIRepoPublisher(ToolBase.ToolBase):
         }
         return self.openqa.openqa_request('GET', 'jobs', values)['jobs']
 
-    def is_repo_published(self, project, repo):
+    def is_repo_published(self, project, repo, arch=None):
         """Validates that the given prj/repo is fully published and all builds
         have succeeded."""
-        url = makeurl(self.apiurl, ['build', project, '_result'],
-                      {'view': 'summary', 'repository': repo})
+        result_filter = {'view': 'summary', 'repository': repo}
+        if arch:
+            result_filter['arch'] = arch
+        url = makeurl(self.apiurl, ['build', project, '_result'], result_filter)
         root = ET.parse(http_GET(url)).getroot()
         for result in root.findall('result'):
             if result.get('dirty', 'false') != 'false':
@@ -79,7 +81,7 @@ class BCIRepoPublisher(ToolBase.ToolBase):
     def run(self, version, token=None):
         build_prj = f'SUSE:SLE-{version}:Update:BCI'
 
-        if not self.is_repo_published(build_prj, 'images'):
+        if not self.is_repo_published(build_prj, 'images', 'local'):
             self.logger.info(f'{build_prj}/images not successfully built')
             return
 
