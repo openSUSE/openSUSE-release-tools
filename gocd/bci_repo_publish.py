@@ -87,6 +87,8 @@ class BCIRepoPublisher(ToolBase.ToolBase):
 
         # Build the list of packages with metainfo
         packages = []
+        # List of packages that have passed openQA
+        openqa_passed_packages = []
         # As long as it's the same everywhere, hardcoding this list here
         # is easier and safer than trying to derive it from the package list.
         for arch in ('aarch64', 'ppc64le', 's390x', 'x86_64'):
@@ -131,7 +133,6 @@ class BCIRepoPublisher(ToolBase.ToolBase):
             return
 
         # Check openQA results
-        openqa_passed = True
         for pkg in packages:
             passed = 0
             pending = 0
@@ -146,20 +147,21 @@ class BCIRepoPublisher(ToolBase.ToolBase):
                 else:
                     self.logger.warning(f'https://openqa.suse.de/tests/{job["id"]} failed')
                     failed += 1
-
             if passed == 0 or pending > 0 or failed > 0:
-                openqa_passed = False
+                self.logger.info(f'openQA did not (yet) pass for {pkg["name"]}: {passed}/{pending}/{failed}')
+                continue
+            openqa_passed_packages.append(pkg)
 
-        if not openqa_passed:
-            self.logger.info('No positive result from openQA (yet)')
+        if not openqa_passed_packages:
+            self.logger.info(f'No positive result from openQA (yet)')
             return
 
         # Trigger publishing
         if token is None:
-            self.logger.warning('Would publish now, but no token specified')
+            self.logger.warning(f'Would publish {[pkg["name"] for pkg in openqa_passed_packages]}, but no token specified')
             return
 
-        for pkg in packages:
+        for pkg in openqa_passed_packages:
             self.logger.info(f'Releasing {pkg["name"]}...')
             params = {
                 'project': pkg['build_prj'], 'package': pkg['name'],
@@ -173,7 +175,7 @@ class BCIRepoPublisher(ToolBase.ToolBase):
                 raise RuntimeError(f'Releasing failed: {req.text}')
 
         self.logger.info('Waiting for publishing to finish')
-        for pkg in packages:
+        for pkg in openqa_passed_packages:
             while not self.is_repo_published(pkg['publish_prj'], 'images'):
                 self.logger.debug(f'Waiting for {pkg["publish_prj"]}')
                 time.sleep(20)
