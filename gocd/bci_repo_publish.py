@@ -19,6 +19,7 @@ import re
 from lxml import etree as ET
 from openqa_client.client import OpenQA_Client
 from osc.core import http_GET, makeurl
+from random import randint
 
 
 class BCIRepoPublisher(ToolBase.ToolBase):
@@ -59,7 +60,7 @@ class BCIRepoPublisher(ToolBase.ToolBase):
         return self.openqa.openqa_request('GET', 'jobs', values)['jobs']
 
     def is_repo_published(self, project, repo, arch=None):
-        """Validates that the given prj/repo is fully published and all builds
+        """Validate that the given prj/repo is fully published and all builds
         have succeeded."""
         result_filter = {'view': 'summary', 'repository': repo}
         if arch:
@@ -87,6 +88,8 @@ class BCIRepoPublisher(ToolBase.ToolBase):
 
         # Build the list of packages with metainfo
         packages = []
+        # List of packages that have passed openQA
+        openqa_passed_packages = []
         # As long as it's the same everywhere, hardcoding this list here
         # is easier and safer than trying to derive it from the package list.
         for arch in ('aarch64', 'ppc64le', 's390x', 'x86_64'):
@@ -131,7 +134,7 @@ class BCIRepoPublisher(ToolBase.ToolBase):
             return
 
         # Check openQA results
-        openqa_passed = True
+        mandatory_arches = ('aarch64', 'x86_64')
         for pkg in packages:
             passed = 0
             pending = 0
@@ -146,20 +149,20 @@ class BCIRepoPublisher(ToolBase.ToolBase):
                 else:
                     self.logger.warning(f'https://openqa.suse.de/tests/{job["id"]} failed')
                     failed += 1
-
-            if passed == 0 or pending > 0 or failed > 0:
-                openqa_passed = False
-
-        if not openqa_passed:
-            self.logger.info('No positive result from openQA (yet)')
-            return
+            if pending or failed:
+                self.logger.info(f'openQA did not (yet) pass for {pkg["name"]}: {passed}/{pending}/{failed}')
+                continue
+            if passed == 0 and pkg['arch'] in mandatory_arches:
+                self.logger.info('No positive result from openQA (yet)')
+                return
+            openqa_passed_packages.append(pkg)
 
         # Trigger publishing
         if token is None:
-            self.logger.warning('Would publish now, but no token specified')
+            self.logger.warning(f'Would publish {[pkg["name"] for pkg in openqa_passed_packages]}, but no token specified')
             return
 
-        for pkg in packages:
+        for pkg in openqa_passed_packages:
             self.logger.info(f'Releasing {pkg["name"]}...')
             params = {
                 'project': pkg['build_prj'], 'package': pkg['name'],
@@ -173,10 +176,10 @@ class BCIRepoPublisher(ToolBase.ToolBase):
                 raise RuntimeError(f'Releasing failed: {req.text}')
 
         self.logger.info('Waiting for publishing to finish')
-        for pkg in packages:
+        for pkg in openqa_passed_packages:
             while not self.is_repo_published(pkg['publish_prj'], 'images'):
                 self.logger.debug(f'Waiting for {pkg["publish_prj"]}')
-                time.sleep(20)
+                time.sleep(randint(10, 30))
 
 
 class CommandLineInterface(ToolBase.CommandLineInterface):
@@ -194,8 +197,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
     @cmdln.option('--token', help='The token for publishing. Does a dry run if not given.')
     def do_run(self, subcmd, opts, project):
-        """${cmd_name}: run the BCI repo publisher for the specified project,
-        e.g. 15-SP3
+        """${cmd_name}: run BCI repo publisher for the project, e.g. 15-SP5.
 
         ${cmd_usage}
         ${cmd_option_list}
