@@ -134,6 +134,7 @@ class BCIRepoPublisher(ToolBase.ToolBase):
             return
 
         # Check openQA results
+        mandatory_arches = ('aarch64', 'x86_64')
         for pkg in packages:
             passed = 0
             pending = 0
@@ -148,14 +149,13 @@ class BCIRepoPublisher(ToolBase.ToolBase):
                 else:
                     self.logger.warning(f'https://openqa.suse.de/tests/{job["id"]} failed')
                     failed += 1
-            if passed == 0 or pending > 0 or failed > 0:
+            if pending or failed:
                 self.logger.info(f'openQA did not (yet) pass for {pkg["name"]}: {passed}/{pending}/{failed}')
                 continue
+            if passed == 0 and pkg['arch'] in mandatory_arches:
+                self.logger.info('No positive result from openQA (yet)')
+                return
             openqa_passed_packages.append(pkg)
-
-        if not openqa_passed_packages:
-            self.logger.info(f'No positive result from openQA (yet)')
-            return
 
         # Trigger publishing
         if token is None:
