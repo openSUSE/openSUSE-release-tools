@@ -292,7 +292,7 @@ class Listener(PubSubConsumer):
 
     def is_production_job(self, job):
         if '/' in job['settings'].get('BUILD', '/') or \
-           'Development' in job['group']:
+           'group' not in job or 'Development' in job['group']:
             return False
 
         return True
