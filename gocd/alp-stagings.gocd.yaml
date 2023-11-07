@@ -195,6 +195,21 @@ pipelines:
                   ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
+
     - Enable.images.repo:
         resources:
           - staging-bot
@@ -239,6 +254,21 @@ pipelines:
                   cd scripts/gocd
                   ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -285,6 +315,21 @@ pipelines:
                   ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
+
     - Enable.images.repo:
         resources:
           - staging-bot
@@ -329,6 +374,21 @@ pipelines:
                   cd scripts/gocd
                   ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -375,6 +435,21 @@ pipelines:
                   ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
+
     - Enable.images.repo:
         resources:
           - staging-bot
@@ -419,6 +494,21 @@ pipelines:
                   cd scripts/gocd
                   ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -465,6 +555,21 @@ pipelines:
                   ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
+
     - Enable.images.repo:
         resources:
           - staging-bot
@@ -509,6 +614,21 @@ pipelines:
                   cd scripts/gocd
                   ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -555,6 +675,21 @@ pipelines:
                   ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
 
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
+
     - Enable.images.repo:
         resources:
           - staging-bot
@@ -599,6 +734,21 @@ pipelines:
                   cd scripts/gocd
                   ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
 
     - Enable.images.repo:
         resources:
