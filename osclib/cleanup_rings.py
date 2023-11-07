@@ -14,24 +14,17 @@ class CleanupRings(object):
         self.api = api
         self.links = {}
         self.commands = []
-        self.whitelist = [
+        self.force_required = {
             # Keep this in ring 1, even though ring 0 builds the main flavor
             # and ring 1 has that disabled.
-            'automake:testsuite',
-            'meson:test',
-            # buildtime services aren't visible in _builddepinfo
-            'obs-service-recompress',
-            'obs-service-set_version',
-            'obs-service-tar_scm',
-            # Used by ARM only, but part of oS:F ring 1 in general
-            'u-boot',
-            'raspberrypi-firmware-dt',
-            'raspberrypi-firmware-config',
-            # Added manually to notice failures early
-            'vagrant',
-            # https://github.com/openSUSE/open-build-service/issues/14129
-            'snobol4',
-        ]
+            'automake:testsuite': 'Keep in Ring 1',
+            'meson:test': 'Keep in Ring 1',
+            'u-boot': 'ARM Ring1',
+            'raspberrypi-firmware-dt': 'ARM Ring1',
+            'raspberrypi-firmware-config': 'ARM Ring1',
+            'vagrant': 'Added manually to notice failures early',
+            'snobol4': 'https://github.com/openSUSE/open-build-service/issues/14129'
+        }
 
     def perform(self):
         for index, ring in enumerate(self.api.rings):
@@ -113,24 +106,30 @@ class CleanupRings(object):
                     return False
         return True
 
+    def package_get_bdeps(self, prj, pkg, repo, arch):
+        "For a given package, return which source packages it has as build deps."
+        ret = set()
+        url = makeurl(self.api.apiurl, ['build', prj, repo, arch, pkg, '_buildinfo'])
+        root = ET.parse(http_GET(url)).getroot()
+        # Keep the package itself
+        ret.add(pkg.split(':')[0])
+        for bdep in root.findall('bdep'):
+            if 'name' not in bdep.attrib:
+                continue
+            b = bdep.attrib['name']
+            if b not in self.bin2src:
+                print("{} not found in bin2src".format(b))
+                continue
+            ret.add(self.bin2src[b])
+
+        return ret
+
     def check_image_bdeps(self, project, arch):
         url = makeurl(self.api.apiurl, ['build', project, '_result'])
         root = ET.parse(http_GET(url)).getroot()
         for image in root.xpath(f"result[@repository = 'images' and @arch = '{arch}']/status[@code != 'excluded' and @code != 'disabled']"):
-            dvd = image.get('package')
-            url = makeurl(self.api.apiurl, ['build', project, 'images', arch, dvd, '_buildinfo'])
-            root = ET.parse(http_GET(url)).getroot()
-            # Don't delete the image itself
-            self.pkgdeps[dvd.split(':')[0]] = 'MYdvd{}'.format(self.api.rings.index(project))
-            for bdep in root.findall('bdep'):
-                if 'name' not in bdep.attrib:
-                    continue
-                b = bdep.attrib['name']
-                if b not in self.bin2src:
-                    print("{} not found in bin2src".format(b))
-                    continue
-                b = self.bin2src[b]
-                self.pkgdeps[b] = 'MYdvd{}'.format(self.api.rings.index(project))
+            for bdep in self.package_get_bdeps(project, image.get('package'), 'images', arch):
+                self.pkgdeps[bdep] = dvd
 
     def check_buildconfig(self, project):
         url = makeurl(self.api.apiurl, ['build', project, 'standard', '_buildconfig'])
@@ -171,11 +170,7 @@ class CleanupRings(object):
         for arch in reversed(self.api.cstaging_archs):
             print(f"Arch {arch}")
 
-            # Dict of needed source pkg -> reason why it's needed
-            self.pkgdeps = {}
-            # Note: bin2src is not cleared, that way ring1 pkgs can depend
-            # on binaries from ring0.
-            self.fill_pkginfo(prj, 'standard', arch)
+            # TODO: This won't work. Also keep all_needed_sources across archs
 
             # 1. No images built, just for bootstrapping the rpm buildenv.
             # 2. Treat multibuild flavors as independent packages
@@ -188,71 +183,7 @@ class CleanupRings(object):
             else:
                 self.check_image_bdeps(prj, arch)
 
-            # Keep all preinstallimages
-            for pkg in self.sources:
-                if pkg.startswith("preinstallimage"):
-                    self.pkgdeps[pkg] = "preinstallimage"
-
-            # Treat all binaries in the whitelist as needed
-            for pkg in self.whitelist:
-                if pkg in self.sources:
-                    self.pkgdeps[pkg] = "whitelist"
-
-            to_visit = set(self.pkgdeps)
-            # print("Directly needed: ", to_visit)
-
-            url = makeurl(self.api.apiurl, ['build', prj, 'standard', arch, '_builddepinfo'], {"view": "pkgnames"})
-            root = ET.parse(http_GET(url)).getroot()
-
-            while len(to_visit) > 0:
-                new_deps = {}
-                for pkg in to_visit:
-                    if not is_ring0:
-                        # Outside of ring0, if one multibuild flavor is needed, add all of them
-                        mainpkg = pkg.split(":")[0]
-                        for src in self.sources:
-                            if src.startswith(f"{mainpkg}:"):
-                                new_deps[src] = pkg
-
-                        # Same for link groups
-                        for ldst, lsrc in self.links.items():
-                            if lsrc == mainpkg:
-                                new_deps[ldst] = pkg
-                            elif ldst == mainpkg:
-                                new_deps[lsrc] = pkg
-
-                    # Add all packages which this package depends on
-                    for dep in root.xpath(f"package[@name='{pkg}']/pkgdep"):
-                        new_deps[dep.text] = pkg
-
-                # Filter out already visited deps
-                to_visit = set(new_deps).difference(set(self.pkgdeps))
-                for pkg, reason in new_deps.items():
-                    self.pkgdeps[pkg] = reason
-
-                all_needed_sources |= set(self.pkgdeps)
-
-                # _builddepinfo only takes care of build deps. runtime deps are handled by
-                # fileinfo_ext_all, but that's really expensive. Thus the "obvious" algorithm
-                # of walking from needed packages to their deps would be too slow. Instead,
-                # walk from possibly unneeded packages (much fewer than needed) and check whether
-                # they satisfy runtime deps of needed packages.
-                # Do this after each batch of buildtime deps were resolved to minimize lookups.
-                if len(to_visit) != 0:
-                    continue
-
-                # Technically this should be self.pkgdeps, but on i586 pretty much nothing
-                # is needed (no built images) so we continue where x86_64 left off
-                maybe_unneeded = self.sources.difference(all_needed_sources)
-                for pkg in sorted(maybe_unneeded):
-                    requiredby = self.package_get_requiredby(prj, pkg, 'standard', arch)
-                    requiredby = requiredby.intersection(all_needed_sources)
-                    # Required by needed packages?
-                    if len(requiredby):
-                        print(f"# {pkg} needed by {requiredby}")
-                        # Include it and also resolve its build deps
-                        self.pkgdeps[pkg] = requiredby
-                        to_visit.add(pkg)
+            all_needed_sources = self.check_depinfo(prj, arch, not is_ring0)
 
         self.commands.append(f"# For {prj}:")
         for source in sorted(self.sources):
@@ -263,3 +194,84 @@ class CleanupRings(object):
                     self.commands.append('osc rdelete -m cleanup {} {}'.format(prj, source))
                     if nextprj:
                         self.commands.append('osc linkpac {} {} {}'.format(self.api.project, source, nextprj))
+
+    def check_depinfo(self, prj, arch, multibuild_independent):
+        all_needed_sources = set()
+
+        # Dict of needed source pkg -> reason why it's needed
+        self.pkgdeps = {}
+        # Note: bin2src is not cleared, that way ring1 pkgs can depend
+        # on binaries from ring0.
+        self.fill_pkginfo(prj, 'standard', arch)
+
+        for pkg in self.sources:
+            if pkg.startswith("preinstallimage"):
+                # Keep all preinstallimages
+                self.pkgdeps[pkg] = "preinstallimage"
+            elif pkg.startswith("obs-service-"):
+                # buildtime services aren't visible in _builddepinfo
+                self.pkgdeps[pkg] = "OBS service"
+
+        # Include all force required packages
+        for pkg in self.force_required:
+            if pkg in self.sources:
+                self.pkgdeps[pkg] = "Forced: " + self.force_required[pkg]
+
+        to_visit = set(self.pkgdeps)
+        # print("Directly needed: ", to_visit)
+
+        url = makeurl(self.api.apiurl, ['build', prj, 'standard', arch, '_builddepinfo'], {"view": "pkgnames"})
+        root = ET.parse(http_GET(url)).getroot()
+
+        while len(to_visit) > 0:
+            new_deps = {}
+            for pkg in to_visit:
+                if not multibuild_independent:
+                    # Outside of ring0, if one multibuild flavor is needed, add all of them
+                    mainpkg = pkg.split(":")[0]
+                    for src in self.sources:
+                        if src.startswith(f"{mainpkg}:"):
+                            new_deps[src] = mainpkg
+
+                    # Same for link groups
+                    for ldst, lsrc in self.links.items():
+                        if lsrc == mainpkg:
+                            new_deps[ldst] = mainpkg
+                        elif ldst == mainpkg:
+                            new_deps[lsrc] = mainpkg
+
+                # Add all packages which this package depends on
+                for dep in root.xpath(f"package[@name='{pkg}']/pkgdep"):
+                    new_deps[dep.text] = f"Builddep of {pkg}"
+
+            # Filter out already visited deps
+            to_visit = set(new_deps).difference(set(self.pkgdeps))
+            for pkg, reason in new_deps.items():
+                self.pkgdeps[pkg] = reason
+
+            all_needed_sources |= set(self.pkgdeps)
+
+            # _builddepinfo only takes care of build deps. runtime deps are handled by
+            # fileinfo_ext_all, but that's really expensive. Thus the "obvious" algorithm
+            # of walking from needed packages to their deps would be too slow. Instead,
+            # walk from possibly unneeded packages (much fewer than needed) and check whether
+            # they satisfy runtime deps of needed packages.
+            # Do this after each batch of buildtime deps were resolved to minimize lookups.
+            if len(to_visit) != 0:
+                continue
+
+            # Technically this should be self.pkgdeps, but on i586 pretty much nothing
+            # is needed (no built images) so we continue where x86_64 left off
+            maybe_unneeded = self.sources.difference(all_needed_sources)
+
+            for pkg in sorted(maybe_unneeded):
+                requiredby = self.package_get_requiredby(prj, pkg, 'standard', arch)
+                requiredby = requiredby.intersection(all_needed_sources)
+                # Required by needed packages?
+                if len(requiredby):
+                    # Include it and also resolve its build deps
+                    if pkg not in self.pkgdeps:
+                        self.pkgdeps[pkg] = f"Runtime dep of {', '.join(requiredby)}"
+                        to_visit.add(pkg)
+
+        return self.pkgdeps

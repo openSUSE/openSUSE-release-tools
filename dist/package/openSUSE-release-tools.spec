@@ -362,7 +362,6 @@ exit 0
 
 %files
 %doc README.md
-%{_bindir}/osrt-biarchtool
 %{_bindir}/osrt-bs_mirrorfull
 %{_bindir}/osrt-bugowner
 %{_bindir}/osrt-build-fail-reminder
