@@ -174,17 +174,15 @@ def installcheck(directories, arch, whitelist, ignore_conflicts):
 
 
 def mirrorRepomd(cachedir, url):
-    # Use repomd.xml to get the location of primary.xml.gz
+    # Use repomd.xml to get the location of primary.xml.*
     repoindex = ET.fromstring(requests.get('{}/repodata/repomd.xml'.format(url)).content)
     primarypath = repoindex.xpath("string(./repo:data[@type='primary']/repo:location/@href)",
                                   namespaces={'repo': 'http://linux.duke.edu/metadata/repo'})
-    if not primarypath.endswith(".xml.gz"):
-        raise Exception('unsupported primary format')
 
     primarydest = os.path.join(cachedir, os.path.basename(primarypath))
     if not os.path.exists(primarydest):
         # Delete the old files first
-        for oldfile in glob.glob(glob.escape(cachedir) + "/*.xml.gz"):
+        for oldfile in glob.glob(glob.escape(cachedir) + "/*.xml.*"):
             os.unlink(oldfile)
 
         with tempfile.NamedTemporaryFile(dir=cachedir) as primarytemp:
