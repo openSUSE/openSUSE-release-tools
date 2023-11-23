@@ -1,8 +1,6 @@
 
 import glob
-import gzip
 import hashlib
-import io
 import logging
 import os.path
 import re
@@ -99,12 +97,11 @@ def parse_repomd(repo, baseurl):
         if sha != sha_expected:
             raise Exception('checksums do not match {} != {}'.format(sha, sha_expected))
 
-        content = gzip.GzipFile(fileobj=io.BytesIO(primary.content))
         os.lseek(f.fileno(), 0, os.SEEK_SET)
-        f.write(content.read())
+        f.write(primary.content)
         f.flush()
         os.lseek(f.fileno(), 0, os.SEEK_SET)
-        repo.add_rpmmd(solv.xfopen_fd(None, f.fileno()), None, 0)
+        repo.add_rpmmd(solv.xfopen_fd(url, f.fileno()), None, 0)
         return True
 
     return False
@@ -132,13 +129,13 @@ def parse_susetags(repo, baseurl):
         if packages.status_code != requests.codes.ok:
             raise Exception(url + ' does not exist')
 
-        content = gzip.GzipFile(fileobj=io.BytesIO(packages.content))
         os.lseek(f.fileno(), 0, os.SEEK_SET)
-        f.write(content.read())
+        f.write(packages.content)
         f.flush()
         os.lseek(f.fileno(), 0, os.SEEK_SET)
         try:
-            repo.add_susetags(f, defvendorid, None, solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
+            repo.add_susetags(solv.xfopen_fd(url, f.fileno()), defvendorid, None,
+                              solv.Repo.REPO_NO_INTERNALIZE | solv.Repo.SUSETAGS_RECORD_SHARES)
         except TypeError:
             logger.error(f"Failed to add susetags for {url}")
             return False

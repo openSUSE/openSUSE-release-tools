@@ -1,18 +1,22 @@
 #!/usr/bin/python3
 import gzip
+import pyzstd
 import sys
 from collections import defaultdict
 from lxml import etree
 
 if len(sys.argv) != 2:
     print("Script to generate necessary FileProvides lines needed by OBS from repo data.", file=sys.stderr)
-    print("Usage: repo2fileprovides.py primary.xml(.gz)", file=sys.stderr)
+    print("Usage: repo2fileprovides.py primary.xml(.gz|.zst)", file=sys.stderr)
     sys.exit(1)
 
 repofilename = sys.argv[1]
-xmlfile = open(repofilename, 'rb')
 if repofilename.endswith('.gz'):
-    xmlfile = gzip.GzipFile(fileobj=xmlfile)
+    xmlfile = gzip.GzipFile(repofilename)
+elif repofilename.endswith('.zst'):
+    xmlfile = pyzstd.ZstdFile(repofilename)
+else:
+    xmlfile = open(repofilename, 'rb')
 
 NS = {'md': 'http://linux.duke.edu/metadata/common',
       'rpm': 'http://linux.duke.edu/metadata/rpm'}

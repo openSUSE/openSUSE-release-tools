@@ -178,7 +178,7 @@ Script to generate necessary FileProvides lines needed by OBS from repo data.
 * Sources: [repo2fileprovides.py](repo2fileprovides.py)
 * Documentation: --
 * Package: --
-* Usage: repo2fileprovides.py primary.xml(.gz)
+* Usage: repo2fileprovides.py primary.xml(.gz|.zst)
 
 ### Bots
 
