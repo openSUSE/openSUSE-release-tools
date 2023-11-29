@@ -63,10 +63,6 @@ Requires:       python3-requests
 Requires:       python3-typing_extensions
 %endif
 
-# bs_mirrorfull
-Requires:       perl-Net-SSLeay
-Requires:       perl-XML-Parser
-
 # Spec related requirements.
 Requires:       osclib = %{version}
 
@@ -363,7 +359,6 @@ exit 0
 %files
 %doc README.md
 %{_bindir}/osrt-biarchtool
-%{_bindir}/osrt-bs_mirrorfull
 %{_bindir}/osrt-bugowner
 %{_bindir}/osrt-build-fail-reminder
 %{_bindir}/osrt-checknewer
