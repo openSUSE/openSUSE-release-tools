@@ -81,15 +81,15 @@ class ToTestReleaser(ToTestManager):
         return self.iso_build_version(self.project.name, self.project.image_products[0].package,
                                       arch=self.project.image_products[0].archs[0])
 
-    def maxsize_for_package(self, package):
+    def maxsize_for_package(self, package, arch):
         if re.match(r'.*-mini-.*', package):
             return 737280000  # a CD needs to match
 
         if re.match(r'.*-dvd5-.*', package):
             return 4700372992  # a DVD needs to match
 
-        if re.match(r'livecd-x11', package):
-            return 681574400  # not a full CD
+        if re.match(r'livecd-x11', package) and arch == 'x86_64':
+            return 681574400  # not a full CD on x86
 
         if re.match(r'livecd-.*', package):
             return 999999999  # a GB stick
@@ -122,7 +122,7 @@ class ToTestReleaser(ToTestManager):
             self.logger.info('No "succeeded" for %s %s %s %s' % (project, package, repository, arch))
             return False
 
-        maxsize = self.maxsize_for_package(package)
+        maxsize = self.maxsize_for_package(package, arch)
         if not maxsize:
             return True
 
