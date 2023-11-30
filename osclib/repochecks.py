@@ -8,10 +8,12 @@ import glob
 from fnmatch import fnmatch
 from lxml import etree as ET
 from osc.core import http_GET
+from osc.core import makeurl
 
 import yaml
 
 from osclib.cache_manager import CacheManager
+from osclib.repomirror import RepoMirror
 
 logger = logging.getLogger('InstallChecker')
 
@@ -192,13 +194,16 @@ def mirrorRepomd(cachedir, url):
 
 
 def mirror(apiurl, project, repository, arch):
-    """Call bs_mirrorfull script to mirror packages."""
+    """
+    Mirror repo metadata for the given pra.
+    Downloads primary.xml for DoD or all RPM headers in the full tree.
+    """
     directory = os.path.join(CACHEDIR, project, repository, arch)
 
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    meta = ET.parse(http_GET('{}/public/source/{}/_meta'.format(apiurl, project))).getroot()
+    meta = ET.parse(http_GET(makeurl(apiurl, ['source', project, '_meta']))).getroot()
     repotag = meta.xpath("/project/repository[@name='{}']".format(repository))[0]
     if arch not in repotag.xpath("./arch/text()"):
         # Arch not in this project, skip mirroring
@@ -213,13 +218,7 @@ def mirror(apiurl, project, repository, arch):
             raise Exception('repotype {} not supported'.format(repotype))
         return mirrorRepomd(directory, download[0].get('url'))
 
-    script = os.path.join(SCRIPT_PATH, '..', 'bs_mirrorfull')
-    path = '/'.join((project, repository, arch))
-    logger.info('mirroring {}'.format(path))
-    url = '{}/public/build/{}'.format(apiurl, path)
-    p = subprocess.run(['perl', script, '--nodebug', url, directory])
-
-    if p.returncode:
-        raise Exception('failed to mirror {}'.format(path))
+    rm = RepoMirror(apiurl)
+    rm.mirror(directory, project, repository, arch)
 
     return directory

@@ -25,6 +25,7 @@ from osclib.core import repository_path_expand
 from osclib.core import repository_arch_state
 from osclib.cache_manager import CacheManager
 from osclib.pkglistgen_comments import PkglistComments
+from osclib.repomirror import RepoMirror
 
 from urllib.parse import urlparse
 
@@ -354,18 +355,8 @@ class PkgListGen(ToolBase.ToolBase):
 
         self.logger.debug('updating %s', d)
 
-        # only there to parse the repos
-        bs_mirrorfull = os.path.join(SCRIPT_PATH, '..', 'bs_mirrorfull')
-
-        args = [bs_mirrorfull]
-        args.append('--nodebug')
-        args.append('{}/public/build/{}/{}/{}'.format(self.apiurl, project, repo, arch))
-        args.append(d)
-        with subprocess.Popen(args, stdout=subprocess.PIPE) as p:
-            for line in p.stdout:
-                self.logger.info(line.decode('utf-8').rstrip())
-            if p.wait() != 0:
-                raise Exception("Mirroring repository failed")
+        rm = RepoMirror(self.apiurl)
+        rm.mirror(d, project, repo, arch)
 
         files = [os.path.join(d, f)
                  for f in os.listdir(d) if f.endswith('.rpm')]

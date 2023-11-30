@@ -108,15 +108,6 @@ Manages bugowner information
 * Package: openSUSE-release-tools
 * Usage: ?
 
-#### bs_mirrorfull
-
-Mirrors repositories from the build service to a local directory.
-
-* Souces: [bs_mirrorfull](bs_mirrorfull)
-* Documentation: --
-* Package: openSUSE-release-tools
-* Usage: Used by other tools like `pkglistgen` or `repocheck`
-
 #### biarchtool
 
 Manages biarch packages
