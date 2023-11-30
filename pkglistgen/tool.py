@@ -359,7 +359,7 @@ class PkgListGen(ToolBase.ToolBase):
 
         args = [bs_mirrorfull]
         args.append('--nodebug')
-        args.append('{}/public/build/{}/{}/{}'.format(self.apiurl, project, repo, arch))
+        args.append('{}/build/{}/{}/{}'.format(self.apiurl, project, repo, arch))
         args.append(d)
         with subprocess.Popen(args, stdout=subprocess.PIPE) as p:
             for line in p.stdout:

@@ -198,7 +198,7 @@ def mirror(apiurl, project, repository, arch):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    meta = ET.parse(http_GET('{}/public/source/{}/_meta'.format(apiurl, project))).getroot()
+    meta = ET.parse(http_GET('{}/source/{}/_meta'.format(apiurl, project))).getroot()
     repotag = meta.xpath("/project/repository[@name='{}']".format(repository))[0]
     if arch not in repotag.xpath("./arch/text()"):
         # Arch not in this project, skip mirroring
@@ -216,7 +216,7 @@ def mirror(apiurl, project, repository, arch):
     script = os.path.join(SCRIPT_PATH, '..', 'bs_mirrorfull')
     path = '/'.join((project, repository, arch))
     logger.info('mirroring {}'.format(path))
-    url = '{}/public/build/{}'.format(apiurl, path)
+    url = '{}/build/{}'.format(apiurl, path)
     p = subprocess.run(['perl', script, '--nodebug', url, directory])
 
     if p.returncode:
