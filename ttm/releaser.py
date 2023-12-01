@@ -88,7 +88,7 @@ class ToTestReleaser(ToTestManager):
         if re.match(r'.*-dvd5-.*', package):
             return 4700372992  # a DVD needs to match
 
-        if re.match(r'livecd-x11', package) and arch == 'x86_64':
+        if re.match(r'livecd-x11-.*', package) and arch == 'x86_64':
             return 681574400  # not a full CD on x86
 
         if re.match(r'livecd-.*', package):
