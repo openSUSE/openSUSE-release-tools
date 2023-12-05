@@ -9,8 +9,7 @@ import sys
 import tempfile
 
 from lxml import etree as ET
-from osc.core import http_GET
-from osc.core import makeurl
+from osc.core import makeurl, http_GET
 from osc.util.cpio import CpioHdr
 from urllib.parse import quote_plus
 
@@ -18,7 +17,10 @@ logger = logging.getLogger('RepoMirror')
 
 
 class RepoMirror:
-    def __init__(self, apiurl, nameignore: str = '-debug(info|source|info-32bit).rpm$'):
+    cpio_struct = struct.Struct('6s8s8s8s8s8s8s8s8s8s8s8s8s8s')
+    cpio_name_re = re.compile('^([^/]+)-([0-9a-f]{32})$')
+
+    def __init__(self, apiurl: str, nameignore: str = '-debug(info|source|info-32bit).rpm$'):
         """
         Class to mirror RPM headers of all binaries in a repo on OBS (full tree).
         Debug packages are ignored by default, see the nameignore parameter.
@@ -27,15 +29,9 @@ class RepoMirror:
         self.nameignorere = re.compile(nameignore)
 
     def extract_cpio_stream(self, destdir: str, stream):
-        hdr_fmt = '6s8s8s8s8s8s8s8s8s8s8s8s8s8s'
-        hdr_len = 110
-
-        name_re = re.compile('^([^/]+)-([0-9a-f]{32})$')
-
         while True:
+            hdrtuples = self.cpio_struct.unpack(stream.read(self.cpio_struct.size))
             # Read and parse the CPIO header
-            hdrdata = stream.read(hdr_len)
-            hdrtuples = struct.unpack(hdr_fmt, hdrdata)
             if hdrtuples[0] != b'070701':
                 raise NotImplementedError(f'CPIO format {hdrtuples[0]} not implemented')
 
@@ -48,7 +44,7 @@ class RepoMirror:
             stream.read(1)  # Skip terminator
             align()
 
-            binarymatch = name_re.match(hdr.filename)
+            binarymatch = self.cpio_name_re.match(hdr.filename)
             if hdr.filename == '.errors':
                 content = stream.read(hdr.filesize)
                 raise RuntimeError('Download has errors: ' + content.decode('ascii'))
@@ -122,9 +118,9 @@ class RepoMirror:
             try:
                 fcntl.flock(lockfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except IOError:
-                logger.info(destdir + 'is locked, waiting... ', end='')
+                logger.info(destdir + 'is locked, waiting... ')
                 fcntl.flock(lockfile, fcntl.LOCK_EX)
-                logger.info('acquired!')
+                logger.info('Lock acquired!')
 
             return self._mirror(destdir, prj, repo, arch)
 
