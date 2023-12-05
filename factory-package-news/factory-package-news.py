@@ -9,6 +9,7 @@ import rpm
 import pickle
 import cmdln
 import re
+import pyzstd
 
 SRPM_RE = re.compile(
     r'(?P<name>.+)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<suffix>(?:no)?src\.rpm)$')
@@ -25,6 +26,17 @@ changelog_max_lines = 100  # maximum number of changelog lines per package
 # [0] https://github.com/rpm-software-management/rpm/commit/84920f898315d09a57a3f1067433eaeb7de5e830
 def utf8str(content):
     return str(content, 'utf-8') if isinstance(content, bytes) else content
+
+
+# Older versions wrote uncompressed files, support both for now.
+def open_zstd_or_plain(path: str):
+    f = open(path, 'rb')
+    if f.read(4) == b'\x28\xb5\x2f\xfd':
+        f.close()
+        return pyzstd.open(path, 'rb')
+
+    f.seek(0, os.SEEK_SET)
+    return f
 
 
 class ChangeLogger(cmdln.Cmdln):
@@ -165,8 +177,8 @@ class ChangeLogger(cmdln.Cmdln):
         if not opts.snapshot:
             raise Exception("missing snapshot option")
 
-        f = open(os.path.join(opts.dir, opts.snapshot), 'wb')
-        pickle.dump([data_version, self.readChangeLogs(dirs)], f)
+        with pyzstd.open(os.path.join(opts.dir, opts.snapshot), 'wb') as f:
+            pickle.dump([data_version, self.readChangeLogs(dirs)], f)
 
     def do_dump(self, subcmd, opts, *dirs):
         """${cmd_name}: pprint the package changelog information
@@ -182,9 +194,9 @@ class ChangeLogger(cmdln.Cmdln):
         ${cmd_usage}
         ${cmd_option_list}
         """
-        f = open(filename, 'rb')
-        (v, (pkgs, changelogs)) = pickle.load(
-            f, encoding='utf-8', errors='backslashreplace')
+        with open_zstd_or_plain(filename) as f:
+            (v, (pkgs, changelogs)) = pickle.load(
+                f, encoding='utf-8', errors='backslashreplace')
         pprint(pkgs[package])
         pprint(changelogs[pkgs[package]['sourcerpm']])
 
@@ -209,14 +221,14 @@ class ChangeLogger(cmdln.Cmdln):
         if not os.path.isdir(opts.dir):
             raise Exception("%s must be a directory" % opts.dir)
 
-        f = open(os.path.join(opts.dir, version1), 'rb')
-        (v, (v1pkgs, v1changelogs)) = pickle.load(f,
-                                                  encoding='utf-8', errors='backslashreplace')
+        with open_zstd_or_plain(os.path.join(opts.dir, version1)) as f:
+            (v, (v1pkgs, v1changelogs)) = pickle.load(f,
+                                                      encoding='utf-8', errors='backslashreplace')
         if v != data_version:
             raise Exception("not matching version %s in %s" % (v, version1))
-        f = open(os.path.join(opts.dir, version2), 'rb')
-        (v, (v2pkgs, v2changelogs)) = pickle.load(f,
-                                                  encoding='utf-8', errors='backslashreplace')
+        with open_zstd_or_plain(os.path.join(opts.dir, version2)) as f:
+            (v, (v2pkgs, v2changelogs)) = pickle.load(f,
+                                                      encoding='utf-8', errors='backslashreplace')
         if v != data_version:
             raise Exception("not matching version %s in %s" % (v, version2))
 
