@@ -58,7 +58,7 @@ Requires:       python3-pycurl
 Requires:       python3-python-dateutil
 Requires:       python3-pyxdg
 # factory-package-news.py
-Requires:       python3-pyzstd
+Requires:       python3-zstandard
 Requires:       python3-requests
 # typing extensions are needed on SLE & Leap
 %if 0%{?suse_version} <= 1500

@@ -9,7 +9,8 @@ import rpm
 import pickle
 import cmdln
 import re
-import pyzstd
+# Can be replaced with pyzstd (for pyzstd.open) once available on ariel
+import zstandard
 
 SRPM_RE = re.compile(
     r'(?P<name>.+)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<suffix>(?:no)?src\.rpm)$')
@@ -31,11 +32,11 @@ def utf8str(content):
 # Older versions wrote uncompressed files, support both for now.
 def open_zstd_or_plain(path: str):
     f = open(path, 'rb')
-    if f.read(4) == b'\x28\xb5\x2f\xfd':
-        f.close()
-        return pyzstd.open(path, 'rb')
-
+    magic = f.read(4)
     f.seek(0, os.SEEK_SET)
+    if magic == b'\x28\xb5\x2f\xfd':
+        return zstandard.ZstdDecompressor().stream_reader(f, closefd=True)
+
     return f
 
 
@@ -177,8 +178,9 @@ class ChangeLogger(cmdln.Cmdln):
         if not opts.snapshot:
             raise Exception("missing snapshot option")
 
-        with pyzstd.open(os.path.join(opts.dir, opts.snapshot), 'wb') as f:
-            pickle.dump([data_version, self.readChangeLogs(dirs)], f)
+        with open(os.path.join(opts.dir, opts.snapshot), 'wb') as fraw:
+            with zstandard.ZstdCompressor().stream_writer(fraw, closefd=False) as f:
+                pickle.dump([data_version, self.readChangeLogs(dirs)], f)
 
     def do_dump(self, subcmd, opts, *dirs):
         """${cmd_name}: pprint the package changelog information
