@@ -896,7 +896,7 @@ class CommandLineInterface(cmdln.Cmdln):
         conf.get_config(override_apiurl=self.options.apiurl)
 
         if (self.options.osc_debug):
-            conf.config['debug'] = 1
+            conf.config['debug'] = True
 
         self.checker = self.setup_checker()
         if self.options.config:
