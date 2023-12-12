@@ -22,7 +22,7 @@ from osclib.core import entity_exists
 from osclib.core import group_members
 from osclib.core import package_kind
 from osclib.core import create_add_role_request
-from osclib.core import maintainers_get
+from osclib.core import package_role_expand
 from osc.core import show_package_meta, show_project_meta
 from osc.core import get_request_list
 from urllib.error import HTTPError
@@ -300,7 +300,7 @@ class CheckSource(ReviewBot.ReviewBot):
             devel_project, devel_package = devel_project_fallback(self.apiurl, target_project, target_package)
             if devel_project and devel_package:
                 submitter = self.request.creator
-                maintainers = set(maintainers_get(self.apiurl, devel_project, devel_package))
+                maintainers = set(package_role_expand(self.apiurl, devel_project, devel_package))
                 known_maintainer = False
                 if maintainers:
                     if submitter in maintainers:
