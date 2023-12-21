@@ -9,6 +9,8 @@
 # * Uses a token for releasing to the publishing project
 
 
+from typing import List, Optional
+from typing_extensions import Literal, TypedDict
 import cmdln
 import logging
 import ToolBase
@@ -18,8 +20,11 @@ import time
 import re
 from lxml import etree as ET
 from openqa_client.client import OpenQA_Client
-from osc.core import http_GET, makeurl
+from osc.core import makeurl
+from osc.connection import http_GET
 from random import randint
+
+_SLE_VERSION_T = Literal['15-SP3', '15-SP4', '15-SP5', '15-SP6']
 
 
 class BCIRepoPublisher(ToolBase.ToolBase):
@@ -28,7 +33,7 @@ class BCIRepoPublisher(ToolBase.ToolBase):
         self.logger = logging.getLogger(__name__)
         self.openqa = OpenQA_Client(server='https://openqa.suse.de')
 
-    def version_of_product(self, project, package, repo, arch):
+    def version_of_product(self, project: str, package: str, repo: str, arch: str) -> str:
         """Get the build version of the given product build, based on the binary name."""
         url = makeurl(self.apiurl, ['build', project, repo, arch, package])
         root = ET.parse(http_GET(url)).getroot()
@@ -39,12 +44,14 @@ class BCIRepoPublisher(ToolBase.ToolBase):
 
         raise RuntimeError(f"Failed to get version of {project}/{package}")
 
-    def mtime_of_product(self, project, package, repo, arch):
+    def mtime_of_product(self, project: str, package: str, repo: str, arch: str) -> int:
         """Get the build time stamp of the given product, based on _buildenv."""
         url = makeurl(self.apiurl, ['build', project, repo, arch, package])
         root = ET.parse(http_GET(url)).getroot()
         mtime = root.xpath('/binarylist/binary[@filename = "_buildenv"]/@mtime')
-        return mtime[0]
+        if not mtime:
+            raise RuntimeError(f"Failed to get mtime of {project}/{package}")
+        return int(mtime[0])
 
     def openqa_jobs_for_product(self, arch, version, build):
         """Query openQA for all relevant jobs"""
@@ -59,9 +66,12 @@ class BCIRepoPublisher(ToolBase.ToolBase):
         }
         return self.openqa.openqa_request('GET', 'jobs', values)['jobs']
 
-    def is_repo_published(self, project, repo, arch=None):
+    def is_repo_published(self, project: str, repo: str, arch: Optional[str] = None) -> bool:
         """Validate that the given prj/repo is fully published and all builds
-        have succeeded."""
+        have succeeded. If an architecture is provided, then only that
+        architecture is considered for checking the publishing & build state.
+
+        """
         result_filter = {'view': 'summary', 'repository': repo}
         if arch:
             result_filter['arch'] = arch
@@ -79,37 +89,52 @@ class BCIRepoPublisher(ToolBase.ToolBase):
 
         return True
 
-    def run(self, version, token=None):
+    def fetch_package_names_in_project(self, apiurl: str, prj_name: str) -> List[str]:
+        url = makeurl(apiurl, ['source', prj_name])
+        root = ET.parse(http_GET(url)).getroot()
+        return [elem.get("name") for elem in root]
+
+    def run(self, version: _SLE_VERSION_T, publish_token: Optional[str] = None,
+            rebuild_token: Optional[str] = None) -> None:
+
+        class Package(TypedDict):
+            arch: str
+            name: str
+            build_prj: str
+            publish_prj: str
+            built_version: str
+            built_mtime: int
+            published_mtime: int
+
         build_prj = f'SUSE:SLE-{version}:Update:BCI'
+        devel_prj = f'devel:BCI:SLE-{version}'
+        _DEVEL_PRJ_APIURL = "https://api.opensuse.org"
 
         if not self.is_repo_published(build_prj, 'images', 'local'):
             self.logger.info(f'{build_prj}/images not successfully built')
             return
 
         # Build the list of packages with metainfo
-        packages = []
+        packages: List[Package] = []
         # List of packages that have passed openQA
-        openqa_passed_packages = []
+        openqa_passed_packages: List[Package] = []
         # As long as it's the same everywhere, hardcoding this list here
         # is easier and safer than trying to derive it from the package list.
         for arch in ('aarch64', 'ppc64le', 's390x', 'x86_64'):
+            name = f'000product:SLE_BCI-ftp-POOL-{arch}'
+            publish_prj = f'SUSE:Products:SLE-BCI:{version}:{arch}'
             packages.append({
                 'arch': arch,
-                'name': f'000product:SLE_BCI-ftp-POOL-{arch}',
+                'name': name,
                 'build_prj': build_prj,
-                'publish_prj': f'SUSE:Products:SLE-BCI:{version}:{arch}'
+                'publish_prj': publish_prj,
+                # Fetch the build numbers of built products.
+                # After release, the BuildXXX part vanishes, so the mtime has to be
+                # used instead for comparing built and published binaries.
+                'built_version': self.version_of_product(build_prj, name, 'images', 'local'),
+                'built_mtime': self.mtime_of_product(build_prj, name, 'images', 'local'),
+                'published_mtime': self.mtime_of_product(publish_prj, name, 'images', 'local')
             })
-
-        # Fetch the build numbers of built products.
-        # After release, the BuildXXX part vanishes, so the mtime has to be
-        # used instead for comparing built and published binaries.
-        for pkg in packages:
-            pkg['built_version'] = self.version_of_product(pkg['build_prj'], pkg['name'],
-                                                           'images', 'local')
-            pkg['built_mtime'] = self.mtime_of_product(pkg['build_prj'], pkg['name'],
-                                                       'images', 'local')
-            pkg['published_mtime'] = self.mtime_of_product(pkg['publish_prj'], pkg['name'],
-                                                           'images', 'local')
 
         # Verify that the builds for all archs are in sync
         built_versions = {pkg['built_version'] for pkg in packages}
@@ -157,8 +182,16 @@ class BCIRepoPublisher(ToolBase.ToolBase):
                 return
             openqa_passed_packages.append(pkg)
 
+        if rebuild_token:
+            for pkg in self.fetch_package_names_in_project(_DEVEL_PRJ_APIURL, devel_prj):
+                url = makeurl(_DEVEL_PRJ_APIURL, ['trigger', 'rebuild'], {'project': devel_prj, 'package': pkg})
+                req = requests.post(url, headers={'Authorization': f'Token {rebuild_token}'})
+                req.raise_for_status()
+        else:
+            self.logger.warning('Would rebuild %s now, but no token specified', devel_prj)
+
         # Trigger publishing
-        if token is None:
+        if publish_token is None:
             self.logger.warning(f'Would publish {[pkg["name"] for pkg in openqa_passed_packages]}, but no token specified')
             return
 
@@ -171,9 +204,8 @@ class BCIRepoPublisher(ToolBase.ToolBase):
             }
             url = makeurl(self.apiurl, ['trigger', 'release'], params)
             # No bindings for using tokens yet, so do the request manually
-            req = requests.post(url, headers={'Authorization': f'Token {token}'})
-            if req.status_code != 200:
-                raise RuntimeError(f'Releasing failed: {req.text}')
+            req = requests.post(url, headers={'Authorization': f'Token {publish_token}'})
+            req.raise_for_status()
 
         self.logger.info('Waiting for publishing to finish')
         for pkg in openqa_passed_packages:
@@ -195,7 +227,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         return tool
 
-    @cmdln.option('--token', help='The token for publishing. Does a dry run if not given.')
+    @cmdln.option('--publish-token', help='The token for publishing. Does a dry run if not given.')
+    @cmdln.option('--rebuild-token', help='The token for rebuilding devel:BCI, no rebuild is triggered if omitted.')
     def do_run(self, subcmd, opts, project):
         """${cmd_name}: run BCI repo publisher for the project, e.g. 15-SP5.
 
@@ -203,7 +236,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         ${cmd_option_list}
         """
 
-        self.tool.run(project, token=opts.token)
+        self.tool.run(project, publish_token=opts.publish_token, rebuild_token=opts.rebuild_token)
 
 
 if __name__ == "__main__":
