@@ -40,6 +40,12 @@ pipelines:
             for product in 000product SLE-Micro; do
               osc -A https://api.suse.de release SUSE:ALP:Products:Marble:6.0 $product
             done
+            sleep 600
+            while (osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Marble:6.0:ToTest/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
+                echo PENDING
+                sleep 600
+            done
+            osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Marble:6.0:ToTest/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
 
     - Release.Images.To.Publish:
         approval: manual
@@ -50,4 +56,11 @@ pipelines:
         resources:
         - staging-bot
         tasks:
-        - script: osc -A https://api.suse.de release SUSE:ALP:Products:Marble:6.0:ToTest
+        - script: |-
+            osc -A https://api.suse.de release SUSE:ALP:Products:Marble:6.0:ToTest
+            sleep 600
+            while (osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Marble:6.0:PUBLISH/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
+                echo PENDING
+                sleep 600
+            done
+            osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Marble:6.0:PUBLISH/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
