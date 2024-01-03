@@ -41,7 +41,7 @@ pipelines:
             tasks:
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p devel:BCI -s target
 
-<% ['SP3', 'SP4', 'SP5', 'SP6'].each do |sp| %>
+<% ['SP5', 'SP6'].each do |sp| %>
   SLE_BCI_15<%= sp %>.RelPkgs:
     group: BCI
     lock_behavior: unlockWhenFinished
