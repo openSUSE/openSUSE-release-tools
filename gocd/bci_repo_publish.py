@@ -39,6 +39,16 @@ class BCIRepoPublisher(ToolBase.ToolBase):
 
         raise RuntimeError(f"Failed to get version of {project}/{package}")
 
+    def srcmd5_of_product(self, project, package):
+        """Get the srcmd5 of the given source package."""
+        # convert to the base package (without multibuild flavor)
+        package = package.partition(':')[0]
+        url = makeurl(self.apiurl, ['source', project, package])
+        root = ET.parse(http_GET(url)).getroot()
+        if root.tag == 'directory' and 'srcmd5' in root.attrib:
+            return root.attrib['srcmd5']
+        raise RuntimeError(f"Failed to get srcmd5 of {project}/{package}")
+
     def mtime_of_product(self, project, package, repo, arch):
         """Get the build time stamp of the given product, based on _buildenv."""
         url = makeurl(self.apiurl, ['build', project, repo, arch, package])
@@ -104,12 +114,16 @@ class BCIRepoPublisher(ToolBase.ToolBase):
         # After release, the BuildXXX part vanishes, so the mtime has to be
         # used instead for comparing built and published binaries.
         for pkg in packages:
-            pkg['built_version'] = self.version_of_product(pkg['build_prj'], pkg['name'],
-                                                           'images', 'local')
-            pkg['built_mtime'] = self.mtime_of_product(pkg['build_prj'], pkg['name'],
-                                                       'images', 'local')
-            pkg['published_mtime'] = self.mtime_of_product(pkg['publish_prj'], pkg['name'],
-                                                           'images', 'local')
+            pkg['built_srcmd5'] = self.srcmd5_of_product(
+                pkg['build_prj'], pkg['name'])
+            pkg['published_srcmd5'] = self.srcmd5_of_product(
+                pkg['publish_prj'], pkg['name'])
+            pkg['built_version'] = self.version_of_product(
+                pkg['build_prj'], pkg['name'], 'images', 'local')
+            pkg['built_mtime'] = self.mtime_of_product(
+                pkg['build_prj'], pkg['name'], 'images', 'local')
+            pkg['published_mtime'] = self.mtime_of_product(
+                pkg['publish_prj'], pkg['name'], 'images', 'local')
 
         # Verify that the builds for all archs are in sync
         built_versions = {pkg['built_version'] for pkg in packages}
@@ -126,11 +140,17 @@ class BCIRepoPublisher(ToolBase.ToolBase):
             return
 
         # If the last published build is less than a day old, don't publish
-        newest_published_mtime = max([int(pkg['published_mtime']) for pkg in packages])
-        published_build_age_hours = int(time.time() - newest_published_mtime) // (60 * 60)
-        if published_build_age_hours < 24:
-            self.logger.info('Current published build less than a day old '
-                             f'({published_build_age_hours}h).')
+        oldest_published_mtime = min([int(pkg['published_mtime']) for pkg in packages])
+        published_disturls = {pkg['published_srcmd5'] for pkg in packages}
+        published_build_age_hours = int(time.time() - oldest_published_mtime) // (60 * 60)
+        pending_source_changes = published_disturls.difference({pkg['built_srcmd5']for pkg in packages})
+        if pending_source_changes:
+            self.logger.info(f"Pending source changes to published, skipping waiting for 24h: {pending_source_changes}")
+            # If the source commit different than the published version, we
+            # do not wait for 24h for a publish as there was a package addition or removal change
+            pass
+        elif published_build_age_hours < 24:
+            self.logger.info(f'Oldest published build is only {published_build_age_hours}h old, not publishing yet.')
             return
 
         # Check openQA results
