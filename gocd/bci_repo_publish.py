@@ -141,9 +141,8 @@ class BCIRepoPublisher(ToolBase.ToolBase):
 
         # If the last published build is less than a day old, don't publish
         oldest_published_mtime = min([int(pkg['published_mtime']) for pkg in packages])
-        published_disturls = {pkg['published_srcmd5'] for pkg in packages}
         published_build_age_hours = int(time.time() - oldest_published_mtime) // (60 * 60)
-        pending_source_changes = published_disturls.difference({pkg['built_srcmd5']for pkg in packages})
+        pending_source_changes = [pkg['name'] for pkg in packages if pkg['built_srcmd5'] != pkg['published_srcmd5']]
         if pending_source_changes:
             self.logger.info(f"Pending source changes to published, skipping waiting for 24h: {pending_source_changes}")
             # If the source commit different than the published version, we
