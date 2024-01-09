@@ -120,17 +120,19 @@ def convert_from_osc_et(xml):
 
 
 @memoize(session=True)
-def owner_fallback(apiurl, project, package):
-    root = owner(apiurl, package, project=project)
+def owner_fallback(apiurl, project, package, search_mode='binary'):
+    # binary is the default search mode in owner()
+    root = owner(apiurl, package, project=project, mode=search_mode)
     entry = root.find('owner') if root else None
     if not entry or project.startswith(entry.get('project')):
         # Fallback to global (ex Factory) maintainer.
-        root = owner(apiurl, package)
+        root = owner(apiurl, package, mode=search_mode)
     return convert_from_osc_et(root)
 
 
 @memoize(session=True)
-def maintainers_get(apiurl, project, package=None):
+def maintainers_get(apiurl, project, package=None, search_mode='binary'):
+    # owner() supports two search mode: binary and package
     if package is None:
         meta = ET.fromstringlist(show_project_meta(apiurl, project))
         maintainers = meta.xpath('//person[@role="maintainer"]/@userid')
@@ -140,7 +142,7 @@ def maintainers_get(apiurl, project, package=None):
 
         return maintainers
 
-    root = owner_fallback(apiurl, project, package)
+    root = owner_fallback(apiurl, project, package, search_mode)
     maintainers = root.xpath('//person[@role="maintainer"]/@name')
 
     groups = root.xpath('//group[@role="maintainer"]/@name')

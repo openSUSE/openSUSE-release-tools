@@ -300,7 +300,7 @@ class CheckSource(ReviewBot.ReviewBot):
             devel_project, devel_package = devel_project_fallback(self.apiurl, target_project, target_package)
             if devel_project and devel_package:
                 submitter = self.request.creator
-                maintainers = set(maintainers_get(self.apiurl, devel_project, devel_package))
+                maintainers = set(maintainers_get(self.apiurl, devel_project, devel_package, search_mode='package'))
                 known_maintainer = False
                 if maintainers:
                     if submitter in maintainers:
