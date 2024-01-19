@@ -18,7 +18,7 @@ class ListCommand:
     def __init__(self, api):
         self.api = api
 
-    def perform(self, supersede=False):
+    def perform(self, supersede=False, new=False):
         """
         Perform the list command
         """
@@ -36,9 +36,13 @@ class ListCommand:
 
         hide_source = self.api.project == 'openSUSE:Factory'
         for group in sorted(splitter.grouped.keys()):
-            print(Fore.YELLOW + group)
+            printlist = [Fore.YELLOW + group]
 
             for request in splitter.grouped[group]['requests']:
+
+                ignored = request.get('ignored')
+                if new and ignored != 'False':
+                    continue
                 request_id = int(request.get('id'))
                 action = request.find('action')
                 target_package = action.find('target').get('package')
@@ -60,7 +64,11 @@ class ListCommand:
                 if message:
                     line += '\n' + Fore.WHITE + message + Fore.RESET
 
-                print(' ', line)
+                printlist.append(' ' + line)
+
+            if len(printlist) > 1:
+                for line in printlist:
+                    print(line)
 
         if len(splitter.other):
             non_ring_packages = []

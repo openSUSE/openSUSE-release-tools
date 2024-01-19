@@ -93,6 +93,8 @@ def clean_args(args):
               help='split the requests into individual groups')
 @cmdln.option('--supersede', action='store_true',
               help='replace staged requests when superseded')
+@cmdln.option('--new', action='store_true',
+              help='only show new packages that are not ignored')
 @cmdln.option('--filter-from', metavar='STAGING',
               help='filter request list to only those from a specific staging')
 @cmdln.option('-p', '--project', dest='project', metavar='PROJECT',
@@ -307,7 +309,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging frozenage [STAGING...]
         osc staging ignore [-m MESSAGE] REQUEST...
         osc staging unignore [--cleanup] [REQUEST...|all]
-        osc staging list [--supersede]
+        osc staging list [--supersede] [--new]
         osc staging lock [-m MESSAGE]
         osc staging select [--no-freeze] [--remove-exclusion] [--move [--filter-from STAGING]]
             STAGING REQUEST...
@@ -578,7 +580,7 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'unignore':
             UnignoreCommand(api).perform(args[1:], opts.cleanup)
         elif cmd == 'list':
-            ListCommand(api).perform(supersede=opts.supersede)
+            ListCommand(api).perform(supersede=opts.supersede, new=opts.new)
         elif cmd == 'lock':
             lock.hold(opts.message)
         elif cmd == 'adi':
