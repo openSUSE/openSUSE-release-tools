@@ -345,7 +345,7 @@ class SkippkgFinder(object):
 
         # Handle the conditionals
         cond_list = {}
-        for item in self.skiplist_conditionals:
+        for item in sorted(self.skiplist_conditionals):
             # node[0] is the condition, node[1] is the package
             # an example of the format: only_x86_64:glibc-32bit
             node = item.split(':')
