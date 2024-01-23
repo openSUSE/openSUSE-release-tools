@@ -243,13 +243,13 @@ class FreezeCommand(object):
             targeturl = self.api.makeurl(['source', self.prj, '000release-packages', 'weakremovers.inc'],
                                          {'comment': 'Update weakremovers.inc'})
             oldinc = osc.core.http_GET(targeturl).read()
+            sourceurl = self.api.makeurl(['source', self.api.project, '000release-packages', 'weakremovers.inc'])
+            inc = osc.core.http_GET(sourceurl).read()
+            if inc != oldinc:
+                osc.core.http_PUT(targeturl, data=inc)
         except HTTPError:
             # if it doesn't exist, don't update
             return
-        sourceurl = self.api.makeurl(['source', self.api.project, '000release-packages', 'weakremovers.inc'])
-        inc = osc.core.http_GET(sourceurl).read()
-        if inc != oldinc:
-            osc.core.http_PUT(targeturl, data=inc)
 
     def is_bootstrap(self):
         """Check if there is a bootstrap copy repository."""
