@@ -43,6 +43,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         return update_project(conf.config['apiurl'], project, opts.fixate)
 
     @cmdln.option('-f', '--force', action='store_true', help='continue even if build is in progress')
+    @cmdln.option('-d', '--dry', help='no modifications uploaded')
     @cmdln.option('-p', '--project', help='target project')
     @cmdln.option('-s', '--scope', help='scope on which to operate ({}, staging:$letter)'.format(', '.join(SCOPES)))
     @cmdln.option('--no-checkout', action='store_true', help='reuse checkout in cache')
