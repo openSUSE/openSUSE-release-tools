@@ -21,10 +21,10 @@ pipelines:
 ['https://download.opensuse.org/tumbleweed/appliances/boxes/openSUSE-MicroOS.x86_64-ContainerHost-Vagrant.json', 'MicroOS-ContainerHost.x86_64'],
 ['https://download.opensuse.org/ports/aarch64/tumbleweed/appliances/boxes/openSUSE-MicroOS.aarch64-Vagrant.json', 'MicroOS.aarch64'],
 ['https://download.opensuse.org/ports/aarch64/tumbleweed/appliances/boxes/openSUSE-MicroOS.aarch64-ContainerHost-Vagrant.json', 'MicroOS-ContainerHost.aarch64'],
-['https://download.opensuse.org/distribution/leap/15.4/appliances/boxes/Leap-15.4.x86_64.json', 'Leap-15.4.x86_64'],
-['https://download.opensuse.org/distribution/leap/15.4/appliances/boxes/Leap-15.4.aarch64-libvirt_aarch64.json', 'Leap-15.4.aarch64'],
 ['https://download.opensuse.org/distribution/leap/15.5/appliances/boxes/Leap-15.5.x86_64.json', 'Leap-15.5.x86_64'],
 ['https://download.opensuse.org/distribution/leap/15.5/appliances/boxes/Leap-15.5.aarch64-libvirt_aarch64.json', 'Leap-15.5.aarch64'],
+['https://download.opensuse.org/distribution/leap/15.6/appliances/boxes/Leap-15.6.x86_64.json', 'Leap-15.6.x86_64'],
+['https://download.opensuse.org/distribution/leap/15.6/appliances/boxes/Leap-15.6.aarch64-libvirt_aarch64.json', 'Leap-15.6.aarch64'],
 ].each do |url, box_name| %>
           publish_<%= box_name.gsub('.', '_') %>:
             resources:
