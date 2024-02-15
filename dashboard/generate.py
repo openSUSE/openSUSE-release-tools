@@ -191,13 +191,6 @@ if __name__ == '__main__':
                     openqa_group='openSUSE Leap 15.5 ARMv7', openqa_version='15.5', openqa_groupid=106)
         fetcher.add('openSUSE:Leap:15.5:ARM:Images', nick='Leap:15.5:ARM:Images',
                     openqa_group='openSUSE Leap 15.5 ARMv7 Images', openqa_version='15.5', openqa_groupid=104)
-        fetcher.add('openSUSE:Leap:15.4:Images', nick='Leap:15.4:Images', openqa_group='openSUSE Leap 15.4 Images',
-                    openqa_version='15.4', openqa_groupid=89)
-        fetcher.add('openSUSE:Leap:15.4:ARM', nick='Leap:15.4:ARM',
-                    download_url='https://download.opensuse.org/ports/armv7hl/distribution/leap/15.4/iso',
-                    openqa_group='openSUSE Leap 15.4 ARMv7', openqa_version='15.4', openqa_groupid=92)
-        fetcher.add('openSUSE:Leap:15.4:ARM:Images', nick='Leap:15.4:ARM:Images',
-                    openqa_group='openSUSE Leap 15.4 ARMv7 Images', openqa_version='15.4', openqa_groupid=91)
 
     with app.app_context():
         rendered = render_template('dashboard.html',
