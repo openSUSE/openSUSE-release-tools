@@ -10,9 +10,6 @@ VERSION = "build-$(shell date +%F)"
 
 all:
 
-build:
-	%sysusers_generate_pre config/sysusers $(package_name) $(package_name).conf
-
 install:
 	install -d -m 755 $(DESTDIR)$(bindir) $(DESTDIR)$(pkgdatadir) $(DESTDIR)$(unitdir) $(DESTDIR)$(oscplugindir) $(DESTDIR)$(sysconfdir)/$(package_name) $(DESTDIR)$(grafana_provisioning_dir)/dashboards $(DESTDIR)$(grafana_provisioning_dir)/datasources $(DESTDIR)$(logdir)/$(package_name) $(DESTDIR)$(varlibdir)/osrt-slsa/pkglistgen $(DESTDIR)$(varlibdir)/osrt-slsa/relpkggen
 	for i in $(pkgdata_SCRIPTS); do install -m 755 $$i $(DESTDIR)$(pkgdatadir); done
@@ -27,8 +24,8 @@ install:
 	ln -s $(pkgdatadir)/metrics/access/aggregate.php $(DESTDIR)$(bindir)/osrt-metrics-access-aggregate
 	ln -s $(pkgdatadir)/metrics/access/ingest.php $(DESTDIR)$(bindir)/osrt-metrics-access-ingest
 	cp -R config/* $(DESTDIR)$(sysconfdir)/$(package_name)
+	rm $(DESTDIR)$(sysconfdir)/$(package_name)/logrotate
 	install -Dpm0644 config/logrotate $(DESTDIR)$(sysconfdir)/logrotate.d/$(package_name)
-	install -Dpm0644 config/$(package_name).conf $(DESTDIR)$(sysusersdir)/$(package_name).conf
 	for dir in dashboards datasources ; do ln -s $(pkgdatadir)/metrics/grafana/provisioning/$$dir.yaml \
 	  $(DESTDIR)$(grafana_provisioning_dir)/$$dir/$(package_name).yaml ; done
 	sed -i "s|OSRT_DATA_DIR|$(pkgdatadir)|" \
