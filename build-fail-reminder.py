@@ -242,7 +242,7 @@ def main(args):
                 # Package failed to build for 6 weeks - file a delete request
                 r = osc.core.Request()
                 r.add_action('delete', tgt_project=project, tgt_package=package)
-                r.description = "[botdel] Package has had build problems for &gt;= 6 weeks"
+                r.description = "[botdel] Package has had build problems for >= 6 weeks"
                 r.create(apiurl)
 
     if len(ProjectComplainList):
