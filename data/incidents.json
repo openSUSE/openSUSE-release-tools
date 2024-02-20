@@ -28,5 +28,20 @@
     "FLAVOR": "DVD-Backports-Incidents",
     "VERSION": "15.5",
     "ARCH": "x86_64"
+  },
+  "openSUSE:Leap:15.6:Update": {
+    "DISTRI": "opensuse",
+    "FLAVOR": "DVD-Incidents",
+    "VERSION": "15.6",
+    "ARCH": [
+      "x86_64",
+      "aarch64"
+    ]
+  },
+  "openSUSE:Backports:SLE-15-SP6:Update": {
+    "DISTRI": "opensuse",
+    "FLAVOR": "DVD-Backports-Incidents",
+    "VERSION": "15.6",
+    "ARCH": "x86_64"
   }
 }
