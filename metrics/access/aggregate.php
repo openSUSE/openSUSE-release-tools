@@ -56,7 +56,7 @@ function cache_init()
     foreach (PROTOCOLS as $protocol) {
       mkdir("$CACHE_DIR/$protocol", 0755, true);
     }
-    mkdir("$CACHE_DIR/ipv4+6", 00755, true);
+    mkdir("$CACHE_DIR/ipv4+6", 0755, true);
 
     // Avoid packaging mess while still automating, but not ideal.
     passthru('cd ' . escapeshellarg($CACHE_DIR) .
