@@ -446,8 +446,8 @@ for my $tc (sort keys %tocheck) {
       my @sp1 = split(' ', $p1);
       my @sp2 = split(' ', $p2);
       print "- between:\n";
-      print "  - [$sp1[0], $sp1[1], $sp1[2], $sp1[3]]\n";
-      print "  - [$sp2[0], $sp2[1], $sp2[2], $sp2[3]]\n";
+      print "  - [$sp1[0], '$sp1[1]', '$sp1[2]', $sp1[3]]\n";
+      print "  - [$sp2[0], '$sp2[1]', '$sp2[2]', $sp2[3]]\n";
       print "  conflicts: |-\n";
       print "    $_\n" for (@con);
     }
