@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import requests
+import solv
 import subprocess
 import tempfile
 import glob
@@ -63,12 +64,40 @@ def _check_conflicts_whitelist(sp1, sp2, whitelist):
         return True
 
 
-def _fileconflicts(pfile, target_packages, whitelist):
+def _do_packages_conflict(pool, pkgs):
+    logger.debug("Checking whether %s can be installed at once", pkgs)
+    jobs = []
+    for pkg in pkgs:
+        sel = pool.select(pkg, solv.Selection.SELECTION_CANON | solv.Selection.SELECTION_DOTARCH)
+        if sel.isempty():
+            raise RuntimeError(f"{pkg} not found in pool")
+
+        jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
+
+    solver = pool.Solver()
+    problems = solver.solve(jobs)
+    if not problems:
+        return False
+
+    for problem in problems:
+        logger.debug("Problem: %s", str(problem))
+
+    return True
+
+
+def _fileconflicts(pfile, arch, target_packages, whitelist):
     script = os.path.join(SCRIPT_PATH, '..', 'findfileconflicts')
     p = subprocess.run(['perl', script, pfile], stdout=subprocess.PIPE)
     if p.returncode or len(p.stdout):
         output = ''
         conflicts = yaml.safe_load(p.stdout)
+
+        pool = solv.Pool()
+        pool.setarch(arch)
+        repo = pool.add_repo("packages")
+        repo.add_susetags(solv.xfopen(pfile), pool.lookup_id(solv.SOLVID_META, solv.SUSETAGS_DEFAULTVENDOR), "en")
+        pool.createwhatprovides()
+
         for conflict in conflicts:
             sp1 = conflict['between'][0]
             sp2 = conflict['between'][1]
@@ -77,6 +106,12 @@ def _fileconflicts(pfile, target_packages, whitelist):
                 continue
 
             if _check_conflicts_whitelist(sp1, sp2, whitelist):
+                continue
+
+            pkgcanon1 = _format_pkg(sp1)
+            pkgcanon2 = _format_pkg(sp2)
+            if _do_packages_conflict(pool, [pkgcanon1, pkgcanon2]):
+                logger.debug("Packages %s and %s with conflicting files conflict", pkgcanon1, pkgcanon2)
                 continue
 
             output += "found conflict of {} with {}\n".format(_format_pkg(sp1), _format_pkg(sp2))
@@ -159,7 +194,7 @@ def installcheck(directories, arch, whitelist, ignore_conflicts):
             target_packages = catalog.get(directories[0], [])
 
         parts = []
-        output = _fileconflicts(pfile, target_packages, ignore_conflicts)
+        output = _fileconflicts(pfile, arch, target_packages, ignore_conflicts)
         if output:
             parts.append(output)
 
