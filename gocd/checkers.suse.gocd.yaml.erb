@@ -233,7 +233,7 @@ pipelines:
             tasks:
             - script: ./check_source.py -A https://api.suse.de --verbose --skip-add-reviews --group factory-auto --user factory-auto review
   SLE.Legal.Check:
-    group: SLE.Checkers
+    group: SUSE.Legal
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 */5 * ? * *
@@ -255,7 +255,7 @@ pipelines:
             - script: ./legal-auto.py -A https://api.suse.de --debug --legaldb https://legaldb.suse.de --group=legal-auto review
             - script: ./legal-auto.py -A https://api.suse.de --debug --legaldb https://legaldb.suse.de --user=licensedigger review
   SLE.Legal.Import:
-    group: SLE.Checkers
+    group: SUSE.Legal
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 0 0 ? * *

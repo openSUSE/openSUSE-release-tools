@@ -41,7 +41,7 @@ pipelines:
             tasks:
             - script: ./maintenance-installcheck.py -A https://api.opensuse.org --user=maintenance-installcheck --debug review
   openSUSE.Legal.Check:
-    group: openSUSE.Checkers
+    group: openSUSE.Legal
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 */5 * ? * *
@@ -62,7 +62,7 @@ pipelines:
             - script: ./legal-auto.py -A https://api.opensuse.org --debug --legaldb https://legaldb.suse.de --group=legal-auto review
             - script: ./legal-auto.py -A https://api.opensuse.org --debug --legaldb https://legaldb.suse.de --user=licensedigger review
   openSUSE.Legal.Import:
-    group: openSUSE.Checkers
+    group: openSUSE.Legal
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 0 */3 ? * *
