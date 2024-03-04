@@ -1,0 +1,10 @@
+/var/log/openSUSE-release-tools/*/*.log {
+    compress
+    dateext
+    maxage 365
+    rotate 99
+    size=+4096k
+    missingok
+    notifempty
+    delaycompress
+}

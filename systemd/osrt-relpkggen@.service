@@ -1,0 +1,15 @@
+[Unit]
+PartOf=osrt-slsa.target
+
+[Service]
+User=osrt-slsa
+SyslogIdentifier=osrt-slsa
+EnvironmentFile=/etc/openSUSE-release-tools/ibsapi
+Environment="OSC_CONFIG=/etc/openSUSE-release-tools/oscrc"
+WorkingDirectory=/var/lib/osrt-slsa/relpkggen
+ExecStartPre=/bin/bash -xc '/usr/bin/systemctl is-active --quiet osrt-pkglistgen@%i.service && exit 1 || exit 0'
+ExecStart=/usr/bin/osrt-generate-release-packages %i
+RuntimeMaxSec=120 hour
+
+[Install]
+WantedBy=osrt-slsa.target

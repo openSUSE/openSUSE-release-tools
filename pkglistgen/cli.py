@@ -49,6 +49,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     @cmdln.option('--stop-after-solve', action='store_true', help='only create group files')
     @cmdln.option('--staging', help='Only solve that one staging')
     @cmdln.option('--only-release-packages', action='store_true', help='Generate 000release-packages only')
+    @cmdln.option('--custom-cache-tag', help='add custom tag to cache dir to avoid issues when running in parallel')
     def do_update_and_solve(self, subcmd, opts):
         """${cmd_name}: update and solve for given scope
 
@@ -94,7 +95,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                                                          project=project, scope=scope, force=opts.force,
                                                          no_checkout=opts.no_checkout,
                                                          only_release_packages=opts.only_release_packages,
-                                                         stop_after_solve=opts.stop_after_solve)
+                                                         stop_after_solve=opts.stop_after_solve,
+                                                         custom_cache_tag=opts.custom_cache_tag)
             except MismatchedRepoException:
                 logging.error("Failed to create weakremovers.inc due to mismatch in repos - project most likey started building again.")
                 # for stagings we have to be strict on the exit value

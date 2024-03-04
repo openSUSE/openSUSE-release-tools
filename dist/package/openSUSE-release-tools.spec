@@ -19,6 +19,7 @@
 %global __provides_exclude ^perl.*
 %define source_dir openSUSE-release-tools
 %define announcer_filename factory-package-news
+%define services osrt-slsa.target osrt-relpkggen@.timer osrt-relpkggen@.service osrt-pkglistgen@.timer osrt-pkglistgen@.service
 Name:           openSUSE-release-tools
 Version:        0
 Release:        0
@@ -48,6 +49,9 @@ BuildRequires:  apache-rpm-macros
 BuildRequires:  apache2-devel
 BuildRequires:  rsyslog
 BuildRequires:  systemd-rpm-macros
+
+BuildRequires:  sysuser-shadow
+BuildRequires:  sysuser-tools
 
 Requires:       python3-PyYAML
 Requires:       python3-cmdln
@@ -242,6 +246,19 @@ BuildArch:      noarch
 Generates package lists based on 000package-groups and puts them
 in 000product, resp 000release-packages
 
+%package slsa-build-service
+Summary:        Build service
+Group:          Development/Tools/Other
+# TODO Update requirements, but for now base deps.
+Requires:       %{name} = %{version}
+Requires:       openSUSE-release-tools-pkglistgen
+%sysusers_requires
+Recommends:     logrotate
+BuildArch:      noarch
+
+%description slsa-build-service
+Service to run repo-checker and pkglistgen.
+
 %package -n osclib
 Summary:        Supplemental osc libraries
 Group:          Development/Tools/Other
@@ -351,6 +368,21 @@ getent passwd osrt-repo-checker > /dev/null || \
   useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-repo-checker" osrt-repo-checker
 exit 0
 
+%pre slsa-build-service
+%service_add_pre %{services}
+getent passwd osrt-slsa > /dev/null || \
+  useradd -r -d /var/lib/osrt-slsa -s /sbin/nologin -c "user for openSUSE-release-tools-slsa-build-service" osrt-slsa
+exit 0
+
+%post slsa-build-service
+%service_add_post %{services}
+
+%preun slsa-build-service
+%service_del_preun %{services}
+
+%postun slsa-build-service
+%service_del_postun_with_restart %{services}
+
 %pre staging-bot
 getent passwd osrt-staging-bot > /dev/null || \
   useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-staging-bot" osrt-staging-bot
@@ -400,6 +432,9 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/osc-staging.py
 %exclude %{_datadir}/%{source_dir}/publish_distro
 %exclude %{_datadir}/%{source_dir}/findfileconflicts
+%exclude %{_datadir}/%{source_dir}/generate-release-packages
+%exclude %{_datadir}/%{source_dir}/verify-build-and-generatelists
+%exclude %{_datadir}/%{source_dir}/verify-repo-built-successful.py
 %exclude %{_datadir}/%{source_dir}/write_repo_susetags_file.pl
 %dir %{_sysconfdir}/openSUSE-release-tools
 
@@ -426,6 +461,25 @@ exit 0
 %{_datadir}/%{source_dir}/docker_registry.py
 %{_unitdir}/osrt-docker-publisher.service
 %{_unitdir}/osrt-docker-publisher.timer
+
+%files slsa-build-service
+%{_bindir}/osrt-generate-release-packages
+%{_bindir}/osrt-verify-build-and-generatelists
+%{_datadir}/%{source_dir}/generate-release-packages
+%{_datadir}/%{source_dir}/verify-build-and-generatelists
+%{_datadir}/%{source_dir}/verify-repo-built-successful.py
+%{_sysconfdir}/openSUSE-release-tools/ibsapi
+%{_unitdir}/osrt-pkglistgen@.service
+%{_unitdir}/osrt-pkglistgen@.timer
+%{_unitdir}/osrt-relpkggen@.service
+%{_unitdir}/osrt-relpkggen@.timer
+%{_unitdir}/osrt-slsa.target
+%config(noreplace) %attr(0640,osrt-slsa,osrt-slsa) %{_sysconfdir}/openSUSE-release-tools/oscrc
+%config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
+%dir %attr(755,osrt-slsa,osrt-slsa) %{_localstatedir}/log/openSUSE-release-tools/
+%dir %attr(750,osrt-slsa,osrt-slsa) %{_sharedstatedir}/osrt-slsa
+%dir %attr(750,osrt-slsa,osrt-slsa) %{_sharedstatedir}/osrt-slsa/pkglistgen
+%dir %attr(750,osrt-slsa,osrt-slsa) %{_sharedstatedir}/osrt-slsa/relpkggen
 
 %files maintenance
 %{_bindir}/osrt-check_maintenance_incidents
