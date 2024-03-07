@@ -150,6 +150,8 @@ class PkgListGen(ToolBase.ToolBase):
                     if arch != '*':
                         opfh.write(f"_{arch}")
                     opfh.write('\n')
+                    if group.default_support_status and group.default_support_status != 'unsupported':
+                        opfh.write(f"  supportstatus: {group.default_support_status}\n")
                     opfh.write('  flavors:\n')
                     for f in group.flavors:
                         opfh.write(f"  - {f}\n")
@@ -772,6 +774,8 @@ class PkgListGen(ToolBase.ToolBase):
                     break
                 new_lines.append(line)
             open(os.path.join(productcompose_dir, 'default.productcompose'), 'w').write(''.join(new_lines))
+            if os.path.isfile(os.path.join(group_dir, 'supportstatus.txt')):
+                shutil.copy(os.path.join(group_dir, 'supportstatus.txt'), productcompose_dir)
             self.skip_productcompose = False
         else:
             # No template file, so we don't create one either
