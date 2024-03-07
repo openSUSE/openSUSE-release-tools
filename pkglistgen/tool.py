@@ -153,6 +153,8 @@ class PkgListGen(ToolBase.ToolBase):
                     if arch != '*':
                         opfh.write(f"_{arch}")
                     opfh.write('\n')
+                    if group.default_support_status and group.default_support_status != 'unsupported':
+                        opfh.write(f"  supportstatus: {group.default_support_status}\n")
                     opfh.write('  flavors:\n')
                     for f in group.flavors:
                         opfh.write(f"  - {f}\n")
@@ -767,15 +769,12 @@ class PkgListGen(ToolBase.ToolBase):
                     break
                 new_lines.append(line)
             open(os.path.join(self.productcompose_dir, 'default.productcompose'), 'w').write(''.join(new_lines))
-<<<<<<< HEAD
             if git_url:
                 logging.debug(subprocess.check_output(
                     ['git', 'add', self.productcompose_dir, f"{self.productcompose_dir}/default.productcompose"],
                     cwd=cache_dir, encoding='utf-8'))
-=======
             if os.path.isfile(os.path.join(group_dir, 'supportstatus.txt')):
                 shutil.copy(os.path.join(group_dir, 'supportstatus.txt'), self.productcompose_dir)
->>>>>>> 8c7c16b8 (git cleanup)
             self.skip_productcompose = False
         else:
             # No template file, so we don't create one either
@@ -883,15 +882,7 @@ class PkgListGen(ToolBase.ToolBase):
                     f.write(line + '\n')
 
         if git_url:
-<<<<<<< HEAD
-            if os.path.isfile(f"{productcompose_dir}/default.productcompose"):
-                logging.debug(subprocess.check_output(
-                    ['git', 'add', productcompose_dir, f"{productcompose_dir}/default.productcompose"],
-                    cwd=cache_dir, encoding='utf-8'))
-            if os.path.isdir(product_dir):
-=======
             if product_dir and os.path.isdir(product_dir):
->>>>>>> 8c7c16b8 (git cleanup)
                 logging.debug(subprocess.check_output(
                     ['git', 'add', productcompose_dir, product_dir],
                     cwd=cache_dir, encoding='utf-8'))
