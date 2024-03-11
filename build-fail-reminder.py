@@ -248,7 +248,7 @@ def main(args):
     if len(ProjectComplainList):
         # At least to report to the project for not building - send a mail to openSUSE-Factory
         ProjectComplainList.sort()
-        to = 'openSUSE-Factory@opensuse.org'
+        to = 'factory@lists.opensuse.org'
         fullname = "openSUSE Factory - Mailing List"
         subject = "%(project)s - Build fail notification" % {'project': project}
 
