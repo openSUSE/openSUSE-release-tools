@@ -1,3 +1,4 @@
+import fnmatch
 import glob
 import os
 import os.path
@@ -20,8 +21,12 @@ def move_list(file_list, destination):
 
 
 def unlink_all_except(path, ignore_list=['_service'], ignore_hidden=True):
+    """ignore_list is a list of globs"""
     for name in os.listdir(path):
-        if name in ignore_list or (ignore_hidden and name.startswith('.')):
+        if ignore_hidden and name.startswith('.'):
+            continue
+
+        if any([fnmatch.fnmatch(name, pattern) for pattern in ignore_list]):
             continue
 
         name_path = os.path.join(path, name)
