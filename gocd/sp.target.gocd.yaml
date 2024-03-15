@@ -74,6 +74,7 @@ pipelines:
         - staging-bot
         tasks:
         - script: |-
+            set -e
             osc -A https://api.suse.de release SUSE:SLE-15-SP6:GA:TEST
             sleep 600
             while (osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP6:GA:PUBLISH/_result?view=summary&repository=containers" | grep "result project" | grep -v 'code="published" state="published">'); do

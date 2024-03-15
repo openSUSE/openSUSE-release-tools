@@ -37,6 +37,7 @@ pipelines:
         - staging-bot
         tasks:
         - script: |-
+            set -e
             for product in 000product SLE-Micro; do
               osc -A https://api.suse.de release SUSE:ALP:Products:Marble:6.0 $product
             done
@@ -57,6 +58,7 @@ pipelines:
         - staging-bot
         tasks:
         - script: |-
+            set -e
             osc -A https://api.suse.de release SUSE:ALP:Products:Marble:6.0:ToTest
             sleep 600
             while (osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Marble:6.0:PUBLISH/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
