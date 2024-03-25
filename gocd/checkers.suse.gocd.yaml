@@ -62,7 +62,7 @@ pipelines:
             - repo-checker
             tasks:
             - script: ./project-installcheck.py -A https://api.suse.de --debug check --store SUSE:SLE-15-SP6:GA:Staging/dashboard --no-rebuild SUSE:SLE-15-SP6:GA
-  SLE-Micro.Project:
+  SL-Micro.Project:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
@@ -78,7 +78,7 @@ pipelines:
         timeout: 30
         approval: manual
         jobs:
-          SLE-Micro:
+          SL-Micro:
             resources:
             - repo-checker
             tasks:
@@ -135,7 +135,7 @@ pipelines:
                 osc -A https://api.suse.de staging -p SUSE:SLE-15-SP6:GA unselect --cleanup
                 osc -A https://api.suse.de staging -p SUSE:SLE-15-SP6:GA repair --cleanup
                 rm -rf $tempdir
-  SLE-Micro.Staging.Bot.Regular:
+  SL-Micro.Staging.Bot.Regular:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
@@ -190,7 +190,7 @@ pipelines:
             - staging-bot
             tasks:
             - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:SLE-15-SP6:GA
-  SLE-Micro.Staging.Bot.Report:
+  SL-Micro.Staging.Bot.Report:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
     timer:

@@ -2,7 +2,7 @@
 <% stagings = %w(A B) -%>
 format_version: 3
 pipelines:
-  SLE-Micro.Stagings.RelPkgs:
+  SL-Micro.Stagings.RelPkgs:
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
     group: MicroOS
@@ -18,7 +18,7 @@ pipelines:
         approval: manual
         jobs:
 <% stagings.each do |letter| -%>
-          SLE-Micro.Staging.<%= letter %>:
+          SL-Micro.Staging.<%= letter %>:
             resources:
               - repo-checker
             tasks:
@@ -27,7 +27,7 @@ pipelines:
                   --only-release-packages --force
 <% end -%>
 <% stagings.each do |letter| %>
-  SLE-Micro.Staging.<%= letter %>:
+  SL-Micro.Staging.<%= letter %>:
     environment_variables:
       STAGING_PROJECT: SUSE:ALP:Products:Marble:6.0:Staging:<%= letter %>
       STAGING_API: https://api.suse.de
