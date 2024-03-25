@@ -1,7 +1,7 @@
 ---
 format_version: 3
 pipelines:
-  SLE-Micro.Stagings.RelPkgs:
+  SL-Micro.Stagings.RelPkgs:
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
     group: MicroOS
@@ -16,14 +16,14 @@ pipelines:
     - Generate.Release.Package:
         approval: manual
         jobs:
-          SLE-Micro.Staging.A:
+          SL-Micro.Staging.A:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                   --staging SUSE:ALP:Products:Marble:6.0:Staging:A
                   --only-release-packages --force
-          SLE-Micro.Staging.B:
+          SL-Micro.Staging.B:
             resources:
               - repo-checker
             tasks:
@@ -31,7 +31,7 @@ pipelines:
                   --staging SUSE:ALP:Products:Marble:6.0:Staging:B
                   --only-release-packages --force
 
-  SLE-Micro.Staging.A:
+  SL-Micro.Staging.A:
     environment_variables:
       STAGING_PROJECT: SUSE:ALP:Products:Marble:6.0:Staging:A
       STAGING_API: https://api.suse.de
@@ -92,7 +92,7 @@ pipelines:
           - script: |-
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
 
-  SLE-Micro.Staging.B:
+  SL-Micro.Staging.B:
     environment_variables:
       STAGING_PROJECT: SUSE:ALP:Products:Marble:6.0:Staging:B
       STAGING_API: https://api.suse.de

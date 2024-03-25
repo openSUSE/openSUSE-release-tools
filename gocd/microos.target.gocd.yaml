@@ -1,6 +1,6 @@
 format_version: 3
 pipelines:
-  SLE-Micro.Images:
+  SL-Micro.Images:
     group: MicroOS
     lock_behavior: unlockWhenFinished
     materials:
@@ -38,7 +38,7 @@ pipelines:
         tasks:
         - script: |-
             set -e
-            for product in 000product SLE-Micro; do
+            for product in 000product SL-Micro; do
               osc -A https://api.suse.de release SUSE:ALP:Products:Marble:6.0 $product
             done
             sleep 600
