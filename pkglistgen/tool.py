@@ -615,7 +615,6 @@ class PkgListGen(ToolBase.ToolBase):
         self._collect_unsorted_packages(modules, self.groups.get('unsorted'))
         if not self.skip_productcompose:
             self.write_productcompose()
-        return self.write_all_groups()
 
     def strip_medium_from_staging(self, path):
         # staging projects don't need source and debug medium - and the glibc source
@@ -637,7 +636,7 @@ class PkgListGen(ToolBase.ToolBase):
         if self.dry_run:
             package = Package(path)
             for i in package.get_diff():
-                logging.info(''.join(i))
+                logging.info(''.join([d.decode('ascii') for d in i]))
         else:
             # No proper API function to perform the same operation.
             logging.debug(subprocess.check_output(
@@ -689,11 +688,11 @@ class PkgListGen(ToolBase.ToolBase):
         drop_list = []
         checkout_list = [group, product, release]
         if not force:
-          root = ET.fromstringlist(show_results_meta(api.apiurl, project, product,
-                                                     repository=[main_repo], multibuild=True))
-          if len(root.xpath('result[@state="building"]')) or len(root.xpath('result[@state="dirty"]')):
-              logging.info('{}/{} build in progress'.format(project, product))
-              return
+            root = ET.fromstringlist(show_results_meta(api.apiurl, project, product,
+                                                       repository=[main_repo], multibuild=True))
+            if len(root.xpath('result[@state="building"]')) or len(root.xpath('result[@state="dirty"]')):
+                logging.info('{}/{} build in progress'.format(project, product))
+                return
         if git_url:
             if os.path.exists(cache_dir + "/.git"):
                 # reset and update existing clone
@@ -749,15 +748,26 @@ class PkgListGen(ToolBase.ToolBase):
                 checkout_package(api.apiurl, project, package, expand_link=True,
                                  prj_dir=cache_dir, outdir=os.path.join(cache_dir, package))
 
-        file_utils.unlink_all_except(release_dir, ['weakremovers.inc', '*.changes'])
+        if not os.path.isdir(product_dir):
+            # otherwise just unset product_dir to skip all product-builder actions
+            product_dir = None
+            self.output_dir = self.productcompose_dir
+
         if not only_release_packages:
             file_utils.unlink_all_except(product_dir)
+
         ignore_list = ['supportstatus.txt', 'summary-staging.txt', 'package-groups.changes',
                        'default.productcompose.in']
         ignore_list += self.group_input_files()
-        file_utils.copy_directory_contents(group_dir, product_dir, ignore_list)
-        file_utils.change_extension(product_dir, '.spec.in', '.spec')
-        file_utils.change_extension(product_dir, '.product.in', '.product')
+
+        # old product-builder
+        if product_dir:
+            file_utils.copy_directory_contents(group_dir, product_dir, ignore_list)
+            file_utils.change_extension(product_dir, '.spec.in', '.spec')
+            file_utils.change_extension(product_dir, '.product.in', '.product')
+            file_utils.unlink_all_except(release_dir, ['weakremovers.inc', '*.changes'])
+
+        # new product-composer
         fn = os.path.join(group_dir, 'default.productcompose.in')
         if os.path.isfile(fn):
             if not os.path.isdir(self.productcompose_dir):
@@ -795,6 +805,8 @@ class PkgListGen(ToolBase.ToolBase):
                 locale=target_config.get('pkglistgen-locale'),
                 locales_from=target_config.get('pkglistgen-locales-from')
             )
+            if product_dir:
+                self.write_all_groups()
 
         if stop_after_solve:
             return
@@ -807,71 +819,73 @@ class PkgListGen(ToolBase.ToolBase):
                 logging.error("Failed to create weakremovers.inc due to mismatch in repos - project most likey started building again.")
                 return
 
-        delete_products = target_config.get('pkglistgen-delete-products', '').split(' ')
-        file_utils.unlink_list(product_dir, delete_products)
+        if product_dir:
+            delete_products = target_config.get('pkglistgen-delete-products', '').split(' ')
+            file_utils.unlink_list(product_dir, delete_products)
 
-        logging.debug('-> product service')
-        product_version = attribute_value_load(api.apiurl, project, 'ProductVersion')
-        if not product_version:
-            # for stagings the product version doesn't matter (I hope)
-            product_version = '1'
-        for product_file in glob.glob(os.path.join(product_dir, '*.product')):
-            self.replace_product_version(product_file, product_version)
-            logging.debug(subprocess.check_output(
-                [PRODUCT_SERVICE, product_file, product_dir, project], encoding='utf-8'))
+            logging.debug('-> product service')
+            product_version = attribute_value_load(api.apiurl, project, 'ProductVersion')
+            if not product_version:
+                # for stagings the product version doesn't matter (I hope)
+                product_version = '1'
+            for product_file in glob.glob(os.path.join(product_dir, '*.product')):
+                self.replace_product_version(product_file, product_version)
+                logging.debug(subprocess.check_output(
+                    [PRODUCT_SERVICE, product_file, product_dir, project], encoding='utf-8'))
 
-        for delete_kiwi in target_config.get('pkglistgen-delete-kiwis-{}'.format(scope), '').split(' '):
-            delete_kiwis = glob.glob(os.path.join(product_dir, delete_kiwi))
-            file_utils.unlink_list(product_dir, delete_kiwis)
-        if scope == 'staging':
-            self.strip_medium_from_staging(product_dir)
+            for delete_kiwi in target_config.get('pkglistgen-delete-kiwis-{}'.format(scope), '').split(' '):
+                delete_kiwis = glob.glob(os.path.join(product_dir, delete_kiwi))
+                file_utils.unlink_list(product_dir, delete_kiwis)
+            if scope == 'staging':
+                self.strip_medium_from_staging(product_dir)
 
-        spec_files = glob.glob(os.path.join(product_dir, '*.spec'))
-        file_utils.move_list(spec_files, release_dir)
-        inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
-        # filter special inc file
-        inc_files = filter(lambda file: file.endswith('weakremovers.inc'), inc_files)
-        file_utils.move_list(inc_files, release_dir)
+            spec_files = glob.glob(os.path.join(product_dir, '*.spec'))
+            file_utils.move_list(spec_files, release_dir)
+            inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
+            # filter special inc file
+            inc_files = filter(lambda file: file.endswith('weakremovers.inc'), inc_files)
+            file_utils.move_list(inc_files, release_dir)
 
-        # do not overwrite weakremovers.inc if it exists
-        # we will commit there afterwards if needed
-        if os.path.exists(os.path.join(group_dir, 'weakremovers.inc')) and \
-           not os.path.exists(os.path.join(release_dir, 'weakremovers.inc')):
-            file_utils.move_list([os.path.join(group_dir, 'weakremovers.inc')], release_dir)
+            # do not overwrite weakremovers.inc if it exists
+            # we will commit there afterwards if needed
+            if os.path.exists(os.path.join(group_dir, 'weakremovers.inc')) and \
+               not os.path.exists(os.path.join(release_dir, 'weakremovers.inc')):
+                file_utils.move_list([os.path.join(group_dir, 'weakremovers.inc')], release_dir)
 
-        file_utils.multibuild_from_glob(release_dir, '*.spec')
-        self.build_stub(release_dir, 'spec')
-
-        todo_spec_files = []
-        package = Package(release_dir)
-        if package.get_status(False, ' '):
-            todo_spec_files = glob.glob(os.path.join(release_dir, '*.spec'))
-        for spec_file in todo_spec_files:
-            changes_file = os.path.splitext(spec_file)[0] + '.changes'
-            with open(changes_file, 'w', encoding="utf-8") as f:
-                date = datetime.now(timezone.utc)
-                date = date.strftime("%a %b %d %H:%M:%S %Z %Y")
-                f.write(
-                    "-------------------------------------------------------------------\n"
-                    + date + " - openSUSE <packaging@lists.opensuse.org>\n\n"
-                    "- automatically generated by openSUSE-release-tools/pkglistgen\n\n"
-                )
+            file_utils.multibuild_from_glob(release_dir, '*.spec')
+            self.build_stub(release_dir, 'spec')
 
         if git_url:
             logging.debug(subprocess.check_output(
                 'git add *.spec', cwd=release_dir, shell=True, encoding='utf-8'))
-        else:
+        elif product_dir:
+            todo_spec_files = []
+            package = Package(release_dir)
+            if package.get_status(False, ' '):
+                todo_spec_files = glob.glob(os.path.join(release_dir, '*.spec'))
+            for spec_file in todo_spec_files:
+                changes_file = os.path.splitext(spec_file)[0] + '.changes'
+                with open(changes_file, 'w', encoding="utf-8") as f:
+                    date = datetime.now(timezone.utc)
+                    date = date.strftime("%a %b %d %H:%M:%S %Z %Y")
+                    f.write(
+                        "-------------------------------------------------------------------\n"
+                        + date + " - openSUSE <packaging@lists.opensuse.org>\n\n"
+                        "- automatically generated by openSUSE-release-tools/pkglistgen\n\n"
+                    )
+
             self.commit_package(release_dir)
 
         if only_release_packages:
             return
 
-        file_utils.multibuild_from_glob(product_dir, '*.kiwi')
-        self.build_stub(product_dir, 'kiwi')
+        if product_dir:
+            file_utils.multibuild_from_glob(product_dir, '*.kiwi')
+            self.build_stub(product_dir, 'kiwi')
 
         reference_summary = os.path.join(group_dir, f'summary-{scope}.txt')
         if os.path.isfile(reference_summary):
-            summary_file = os.path.join(product_dir, f'summary-{scope}.txt')
+            summary_file = os.path.join(self.output_dir, f'summary-{scope}.txt')
             output = []
             for group in summary:
                 for package in sorted(summary[group]):
@@ -884,7 +898,11 @@ class PkgListGen(ToolBase.ToolBase):
         if git_url:
             if product_dir and os.path.isdir(product_dir):
                 logging.debug(subprocess.check_output(
-                    ['git', 'add', productcompose_dir, product_dir],
+                    ['git', 'add', product_dir],
+                    cwd=cache_dir, encoding='utf-8'))
+            if os.path.isdir(self.productcompose_dir):
+                logging.debug(subprocess.check_output(
+                    ['git', 'add', self.productcompose_dir],
                     cwd=cache_dir, encoding='utf-8'))
 
             logging.debug(subprocess.check_output(
