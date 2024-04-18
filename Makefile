@@ -24,8 +24,7 @@ install:
 	ln -s $(pkgdatadir)/metrics/access/aggregate.php $(DESTDIR)$(bindir)/osrt-metrics-access-aggregate
 	ln -s $(pkgdatadir)/metrics/access/ingest.php $(DESTDIR)$(bindir)/osrt-metrics-access-ingest
 	cp -R config/* $(DESTDIR)$(sysconfdir)/$(package_name)
-	rm $(DESTDIR)$(sysconfdir)/$(package_name)/logrotate
-	install -Dpm0644 config/logrotate $(DESTDIR)$(sysconfdir)/logrotate.d/$(package_name)
+	install -Dpm0644 slsa/logrotate $(DESTDIR)$(sysconfdir)/logrotate.d/$(package_name)
 	for dir in dashboards datasources ; do ln -s $(pkgdatadir)/metrics/grafana/provisioning/$$dir.yaml \
 	  $(DESTDIR)$(grafana_provisioning_dir)/$$dir/$(package_name).yaml ; done
 	sed -i "s|OSRT_DATA_DIR|$(pkgdatadir)|" \
