@@ -599,7 +599,7 @@ class StagingAPI(object):
 
         ignored_requests = self.get_ignored_requests()
         for rq in root.findall('request'):
-            if not rq.get('id') in ignored_requests:
+            if rq.get('id') not in ignored_requests:
                 requests.append(rq)
         return requests
 

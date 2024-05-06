@@ -102,7 +102,7 @@ def _fileconflicts(pfile, arch, target_packages, whitelist):
             sp1 = conflict['between'][0]
             sp2 = conflict['between'][1]
 
-            if not sp1[0] in target_packages and not sp2[0] in target_packages:
+            if sp1[0] not in target_packages and sp2[0] not in target_packages:
                 continue
 
             if _check_conflicts_whitelist(sp1, sp2, whitelist):
