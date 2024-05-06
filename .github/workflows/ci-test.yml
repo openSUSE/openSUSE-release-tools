@@ -34,9 +34,10 @@ jobs:
         CI_NODE_INDEX: ${{ matrix.ci_node_index }}
 
     - name: Submit coverage report to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         fail_ci_if_error: true
+        token: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Stop containers
       if: always()
