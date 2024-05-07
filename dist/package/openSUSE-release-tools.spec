@@ -319,12 +319,18 @@ OSC plugin for the staging workflow, see `osc staging --help`.
 
 %build
 %make_build
+%sysusers_generate_pre slsa/osrt-slsa-user.conf %{name} %{name}.conf
 
 %install
 %make_install \
   grafana_provisioning_dir="%{_sysconfdir}/grafana/provisioning" \
   oscplugindir="%{osc_plugin_dir}" \
   VERSION="%{version}"
+
+install -Dpm0644 slsa/osrt-slsa-user.conf %{buildroot}%{_sysusersdir}/%{name}.conf
+
+%pre -f %{name}.pre
+%service_add_pre %{name}.service
 
 %pre announcer
 getent passwd osrt-announcer > /dev/null || \
@@ -370,9 +376,6 @@ exit 0
 
 %pre slsa-build-service
 %service_add_pre %{services}
-getent passwd osrt-slsa > /dev/null || \
-  useradd -r -d /var/lib/osrt-slsa -s /sbin/nologin -c "user for openSUSE-release-tools-slsa-build-service" osrt-slsa
-exit 0
 
 %post slsa-build-service
 %service_add_post %{services}
@@ -469,6 +472,7 @@ exit 0
 %{_datadir}/%{source_dir}/verify-build-and-generatelists
 %{_datadir}/%{source_dir}/verify-repo-built-successful.py
 %{_sysconfdir}/openSUSE-release-tools/ibsapi
+%{_sysusersdir}/%{name}.conf
 %{_unitdir}/osrt-pkglistgen@.service
 %{_unitdir}/osrt-pkglistgen@.timer
 %{_unitdir}/osrt-relpkggen@.service
