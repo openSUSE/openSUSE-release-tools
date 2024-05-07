@@ -43,7 +43,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         return update_project(conf.config['apiurl'], project, opts.fixate)
 
     @cmdln.option('-f', '--force', action='store_true', help='continue even if build is in progress')
+    @cmdln.option('-d', '--dry', help='no modifications uploaded')
     @cmdln.option('-p', '--project', help='target project')
+    @cmdln.option('-g', '--git-url', help='git repository for target project')
     @cmdln.option('-s', '--scope', help='scope on which to operate ({}, staging:$letter)'.format(', '.join(SCOPES)))
     @cmdln.option('--no-checkout', action='store_true', help='reuse checkout in cache')
     @cmdln.option('--stop-after-solve', action='store_true', help='only create group files')
@@ -92,13 +94,13 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 self.tool.reset()
                 self.tool.dry_run = self.options.dry
                 return self.tool.update_and_solve_target(api, target_project, target_config, main_repo,
-                                                         project=project, scope=scope, force=opts.force,
-                                                         no_checkout=opts.no_checkout,
+                                                         git_url=opts.git_url, project=project, scope=scope,
+                                                         force=opts.force, no_checkout=opts.no_checkout,
                                                          only_release_packages=opts.only_release_packages,
                                                          stop_after_solve=opts.stop_after_solve,
                                                          custom_cache_tag=opts.custom_cache_tag)
             except MismatchedRepoException:
-                logging.error("Failed to create weakremovers.inc due to mismatch in repos - project most likey started building again.")
+                logging.error("Failed to create weakremovers.inc due to mismatch in repos - project most likey started building again!")
                 # for stagings we have to be strict on the exit value
                 if scope == 'staging':
                     return 1

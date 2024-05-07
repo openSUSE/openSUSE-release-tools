@@ -15,6 +15,7 @@ class Group(object):
         self.pkglist = pkglist
         self.architectures = pkglist.all_architectures
         self.conditional = None
+        self.flavors = dict()
         self.packages = dict()
         self.locked = set()
         self.solved_packages = None
@@ -311,6 +312,41 @@ class Group(object):
 
     def filter_already_selected(self, modules):
         self._filter_already_selected(modules, self.recommends)
+
+    def tocompose(self, prefix, arch, ignore_broken=False, comment=None):
+        packages = self.solved_packages.get(arch, dict())
+
+        name = self.name
+
+        missing = dict()
+        if arch == '*':
+            missing = self.not_found
+
+        content = ''
+
+        unresolvable = self.unresolvable.get(arch, dict())
+        for name in sorted(list(packages) + list(missing) + list(unresolvable)):
+            if name in self.silents:
+                continue
+            if name in missing:
+                if ignore_broken and name not in self.required:
+                    msg = ' {} not found on {}'.format(name, ','.join(sorted(missing[name])))
+                    content += prefix + "#- " + msg + "\n"
+                    self.logger.error(msg)
+                continue
+            if name in unresolvable:
+                if ignore_broken and name not in self.required:
+                    msg = ' {} uninstallable: {}'.format(name, unresolvable[name])
+                    content += prefix + "#- " + msg + "\n"
+                    self.logger.error(msg)
+                continue
+            content += prefix + "- " + name
+            if comment:
+                content += " # " + comment
+            content += "\n"
+
+        content += "\n"
+        return content
 
     def toxml(self, arch, ignore_broken=False, comment=None):
         packages = self.solved_packages.get(arch, dict())
