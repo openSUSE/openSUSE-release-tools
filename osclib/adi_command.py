@@ -40,12 +40,12 @@ class AdiCommand:
                     review.get('request')))
                 return
             for check in info.findall('missing_checks/check'):
-                print(query_project + ' ' + Fore.MAGENTA + 'missing: {}'.format(check.get('name')))
+                print(query_project + ' ' + Fore.MAGENTA + f"missing: {check.get('name')}")
                 return
             for check in info.findall('checks/check'):
                 state = check.find('state').text
                 if state != 'success':
-                    print(query_project + '{} {} check: {}'.format(Fore.MAGENTA, state, check.get('name')))
+                    print(query_project + f"{Fore.MAGENTA} {state} check: {check.get('name')}")
                     return
 
         overall_state = info.get('state')
@@ -59,7 +59,7 @@ class AdiCommand:
 
         ready = []
         for req in info.findall('staged_requests/request'):
-            ready.append('{}[{}]'.format(Fore.CYAN + req.get('package') + Fore.RESET, req.get('id')))
+            ready.append(f"{Fore.CYAN + req.get('package') + Fore.RESET}[{req.get('id')}]")
         if len(ready):
             print(query_project, Fore.GREEN + 'ready:', ', '.join(ready))
 
@@ -98,7 +98,7 @@ class AdiCommand:
                 request_id = int(request.get('id'))
                 target = request.find('./action/target')
                 target_package = target.get('package')
-                line = '- {} {}{:<30}{}'.format(request_id, Fore.CYAN, target_package, Fore.RESET)
+                line = f'- {request_id} {Fore.CYAN}{target_package:<30}{Fore.RESET}'
 
                 message = self.api.ignore_format(request_id)
                 if message:
@@ -108,7 +108,7 @@ class AdiCommand:
                 # Auto-superseding request in adi command
                 stage_info, code = self.api.update_superseded_request(request)
                 if stage_info:
-                    print(line + ' ({})'.format(SupersedeCommand.CODE_MAP[code]))
+                    print(line + f' ({SupersedeCommand.CODE_MAP[code]})')
                     continue
 
                 # Only create staging projec the first time a non superseded
@@ -120,7 +120,7 @@ class AdiCommand:
                 if not self.api.rq_to_prj(request_id, name):
                     return False
 
-                print(line + Fore.GREEN + ' (staged in {})'.format(name) + Fore.RESET)
+                print(line + Fore.GREEN + f' (staged in {name})' + Fore.RESET)
 
     def perform(self, packages, move=False, split=False):
         """

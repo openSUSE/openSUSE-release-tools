@@ -30,7 +30,7 @@ for arg in args:
     elif re.search(r'packages', arg):
         repo.add_susetags(argf, 0, None)
     else:
-        print("%s: unknown repo type" % (arg))
+        print(f"{arg}: unknown repo type")
         sys.exit(1)
 
 # we only want self-provides
@@ -59,4 +59,4 @@ for p in firstrepo.solvables:
             src = p.lookup_str(solv.SOLVABLE_SOURCENAME)
         if src is None:
             src = "?"
-        print("%s: %s is older than %s from %s" % (src, p, pp, pp.repo))
+        print(f"{src}: {p} is older than {pp} from {pp.repo}")

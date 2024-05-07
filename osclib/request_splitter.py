@@ -47,7 +47,7 @@ class RequestSplitter(object):
     def strategy_set(self, name, **kwargs):
         self.reset()
 
-        class_name = 'Strategy{}'.format(name.lower().title())
+        class_name = f'Strategy{name.lower().title()}'
         cls = globals()[class_name]
         self.strategy = cls(**kwargs)
         self.strategy.apply(self)
@@ -276,7 +276,7 @@ class RequestSplitter(object):
 
     def requests_assign(self, group, staging, merge=False):
         # Arbitrary, but descriptive group key for proposal.
-        key = '{}#{}@{}'.format(len(self.proposal), self.strategy.key, group)
+        key = f'{len(self.proposal)}#{self.strategy.key}@{group}'
         self.proposal[key] = {
             'bootstrap_required': self.grouped[group]['bootstrap_required'],
             'group': group,

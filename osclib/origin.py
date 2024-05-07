@@ -208,7 +208,7 @@ def config_resolve_variables(config, config_project):
 
 
 def config_resolve_variable(value, config_project, key='config'):
-    prefix = '<{}:'.format(key)
+    prefix = f'<{key}:'
     end = value.rfind('>')
     if not value.startswith(prefix) or end == -1:
         return value
@@ -488,7 +488,7 @@ def policy_get_preprocess(apiurl, origin, policy):
     project = origin.rstrip('~')
     config_project = Config.get(apiurl, project)
     for suffix in ('', '_update'):
-        key = 'pending_submission_allowed_reviews{}'.format(suffix)
+        key = f'pending_submission_allowed_reviews{suffix}'
         policy[key] = list(filter(None, [
             config_resolve_variable(v, config_project, 'config_source')
             for v in policy[key]]))
@@ -573,7 +573,7 @@ def policy_input_evaluate(policy, inputs) -> PolicyResult:
                     result.reviews['fallback'] = 'Changing to a higher priority origin, but from another family.'
                 elif inputs['direction'] != 'forward':
                     result.reviews['fallback'] = \
-                        'Changing to a higher priority origin, but {} direction.'.format(inputs['direction'])
+                        f"Changing to a higher priority origin, but {inputs['direction']} direction."
             else:
                 result.reviews['fallback'] = 'Changing to a lower priority origin.'
         else:
@@ -584,7 +584,7 @@ def policy_input_evaluate(policy, inputs) -> PolicyResult:
                 if not policy['automatic_updates']:
                     result.reviews['fallback'] = 'Forward direction, but automatic updates not allowed.'
             else:
-                result.reviews['fallback'] = '{} direction.'.format(inputs['direction'])
+                result.reviews['fallback'] = f"{inputs['direction']} direction."
 
     if inputs['pending_submission'] is not False:
         reviews_not_allowed = policy_input_evaluate_reviews_not_allowed(policy, inputs)
@@ -822,7 +822,7 @@ def origin_update_pending(apiurl, origin_project, package, target_project, polic
             continue
 
         identifier = request_remote_identifier(apiurl, apiurl_remote, request.reqid)
-        message = 'Newer pending source available from package origin. See {}.'.format(identifier)
+        message = f'Newer pending source available from package origin. See {identifier}.'
         src_project = project_remote_prefixed(apiurl, apiurl_remote, action.src_project)
         return request_create_submit(apiurl, src_project, action.src_package,
                                      target_project, package, message=message, revision=action.src_rev,
@@ -834,7 +834,7 @@ def origin_update_pending(apiurl, origin_project, package, target_project, polic
 def origin_update_mode(apiurl, target_project, package, policy, origin_project):
     values = {}
     for key in ('skip', 'supersede', 'delay', 'frequency'):
-        attribute = 'OriginUpdate{}'.format(key.capitalize())
+        attribute = f'OriginUpdate{key.capitalize()}'
         for project in (origin_project, target_project):
             for package_attribute in (package, None):
                 value = attribute_value_load(apiurl, project, attribute, package=package_attribute)

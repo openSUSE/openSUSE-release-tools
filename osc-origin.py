@@ -75,7 +75,7 @@ def do_origin(self, subcmd, opts, *args):
     command = args[0]
     if command not in ['config', 'cron', 'history', 'list', 'package', 'potentials',
                        'projects', 'report', 'update']:
-        raise oscerr.WrongArgs('Unknown command: {}'.format(command))
+        raise oscerr.WrongArgs(f'Unknown command: {command}')
     if command == 'package' and len(args) < 2:
         raise oscerr.WrongArgs('A package must be indicated.')
 
@@ -93,9 +93,9 @@ def do_origin(self, subcmd, opts, *args):
             raise oscerr.WrongArgs('A project must be indicated.')
         config = config_load(apiurl, opts.project)
         if not config:
-            raise oscerr.WrongArgs('OSRT:OriginConfig attribute missing from {}'.format(opts.project))
+            raise oscerr.WrongArgs(f'OSRT:OriginConfig attribute missing from {opts.project}')
 
-    function = 'osrt_origin_{}'.format(command)
+    function = f'osrt_origin_{command}'
     globals()[function](apiurl, opts, *args[1:])
 
 
@@ -118,12 +118,12 @@ def osrt_origin_cron(apiurl, opts, *args):
             if os.path.exists(lookup_path):
                 # Update the last accessed time to avoid cache manager culling.
                 os.utime(lookup_path, (time.time(), os.stat(lookup_path).st_mtime))
-                print('{}<locked> lookup preserved'.format(project))
+                print(f'{project}<locked> lookup preserved')
                 continue
 
         # Force update lookup information.
         lookup = osrt_origin_lookup(apiurl, project, force_refresh=True, quiet=True)
-        print('{} lookup updated for {} package(s)'.format(project, len(lookup)))
+        print(f'{project} lookup updated for {len(lookup)} package(s)')
 
 
 def osrt_origin_dump(format, data):
@@ -133,7 +133,7 @@ def osrt_origin_dump(format, data):
         print(yaml.dump(data))
     else:
         if format != 'plain':
-            print('unknown format: {}'.format(format), file=sys.stderr)
+            print(f'unknown format: {format}', file=sys.stderr)
         return False
     return True
 
@@ -203,7 +203,7 @@ def osrt_origin_lookup(apiurl, project, force_refresh=False, previous=False, qui
 
     if not previous and not quiet:
         dt = timedelta(seconds=time.time() - os.stat(lookup_path).st_mtime)
-        print('# generated {} ago'.format(dt), file=sys.stderr)
+        print(f'# generated {dt} ago', file=sys.stderr)
 
     return lookup
 
@@ -353,7 +353,7 @@ def osrt_origin_report(apiurl, opts, *args):
     print(body)
 
     if opts.mail:
-        mail_send(apiurl, opts.project, 'release-list', '{} origin report'.format(opts.project),
+        mail_send(apiurl, opts.project, 'release-list', f'{opts.project} origin report',
                   body, None, dry=opts.dry)
 
 
@@ -369,7 +369,7 @@ def osrt_origin_update(apiurl, opts, *packages):
         packages = osrt_origin_update_packages(apiurl, opts.project)
 
     for package in packages:
-        print('checking for updates to {}/{}...'.format(opts.project, package))
+        print(f'checking for updates to {opts.project}/{package}...')
 
         request_future = origin_update(apiurl, opts.project, package)
         if request_future:

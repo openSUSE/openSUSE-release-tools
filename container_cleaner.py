@@ -68,11 +68,11 @@ class ContainerCleaner(ToolBase.ToolBase):
                 if len(bins) > 0:
                     match = regex_srccontainer.match(buildcontainer)
                     if not match:
-                        raise Exception("Could not map %s to source container" % buildcontainer)
+                        raise Exception(f"Could not map {buildcontainer} to source container")
 
                     srccontainer = match.group(1)
                     if srccontainer not in srccontainers:
-                        raise Exception("Mapped %s to wrong source container (%s)" % (buildcontainer, srccontainer))
+                        raise Exception(f"Mapped {buildcontainer} to wrong source container ({srccontainer})")
 
                     if srccontainer not in srccontainerarchs:
                         srccontainerarchs[srccontainer] = []

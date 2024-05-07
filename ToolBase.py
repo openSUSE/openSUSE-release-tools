@@ -51,7 +51,7 @@ class ToolBase(object):
             return http_GET(url)
         except HTTPError as e:
             if 500 <= e.code <= 599:
-                print('Retrying {}'.format(url))
+                print(f'Retrying {url}')
                 time.sleep(1)
                 return self.retried_GET(url)
             logging.error('%s: %s', e, url)
@@ -60,7 +60,7 @@ class ToolBase(object):
             logging.error('%s: "%s - %s" %s', e, e.reason, type(e.reason), url)
             # connection timeout
             if isinstance(e.reason, TimeoutError):
-                print('Retrying {}'.format(url))
+                print(f'Retrying {url}')
                 time.sleep(1)
                 return self.retried_GET(url)
             raise e
@@ -202,7 +202,7 @@ class CommandLineInterface(cmdln.Cmdln):
                 except ExTimeout:
                     pass
                 signal.alarm(0)
-                logger.info("recheck at %s" % datetime.datetime.now().isoformat())
+                logger.info(f"recheck at {datetime.datetime.now().isoformat()}")
                 continue
             break
 

@@ -35,7 +35,7 @@ class CleanupRings(object):
 
     def perform(self):
         for index, ring in enumerate(self.api.rings):
-            print('# {}'.format(ring))
+            print(f'# {ring}')
             ring_next = self.api.rings[index + 1] if index + 1 < len(self.api.rings) else None
             self.check_depinfo_ring(ring, ring_next)
 
@@ -53,31 +53,31 @@ class CleanupRings(object):
             links = si.findall('linked')
             pkg = si.get('package')
             if links is None or len(links) == 0:
-                print('# {} not a link'.format(pkg))
+                print(f'# {pkg} not a link')
             else:
                 linked = links[0]
                 dprj = linked.get('project')
                 dpkg = linked.get('package')
                 if dprj != self.api.project:
                     if not dprj.startswith(self.api.crings):
-                        print("#{} not linking to base {} but {}".format(pkg, self.api.project, dprj))
+                        print(f"#{pkg} not linking to base {self.api.project} but {dprj}")
                     self.links[pkg] = dpkg
                 # multi spec package must link to ring
                 elif len(links) > 1:
                     mainpkg = links[1].get('package')
                     mainprj = links[1].get('project')
                     if mainprj != self.api.project:
-                        print('# FIXME: {} links to {}'.format(pkg, mainprj))
+                        print(f'# FIXME: {pkg} links to {mainprj}')
                     else:
                         destring = None
                         if mainpkg in self.api.ring_packages:
                             destring = self.api.ring_packages[mainpkg]
                         if not destring:
-                            print('# {} links to {} but is not in a ring'.format(pkg, mainpkg))
-                            print("osc linkpac {}/{} {}/{}".format(mainprj, mainpkg, prj, mainpkg))
+                            print(f'# {pkg} links to {mainpkg} but is not in a ring')
+                            print(f"osc linkpac {mainprj}/{mainpkg} {prj}/{mainpkg}")
                         else:
                             if pkg != 'glibc.i686':  # FIXME: ugly exception
-                                print("osc linkpac -f {}/{} {}/{}".format(destring, mainpkg, prj, pkg))
+                                print(f"osc linkpac -f {destring}/{mainpkg} {prj}/{pkg}")
                                 self.links[pkg] = mainpkg
 
     def fill_pkginfo(self, prj, repo, arch):
@@ -94,7 +94,7 @@ class CleanupRings(object):
                     if self.bin2src[subpkg] == name:
                         # different archs
                         continue
-                    print('# Binary {} is defined twice: {} {}+{}'.format(subpkg, prj, name, self.bin2src[subpkg]))
+                    print(f'# Binary {subpkg} is defined twice: {prj} {name}+{self.bin2src[subpkg]}')
                 self.bin2src[subpkg] = name
 
     def repo_state_acceptable(self, project):
@@ -103,7 +103,7 @@ class CleanupRings(object):
         for repo in root.findall('result'):
             repostate = repo.get('state', 'missing')
             if repostate not in ['unpublished', 'published'] or repo.get('dirty', 'false') == 'true':
-                print('Repo {}/{} is in state {}'.format(repo.get('project'), repo.get('repository'), repostate))
+                print(f"Repo {repo.get('project')}/{repo.get('repository')} is in state {repostate}")
                 return False
             for package in repo.findall('status'):
                 code = package.get('code')
@@ -121,16 +121,16 @@ class CleanupRings(object):
             url = makeurl(self.api.apiurl, ['build', project, 'images', arch, dvd, '_buildinfo'])
             root = ET.parse(http_GET(url)).getroot()
             # Don't delete the image itself
-            self.pkgdeps[dvd.split(':')[0]] = 'MYdvd{}'.format(self.api.rings.index(project))
+            self.pkgdeps[dvd.split(':')[0]] = f'MYdvd{self.api.rings.index(project)}'
             for bdep in root.findall('bdep'):
                 if 'name' not in bdep.attrib:
                     continue
                 b = bdep.attrib['name']
                 if b not in self.bin2src:
-                    print("{} not found in bin2src".format(b))
+                    print(f"{b} not found in bin2src")
                     continue
                 b = self.bin2src[b]
-                self.pkgdeps[b] = 'MYdvd{}'.format(self.api.rings.index(project))
+                self.pkgdeps[b] = f'MYdvd{self.api.rings.index(project)}'
 
     def check_buildconfig(self, project):
         url = makeurl(self.api.apiurl, ['build', project, 'standard', '_buildconfig'])
@@ -260,6 +260,6 @@ class CleanupRings(object):
                 if ":" in source:
                     self.commands.append(f"# Multibuild flavor {source} not needed")
                 else:
-                    self.commands.append('osc rdelete -m cleanup {} {}'.format(prj, source))
+                    self.commands.append(f'osc rdelete -m cleanup {prj} {source}')
                     if nextprj:
-                        self.commands.append('osc linkpac {} {} {}'.format(self.api.project, source, nextprj))
+                        self.commands.append(f'osc linkpac {self.api.project} {source} {nextprj}')

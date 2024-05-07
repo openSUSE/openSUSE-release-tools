@@ -121,9 +121,9 @@ class ReviewBot(object):
         self.request_default_return = None
         self.comment_handler = False
         self.override_allow = True
-        self.override_group_key = '{}-override-group'.format(self.bot_name.lower())
+        self.override_group_key = f'{self.bot_name.lower()}-override-group'
         self.request_age_min_default = 0
-        self.request_age_min_key = '{}-request-age-min'.format(self.bot_name.lower())
+        self.request_age_min_key = f'{self.bot_name.lower()}-request-age-min'
         self.lookup = PackageLookup(self.apiurl)
 
         self.load_config()
@@ -147,7 +147,7 @@ class ReviewBot(object):
             return True
         except HTTPError as e:
             if e.code != 404:
-                self.logger.error('ERROR in URL %s [%s]' % (url, e))
+                self.logger.error(f'ERROR in URL {url} [{e}]')
                 raise
         return False
 
@@ -172,7 +172,7 @@ class ReviewBot(object):
     def review_mode(self, value: Union[ReviewChoices, str]) -> None:
         val = ReviewChoices(value)
         if val not in self.REVIEW_CHOICES:
-            raise ValueError("invalid review option: %s" % val)
+            raise ValueError(f"invalid review option: {val}")
         self._review_mode = val
 
     def set_request_ids(self, ids):
@@ -196,7 +196,7 @@ class ReviewBot(object):
         return_value = 0
 
         for req in self.requests:
-            self.logger.info("checking %s" % req.reqid)
+            self.logger.info(f"checking {req.reqid}")
             self.request = req
 
             # XXX: this is a hack. Annotating the request with staging_project.
@@ -225,7 +225,7 @@ class ReviewBot(object):
                 good = True
 
             if good is None:
-                self.logger.info("%s ignored" % req.reqid)
+                self.logger.info(f"{req.reqid} ignored")
             elif good:
                 self._set_review(req, 'accepted')
             elif self.review_mode != ReviewChoices.ACCEPT_ONPASS:
@@ -256,7 +256,7 @@ class ReviewBot(object):
             return None
 
         for args, who in self.request_commands('override'):
-            message = 'overridden by {}'.format(who)
+            message = f'overridden by {who}'
             override = args[1] if len(args) >= 2 else 'accept'
             if override == 'accept':
                 self.review_messages['accepted'] = message
@@ -285,7 +285,7 @@ class ReviewBot(object):
     def _set_review(self, req, state):
         doit = self.can_accept_review(req.reqid)
         if doit is None:
-            self.logger.info("can't change state, %s does not have the reviewer" % (req.reqid))
+            self.logger.info(f"can't change state, {req.reqid} does not have the reviewer")
 
         newstate = state
 
@@ -293,11 +293,11 @@ class ReviewBot(object):
         by_group = self.fallback_group
 
         msg = self.review_messages[state] if state in self.review_messages else state
-        self.logger.info("%s %s: %s" % (req.reqid, state, msg))
+        self.logger.info(f"{req.reqid} {state}: {msg}")
 
         if state == 'declined':
             if self.review_mode == ReviewChoices.FALLBACK_ONFAIL:
-                self.logger.info("%s needs fallback reviewer" % req.reqid)
+                self.logger.info(f"{req.reqid} needs fallback reviewer")
                 self.add_review(req, by_group=by_group, by_user=by_user,
                                 msg="Automated review failed. Needs fallback reviewer.")
                 newstate = 'accepted'
@@ -306,9 +306,9 @@ class ReviewBot(object):
 
         if doit:
             if self.dryrun:
-                self.logger.info("(dryrun) would set %s to %s with message %s" % (req.reqid, state, msg))
+                self.logger.info(f"(dryrun) would set {req.reqid} to {state} with message {msg}")
             else:
-                self.logger.debug("setting %s to %s" % (req.reqid, state))
+                self.logger.debug(f"setting {req.reqid} to {state}")
                 try:
                     osc.core.change_review_state(apiurl=self.apiurl,
                                                  reqid=req.reqid, newstate=newstate,
@@ -319,7 +319,7 @@ class ReviewBot(object):
                         raise e
                     self.logger.info('unable to change review state (likely superseded or revoked)')
         else:
-            self.logger.debug("%s review not changed" % (req.reqid))
+            self.logger.debug(f"{req.reqid} review not changed")
 
     def _is_duplicate_review(self, review, query, allow_duplicate):
         if review.by_group != query.get('by_group'):
@@ -363,7 +363,7 @@ class ReviewBot(object):
 
         u = osc.core.makeurl(self.apiurl, ['request', req.reqid], query)
         if self.dryrun:
-            self.logger.info('POST %s' % u)
+            self.logger.info(f'POST {u}')
             return
 
         if self.multiple_actions:
@@ -376,17 +376,17 @@ class ReviewBot(object):
             if e.code != 403:
                 raise e
             del query['cmd']
-            self.logger.info('unable to add review {} with message: {}'.format(query, msg))
+            self.logger.info(f'unable to add review {query} with message: {msg}')
             return
 
         code = ET.parse(r).getroot().attrib['code']
         if code != 'ok':
-            raise Exception('non-ok return code: {}'.format(code))
+            raise Exception(f'non-ok return code: {code}')
 
     def devel_project_review_add(self, request, project, package, message='adding devel project review'):
         devel_project, devel_package = devel_project_fallback(self.apiurl, project, package)
         if not devel_project:
-            self.logger.warning('no devel project found for {}/{}'.format(project, package))
+            self.logger.warning(f'no devel project found for {project}/{package}')
             return False
 
         self.add_review(request, by_project=devel_project, by_package=devel_package, msg=message)
@@ -541,7 +541,7 @@ class ReviewBot(object):
         # to find the real package name
         (linkprj, linkpkg) = self._get_linktarget(a.src_project, pkgname)
         if linkpkg is None or linkprj is None or linkprj != a.tgt_project:
-            self.logger.warning("%s/%s is not a link to %s" % (a.src_project, pkgname, a.tgt_project))
+            self.logger.warning(f"{a.src_project}/{pkgname} is not a link to {a.tgt_project}")
             return self.check_source_submission(a.src_project, a.src_package, a.src_rev, a.tgt_project, a.tgt_package)
         else:
             pkgname = linkpkg
@@ -555,14 +555,14 @@ class ReviewBot(object):
         # comment_write() is called by another bot wrapping __default().
         self.comment_handler_remove()
 
-        message = 'unhandled request type {}'.format(a.type)
+        message = f'unhandled request type {a.type}'
         self.logger.info(message)
         self.review_messages['accepted'] += ': ' + message
         return self.request_default_return
 
     def check_source_submission(self, src_project: str, src_package: str, src_rev: str, target_project: str, target_package: str) -> None:
         """ default implemention does nothing """
-        self.logger.info("%s/%s@%s -> %s/%s" % (src_project, src_package, src_rev, target_project, target_package))
+        self.logger.info(f"{src_project}/{src_package}@{src_rev} -> {target_project}/{target_package}")
         return None
 
     @staticmethod
@@ -637,17 +637,17 @@ class ReviewBot(object):
             if self.review_group and self._has_open_review_by(root, 'by_group', self.review_group):
                 return True
         except HTTPError as e:
-            print('ERROR in URL %s [%s]' % (url, e))
+            print(f'ERROR in URL {url} [{e}]')
         return False
 
     def set_request_ids_search_review(self):
         review = None
         if self.review_user:
-            review = "@by_user='%s' and @state='new'" % self.review_user
+            review = f"@by_user='{self.review_user}' and @state='new'"
         if self.review_group:
-            review = osc.core.xpath_join(review, "@by_group='%s' and @state='new'" % self.review_group)
+            review = osc.core.xpath_join(review, f"@by_group='{self.review_group}' and @state='new'")
         url = osc.core.makeurl(self.apiurl, ('search', 'request'), {
-                               'match': "state/@name='review' and review[%s]" % review, 'withfullhistory': 1})
+                               'match': f"state/@name='review' and review[{review}]", 'withfullhistory': 1})
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
         self.requests = []
@@ -659,7 +659,7 @@ class ReviewBot(object):
 
     # also used by openqabot
     def ids_project(self, project, typename):
-        xpath = "(state/@name='review' or state/@name='new') and (action/target/@project='%s' and action/@type='%s')" % (project, typename)
+        xpath = f"(state/@name='review' or state/@name='new') and (action/target/@project='{project}' and action/@type='{typename}')"
         url = osc.core.makeurl(self.apiurl, ('search', 'request'),
                                {'match': xpath,
                                 'withfullhistory': 1})
@@ -732,7 +732,7 @@ class ReviewBot(object):
 
         if message is None:
             if not len(self.comment_handler.lines):
-                self.logger.debug('skipping empty comment for {}'.format(debug_key))
+                self.logger.debug(f'skipping empty comment for {debug_key}')
                 return
             message = '\n\n'.join(self.comment_handler.lines)
 
@@ -756,21 +756,21 @@ class ReviewBot(object):
 
         if self._is_comment_identical(comment, message, identical):
             # Assume same state/result and number of lines in message is duplicate.
-            self.logger.debug('previous comment too similar on {}'.format(debug_key))
+            self.logger.debug(f'previous comment too similar on {debug_key}')
             return
 
         if comment is None:
-            self.logger.debug('broadening search to include any state on {}'.format(debug_key))
+            self.logger.debug(f'broadening search to include any state on {debug_key}')
             comment, _ = self.comment_api.comment_find(comments, bot_name)
         if comment is not None:
-            self.logger.debug('removing previous comment on {}'.format(debug_key))
+            self.logger.debug(f'removing previous comment on {debug_key}')
             if not self.dryrun:
                 self.comment_api.delete(comment['id'])
         elif only_replace:
-            self.logger.debug('no previous comment to replace on {}'.format(debug_key))
+            self.logger.debug(f'no previous comment to replace on {debug_key}')
             return
 
-        self.logger.debug('adding comment to {}: {}'.format(debug_key, message))
+        self.logger.debug(f'adding comment to {debug_key}: {message}')
         if not self.dryrun:
             self.comment_api.add_comment(comment=message, **kwargs)
 
@@ -787,7 +787,7 @@ class ReviewBot(object):
 
     def _check_matching_srcmd5(self, project, package, rev, history_limit=5):
         """check if factory sources contain the package and revision. check head and history"""
-        self.logger.debug("checking %s in %s" % (package, project))
+        self.logger.debug(f"checking {package} in {project}")
         try:
             osc.core.show_package_meta(self.apiurl, project, package)
         except (HTTPError, URLError):
@@ -816,9 +816,9 @@ class ReviewBot(object):
                 node = revision.find('srcmd5')
                 if node is None:
                     continue
-                self.logger.debug("checking %s" % node.text)
+                self.logger.debug(f"checking {node.text}")
                 if node.text == rev:
-                    self.logger.debug("got it, rev %s" % revision.get('rev'))
+                    self.logger.debug(f"got it, rev {revision.get('rev')}")
                     return True
                 if i == history_limit:
                     break
@@ -995,7 +995,7 @@ class CommandLineInterface(cmdln.Cmdln):
                 except ExTimeout:
                     pass
                 signal.alarm(0)
-                self.logger.info("recheck at %s" % datetime.datetime.now().isoformat())
+                self.logger.info(f"recheck at {datetime.datetime.now().isoformat()}")
             else:
                 self.logger.info("sleeping %d minutes." % interval)
                 time.sleep(interval * 60)

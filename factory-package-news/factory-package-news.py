@@ -87,9 +87,9 @@ class ChangeLogger(cmdln.Cmdln):
                 'kernel-vanilla',
                 'kernel-xen',
             ):
-                srpm = '%s-%s-%s.src.rpm' % ('kernel-source', m.group('version'), m.group('release'))
+                srpm = f"kernel-source-{m.group('version')}-{m.group('release')}.src.rpm"
                 pkgdata[binrpm]['sourcerpm'] = srpm
-                print("%s -> %s" % (utf8str(h['sourcerpm']), srpm))
+                print(f"{utf8str(h['sourcerpm'])} -> {srpm}")
 
             if srpm in changelogs:
                 changelogs[srpm]['packages'].append(binrpm)
@@ -104,7 +104,7 @@ class ChangeLogger(cmdln.Cmdln):
         def _walk_through_iso_image(iso, path="/"):
             file_stats = iso.readdir(path)
             if file_stats is None:
-                raise Exception("Unable to find directory %s inside the iso image" % path)
+                raise Exception(f"Unable to find directory {path} inside the iso image")
 
             for stat in file_stats:
                 filename = stat[0]
@@ -128,7 +128,7 @@ class ChangeLogger(cmdln.Cmdln):
                 fd = os.open(arg, os.O_RDONLY)
 
                 if not iso.is_open() or fd is None:
-                    raise Exception("Could not open %s as an ISO-9660 image." % arg)
+                    raise Exception(f"Could not open {arg} as an ISO-9660 image.")
 
                 for filename, LSN in _walk_through_iso_image(iso):
                     os.lseek(fd, LSN * pycdio.ISO_BLOCKSIZE, io.SEEK_SET)
@@ -145,7 +145,7 @@ class ChangeLogger(cmdln.Cmdln):
                         h = self.readRpmHeader(pkg)
                         _getdata(h)
             else:
-                raise Exception("don't know what to do with %s" % arg)
+                raise Exception(f"don't know what to do with {arg}")
 
         return pkgdata, changelogs
 
@@ -161,7 +161,7 @@ class ChangeLogger(cmdln.Cmdln):
         if not opts.dir:
             raise Exception("need --dir option")
         if not os.path.isdir(opts.dir):
-            raise Exception("%s must be a directory" % opts.dir)
+            raise Exception(f"{opts.dir} must be a directory")
         if not opts.snapshot:
             raise Exception("missing snapshot option")
 
@@ -207,18 +207,18 @@ class ChangeLogger(cmdln.Cmdln):
         if not opts.dir:
             raise Exception("need --dir option")
         if not os.path.isdir(opts.dir):
-            raise Exception("%s must be a directory" % opts.dir)
+            raise Exception(f"{opts.dir} must be a directory")
 
         f = open(os.path.join(opts.dir, version1), 'rb')
         (v, (v1pkgs, v1changelogs)) = pickle.load(f,
                                                   encoding='utf-8', errors='backslashreplace')
         if v != data_version:
-            raise Exception("not matching version %s in %s" % (v, version1))
+            raise Exception(f"not matching version {v} in {version1}")
         f = open(os.path.join(opts.dir, version2), 'rb')
         (v, (v2pkgs, v2changelogs)) = pickle.load(f,
                                                   encoding='utf-8', errors='backslashreplace')
         if v != data_version:
-            raise Exception("not matching version %s in %s" % (v, version2))
+            raise Exception(f"not matching version {v} in {version2}")
 
         p1 = set(v1pkgs.keys())
         p2 = set(v2pkgs.keys())
@@ -237,7 +237,7 @@ class ChangeLogger(cmdln.Cmdln):
             try:
                 t1 = v1changelogs[srpm1]['changelogtime'][0]
             except IndexError:
-                print("{} doesn't have a changelog".format(srpm1), file=sys.stderr)
+                print(f"{srpm1} doesn't have a changelog", file=sys.stderr)
                 continue
             m = SRPM_RE.match(srpm)
             if m:
@@ -245,21 +245,21 @@ class ChangeLogger(cmdln.Cmdln):
             else:
                 name = srpm
             if len(v2changelogs[srpm]['changelogtime']) == 0:
-                print('  {} ERROR: no changelog'.format(name))
+                print(f'  {name} ERROR: no changelog')
                 continue
             if t1 == v2changelogs[srpm]['changelogtime'][0]:
                 continue  # no new changelog entry, probably just rebuilt
             pkgs = sorted(group[srpm])
-            details += "\n==== %s ====\n" % name
+            details += f"\n==== {name} ====\n"
             if v1pkgs[pkgs[0]]['version'] != v2pkgs[pkgs[0]]['version']:
                 print("  %s (%s -> %s)" % (name, v1pkgs[pkgs[0]]['version'],
                                            v2pkgs[pkgs[0]]['version']))
                 details += "Version update (%s -> %s)\n" % (v1pkgs[pkgs[0]]['version'],
                                                             v2pkgs[pkgs[0]]['version'])
             else:
-                print("  %s" % name)
+                print(f"  {name}")
             if len(pkgs) > 1:
-                details += "Subpackages: %s\n" % " ".join([p for p in pkgs if p != name])
+                details += f"Subpackages: {' '.join([p for p in pkgs if p != name])}\n"
 
             changedetails = ""
             for (i2, t2) in enumerate(v2changelogs[srpm]['changelogtime']):
@@ -273,7 +273,7 @@ class ChangeLogger(cmdln.Cmdln):
             if len(changedetails_lines) > changelog_max_lines + 5:
                 changedetails = '\n'.join(changedetails_lines[0:changelog_max_lines])
                 left = len(changedetails_lines) - changelog_max_lines - 1
-                changedetails += '\n    ... changelog too long, skipping {} lines ...\n'.format(left)
+                changedetails += f'\n    ... changelog too long, skipping {left} lines ...\n'
                 # add last line of changelog diff so that it's possible to
                 # find out the end of the changelog section
                 changedetails += changedetails_lines[-1]

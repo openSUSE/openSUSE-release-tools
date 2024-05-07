@@ -67,7 +67,7 @@ class SelectCommand(object):
 
         if request not in staged_requests and not supersede:
             # Normal 'select' command
-            print('Adding request "{}" to project "{}"'.format(request, self.target_project))
+            print(f'Adding request "{request}" to project "{self.target_project}"')
 
             return self.api.rq_to_prj(request, self.target_project, remove_exclusion)
         elif request in staged_requests and (move or supersede):
@@ -75,17 +75,17 @@ class SelectCommand(object):
             # supersede = (new_rq, package, project)
             fprj = self.api.packages_staged[staged_requests[request]]['prj'] if not supersede else supersede[2]
             if filter_from and filter_from != fprj:
-                print('Ignoring "{}" in "{}" since not in "{}"'.format(request, fprj, filter_from))
+                print(f'Ignoring "{request}" in "{fprj}" since not in "{filter_from}"')
                 return True
 
             if supersede:
-                print('"{} ({}) is superseded by {}'.format(request, supersede[1], supersede[0]))
+                print(f'"{request} ({supersede[1]}) is superseded by {supersede[0]}')
 
             if fprj == self.target_project:
-                print('"{}" is currently in "{}"'.format(request, self.target_project))
+                print(f'"{request}" is currently in "{self.target_project}"')
                 return False
 
-            print('Moving "{}" from "{}" to "{}"'.format(request, fprj, self.target_project))
+            print(f'Moving "{request}" from "{fprj}" to "{self.target_project}"')
 
             # Store the source project, we also need to write a comment there
             self.affected_projects.add(fprj)
@@ -102,7 +102,7 @@ class SelectCommand(object):
             print(msg)
             return True
         elif supersede:
-            print('"{} ({}) supersedes {}'.format(request, supersede[1], supersede[0]))
+            print(f'"{request} ({supersede[1]}) supersedes {supersede[0]}')
         else:
             raise oscerr.WrongArgs('Arguments for select are not correct.')
 
@@ -132,7 +132,7 @@ class SelectCommand(object):
         requests = RequestFinder.find_sr(requests, self.api, newcand, consider_stagings=move)
         requests_count = len(requests)
         for index, request in enumerate(requests, start=1):
-            print('({}/{}) '.format(index, requests_count), end='')
+            print(f'({index}/{requests_count}) ', end='')
             if not self.select_request(request, move, filter_from, remove_exclusion=remove_exclusion):
                 return False
 

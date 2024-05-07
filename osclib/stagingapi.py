@@ -97,8 +97,8 @@ class StagingAPI(object):
             # If the project support rings, inititialize some variables.
             if self.crings:
                 self._rings = (
-                    '{}:0-Bootstrap'.format(self.crings),
-                    '{}:1-MinimalX'.format(self.crings)
+                    f'{self.crings}:0-Bootstrap',
+                    f'{self.crings}:1-MinimalX'
                 )
             else:
                 self._rings = []
@@ -167,9 +167,9 @@ class StagingAPI(object):
                 return func(url)
             except HTTPError as e:
                 if 500 <= e.code <= 599:
-                    print('Error {}, retrying {} in {}s'.format(e.code, url, retry_sleep_seconds))
+                    print(f'Error {e.code}, retrying {url} in {retry_sleep_seconds}s')
                 elif e.code == 400 and e.reason == 'service in progress':
-                    print('Service in progress, retrying {} in {}s'.format(url, retry_sleep_seconds))
+                    print(f'Service in progress, retrying {url} in {retry_sleep_seconds}s')
                 else:
                     raise e
                 time.sleep(retry_sleep_seconds)
@@ -327,7 +327,7 @@ class StagingAPI(object):
     def prj_from_short(self, name):
         if name.startswith(self.cstaging):
             return name
-        return '{}:{}'.format(self.cstaging, name)
+        return f'{self.cstaging}:{name}'
 
     def get_staging_projects_short(self, adi=False):
         """
@@ -381,7 +381,7 @@ class StagingAPI(object):
 
         req = get_request(self.apiurl, str(request_id))
         if not req:
-            raise oscerr.WrongArgs('Request {} not found'.format(request_id))
+            raise oscerr.WrongArgs(f'Request {request_id} not found')
 
         for review in req.reviews:
             if review.by_group == by_group and \
@@ -434,7 +434,7 @@ class StagingAPI(object):
         request_id = int(request.get('id'))
         action = request.find('action')
         if action is None:
-            msg = 'Request {} has no action'.format(request_id)
+            msg = f'Request {request_id} has no action'
             raise oscerr.WrongArgs(msg)
 
         # Where are we targeting the package
@@ -511,7 +511,7 @@ class StagingAPI(object):
                 else:
                     # Supersedes request is from the same project
                     if request_new.find('./action/source').get('project') == request_old.find('./action/source').get('project'):
-                        message = 'sr#{} has newer source and is from the same project'.format(request_new.get('id'))
+                        message = f"sr#{request_new.get('id')} has newer source and is from the same project"
 
                         self.rm_from_prj(stage_info['prj'], request_id=stage_info['rq_id'])
                         self.do_change_review_state(stage_info['rq_id'], 'declined',
@@ -587,8 +587,8 @@ class StagingAPI(object):
         requests = []
 
         # xpath query, using the -m, -r, -s options
-        where = "@by_group='{}' and @state='new'".format(self.cstaging_group)
-        target = "target[@project='{}']".format(self.project)
+        where = f"@by_group='{self.cstaging_group}' and @state='new'"
+        target = f"target[@project='{self.project}']"
 
         query = {'match': f"state/@name='review' and review[{where}] and {target}"}
         if query_extra is not None:
@@ -763,13 +763,13 @@ class StagingAPI(object):
 
     def format_review(self, review):
         if review.get('by_group'):
-            return 'group:{}'.format(review.get('by_group'))
+            return f"group:{review.get('by_group')}"
         if review.get('by_user'):
             return review.get('by_user')
         if review.get('by_package'):
-            return 'package:{}'.format(review.get('by_package'))
+            return f"package:{review.get('by_package')}"
         if review.get('by_project'):
-            return 'project:{}'.format(review.get('by_project'))
+            return f"project:{review.get('by_project')}"
         raise oscerr.WrongArgs('Invalid review')
 
     def job_history_fail_count(self, history):
@@ -806,7 +806,7 @@ class StagingAPI(object):
             if size:
                 offset += int(size[0])
 
-        query = {'nostream': '1', 'start': '%s' % offset}
+        query = {'nostream': '1', 'start': f'{offset}'}
         if last:
             query['last'] = 1
         log = StringIO()
@@ -904,7 +904,7 @@ class StagingAPI(object):
 
         req = get_request(self.apiurl, str(request_id))
         if not req:
-            raise oscerr.WrongArgs('Request {} not found'.format(request_id))
+            raise oscerr.WrongArgs(f'Request {request_id} not found')
 
         act = req.get_actions('submit')
         if act:
@@ -949,7 +949,7 @@ class StagingAPI(object):
         if '_multibuild' in filelist:
             return []
 
-        mainspec = "{}{}".format(package, '.spec')
+        mainspec = f"{package}.spec"
         if mainspec in filelist:
             filelist.remove(mainspec)
         for file in filelist:
@@ -1033,7 +1033,7 @@ class StagingAPI(object):
         # dynamically generated and static baselibs.conf.
         if self.is_adi_project(project):
             baselibs = False
-            specfile = source_file_load(self.apiurl, src_prj, src_pkg, '{}.spec'.format(src_pkg), src_rev)
+            specfile = source_file_load(self.apiurl, src_prj, src_pkg, f'{src_pkg}.spec', src_rev)
             if specfile and 'baselibs.conf' in specfile:
                 baselibs = True
         else:
@@ -1047,7 +1047,7 @@ class StagingAPI(object):
             http_PUT(url, data=ET.tostring(root))
 
             if baselibs is False:
-                specfile = source_file_load(self.apiurl, src_prj, src_pkg, '{}.spec'.format(sub_pkg), src_rev)
+                specfile = source_file_load(self.apiurl, src_prj, src_pkg, f'{sub_pkg}.spec', src_rev)
                 if specfile and 'baselibs.conf' in specfile:
                     baselibs = True
 
@@ -1062,11 +1062,11 @@ class StagingAPI(object):
 
     def ensure_staging_archs(self, project):
         meta = ET.parse(http_GET(self.project_meta_url(project)))
-        repository = meta.find('repository[@name="{}"]'.format(self.cmain_repo))
+        repository = meta.find(f'repository[@name="{self.cmain_repo}"]')
 
         changed = False
         for arch in self.cstaging_archs:
-            if not repository.xpath('./arch[text()="{}"]'.format(arch)):
+            if not repository.xpath(f'./arch[text()="{arch}"]'):
                 elm = ET.SubElement(repository, 'arch')
                 elm.text = arch
                 changed = True
@@ -1083,18 +1083,18 @@ class StagingAPI(object):
     def prj_from_letter(self, letter):
         if ':' in letter:  # not a letter
             return letter
-        return '{}:{}'.format(self.cstaging, letter)
+        return f'{self.cstaging}:{letter}'
 
     def adi_prj_from_number(self, number):
         if ':' in str(number):
             return number
-        return '{}:adi:{}'.format(self.cstaging, number)
+        return f'{self.cstaging}:adi:{number}'
 
     def list_requests_in_prj(self, project):
-        where = "@by_project='%s'+and+@state='new'" % project
+        where = f"@by_project='{project}'+and+@state='new'"
 
         url = self.makeurl(['search', 'request', 'id'],
-                           "match=state/@name='review'+and+review[%s]" % where)
+                           f"match=state/@name='review'+and+review[{where}]")
         f = http_GET(url)
         root = ET.parse(f).getroot()
         list = []
@@ -1111,7 +1111,7 @@ class StagingAPI(object):
         """
         req = get_request(self.apiurl, str(request_id))
         if not req:
-            raise oscerr.WrongArgs('Request {} not found'.format(request_id))
+            raise oscerr.WrongArgs(f'Request {request_id} not found')
         for i in req.reviews:
             if by_project and i.by_project == by_project and i.state == 'new':
                 return
@@ -1131,7 +1131,7 @@ class StagingAPI(object):
         if by_group:
             query['by_group'] = by_group
             if not msg:
-                msg = 'Being evaluated by group "{}"'.format(by_group)
+                msg = f'Being evaluated by group "{by_group}"'
         if not query:
             raise oscerr.WrongArgs('We need a group or a project')
         query['cmd'] = 'addreview'
@@ -1215,7 +1215,7 @@ class StagingAPI(object):
 
         version = None
 
-        specfile = source_file_load(self.apiurl, project, package, '{}.spec'.format(package))
+        specfile = source_file_load(self.apiurl, project, package, f'{package}.spec')
         if specfile:
             try:
                 version = re.findall('^Version:(.*)', specfile, re.MULTILINE)[0].strip()
@@ -1227,7 +1227,7 @@ class StagingAPI(object):
         """
         Return the version of a built rpm file
         """
-        url = self.makeurl(['build', project, repository, arch, '_repository', "%s?view=fileinfo" % rpm])
+        url = self.makeurl(['build', project, repository, arch, '_repository', f"{rpm}?view=fileinfo"])
         try:
             return ET.parse(http_GET(url)).getroot().find('version').text
         except HTTPError as e:
@@ -1289,7 +1289,7 @@ class StagingAPI(object):
         return results
 
     def is_repo_dirty(self, project, repository):
-        url = self.makeurl(['build', project, '_result?code=broken&repository=%s' % repository])
+        url = self.makeurl(['build', project, f'_result?code=broken&repository={repository}'])
         root = ET.parse(http_GET(url)).getroot()
         for repo in root.findall('result'):
             repostate = repo.get('state', 'missing')
@@ -1331,10 +1331,10 @@ class StagingAPI(object):
         u = self.makeurl(['build', prj], query=query)
 
         try:
-            print("tried to trigger rebuild for project '%s' package '%s'" % (prj, pkg))
+            print(f"tried to trigger rebuild for project '{prj}' package '{pkg}'")
             http_POST(u)
         except HTTPError:
-            print("could not trigger rebuild for project '%s' package '%s'" % (prj, pkg))
+            print(f"could not trigger rebuild for project '{prj}' package '{pkg}'")
 
     def _candidate_adi_project(self):
         """Decide a candidate name for an ADI project."""
@@ -1349,7 +1349,7 @@ class StagingAPI(object):
 
     def update_adi_frozenlinks(self, name, src_prj):
         xpath = {
-            'package': "@project='%s' and devel/@project='%s'" % (self.project, src_prj),
+            'package': f"@project='{self.project}' and devel/@project='{src_prj}'",
         }
         collection = search(self.apiurl, **xpath)['package']
 
@@ -1383,10 +1383,10 @@ class StagingAPI(object):
 
         adi_projects = self.get_adi_projects()
         if name in adi_projects:
-            raise Exception('Project {} already exist'.format(name))
+            raise Exception(f'Project {name} already exist')
 
         if use_frozenlinks:
-            linkproject = '<link project="{}"/>'.format(self.project)
+            linkproject = f'<link project="{self.project}"/>'
             repository = '<repository name="standard" rebuild="direct" linkedbuild="all">'
         else:
             linkproject = ''
@@ -1471,7 +1471,7 @@ class StagingAPI(object):
         name.text = check
 
         meta = ET.parse(http_GET(self.project_meta_url(project)))
-        repository = meta.find('repository[@name="{}"]'.format(self.cmain_repo))
+        repository = meta.find(f'repository[@name="{self.cmain_repo}"]')
 
         for arch_element in repository.findall('arch'):
             architecture = arch_element.text
@@ -1480,7 +1480,7 @@ class StagingAPI(object):
             http_POST(url, data=ET.tostring(root))
 
     def register_new_staging_project(self, name):
-        data = '<workflow><staging_project>{}</staging_project></workflow>'.format(name)
+        data = f'<workflow><staging_project>{name}</staging_project></workflow>'
         url = self.makeurl(['staging', self.project, 'staging_projects'])
         try:
             http_POST(url, data=data)
@@ -1492,7 +1492,7 @@ class StagingAPI(object):
     def is_user_member_of(self, user, group):
         root = ET.fromstring(get_group(self.apiurl, group))
 
-        if root.findall("./person/person[@userid='%s']" % user):
+        if root.findall(f"./person/person[@userid='{user}']"):
             return True
         else:
             return False
@@ -1520,7 +1520,7 @@ class StagingAPI(object):
         if self.rings:
             # Determine if staging is bootstrapped.
             meta = self.get_prj_meta(project)
-            xpath = 'link[@project="{}"]'.format(self.rings[0])
+            xpath = f'link[@project="{self.rings[0]}"]'
             return meta.find(xpath) is not None
 
         return False

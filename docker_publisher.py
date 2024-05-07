@@ -115,7 +115,7 @@ class DockerImagePublisherRegistry(DockerImagePublisher):
 
     def getDockerArch(self, arch):
         if arch not in self.MAP_ARCH_RPM_DOCKER:
-            raise DockerPublishException("Unknown arch %s" % arch)
+            raise DockerPublishException(f"Unknown arch {arch}")
 
         return self.MAP_ARCH_RPM_DOCKER[arch]
 
@@ -288,7 +288,7 @@ class DockerImageFetcherURL(DockerImageFetcher):
             tar_file.write(requests.get(self.url).content)
             with tempfile.TemporaryDirectory() as tar_dir:
                 # Extract the .tar.xz into the dir
-                subprocess.call("tar -xaf '%s' -C '%s'" % (tar_file.name, tar_dir), shell=True)
+                subprocess.call(f"tar -xaf '{tar_file.name}' -C '{tar_dir}'", shell=True)
                 return callback(tar_dir)
 
 
@@ -354,7 +354,7 @@ class DockerImageFetcherOBS(DockerImageFetcher):
             tar_file.write(requests.get(self.newest_release_url + "/" + filename).content)
             with tempfile.TemporaryDirectory() as tar_dir:
                 # Extract the .tar into the dir
-                subprocess.call("tar -xaf '%s' -C '%s'" % (tar_file.name, tar_dir), shell=True)
+                subprocess.call(f"tar -xaf '{tar_file.name}' -C '{tar_dir}'", shell=True)
                 return callback(tar_dir)
 
 
@@ -412,25 +412,25 @@ def run():
     success = True
 
     for distro in args.distros:
-        print("Handling %s" % distro)
+        print(f"Handling {distro}")
 
         archs_to_update = {}
         fetchers = config[distro]['fetchers']
         publisher = config[distro]['publisher']
 
         for arch in fetchers:
-            print("\tArchitecture %s" % arch)
+            print(f"\tArchitecture {arch}")
             try:
                 current = fetchers[arch].currentVersion()
-                print("\t\tAvailable version: %s" % current)
+                print(f"\t\tAvailable version: {current}")
 
                 released = publisher.releasedDockerImageVersion(arch)
-                print("\t\tReleased version: %s" % released)
+                print(f"\t\tReleased version: {released}")
 
                 if current != released:
                     archs_to_update[arch] = current
             except Exception as e:
-                print("\t\tException during version fetching: %s" % e)
+                print(f"\t\tException during version fetching: {e}")
 
         if not archs_to_update:
             print("\tNothing to do.")
@@ -444,7 +444,7 @@ def run():
         need_to_upload = False
 
         for arch, version in archs_to_update.items():
-            print("\tUpdating %s image to version %s" % (arch, version))
+            print(f"\tUpdating {arch} image to version {version}")
             try:
                 fetchers[arch].getDockerImage(lambda image_path: publisher.addImage(version=version,
                                                                                     arch=arch,
@@ -452,11 +452,11 @@ def run():
                 need_to_upload = True
 
             except DockerFetchException as dfe:
-                print("\t\tCould not fetch the image: %s" % dfe)
+                print(f"\t\tCould not fetch the image: {dfe}")
                 success = False
                 continue
             except DockerPublishException as dpe:
-                print("\t\tCould not publish the image: %s" % dpe)
+                print(f"\t\tCould not publish the image: {dpe}")
                 success = False
                 continue
 

@@ -129,7 +129,7 @@ class PkgListGen(ToolBase.ToolBase):
         for name in self.groups:
             group = self.groups[name]
             group.solved_packages = dict()
-            fn = '{}.group'.format(group.name)
+            fn = f'{group.name}.group'
             with open(os.path.join(self.output_dir, fn), 'w') as fh:
                 for arch in archs:
                     x = group.toxml(arch, group.ignore_broken, None)
@@ -189,7 +189,7 @@ class PkgListGen(ToolBase.ToolBase):
             if not group.solved:
                 continue
             summary[name] = group.summary()
-            fn = '{}.group'.format(group.name)
+            fn = f'{group.name}.group'
             with open(os.path.join(self.output_dir, fn), 'w') as fh:
                 comment = group.comment
                 for arch in archs:
@@ -247,7 +247,7 @@ class PkgListGen(ToolBase.ToolBase):
                             tocheck.add(s.name)
 
             for locale in self.locales:
-                id = pool.str2id('locale({})'.format(locale))
+                id = pool.str2id(f'locale({locale})')
                 for s in pool.whatprovides(id):
                     tocheck_locales.add(s.name)
 
@@ -283,7 +283,7 @@ class PkgListGen(ToolBase.ToolBase):
                 continue
             s = f'repo-{project}-{reponame}-{arch}-{state}.solv'
             if not repo.add_solv(s):
-                raise MismatchedRepoException('failed to add repo {}/{}/{}'.format(project, reponame, arch))
+                raise MismatchedRepoException(f'failed to add repo {project}/{reponame}/{arch}')
             for solvable in repo.solvables_iter():
                 if ignore_conflicts:
                     solvable.unset(solv.SOLVABLE_CONFLICTS)
@@ -432,11 +432,11 @@ class PkgListGen(ToolBase.ToolBase):
                     # Repo might not have this architecture
                     continue
 
-                repo_solv_name = 'repo-{}-{}-{}.solv'.format(project, repo, arch)
+                repo_solv_name = f'repo-{project}-{repo}-{arch}.solv'
                 # Would be preferable to include hash in name, but cumbersome to handle without
                 # reworking a fair bit since the state needs to be tracked.
                 solv_file = os.path.join(CACHEDIR, repo_solv_name)
-                solv_file_hash = '{}::{}'.format(solv_file, state)
+                solv_file_hash = f'{solv_file}::{state}'
                 if os.path.exists(solv_file) and os.path.exists(solv_file_hash):
                     # Solve file exists and hash unchanged, skip updating solv.
                     self.logger.debug('skipping solv generation for {} due to matching state {}'.format(
@@ -464,7 +464,7 @@ class PkgListGen(ToolBase.ToolBase):
                 pool.setarch()
 
                 # we need some progress in the debug output - or gocd gets nervous
-                self.logger.debug('checking {}'.format(oldrepo))
+                self.logger.debug(f'checking {oldrepo}')
                 oldsysrepo = file_utils.add_susetags(pool, oldrepo)
 
                 for arch in self.all_architectures:
@@ -476,7 +476,7 @@ class PkgListGen(ToolBase.ToolBase):
                         fn = f'repo-{project}-{repo}-{arch}-{state}.solv'
                         r = pool.add_repo('/'.join([project, repo]))
                         if not r.add_solv(fn):
-                            raise MismatchedRepoException('failed to add repo {}/{}/{}.'.format(project, repo, arch))
+                            raise MismatchedRepoException(f'failed to add repo {project}/{repo}/{arch}.')
 
                 pool.createwhatprovides()
 
@@ -534,7 +534,7 @@ class PkgListGen(ToolBase.ToolBase):
                     if not repo_output:
                         print('#', repo, file=output)
                         repo_output = True
-                    print('Provides: weakremover({})'.format(name), file=output)
+                    print(f'Provides: weakremover({name})', file=output)
                 else:
                     jarch = ' '.join(sorted(drops[name]['archs']))
                     exclusives.setdefault(jarch, []).append(name)
@@ -543,9 +543,9 @@ class PkgListGen(ToolBase.ToolBase):
                 if not repo_output:
                     print('#', repo, file=output)
                     repo_output = True
-                print('%ifarch {}'.format(arch), file=output)
+                print(f'%ifarch {arch}', file=output)
                 for name in sorted(exclusives[arch]):
-                    print('Provides: weakremover({})'.format(name), file=output)
+                    print(f'Provides: weakremover({name})', file=output)
                 print('%endif', file=output)
         output.flush()
 
@@ -628,7 +628,7 @@ class PkgListGen(ToolBase.ToolBase):
 
     def build_stub(self, destination, extension):
         with open(os.path.join(destination, '.'.join(['stub', extension])), 'w+') as f:
-            f.write('# prevent building single {} files twice\n'.format(extension))
+            f.write(f'# prevent building single {extension} files twice\n')
             f.write('Name: stub\n')
             f.write('Version: 0.0\n')
 
@@ -645,7 +645,7 @@ class PkgListGen(ToolBase.ToolBase):
             package.commit(msg='Automatic update', skip_local_service_run=True)
 
     def replace_product_version(self, product_file, product_version):
-        product_version = '<version>{}</version>'.format(product_version)
+        product_version = f'<version>{product_version}</version>'
         lines = open(product_file).readlines()
         new_lines = []
         for line in lines:
@@ -670,7 +670,7 @@ class PkgListGen(ToolBase.ToolBase):
         self.all_architectures = target_config.get('pkglistgen-archs').split(' ')
         self.use_newest_version = str2bool(target_config.get('pkglistgen-use-newest-version', 'False'))
         self.repos = self.expand_repos(project, main_repo)
-        logging.debug('[{}] {}/{}: update and solve'.format(scope, project, main_repo))
+        logging.debug(f'[{scope}] {project}/{main_repo}: update and solve')
 
         group = target_config.get('pkglistgen-group', '000package-groups')
         product = target_config.get('pkglistgen-product', '000product')
@@ -691,7 +691,7 @@ class PkgListGen(ToolBase.ToolBase):
             root = ET.fromstringlist(show_results_meta(api.apiurl, project, product,
                                                        repository=[main_repo], multibuild=True))
             if len(root.xpath('result[@state="building"]')) or len(root.xpath('result[@state="dirty"]')):
-                logging.info('{}/{} build in progress'.format(project, product))
+                logging.info(f'{project}/{product} build in progress')
                 return
         if git_url:
             if os.path.exists(cache_dir + "/.git"):
@@ -711,21 +711,21 @@ class PkgListGen(ToolBase.ToolBase):
         else:
             url = api.makeurl(['source', project])
             packages = ET.parse(http_GET(url)).getroot()
-            if packages.find('entry[@name="{}"]'.format(product)) is None:
+            if packages.find(f'entry[@name="{product}"]') is None:
                 if not self.dry_run:
                     undelete_package(api.apiurl, project, product, 'revive')
                 # TODO disable build.
-                logging.info('{} undeleted, skip dvd until next cycle'.format(product))
+                logging.info(f'{product} undeleted, skip dvd until next cycle')
                 return
 
             drop_list = api.item_exists(project, oldrepos)
             if drop_list and not only_release_packages:
                 checkout_list.append(oldrepos)
 
-            if packages.find('entry[@name="{}"]'.format(release)) is None:
+            if packages.find(f'entry[@name="{release}"]') is None:
                 if not self.dry_run:
                     undelete_package(api.apiurl, project, release, 'revive')
-                logging.info('{} undeleted, skip dvd until next cycle'.format(release))
+                logging.info(f'{release} undeleted, skip dvd until next cycle')
                 return
 
             if not no_checkout:
@@ -743,7 +743,7 @@ class PkgListGen(ToolBase.ToolBase):
         self.output_dir = product_dir
 
         if not no_checkout and not git_url:
-            logging.debug('Skipping checkout of {}'.format(project))
+            logging.debug(f'Skipping checkout of {project}')
             for package in checkout_list:
                 checkout_package(api.apiurl, project, package, expand_link=True,
                                  prj_dir=cache_dir, outdir=os.path.join(cache_dir, package))
@@ -833,7 +833,7 @@ class PkgListGen(ToolBase.ToolBase):
                 logging.debug(subprocess.check_output(
                     [PRODUCT_SERVICE, product_file, product_dir, project], encoding='utf-8'))
 
-            for delete_kiwi in target_config.get('pkglistgen-delete-kiwis-{}'.format(scope), '').split(' '):
+            for delete_kiwi in target_config.get(f'pkglistgen-delete-kiwis-{scope}', '').split(' '):
                 delete_kiwis = glob.glob(os.path.join(product_dir, delete_kiwi))
                 file_utils.unlink_list(product_dir, delete_kiwis)
             if scope == 'staging':

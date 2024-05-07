@@ -19,7 +19,7 @@ class Requestfinder(ToolBase.ToolBase):
 
     def fill_package_meta(self, project):
         self.package_metas = dict()
-        url = osc.core.makeurl(self.apiurl, ['search', 'package'], "match=[@project='%s']" % project)
+        url = osc.core.makeurl(self.apiurl, ['search', 'package'], f"match=[@project='{project}']")
         root = ET.fromstring(self.cached_GET(url))
         for p in root.findall('package'):
             name = p.attrib['name']
@@ -70,7 +70,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         return tool
 
     def _load_settings(self, settings, name):
-        section = 'settings {}'.format(name)
+        section = f'settings {name}'
         for option in settings.keys():
             if self.cp.has_option(section, option):
                 settings[option] = self.cp.get(section, option).replace('\n', ' ')
@@ -209,7 +209,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         rqs = self.tool.find_requests(settings)
         for r in rqs:
             self.print_actions(r)
-            print("osc rq {} -m '{}' {}".format(settings['action'], settings['message'], r.reqid))
+            print(f"osc rq {settings['action']} -m '{settings['message']}' {r.reqid}")
 
     def help_examples(self):
         return """$ cat > ~/.config/opensuse-release-tools/requestfinder.conf << EOF

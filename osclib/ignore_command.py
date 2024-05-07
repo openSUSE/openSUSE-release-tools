@@ -15,7 +15,7 @@ class IgnoreCommand(object):
         """
 
         for request_id in RequestFinder.find_sr(requests, self.api):
-            print('{}: ignored'.format(request_id))
+            print(f'{request_id}: ignored')
             comment = message if message else self.MESSAGE
             self.api.add_ignored_request(request_id, comment)
             self.comment.add_comment(request_id=str(request_id), comment=comment)

@@ -36,27 +36,27 @@ class FactorySourceChecker(ReviewBot.ReviewBot):
         if src_srcinfo is None:
             # source package does not exist?
             # handle here to avoid crashing on the next line
-            self.logger.info("Could not get source info for %s/%s@%s" % (src_project, src_package, src_rev))
+            self.logger.info(f"Could not get source info for {src_project}/{src_package}@{src_rev}")
             return False
         projects = self._package_get_upstream_projects(target_package)
         if projects is None:
-            self.logger.error("no upstream project found for {}, can't check".format(target_package))
+            self.logger.error(f"no upstream project found for {target_package}, can't check")
             return False
 
-        self.review_messages['declined'] = 'the package needs to be accepted in {} first'.format(' or '.join(projects))
+        self.review_messages['declined'] = f"the package needs to be accepted in {' or '.join(projects)} first"
         for project in projects:
-            self.logger.info("Checking in project %s" % project)
+            self.logger.info(f"Checking in project {project}")
             good = self._check_matching_srcmd5(project, target_package, src_srcinfo.verifymd5, self.history_limit)
             if good:
-                self.logger.info("{} is in {}".format(target_package, project))
+                self.logger.info(f"{target_package} is in {project}")
                 return good
 
             good = self._check_requests(project, target_package, src_srcinfo.verifymd5)
             if good:
-                self.logger.info("{} already reviewed for {}".format(target_package, project))
+                self.logger.info(f"{target_package} already reviewed for {project}")
 
         if not good:
-            self.logger.info('{} failed source submission check'.format(target_package))
+            self.logger.info(f'{target_package} failed source submission check')
 
         return good
 
@@ -167,7 +167,7 @@ by OBS on which this bot relies.
 
     def isNewPackage(self, tgt_project, tgt_package):
         try:
-            self.logger.debug("package_meta %s %s/%s" % (self.apiurl, tgt_project, tgt_package))
+            self.logger.debug(f"package_meta {self.apiurl} {tgt_project}/{tgt_package}")
             osc.core.show_package_meta(self.apiurl, tgt_project, tgt_package)
         except (HTTPError, URLError):
             return True
@@ -200,7 +200,7 @@ by OBS on which this bot relies.
             self.logger.debug("reject: diff contains no tags")
             return False
         if deleted > 0:
-            self.review_messages['declined'] = '{} issue reference(s) deleted'.format(deleted)
+            self.review_messages['declined'] = f'{deleted} issue reference(s) deleted'
             return False
         return True
 

@@ -61,10 +61,10 @@ class Listener(PubSubConsumer):
         for arch in archs:
             repoid = self.check_arch(project, repository, arch)
             if not repoid:
-                self.logger.info('{}/{}/{} not yet done'.format(project, repository, arch))
+                self.logger.info(f'{project}/{repository}/{arch} not yet done')
                 return None
             ids[arch] = repoid
-        self.logger.info('All of {}/{} finished'.format(project, repository))
+        self.logger.info(f'All of {project}/{repository} finished')
         return ids
 
     def is_part_of_namespaces(self, project):
@@ -76,7 +76,7 @@ class Listener(PubSubConsumer):
         # now we are (re-)connected to the bus and need to fetch the
         # initial state
         for namespace in self.namespaces:
-            for state in glob.glob('{}*.yaml'.format(namespace)):
+            for state in glob.glob(f'{namespace}*.yaml'):
                 state = state.replace('.yaml', '')
                 # split
                 project, repository = state.split('_-_')
@@ -117,8 +117,8 @@ class Listener(PubSubConsumer):
         pathname = project + '_-_' + repository + '.yaml'
         with open(pathname, 'w') as f:
             for arch in sorted(ids.keys()):
-                f.write('{}: {}\n'.format(arch, ids[arch]))
-        self.push_git('Repository update: {}/{}'.format(project, repository))
+                f.write(f'{arch}: {ids[arch]}\n')
+        self.push_git(f'Repository update: {project}/{repository}')
 
     def on_message(self, unused_channel, method, properties, body):
         self.logger.debug("on_message")
@@ -131,11 +131,11 @@ class Listener(PubSubConsumer):
             if not self.is_part_of_namespaces(body['project']):
                 return
             self.restart_timer()
-            self.logger.info('Repo finished event: {}/{}/{}'.format(body['project'], body['repo'], body['arch']))
+            self.logger.info(f"Repo finished event: {body['project']}/{body['repo']}/{body['arch']}")
             self.update_repo(body['project'], body['repo'])
         else:
             self.logger.warning(
-                'unknown rabbitmq message {}'.format(method.routing_key))
+                f'unknown rabbitmq message {method.routing_key}')
 
 
 if __name__ == '__main__':

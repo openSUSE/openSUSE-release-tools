@@ -173,7 +173,7 @@ class CommentAPI(object):
             for key, value in info.items():
                 infos.append('='.join((str(key), str(value))))
 
-        marker = '<!-- {}{} -->'.format(bot, ' ' + ' '.join(infos) if info else '')
+        marker = f"<!-- {bot}{' ' + ' '.join(infos) if info else ''} -->"
         return marker + '\n\n' + comment
 
     def remove_marker(self, comment):

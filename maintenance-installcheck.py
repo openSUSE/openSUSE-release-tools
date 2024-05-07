@@ -20,11 +20,11 @@ class MaintInstCheck(ReviewBot.ReviewBot):
 
     def repository_check(self, repository_pairs, archs):
         project, repository = repository_pairs[0]
-        self.logger.info('checking {}/{}'.format(project, repository))
+        self.logger.info(f'checking {project}/{repository}')
 
         if not len(archs):
             self.logger.debug(
-                '{} has no relevant architectures'.format(project))
+                f'{project} has no relevant architectures')
             return
 
         for arch in archs:
@@ -36,7 +36,7 @@ class MaintInstCheck(ReviewBot.ReviewBot):
             parts = installcheck(directories, arch, [], [])
             if len(parts):
                 self.comment.append(
-                    '## {}/{}\n'.format(repository_pairs[0][1], arch))
+                    f'## {repository_pairs[0][1]}/{arch}\n')
                 self.comment.extend(parts)
 
         return len(self.comment) == 0
@@ -71,7 +71,7 @@ class MaintInstCheck(ReviewBot.ReviewBot):
             # targeting multiple projects such as in maintenance workflow in
             # which the message should be set by other actions.
             self.logger.debug(
-                'skipping review of action targeting {}'.format(action.tgt_project))
+                f'skipping review of action targeting {action.tgt_project}')
             return True
 
         repository = target_config.get('main-repo')

@@ -21,13 +21,13 @@ class Update(object):
     def get_max_revision(self, job):
         repo = self.repo_prefix + '/'
         repo += self.maintenance_project.replace(':', ':/')
-        repo += ':/{!s}'.format(job['id'])
+        repo += f":/{job['id']!s}"
         max_revision = 0
         for channel in job['channels']:
             crepo = repo + '/' + channel.replace(':', '_')
             xml = requests.get(crepo + '/repodata/repomd.xml')
             if not xml.ok:
-                self.logger.info("{} skipped .. need wait".format(crepo))
+                self.logger.info(f"{crepo} skipped .. need wait")
                 # if one fails, we skip it and wait
                 return False
             root = ET.fromstring(bytes(xml.text, encoding='utf-8'))
@@ -45,7 +45,7 @@ class Update(object):
         s['BUILD'] = ':' + build
         name = self.incident_name(src_prj)
         repo = dst_prj.replace(':', '_')
-        repo = '{!s}/{!s}/{!s}/'.format(self.repo_prefix, src_prj.replace(':', ':/'), repo)
+        repo = f"{self.repo_prefix!s}/{src_prj.replace(':', ':/')!s}/{repo!s}/"
         patch_id = self.patch_id(repo)
         if not patch_id and self.opensuse:
             # hot fix for openSUSE

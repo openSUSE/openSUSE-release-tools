@@ -108,14 +108,14 @@ class BiArchTool(ToolBase.ToolBase):
             if ':Rings' in self.project:
                 self.biarch_packages = set()
             else:
-                self.biarch_packages = set(self.meta_get_packagelist("%s:Rings:0-Bootstrap" % self.project))
-                self.biarch_packages |= set(self.meta_get_packagelist("%s:Rings:1-MinimalX" % self.project))
+                self.biarch_packages = set(self.meta_get_packagelist(f"{self.project}:Rings:0-Bootstrap"))
+                self.biarch_packages |= set(self.meta_get_packagelist(f"{self.project}:Rings:1-MinimalX"))
 
         self._init_rdeps()
         self.fill_package_meta()
 
     def fill_package_meta(self):
-        url = self.makeurl(['search', 'package'], "match=[@project='%s']" % self.project)
+        url = self.makeurl(['search', 'package'], f"match=[@project='{self.project}']")
         root = ET.fromstring(self.cached_GET(url))
         for p in root.findall('package'):
             name = p.attrib['name']
@@ -153,7 +153,7 @@ class BiArchTool(ToolBase.ToolBase):
 
         packages = set()
 
-        for n in result.findall("./result[@arch='{}']/status".format(self.arch)):
+        for n in result.findall(f"./result[@arch='{self.arch}']/status"):
             if n.get('code') not in ('disabled', 'excluded'):
                 packages.add(n.get('package'))
 
@@ -167,7 +167,7 @@ class BiArchTool(ToolBase.ToolBase):
             pkgmeta = self.package_metas[pkg]
 
             for build in pkgmeta.findall("./build"):
-                for n in build.findall("./enable[@arch='{}']".format(self.arch)):
+                for n in build.findall(f"./enable[@arch='{self.arch}']"):
                     logger.debug("disable %s", pkg)
                     build.remove(n)
                     changed = True
@@ -233,9 +233,9 @@ class BiArchTool(ToolBase.ToolBase):
             must_disable = None
             changed = None
 
-            for n in pkgmeta.findall("./build/enable[@arch='{}']".format(self.arch)):
+            for n in pkgmeta.findall(f"./build/enable[@arch='{self.arch}']"):
                 is_enabled = True
-            for n in pkgmeta.findall("./build/disable[@arch='{}']".format(self.arch)):
+            for n in pkgmeta.findall(f"./build/disable[@arch='{self.arch}']"):
                 is_disabled = True
 
             if force:
@@ -251,7 +251,7 @@ class BiArchTool(ToolBase.ToolBase):
                 if is_disabled:
                     logger.info('enabling %s for %s', pkg, self.arch)
                     for build in pkgmeta.findall("./build"):
-                        for n in build.findall("./disable[@arch='{}']".format(self.arch)):
+                        for n in build.findall(f"./disable[@arch='{self.arch}']"):
                             build.remove(n)
                             changed = True
                     if not changed:
@@ -272,7 +272,7 @@ class BiArchTool(ToolBase.ToolBase):
             if is_enabled:
                 logger.info('removing explicit enable %s for %s', pkg, self.arch)
                 for build in pkgmeta.findall("./build"):
-                    for n in build.findall("./enable[@arch='{}']".format(self.arch)):
+                    for n in build.findall(f"./enable[@arch='{self.arch}']"):
                         build.remove(n)
                         changed = True
                 if not changed:
@@ -291,7 +291,7 @@ class BiArchTool(ToolBase.ToolBase):
                 if self.caching:
                     self._invalidate__cached_GET(pkgmetaurl)
 
-                if wipebinaries and pkgmeta.find("./build/disable[@arch='{}']".format(self.arch)) is not None:
+                if wipebinaries and pkgmeta.find(f"./build/disable[@arch='{self.arch}']") is not None:
                     logger.debug("wiping %s", pkg)
                     self.http_POST(self.makeurl(['build', self.project], {
                         'cmd': 'wipe',
@@ -309,7 +309,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     def get_optparser(self):
         parser = ToolBase.CommandLineInterface.get_optparser(self)
         parser.add_option('-p', '--project', dest='project', metavar='PROJECT',
-                          help='project to process (default: %s)' % FACTORY,
+                          help=f'project to process (default: {FACTORY})',
                           default=FACTORY)
         return parser
 

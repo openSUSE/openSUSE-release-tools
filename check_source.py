@@ -144,7 +144,7 @@ class CheckSource(ReviewBot.ReviewBot):
 
             return True
         elif (kind is not None and kind != 'source'):
-            self.review_messages['declined'] = 'May not modify a non-source package of type {}'.format(kind)
+            self.review_messages['declined'] = f'May not modify a non-source package of type {kind}'
             return False
 
         if not self.allow_source_in_sle and self.sle_project_to_check:
@@ -219,7 +219,7 @@ class CheckSource(ReviewBot.ReviewBot):
 
             req = self.__ensure_add_role_request(source_project)
             if req:
-                declined_msg += ' Created the add_role request %s for addressing this problem.' % req
+                declined_msg += f' Created the add_role request {req} for addressing this problem.'
 
             self.review_messages['declined'] = declined_msg
             return False
@@ -229,9 +229,9 @@ class CheckSource(ReviewBot.ReviewBot):
             return False
 
         # Checkout and see if renaming package screws up version parsing.
-        copath = os.path.expanduser('~/co/%s' % self.request.reqid)
+        copath = os.path.expanduser(f'~/co/{self.request.reqid}')
         if os.path.exists(copath):
-            self.logger.warning('directory %s already exists' % copath)
+            self.logger.warning(f'directory {copath} already exists')
             shutil.rmtree(copath)
         os.makedirs(copath)
         os.chdir(copath)
@@ -243,7 +243,7 @@ class CheckSource(ReviewBot.ReviewBot):
             os.rename(target_package, '_old')
         except HTTPError as e:
             if e.code == 404:
-                self.logger.info('target package does not exist %s/%s' % (target_project, target_package))
+                self.logger.info(f'target package does not exist {target_project}/{target_package}')
             else:
                 raise e
 
@@ -304,21 +304,21 @@ class CheckSource(ReviewBot.ReviewBot):
                 known_maintainer = False
                 if maintainers:
                     if submitter in maintainers:
-                        self.logger.debug("%s is maintainer" % submitter)
+                        self.logger.debug(f"{submitter} is maintainer")
                         known_maintainer = True
                     if not known_maintainer:
                         for r in self.request.reviews:
                             if r.by_user in maintainers:
-                                self.logger.debug("found %s as reviewer" % r.by_user)
+                                self.logger.debug(f"found {r.by_user} as reviewer")
                                 known_maintainer = True
                 if not known_maintainer:
-                    self.logger.warning("submitter: %s, maintainers: %s => need review" % (submitter, ','.join(maintainers)))
-                    self.logger.debug("adding review to %s/%s" % (devel_project, devel_package))
+                    self.logger.warning(f"submitter: {submitter}, maintainers: {','.join(maintainers)} => need review")
+                    self.logger.debug(f"adding review to {devel_project}/{devel_package}")
                     msg = ('Submission for {} by someone who is not maintainer in '
                            'the devel project ({}). Please review').format(target_package, devel_project)
                     self.add_review(self.request, by_project=devel_project, by_package=devel_package, msg=msg)
             else:
-                self.logger.warning("%s doesn't have devel project" % target_package)
+                self.logger.warning(f"{target_package} doesn't have devel project")
 
         if self.only_changes():
             self.logger.debug('only .changes modifications')
@@ -338,7 +338,7 @@ class CheckSource(ReviewBot.ReviewBot):
 
         # Allow any projects already used as devel projects for other packages.
         search = {
-            'package': "@project='%s' and devel/@project='%s'" % (target_project, source_project),
+            'package': f"@project='{target_project}' and devel/@project='{source_project}'",
         }
         result = osc.core.search(self.apiurl, **search)
         return result['package'].attrib['matches'] != '0'
@@ -455,7 +455,7 @@ class CheckSource(ReviewBot.ReviewBot):
         source_project - source project name
         """
         self.logger.info(
-            'Checking required maintainer from the source project (%s)' % self.required_maintainer
+            f'Checking required maintainer from the source project ({self.required_maintainer})'
         )
         if not self.required_maintainer:
             return True
@@ -475,12 +475,12 @@ class CheckSource(ReviewBot.ReviewBot):
             if len(add_roles) > 0:
                 return add_roles[0].reqid
             else:
-                add_role_msg = 'Created automatically from request %s' % self.request.reqid
+                add_role_msg = f'Created automatically from request {self.request.reqid}'
                 return create_add_role_request(self.apiurl, source_project, self.required_maintainer,
                                                'maintainer', message=add_role_msg)
         except HTTPError as e:
             self.logger.error(
-                'Cannot create the corresponding add_role request for %s: %s' % (self.request.reqid, e)
+                f'Cannot create the corresponding add_role request for {self.request.reqid}: {e}'
             )
 
     def __is_required_maintainer(self, request):
@@ -516,7 +516,7 @@ class CheckSource(ReviewBot.ReviewBot):
         try:
             xml = ET.parse(osc.core.http_GET(url)).getroot()
         except HTTPError as e:
-            self.logger.error('ERROR in URL %s [%s]' % (url, e))
+            self.logger.error(f'ERROR in URL {url} [{e}]')
             return ret
 
         if xml.find('error') is not None:
@@ -552,11 +552,11 @@ class CheckSource(ReviewBot.ReviewBot):
 
     def check_action_add_role(self, request, action):
         # Decline add_role request (assumed the bot acting on requests to Factory or similar).
-        message = 'Roles to packages are granted in the devel project, not in %s.' % action.tgt_project
+        message = f'Roles to packages are granted in the devel project, not in {action.tgt_project}.'
 
         if action.tgt_package is not None:
             project, package = devel_project_fallback(self.apiurl, action.tgt_project, action.tgt_package)
-            message += ' Send this request to {}/{}.'.format(project, package)
+            message += f' Send this request to {project}/{package}.'
 
         self.review_messages['declined'] = message
         return False
@@ -595,13 +595,13 @@ class CheckSource(ReviewBot.ReviewBot):
         if linked.get('project', action.tgt_project) != action.tgt_project:
             return True
         linked_package = linked.get('package')
-        self.review_messages['declined'] = "Delete the package %s instead" % (linked_package)
+        self.review_messages['declined'] = f"Delete the package {linked_package} instead"
         return False
 
     def check_action_delete_project(self, request, action):
         # Presumably if the request is valid the bot should be disabled or
         # overridden, but seems like no valid case for allowing this (see #1696).
-        self.review_messages['declined'] = 'Deleting the {} project is not allowed.'.format(action.tgt_project)
+        self.review_messages['declined'] = f'Deleting the {action.tgt_project} project is not allowed.'
         return False
 
     def check_action_delete_repository(self, request, action):

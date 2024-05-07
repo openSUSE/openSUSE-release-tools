@@ -55,7 +55,7 @@ class BugownerTool(ToolBase.ToolBase):
         url = self.makeurl(['person', name])
         root = ET.fromstring(self.cached_GET(url))
 
-        person = Person(*[root.find('./{}'.format(field)).text for field in Person._fields])
+        person = Person(*[root.find(f'./{field}').text for field in Person._fields])
         self.persons[name] = person
 
         return person
@@ -76,9 +76,9 @@ class BugownerTool(ToolBase.ToolBase):
         url = self.makeurl(['search', 'owner'], {'binary': package})
         root = ET.fromstring(self.cached_GET(url))
         ret = []
-        for node in root.findall('./owner/person[@role="{}"]'.format(role)):
+        for node in root.findall(f'./owner/person[@role="{role}"]'):
             ret.append(Owner('person', node.get('name')))
-        for node in root.findall('./owner/group[@role="{}"]'.format(role)):
+        for node in root.findall(f'./owner/group[@role="{role}"]'):
             ret.append(Owner('group', node.get('name')))
 
         return ret
@@ -88,7 +88,7 @@ class BugownerTool(ToolBase.ToolBase):
         root = ET.fromstring(self.cached_GET(url))
         idname = 'userid' if owner.kind == 'person' else 'groupid'
         # XXX: can't use 'and' here to filter for bugowner too
-        exists = root.findall('./{}[@{}="{}"]'.format(owner.kind, idname, owner.name))
+        exists = root.findall(f'./{owner.kind}[@{idname}="{owner.name}"]')
         for node in exists:
             if node.get('role') == 'bugowner':
                 logger.debug("%s/%s already has %s %s", self.project, package, owner.kind, owner.name)
@@ -113,7 +113,7 @@ class BugownerTool(ToolBase.ToolBase):
             user = srcrev['user']
 
         if self.is_release_manager(user):
-            logging.debug("%s was last touched by %s, ignored." % (package, user))
+            logging.debug(f"{package} was last touched by {user}, ignored.")
             return None
 
         return [Owner('person', user)]
@@ -138,7 +138,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     def get_optparser(self):
         parser = ToolBase.CommandLineInterface.get_optparser(self)
         parser.add_option('-p', '--project', dest='project', metavar='PROJECT',
-                          help='project to process (default: %s)' % FACTORY,
+                          help=f'project to process (default: {FACTORY})',
                           default=FACTORY)
         parser.add_option('--reference-project', metavar='PROJECT',
                           action='append', help='reference project')

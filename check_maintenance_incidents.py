@@ -38,7 +38,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
             if prj.startswith('openSUSE:Leap') or prj.startswith('openSUSE:1'):
                 self.logger.debug("%s looks wrong as maintainer, skipped", prj)
                 continue
-            msg = 'Submission for {} by someone who is not maintainer in the devel project ({}). Please review'.format(pkg, prj)
+            msg = f'Submission for {pkg} by someone who is not maintainer in the devel project ({prj}). Please review'
             self.add_review(req, by_project=prj, by_package=pkg, msg=msg)
 
     @staticmethod
@@ -75,16 +75,16 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         if project.startswith('openSUSE:Leap:') and hasattr(a, 'src_project'):
             mapping = MaintenanceChecker._get_lookup_yml(self.apiurl, project)
             if mapping is None:
-                self.logger.error("error loading mapping for {}".format(project))
+                self.logger.error(f"error loading mapping for {project}")
             elif pkgname not in mapping:
-                self.logger.debug("{} not tracked".format(pkgname))
+                self.logger.debug(f"{pkgname} not tracked")
             else:
                 origin = mapping[pkgname]
-                self.logger.debug("{} comes from {}, submitted from {}".format(pkgname, origin, a.src_project))
+                self.logger.debug(f"{pkgname} comes from {origin}, submitted from {a.src_project}")
                 if origin.startswith('SUSE:SLE-12') and a.src_project.startswith('SUSE:SLE-12') \
                         or origin.startswith('SUSE:SLE-15') and a.src_project.startswith('SUSE:SLE-15') \
                         or origin.startswith('openSUSE:Leap') and a.src_project.startswith('openSUSE:Leap'):
-                    self.logger.info("{} submitted from {}, no maintainer review needed".format(pkgname, a.src_project))
+                    self.logger.info(f"{pkgname} submitted from {a.src_project}, no maintainer review needed")
                     return
 
         maintainers = set(maintainers_get(self.apiurl, project, pkgname))
@@ -92,18 +92,18 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
             known_maintainer = False
             for m in maintainers:
                 if author == m:
-                    self.logger.debug("%s is maintainer" % author)
+                    self.logger.debug(f"{author} is maintainer")
                     known_maintainer = True
             if not known_maintainer:
                 for r in req.reviews:
                     if r.by_user in maintainers:
-                        self.logger.debug("found %s as reviewer" % r.by_user)
+                        self.logger.debug(f"found {r.by_user} as reviewer")
                         known_maintainer = True
             if not known_maintainer:
-                self.logger.debug("author: %s, maintainers: %s => need review" % (author, ','.join(maintainers)))
+                self.logger.debug(f"author: {author}, maintainers: {','.join(maintainers)} => need review")
                 self.needs_maintainer_review.add(pkgname)
         else:
-            self.logger.warning("%s doesn't have maintainers" % pkgname)
+            self.logger.warning(f"{pkgname} doesn't have maintainers")
             self.needs_maintainer_review.add(pkgname)
 
     def check_action_maintenance_incident(self, req, a):

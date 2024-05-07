@@ -15,8 +15,8 @@ class TestComment(unittest.TestCase):
         self.api = CommentAPI('bogus')
         self.bot = type(self).__name__
         self.comments = {
-            1: {'comment': '<!-- {} -->\n\nshort comment'.format(self.bot)},
-            2: {'comment': '<!-- {} foo=bar distro=openSUSE -->\n\nshort comment'.format(self.bot)}
+            1: {'comment': f'<!-- {self.bot} -->\n\nshort comment'},
+            2: {'comment': f'<!-- {self.bot} foo=bar distro=openSUSE -->\n\nshort comment'}
         }
 
     def test_truncate(self):
@@ -52,7 +52,7 @@ handle
             truncated = self.api.truncate(comment, length=i)
             print('=' * 80)
             print(truncated)
-            self.assertTrue(len(truncated) <= i, '{} <= {}'.format(len(truncated), i))
+            self.assertTrue(len(truncated) <= i, f'{len(truncated)} <= {i}')
             self.assertEqual(truncated.count('<pre>'), truncated.count('</pre>'))
             self.assertFalse(len(re.findall(r'</?\w+[^\w>]', truncated)))
             tag_count = truncated.count('<pre>') + truncated.count('</pre>')

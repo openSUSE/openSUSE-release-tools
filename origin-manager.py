@@ -86,7 +86,7 @@ class OriginManager(ReviewBot.ReviewBot):
     def check_source_submission(self, src_project, src_package, src_rev, tgt_project, tgt_package) -> Optional[bool]:
         kind = package_kind(self.apiurl, tgt_project, tgt_package)
         if not (kind is None or kind == 'source'):
-            self.review_messages['accepted'] = 'skipping {} package since not source'.format(kind)
+            self.review_messages['accepted'] = f'skipping {kind} package since not source'
             return True
 
         advance, result = self.config_validate(tgt_project)
@@ -172,7 +172,7 @@ class OriginManager(ReviewBot.ReviewBot):
 
         override, who = self.devel_project_simulate_check_command(source_project, target_project)
         if override:
-            return override, 'change_devel command by {}'.format(who)
+            return override, f'change_devel command by {who}'
 
         return False, None
 
@@ -244,7 +244,7 @@ class OriginManager(ReviewBot.ReviewBot):
     def policy_result_comment_add(self, project, package, comments):
         message = '\n\n'.join(comments)
         if len(self.request.actions) > 1:
-            message = '## {}/{}\n\n{}'.format(project, package, message)
+            message = f'## {project}/{package}\n\n{message}'
             suffix = '::'.join([project, package])
         else:
             suffix = None

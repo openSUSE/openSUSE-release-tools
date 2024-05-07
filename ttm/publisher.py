@@ -50,7 +50,7 @@ class ToTestPublisher(ToTestManager):
         self.failed_ignored_jobs = []
 
         if len(jobs) < self.project.jobs_num:  # not yet scheduled
-            self.logger.warning('we have only %s jobs' % len(jobs))
+            self.logger.warning(f'we have only {len(jobs)} jobs')
             return QAResult.inprogress
 
         in_progress = False
@@ -92,7 +92,7 @@ class ToTestPublisher(ToTestManager):
                         # remove flag - unfortunately can't delete comment unless admin
                         data = {'text': text}
                         if self.dryrun:
-                            self.logger.info('Would label {} with: {}'.format(job['id'], text))
+                            self.logger.info(f"Would label {job['id']} with: {text}")
                         else:
                             self.openqa.openqa_request(
                                 'PUT', 'jobs/%s/comments/%d' % (job['id'], labeled), data=data)
@@ -103,12 +103,12 @@ class ToTestPublisher(ToTestManager):
                     if not labeled and len(refs) > 0:
                         data = {'text': 'label:unknown_failure'}
                         if self.dryrun:
-                            self.logger.info('Would label {} as unknown'.format(job['id']))
+                            self.logger.info(f"Would label {job['id']} as unknown")
                         else:
                             self.openqa.openqa_request(
-                                'POST', 'jobs/%s/comments' % job['id'], data=data)
+                                'POST', f"jobs/{job['id']}/comments", data=data)
 
-                    joburl = '%s/tests/%s' % (self.project.openqa_server, job['id'])
+                    joburl = f"{self.project.openqa_server}/tests/{job['id']}"
                     self.logger.info('job %s failed, see %s', job['name'], joburl)
 
             elif job['result'] == 'passed' or job['result'] == 'softfailed':
@@ -137,7 +137,7 @@ class ToTestPublisher(ToTestManager):
 
         self.logger.debug('Sending AMQP message')
         inf = re.sub(r'ed$', '', str(current_result))
-        msg_topic = '%s.ttm.build.%s' % (self.project.base.lower(), inf)
+        msg_topic = f'{self.project.base.lower()}.ttm.build.{inf}'
         msg_body = json.dumps({
             'build': current_snapshot,
             'project': self.project.name,
@@ -158,9 +158,9 @@ class ToTestPublisher(ToTestManager):
                 notify_connection.close()
                 break
             except pika.exceptions.ConnectionClosed as e:
-                self.logger.warning('Sending AMQP event did not work: %s. Retrying try %s out of %s' % (e, t, tries))
+                self.logger.warning(f'Sending AMQP event did not work: {e}. Retrying try {t} out of {tries}')
         else:
-            self.logger.error('Could not send out AMQP event for %s tries, aborting.' % tries)
+            self.logger.error(f'Could not send out AMQP event for {tries} tries, aborting.')
 
     def publish(self, project, force=False):
         self.setup(project)
@@ -179,7 +179,7 @@ class ToTestPublisher(ToTestManager):
         current_snapshot = self.get_status('testing')
 
         if self.get_status('publishing') == current_snapshot:
-            self.logger.info('{} is already publishing'.format(current_snapshot))
+            self.logger.info(f'{current_snapshot} is already publishing')
             # migrating - if there is no published entry, the last publish call
             # didn't wait for publish - and as such didn't set published state
             if self.get_status('published') != current_snapshot:
@@ -189,8 +189,8 @@ class ToTestPublisher(ToTestManager):
         current_result = self.overall_result(current_snapshot)
         current_qa_version = self.current_qa_version()
 
-        self.logger.info('current_snapshot {}: {}'.format(current_snapshot, str(current_result)))
-        self.logger.debug('current_qa_version {}'.format(current_qa_version))
+        self.logger.info(f'current_snapshot {current_snapshot}: {str(current_result)}')
+        self.logger.debug(f'current_qa_version {current_qa_version}')
 
         self.send_amqp_event(current_snapshot, current_result)
 
@@ -231,7 +231,7 @@ class ToTestPublisher(ToTestManager):
 
         current_snapshot = self.get_status('publishing')
         if self.dryrun:
-            self.logger.info('Publisher finished, updating published snapshot to {}'.format(current_snapshot))
+            self.logger.info(f'Publisher finished, updating published snapshot to {current_snapshot}')
             return
 
         self.update_status('published', current_snapshot)
@@ -263,8 +263,8 @@ class ToTestPublisher(ToTestManager):
             return
 
         status_flag = 'published'
-        data = {'text': 'tag:{}:{}:{}'.format(snapshot, status_flag, status_flag)}
-        self.openqa.openqa_request('POST', 'groups/%s/comments' % group_id, data=data)
+        data = {'text': f'tag:{snapshot}:{status_flag}:{status_flag}'}
+        self.openqa.openqa_request('POST', f'groups/{group_id}/comments', data=data)
 
     def openqa_group_id(self):
         url = makeurl(self.project.openqa_server,

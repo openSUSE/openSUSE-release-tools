@@ -77,7 +77,7 @@ def get_request_list_with_history(
     xpath = ''
     if 'all' not in req_state:
         for state in req_state:
-            xpath = xpath_join(xpath, 'state/@name=\'%s\'' % state, inner=True)
+            xpath = xpath_join(xpath, f'state/@name=\'{state}\'', inner=True)
     if req_who:
         xpath = xpath_join(xpath, '(state/@who=\'%(who)s\' or history/@who=\'%(who)s\')' % {'who': req_who}, op='and')
 
@@ -95,12 +95,12 @@ def get_request_list_with_history(
         xpath = xpath_join(xpath, xpath_base % {'kind': kind, 'val': val}, op='and', nexpr_parentheses=True)
 
     if req_type:
-        xpath = xpath_join(xpath, 'action/@type=\'%s\'' % req_type, op='and')
+        xpath = xpath_join(xpath, f'action/@type=\'{req_type}\'', op='and')
     for i in exclude_target_projects:
-        xpath = xpath_join(xpath, '(not(action/target/@project=\'%(prj)s\'))' % {'prj': i}, op='and')
+        xpath = xpath_join(xpath, f'(not(action/target/@project=\'{i}\'))', op='and')
 
     if conf.config['verbose'] > 1:
-        print('[ %s ]' % xpath)
+        print(f'[ {xpath} ]')
     queries = {}
     queries['request'] = {'withfullhistory': '1'}
     res = osc_core_search(apiurl, queries=queries, request=xpath)
@@ -175,9 +175,9 @@ def project_role_expand(apiurl, project, role='maintainer'):
 
 
 def meta_role_expand(apiurl, meta, role='maintainer'):
-    users = meta.xpath('//person[@role="{}"]/@userid'.format(role))
+    users = meta.xpath(f'//person[@role="{role}"]/@userid')
 
-    groups = meta.xpath('//group[@role="{}"]/@groupid'.format(role))
+    groups = meta.xpath(f'//group[@role="{role}"]/@groupid')
     users.extend(groups_members(apiurl, groups))
 
     return users
@@ -200,7 +200,7 @@ def package_list(apiurl, project, expand=True):
 @memoize(session=True)
 def target_archs(apiurl, project, repository='standard'):
     meta = ET.fromstringlist(show_project_meta(apiurl, project))
-    return meta.xpath('repository[@name="{}"]/arch/text()'.format(repository))
+    return meta.xpath(f'repository[@name="{repository}"]/arch/text()')
 
 
 @memoize(session=True)
@@ -323,7 +323,7 @@ def devel_project_fallback(apiurl, target_project, target_package):
 def devel_projects(apiurl, project):
     devel_projects = set()
 
-    root = search(apiurl, 'package', "@project='{}' and devel/@project!=''".format(project))
+    root = search(apiurl, 'package', f"@project='{project}' and devel/@project!=''")
     for devel_project in root.xpath('package/devel/@project'):
         if devel_project != project:
             devel_projects.add(devel_project)
@@ -345,7 +345,7 @@ def request_age(request):
 
 def project_list_prefix(apiurl, prefix):
     """Get a list of project with the same prefix."""
-    query = {'match': 'starts-with(@name, "{}")'.format(prefix)}
+    query = {'match': f'starts-with(@name, "{prefix}")'}
     url = makeurl(apiurl, ['search', 'project', 'id'], query)
     root = ET.parse(http_GET(url)).getroot()
     return root.xpath('project/@name')
@@ -401,7 +401,7 @@ def entity_email(apiurl, key, entity_type='person', include_name=False):
 
     realname = root.find('realname')
     if include_name and realname is not None:
-        email = '{} <{}>'.format(realname.text, email)
+        email = f'{realname.text} <{email}>'
 
     return email
 
@@ -506,8 +506,8 @@ def attribute_value_load(
 
         raise e
 
-    xpath_base = './attribute[@namespace="{}" and @name="{}"]'.format(namespace, name)
-    value = root.xpath('{}/value/text()'.format(xpath_base))
+    xpath_base = f'./attribute[@namespace="{namespace}" and @name="{name}"]'
+    value = root.xpath(f'{xpath_base}/value/text()')
     if not len(value):
         if root.xpath(xpath_base):
             # Handle boolean attributes that are present, but have no value.
@@ -563,7 +563,7 @@ def repository_path_expand(apiurl: str, project: str, repo: str, visited_repos: 
         visited_repos = set()
     repos = [[project, repo]]
     meta = ET.fromstringlist(show_project_meta(apiurl, project))
-    paths = meta.findall('.//repository[@name="{}"]/path'.format(repo))
+    paths = meta.findall(f'.//repository[@name="{repo}"]/path')
 
     # The listed paths are taken as-is, except for the last one...
     for path in paths[:-1]:
@@ -595,7 +595,7 @@ def repository_path_search(apiurl, project, search_project, search_repository):
             # Repositories for a single project are in a row so cache parsing.
             root = ET.fromstringlist(show_project_meta(apiurl, project))
 
-        paths = root.findall('repository[@name="{}"]/path'.format(repository))
+        paths = root.findall(f'repository[@name="{repository}"]/path')
         for path in paths:
             if path.get('project') == search_project and path.get('repository') == search_repository:
                 return repository_top
@@ -865,7 +865,7 @@ def package_version(apiurl, project, package):
 
 
 def project_attribute_list(apiurl, attribute, locked=None):
-    xpath = 'attribute/@name="{}"'.format(attribute)
+    xpath = f'attribute/@name="{attribute}"'
     root = search(apiurl, 'project', xpath)
     for project in root.xpath('project/@name'):
         # Locked not exposed via OBS xpath engine.
@@ -922,7 +922,7 @@ def project_remote_prefixed(apiurl, apiurl_remote, project):
         if remote_apiurl == apiurl_remote:
             return remote + ':' + project
 
-    raise Exception('remote APIURL interconnect not configured for{}'.format(apiurl_remote))
+    raise Exception(f'remote APIURL interconnect not configured for{apiurl_remote}')
 
 
 def review_find_last(request, user, states=['all']):
@@ -978,7 +978,7 @@ def issue_tracker_by_url(apiurl: str, tracker_url: str) -> Optional[str]:
     if not tracker_url.endswith('/'):
         # All trackers are formatted with trailing slash.
         tracker_url += '/'
-    return next(iter(root.xpath('issue-tracker[url[text()="{}"]]'.format(tracker_url)) or []), None)
+    return next(iter(root.xpath(f'issue-tracker[url[text()="{tracker_url}"]]') or []), None)
 
 
 def issue_tracker_label_apply(tracker, identifier):
@@ -987,7 +987,7 @@ def issue_tracker_label_apply(tracker, identifier):
 
 def request_remote_identifier(apiurl: str, apiurl_remote: str, request_id: str) -> str:
     if apiurl_remote == apiurl:
-        return 'request#{}'.format(request_id)
+        return f'request#{request_id}'
 
     # The URL differences make this rather convoluted.
     tracker = issue_tracker_by_url(apiurl, apiurl_remote.replace('api.', 'build.'))
@@ -1085,7 +1085,7 @@ def request_action_list_maintenance_incident(apiurl, project, package, states=['
     # included in the search results. Overall, another prime example of design
     # done completely and utterly wrong.
 
-    package_repository = '{}.{}'.format(package, project.replace(':', '_'))
+    package_repository = f"{package}.{project.replace(':', '_')}"
 
     # Loop over all maintenance projects and create selectors for the two
     # request states for the given project.
@@ -1099,7 +1099,7 @@ def request_action_list_maintenance_incident(apiurl, project, package, states=['
 
         xpath_project_package = ''
         xpath_project_package = xpath_join(
-            xpath_project_package, 'action/source/@package="{}"'.format(package))
+            xpath_project_package, f'action/source/@package="{package}"')
         xpath_project_package = xpath_join(
             xpath_project_package, 'action/source/@package="{}"'.format(
                 package_repository), op='or', inner=True)
@@ -1117,12 +1117,12 @@ def request_action_list_maintenance_incident(apiurl, project, package, states=['
 
         xpath = xpath_join(xpath, xpath_project, op='or', nexpr_parentheses=True)
 
-    xpath = '({})'.format(xpath)
+    xpath = f'({xpath})'
 
     if 'all' not in states:
         xpath_states = ''
         for state in states:
-            xpath_states = xpath_join(xpath_states, 'state/@name="{}"'.format(state), inner=True)
+            xpath_states = xpath_join(xpath_states, f'state/@name="{state}"', inner=True)
         xpath = xpath_join(xpath, xpath_states, op='and', nexpr_parentheses=True)
 
     xpath = xpath_join(xpath, 'action/@type="maintenance_incident"', op='and')
@@ -1142,16 +1142,16 @@ def request_action_list_maintenance_incident(apiurl, project, package, states=['
 
 
 def request_action_list_maintenance_release(apiurl, project, package, states=['new', 'review']):
-    package_repository = '{}.{}'.format(package, project.replace(':', '_'))
+    package_repository = f"{package}.{project.replace(':', '_')}"
 
-    xpath = 'action/target/@project="{}"'.format(project)
-    xpath = xpath_join(xpath, 'action/source/@package="{}"'.format(package_repository), op='and', inner=True)
-    xpath = '({})'.format(xpath)
+    xpath = f'action/target/@project="{project}"'
+    xpath = xpath_join(xpath, f'action/source/@package="{package_repository}"', op='and', inner=True)
+    xpath = f'({xpath})'
 
     if 'all' not in states:
         xpath_states = ''
         for state in states:
-            xpath_states = xpath_join(xpath_states, 'state/@name="{}"'.format(state), inner=True)
+            xpath_states = xpath_join(xpath_states, f'state/@name="{state}"', inner=True)
         xpath = xpath_join(xpath, xpath_states, op='and', nexpr_parentheses=True)
 
     xpath = xpath_join(xpath, 'action/@type="maintenance_release"', op='and')
@@ -1257,7 +1257,7 @@ def request_create_delete(apiurl, target_project, target_package, message=None):
     def create_function():
         return create_delete_request(apiurl, target_project, target_package, message)
 
-    return RequestFuture('delete {}/{}'.format(target_project, target_package), create_function)
+    return RequestFuture(f'delete {target_project}/{target_package}', create_function)
 
 
 def request_create_change_devel(apiurl, source_project, source_package,
@@ -1363,7 +1363,7 @@ class RequestFuture:
             return None
 
         request_id = self.create_tolerant()
-        print('{} = {}'.format(self, request_id))
+        print(f'{self} = {request_id}')
         return request_id
 
     def __str__(self):
@@ -1383,9 +1383,9 @@ def add_description(request, text=None):
 
 def message_suffix(action, message=None):
     if not message:
-        message = '{} by OSRT tools'.format(action)
+        message = f'{action} by OSRT tools'
 
-    message += ' (host {})'.format(socket.gethostname())
+    message += f' (host {socket.gethostname()})'
     return message
 
 

@@ -170,12 +170,12 @@ def mail_send(apiurl, project, to, subject, body, from_key='maintainer',
     if from_key is None:
         sender = entity_email(apiurl, conf.get_apiurl_usr(apiurl), include_name=True)
     else:
-        sender = config['mail-{}'.format(from_key)]
+        sender = config[f'mail-{from_key}']
 
     if '@' not in to:
-        to = config['mail-{}'.format(to)]
+        to = config[f'mail-{to}']
 
-    followup_to = config.get('mail-{}'.format(followup_to_key))
+    followup_to = config.get(f'mail-{followup_to_key}')
     relay = config.get('mail-relay', 'relay.suse.de')
 
     mail_send_with_details(text=body, subject=subject, relay=relay, sender=sender,

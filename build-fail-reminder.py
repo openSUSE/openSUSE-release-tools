@@ -31,7 +31,7 @@ class RemindedPackage(object):
         self.problem = problem
 
     def __str__(self):
-        return '{} {} {} {}'.format(self.firstfail, self.reminded, self.remindCount, self.problem)
+        return f'{self.firstfail} {self.reminded} {self.remindCount} {self.problem}'
 
 
 def jdefault(o):
@@ -88,14 +88,14 @@ Kind regards,
 
 def SendMail(logger, project, sender, to, fullname, subject, text):
     try:
-        xmailer = '{} - Problem Notification'.format(project)
+        xmailer = f'{project} - Problem Notification'
         to = email.utils.formataddr((fullname, to))
         mail_send_with_details(sender=sender, to=to,
                                subject=subject, text=text, xmailer=xmailer,
                                relay=args.relay, dry=args.dry)
     except Exception as e:
         print(e)
-        logger.error("Failed to send an email to %s (%s)" % (fullname, to))
+        logger.error(f"Failed to send an email to {fullname} ({to})")
 
 
 def check_reminder(pname, first, problem, now, Reminded, RemindedLoaded):
@@ -144,7 +144,7 @@ def main(args):
     global project
     project = args.project
 
-    logger.debug('loading build fails for %s' % project)
+    logger.debug(f'loading build fails for {project}')
     url = osc.core.makeurl(apiurl, ['source', f'{project}:Staging', 'dashboard', f'rebuildpacs.{project}-standard.yaml'])
     try:
         _data = osc.core.http_GET(url)
@@ -162,7 +162,7 @@ def main(args):
 
     reminded_json = args.json
     if not reminded_json:
-        reminded_json = '{}.reminded.json'.format(project)
+        reminded_json = f'{project}.reminded.json'
 
     try:
         with open(reminded_json) as json_data:
@@ -225,7 +225,7 @@ def main(args):
                 for userid in maintainers:
                     to = Person[userid][2]
                     fullname = Person[userid][1]
-                    subject = '%s - %s - Build problem notification' % (project, package)
+                    subject = f'{project} - {package} - Build problem notification'
                     text = MAIL_TEMPLATES[Reminded[package].remindCount - 1] % {
                         'recipient': fullname,
                         'sender': sender,
@@ -250,11 +250,11 @@ def main(args):
         ProjectComplainList.sort()
         to = 'factory@lists.opensuse.org'
         fullname = "openSUSE Factory - Mailing List"
-        subject = "%(project)s - Build fail notification" % {'project': project}
+        subject = f"{project} - Build fail notification"
 
-        text = u"""Dear Package maintainers and hackers.
+        text = f"""Dear Package maintainers and hackers.
 
-Below package(s) in %(project)s have had problems for at
+Below package(s) in {project} have had problems for at
 least 4 weeks. We tried to send out notifications to the
 configured bugowner/maintainers of the package(s), but so far no
 fix has been submitted. This probably means that the
@@ -262,16 +262,16 @@ maintainer/bugowner did not yet find the time to look into the
 matter and he/she would certainly appreciate help to get this
 sorted.
 
-""" % {'project': project}
+"""
         for pkg in ProjectComplainList:
-            text += "- %s: %s\n" % (pkg, Reminded[pkg].problem)
-        text += u"""
+            text += f"- {pkg}: {Reminded[pkg].problem}\n"
+        text += f"""
 Unless somebody is stepping up and submitting fixes, the listed
-package(s) are going to be removed from %(project)s.
+package(s) are going to be removed from {project}.
 
 Kind regards,
-%(sender)s
-""" % {'project': project, 'sender': sender}
+{sender}
+"""
         SendMail(logger, project, sender, to, fullname, subject, text)
 
 

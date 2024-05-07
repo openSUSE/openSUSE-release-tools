@@ -45,7 +45,7 @@ class UnselectCommand(object):
         if cleanup:
             obsolete = self.api.project_status_requests('obsolete', self.filter_obsolete)
             if len(obsolete) > 0:
-                print('Cleanup {} obsolete requests'.format(len(obsolete)))
+                print(f'Cleanup {len(obsolete)} obsolete requests')
                 packages += tuple(obsolete)
 
         affected_projects = set()
@@ -53,7 +53,7 @@ class UnselectCommand(object):
                                                                      self.api).items():
             staging_project = request_project['staging']
             affected_projects.add(staging_project)
-            print('Unselecting "{}" from "{}"'.format(request, staging_project))
+            print(f'Unselecting "{request}" from "{staging_project}"')
             self.api.rm_from_prj(staging_project, request_id=request)
 
             req = get_request(self.api.apiurl, str(request))

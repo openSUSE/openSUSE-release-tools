@@ -25,7 +25,7 @@ class MockedContainerCleaner(ContainerCleaner):
 
             return ret
         else:
-            raise RuntimeError("Path %s not expected" % path)
+            raise RuntimeError(f"Path {path} not expected")
 
     def getDirBinaries(self, path):
         """Mock certain OBS APIs returning a list of binaries"""
@@ -37,7 +37,7 @@ class MockedContainerCleaner(ContainerCleaner):
 
             return []
         else:
-            raise RuntimeError("Path %s not expected" % path)
+            raise RuntimeError(f"Path {path} not expected")
 
 
 class TestContainerCleaner(unittest.TestCase):

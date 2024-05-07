@@ -54,14 +54,14 @@ def _full_project_name(self, project):
         return project
 
     if project.startswith('Factory'):
-        return 'openSUSE:%s' % project
+        return f'openSUSE:{project}'
 
     if project.startswith('SLE') or project.startswith('ALP'):
-        return 'SUSE:%s' % project
+        return f'SUSE:{project}'
 
     # If we can't guess, raise a Warning
     if (':' not in project):
-        warnings.warn('%s project not recognized.' % project)
+        warnings.warn(f'{project} project not recognized.')
     return project
 
 
@@ -360,7 +360,7 @@ def do_staging(self, subcmd, opts, *args):
     ):
         min_args, max_args = 0, 0
     else:
-        raise oscerr.WrongArgs('Unknown command: %s' % cmd)
+        raise oscerr.WrongArgs(f'Unknown command: {cmd}')
     args = clean_args(args)
     if len(args) - 1 < min_args:
         raise oscerr.WrongArgs('Too few arguments.')
@@ -551,7 +551,7 @@ def do_staging(self, subcmd, opts, *args):
                         return
 
                 for group, info in sorted(proposal.items()):
-                    print('Staging {} in {}'.format(group, info['staging']))
+                    print(f"Staging {group} in {info['staging']}")
 
                     # SelectCommand expects strings.
                     request_ids = map(str, info['requests'].keys())

@@ -46,7 +46,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     @cmdln.option('-d', '--dry', help='no modifications uploaded')
     @cmdln.option('-p', '--project', help='target project')
     @cmdln.option('-g', '--git-url', help='git repository for target project')
-    @cmdln.option('-s', '--scope', help='scope on which to operate ({}, staging:$letter)'.format(', '.join(SCOPES)))
+    @cmdln.option('-s', '--scope', help=f"scope on which to operate ({', '.join(SCOPES)}, staging:$letter)")
     @cmdln.option('--no-checkout', action='store_true', help='reuse checkout in cache')
     @cmdln.option('--stop-after-solve', action='store_true', help='only create group files')
     @cmdln.option('--staging', help='Only solve that one staging')
@@ -115,4 +115,4 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         elif scope == 'ring1':
             return solve_project(api.rings[1], scope)
         else:
-            raise ValueError('scope "{}" must be one of: {}'.format(scope, ', '.join(self.SCOPES)))
+            raise ValueError(f"scope \"{scope}\" must be one of: {', '.join(self.SCOPES)}")

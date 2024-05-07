@@ -28,13 +28,13 @@ class TestFreeze(OBSLocal.TestCase):
 
         fp = self._get_fixture_path('staging-meta-for-bootstrap-copy.xml')
         fc.prj = 'openSUSE:Factory:Staging:A'
-        fixture = subprocess.check_output('/usr/bin/xmllint --format %s' % fp, shell=True).decode('utf-8')
+        fixture = subprocess.check_output(f'/usr/bin/xmllint --format {fp}', shell=True).decode('utf-8')
 
         f = tempfile.NamedTemporaryFile(delete=False)
         f.write(fc.prj_meta_for_bootstrap_copy())
         f.close()
 
-        output = subprocess.check_output('/usr/bin/xmllint --format %s' % f.name, shell=True).decode('utf-8')
+        output = subprocess.check_output(f'/usr/bin/xmllint --format {f.name}', shell=True).decode('utf-8')
 
         for line in difflib.unified_diff(fixture.split("\n"), output.split("\n")):
             print(line)

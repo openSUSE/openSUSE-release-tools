@@ -74,7 +74,7 @@ class Config(Base):
     t_updated = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
 def db_engine():
-    return create_engine('sqlite:///%s/abi-checker.db'%DATADIR)
+    return create_engine(f'sqlite:///{DATADIR}/abi-checker.db')
 
 def db_session():
     engine = db_engine()

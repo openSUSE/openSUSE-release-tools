@@ -89,7 +89,7 @@ class Group(object):
 
     def _verify_solved(self):
         if not self.solved:
-            raise Exception('group {} not solved'.format(self.name))
+            raise Exception(f'group {self.name} not solved')
 
     def inherit(self, group):
         for arch in self.architectures:
@@ -144,7 +144,7 @@ class Group(object):
                 jobs = list(self.pkglist.lockjobs[arch])
                 sel = pool.select(str(n), solv.Selection.SELECTION_NAME)
                 if sel.isempty():
-                    self.logger.debug('{}.{}: package {} not found'.format(self.name, arch, n))
+                    self.logger.debug(f'{self.name}.{arch}: package {n} not found')
                     self.not_found.setdefault(n, set()).add(arch)
                     return
                 else:
@@ -168,14 +168,14 @@ class Group(object):
                 for s in self.silents:
                     sel = pool.select(str(s), solv.Selection.SELECTION_NAME | solv.Selection.SELECTION_FLAT)
                     if sel.isempty():
-                        self.logger.warning('{}.{}: silent package {} not found'.format(self.name, arch, s))
+                        self.logger.warning(f'{self.name}.{arch}: silent package {s} not found')
                     else:
                         jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
 
                 problems = solver.solve(jobs)
                 if problems:
                     for problem in problems:
-                        msg = 'unresolvable: {}:{}.{}: {}'.format(self.name, n, arch, problem)
+                        msg = f'unresolvable: {self.name}:{n}.{arch}: {problem}'
                         self.logger.debug(msg)
                         self.unresolvable[arch][n] = str(problem)
                     return
@@ -361,7 +361,7 @@ class Group(object):
             root.append(c)
 
         if arch != '*':
-            ET.SubElement(root, 'conditional', {'name': 'only_{}'.format(arch)})
+            ET.SubElement(root, 'conditional', {'name': f'only_{arch}'})
         packagelist = ET.SubElement(root, 'packagelist', {'relationship': 'recommends'})
 
         missing = dict()
@@ -372,14 +372,14 @@ class Group(object):
             if name in self.silents:
                 continue
             if name in missing:
-                msg = ' {} not found on {}'.format(name, ','.join(sorted(missing[name])))
+                msg = f" {name} not found on {','.join(sorted(missing[name]))}"
                 if ignore_broken and name not in self.required:
                     c = ET.Comment(msg)
                     packagelist.append(c)
                     continue
                 name = msg
             if name in unresolvable:
-                msg = ' {} uninstallable: {}'.format(name, unresolvable[name])
+                msg = f' {name} uninstallable: {unresolvable[name]}'
                 if ignore_broken and name not in self.required:
                     c = ET.Comment(msg)
                     packagelist.append(c)
@@ -393,7 +393,7 @@ class Group(object):
                 attrs['supportstatus'] = status
             ET.SubElement(packagelist, 'package', attrs)
             if name in packages and packages[name]:
-                c = ET.Comment(' reason: {} '.format(packages[name]))
+                c = ET.Comment(f' reason: {packages[name]} ')
                 packagelist.append(c)
 
         return root

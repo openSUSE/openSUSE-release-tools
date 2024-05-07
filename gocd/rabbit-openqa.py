@@ -44,7 +44,7 @@ class Project(object):
     def map_iso(self, staging_project, iso):
         parts = self.replace_string.split('/')
         if parts[0] != 's':
-            raise Exception("{}'s iso_replace_string does not start with s/".format(self.name))
+            raise Exception(f"{self.name}'s iso_replace_string does not start with s/")
         old = parts[1]
         new = parts[2]
         new = new.replace('$LETTER', self.staging_letter(staging_project))
@@ -316,10 +316,10 @@ class Listener(PubSubConsumer):
         return [job for job in jobs if self.is_production_job(job)]
 
     def get_step_url(self, testurl, modulename):
-        failurl = testurl + '/modules/{!s}/fails'.format(quote_plus(modulename))
+        failurl = testurl + f'/modules/{quote_plus(modulename)!s}/fails'
         fails = requests.get(failurl).json()
         failed_step = fails.get('first_failed_step', 1)
-        return "{!s}#step/{!s}/{:d}".format(testurl, modulename, failed_step)
+        return f"{testurl!s}#step/{modulename!s}/{failed_step:d}"
 
     def test_url(self, job):
         url = self.openqa_url + ("/tests/%d" % job['id'])
@@ -340,7 +340,7 @@ class Listener(PubSubConsumer):
 
     def on_message(self, unused_channel, method, properties, body):
         self.acknowledge_message(method.delivery_tag)
-        if method.routing_key == '{}.obs.repo.published'.format(amqp_prefix):
+        if method.routing_key == f'{amqp_prefix}.obs.repo.published':
             self.on_published_repo(json.loads(body))
         elif re.search(r'.openqa.', method.routing_key):
             data = json.loads(body)
@@ -351,7 +351,7 @@ class Listener(PubSubConsumer):
             elif data.get('HDD_1'):
                 self.on_openqa_job(data.get('HDD_1'))
         else:
-            self.logger.warning("unknown rabbitmq message {}".format(method.routing_key))
+            self.logger.warning(f"unknown rabbitmq message {method.routing_key}")
 
 
 if __name__ == '__main__':

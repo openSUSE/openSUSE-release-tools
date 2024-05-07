@@ -44,7 +44,7 @@ def copy_directory_contents(source, destination, ignore_list=[]):
 
 
 def change_extension(path, original, final):
-    for name in glob.glob(os.path.join(path, '*{}'.format(original))):
+    for name in glob.glob(os.path.join(path, f'*{original}')):
         # Assumes the extension is only found at the end.
         os.rename(name, name.replace(original, final))
 

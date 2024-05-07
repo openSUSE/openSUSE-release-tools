@@ -13,7 +13,7 @@ class PrioCommand(object):
         :param project: project to check
 
         """
-        message = 'raising priority for %s' % status.get('name')
+        message = f"raising priority for {status.get('name')}"
         for r in status.findall('missing_reviews/review'):
             reqid = r.get('request')
             req = osc.core.get_request(self.api.apiurl, reqid)
