@@ -251,7 +251,7 @@ class FreezeCommand(object):
             inc = osc.core.http_GET(sourceurl).read()
             sourceurl_exists=True
         except HTTPError:
-            sourceurlurl_exists=False
+            sourceurl_exists=False
         if targeturl_exists != sourceurl_exists:
             raise Exception("weakremover.inc doesn't exist in both Staging and Parent project, please fix")
         if not(targeturl_exists) and not(sourceurl_exists):
