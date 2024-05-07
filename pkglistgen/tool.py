@@ -640,7 +640,7 @@ class PkgListGen(ToolBase.ToolBase):
         else:
             # No proper API function to perform the same operation.
             logging.debug(subprocess.check_output(
-                ' '.join(['cd', path, '&&', 'osc', 'addremove']), shell=True, encoding='utf-8'))
+                ['osc', 'addremove'], cwd=path, encoding='utf-8'))
             package = Package(path)
             package.commit(msg='Automatic update', skip_local_service_run=True)
 
@@ -906,10 +906,10 @@ class PkgListGen(ToolBase.ToolBase):
                     cwd=cache_dir, encoding='utf-8'))
 
             logging.debug(subprocess.check_output(
-                'git commit -m "Update by pkglistgen of openSUSE-release-tool"', cwd=cache_dir, shell=True, encoding='utf-8'))
+                ['git', 'commit', '-m', 'Update by pkglistgen of openSUSE-release-tool'], cwd=cache_dir, encoding='utf-8'))
             if not self.dry_run:
                 logging.debug(subprocess.check_output(
-                    'git push', cwd=cache_dir, shell=True, encoding='utf-8'))
+                    ['git', 'push'], cwd=cache_dir))
         elif not self.dry_run:
             self.commit_package(product_dir)
 
