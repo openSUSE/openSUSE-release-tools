@@ -61,7 +61,7 @@ class AcceptCommand(object):
                 if link['project'] in self.api.rings or link['project'] == self.api.project:
                     print(f"delete {link['project']}/{link['package']}")
                     delete_package(self.api.apiurl, link['project'], link['package'],
-                                   msg="remove link while accepting delete of {}".format(package))
+                                   msg=f"remove link while accepting delete of {package}")
 
     def check_request_for_bugowner(self, to_request, package, id):
         url = self.api.makeurl(['request', str(id)])
@@ -103,7 +103,7 @@ class AcceptCommand(object):
                 if accept_all_green:
                     continue
                 if not force:
-                    print('The project "{}" is not yet acceptable.'.format(project))
+                    print(f'The project "{project}" is not yet acceptable.')
                     return False
 
             staging_packages[project] = []
@@ -137,7 +137,7 @@ class AcceptCommand(object):
 
         for req in other_new:
             print(f"Accepting request {req['id']}: {req['package']}")
-            change_request_state(self.api.apiurl, str(req['id']), 'accepted', message='Accept to %s' % self.api.project)
+            change_request_state(self.api.apiurl, str(req['id']), 'accepted', message=f'Accept to {self.api.project}')
 
         for project in sorted(staging_packages.keys()):
             print(f'waiting for staging project {project} to be accepted')
@@ -146,7 +146,7 @@ class AcceptCommand(object):
                 status = self.api.project_status(project, reload=True)
                 if status.get('state') == 'empty':
                     break
-                print('{} requests still staged - waiting'.format(status.find('staged_requests').get('count')))
+                print(f"{status.find('staged_requests').get('count')} requests still staged - waiting")
                 time.sleep(1)
 
             self.api.accept_status_comment(project, staging_packages[project])
@@ -185,7 +185,7 @@ class AcceptCommand(object):
         clean_list = set(pkglist) - set(self.api.cnocleanup_packages)
 
         for package in clean_list:
-            print("[cleanup] deleted %s/%s" % (project, package))
+            print(f"[cleanup] deleted {project}/{package}")
             delete_package(self.api.apiurl, project, package, force=True, msg="autocleanup")
 
         return

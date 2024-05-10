@@ -40,7 +40,7 @@ class DockerRegistryClient():
         self.username = username
         self.password = password
         self.repository = repository
-        self.scopes = ["repository:%s:pull,push,delete" % repository]
+        self.scopes = [f"repository:{repository}:pull,push,delete"]
         self.token = None
 
     class DockerRegistryError(Exception):
@@ -63,7 +63,7 @@ class DockerRegistryClient():
             bearer_dict[assignment[0]] = assignment[1].strip('"')
 
         scope_param = "&scope=".join([""] + [urllib.parse.quote(scope) for scope in self.scopes])
-        response = requests.get("%s?service=%s%s" % (bearer_dict['realm'], bearer_dict['service'], scope_param),
+        response = requests.get(f"{bearer_dict['realm']}?service={bearer_dict['service']}{scope_param}",
                                 auth=(self.username, self.password))
         self.token = response.json()['token']
 
@@ -123,7 +123,7 @@ class DockerRegistryClient():
             alg.update(content)
             reference = "sha256:" + alg.hexdigest()
 
-        resp = self.doHttpCall("PUT", "/v2/%s/manifests/%s" % (self.repository, reference),
+        resp = self.doHttpCall("PUT", f"/v2/{self.repository}/manifests/{reference}",
                                headers={'Content-Type': content_json['mediaType']},
                                data=content)
 
@@ -153,7 +153,7 @@ class DockerRegistryClient():
     def getManifest(self, reference):
         """Get a (json-parsed) manifest with the given reference (digest or tag).
         If the manifest does not exist, return None. For other errors, False."""
-        resp = self.doHttpCall("GET", "/v2/%s/manifests/%s" % (self.repository, reference),
+        resp = self.doHttpCall("GET", f"/v2/{self.repository}/manifests/{reference}",
                                headers={'Accept': "application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.docker.distribution.manifest.v2+json"})  # noqa: E501
 
         if resp.status_code == 404:
@@ -167,7 +167,7 @@ class DockerRegistryClient():
     def getManifestDigest(self, reference):
         """Return the digest of the manifest with the given reference.
         If the manifest doesn't exist or the request fails, it returns False."""
-        resp = self.doHttpCall("HEAD", "/v2/%s/manifests/%s" % (self.repository, reference),
+        resp = self.doHttpCall("HEAD", f"/v2/{self.repository}/manifests/{reference}",
                                headers={'Accept': "application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.docker.distribution.manifest.v2+json"})  # noqa: E501
 
         if resp.status_code != 200:
@@ -177,7 +177,7 @@ class DockerRegistryClient():
 
     def deleteManifest(self, digest):
         """Delete the manifest with the given reference."""
-        resp = self.doHttpCall("DELETE", "/v2/%s/manifests/%s" % (self.repository, digest))
+        resp = self.doHttpCall("DELETE", f"/v2/{self.repository}/manifests/{digest}")
 
         return resp.status_code == 202
 
@@ -193,7 +193,7 @@ class DockerRegistryClient():
             raise Exception("Invalid digest")
 
         # Check whether the blob already exists - don't upload it needlessly.
-        stat_request = self.doHttpCall("HEAD", "/v2/%s/blobs/%s" % (self.repository, digest))
+        stat_request = self.doHttpCall("HEAD", f"/v2/{self.repository}/blobs/{digest}")
         if stat_request.status_code == 200 or stat_request.status_code == 307:
             return True
 
@@ -204,7 +204,7 @@ class DockerRegistryClient():
             content = blob.read()
 
         # First request an upload "slot", we get an URL we can PUT to back
-        upload_request = self.doHttpCall("POST", "/v2/%s/blobs/uploads/" % self.repository)
+        upload_request = self.doHttpCall("POST", f"/v2/{self.repository}/blobs/uploads/")
         if upload_request.status_code == 202:
             location = upload_request.headers['Location']
             upload = self.doHttpCall("PUT", location + "&digest=" + digest,

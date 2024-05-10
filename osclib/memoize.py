@@ -131,7 +131,7 @@ def memoize(ttl=None, session=False, add_invalidate=False):
             cache.clear()
 
         def _add_invalidate_method(_self):
-            name = '_invalidate_%s' % fn.__name__
+            name = f'_invalidate_{fn.__name__}'
             if not hasattr(_self, name):
                 setattr(_self, name, _invalidate)
 

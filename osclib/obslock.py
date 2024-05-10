@@ -31,9 +31,9 @@ class OBSLock(object):
         """Create a signature with a timestamp."""
         reason = str(self.reason)
         if self.reason_sub:
-            reason += ' ({})'.format(self.reason_sub)
+            reason += f' ({self.reason_sub})'
         reason = reason.replace('@', 'at').replace('#', 'hash')
-        return '%s#%s@%s' % (self.user, reason, datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f'))
+        return f"{self.user}#{reason}@{datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')}"
 
     def _parse(self, signature):
         """Parse a signature into an user and a timestamp."""
@@ -50,7 +50,7 @@ class OBSLock(object):
         return user, reason, reason_sub, ts
 
     def _read(self):
-        url = makeurl(self.apiurl, ['source', self.lock, '_attribute', '%s:LockedBy' % self.ns])
+        url = makeurl(self.apiurl, ['source', self.lock, '_attribute', f'{self.ns}:LockedBy'])
         try:
             root = ET.parse(http_GET(url)).getroot()
         except HTTPError as e:
@@ -66,12 +66,12 @@ class OBSLock(object):
 
     def _write(self, signature):
         url = makeurl(self.apiurl, ['source', self.lock, '_attribute'])
-        data = """
+        data = f"""
         <attributes>
-          <attribute namespace='%s' name='LockedBy'>
-            <value>%s</value>
+          <attribute namespace='{self.ns}' name='LockedBy'>
+            <value>{signature}</value>
           </attribute>
-        </attributes>""" % (self.ns, signature)
+        </attributes>"""
         http_POST(url, data=data)
 
     def acquire(self):
@@ -88,7 +88,7 @@ class OBSLock(object):
         if user and ts:
             now = datetime.utcnow()
             if now < ts:
-                raise Exception('Lock acquired from the future [%s] by [%s]. Try later.' % (ts, user))
+                raise Exception(f'Lock acquired from the future [{ts}] by [{user}]. Try later.')
             delta = now - ts
             if delta.total_seconds() < self.ttl:
                 # Existing lock that has not expired.
@@ -103,14 +103,14 @@ class OBSLock(object):
                         stop = False
 
                 if stop:
-                    print('Lock acquired by [%s] %s ago, reason <%s>. Try later.' % (user, delta, reason))
+                    print(f'Lock acquired by [{user}] {delta} ago, reason <{reason}>. Try later.')
                     exit(-1)
         self._write(self._signature())
 
         time.sleep(1)
         user, _, _, _ = self._parse(self._read())
         if user != self.user:
-            raise Exception('Race condition, [%s] wins. Try later.' % user)
+            raise Exception(f'Race condition, [{user}] wins. Try later.')
         self.locked = True
 
         return self

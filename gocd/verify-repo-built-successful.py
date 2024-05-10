@@ -33,7 +33,7 @@ if __name__ == '__main__':
         root = ET.parse(http_GET(url)).getroot()
         if root.get('code') == 'finished':
             continue
-        logger.error('Repository {}/{}/{} is not yet finished'.format(args.project, args.repository, arch))
+        logger.error(f'Repository {args.project}/{args.repository}/{arch} is not yet finished')
         logger.debug(ET.tostring(root).decode('utf-8'))
         # scheduling means the scheduler had some reason to double check the repository state.
         # this may or may not result in a restart of the build, but if it doesn't, we're in trouble.
@@ -54,9 +54,9 @@ if __name__ == '__main__':
         if count.get('code') in ['succeeded', 'excluded', 'disabled']:
             counts[count.get('code')] = int(count.get('count'))
             continue
-        logger.error('Repository {}/{} has {} packages'.format(args.project, args.repository, count.get('code')))
+        logger.error(f"Repository {args.project}/{args.repository} has {count.get('code')} packages")
         sys.exit(1)
 
     if counts['disabled'] > counts['succeeded']:
-        logger.error('Repository {}/{} has more disabled packages than succeeded'.format(args.project, args.repository))
+        logger.error(f'Repository {args.project}/{args.repository} has more disabled packages than succeeded')
         sys.exit(1)

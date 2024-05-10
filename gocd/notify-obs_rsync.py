@@ -35,9 +35,9 @@ def notify_project(openqa, state):
         logger.debug(f'{state} did not change')
         return
     try:
-        openqa.openqa_request('PUT', 'obs_rsync/{}/runs?repository={}'.format(project, repository), retries=0)
+        openqa.openqa_request('PUT', f'obs_rsync/{project}/runs?repository={repository}', retries=0)
     except RequestError as e:
-        logger.info("Got exception on syncing repository: {}".format(e))
+        logger.info(f"Got exception on syncing repository: {e}")
         return
     copyfile(old_filename(state), new_filename(state))
     subprocess.run(f'cd {args.to} && git add . && git commit -m "Update of {project}/{repository}" && git push', shell=True, check=True)
@@ -70,7 +70,7 @@ if __name__ == '__main__':
         interesting_repos[f'{project}_-_{repository}'] = 1
 
     openqa = OpenQA_Client(server=args.openqa)
-    for state in glob.glob('{}/*.yaml'.format(args.repos)):
+    for state in glob.glob(f'{args.repos}/*.yaml'):
         state = basename(state).replace('.yaml', '')
         if state not in interesting_repos:
             continue

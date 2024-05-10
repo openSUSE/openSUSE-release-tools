@@ -95,7 +95,7 @@ def parse_repomd(repo, baseurl):
             sha = hashlib.sha256(primary.content).hexdigest()
 
         if sha != sha_expected:
-            raise Exception('checksums do not match {} != {}'.format(sha, sha_expected))
+            raise Exception(f'checksums do not match {sha} != {sha_expected}')
 
         os.lseek(f.fileno(), 0, os.SEEK_SET)
         f.write(primary.content)
@@ -165,13 +165,13 @@ def print_repo_delta(pool, repo2, packages_file):
     present = dict()
     for s in pool.solvables_iter():
         if s.repo != repo2:
-            key = '{}/{}'.format(s.name, s.arch)
+            key = f'{s.name}/{s.arch}'
             present.setdefault(key, {})
             present[key][s.evr] = s.repo
     for s in repo2.solvables:
         if s.arch == 'src':
             continue
-        key = '{}/{}'.format(s.name, s.arch)
+        key = f'{s.name}/{s.arch}'
         if present.get(key, {}).get(s.evr):
             continue
         elif key not in present:
@@ -277,7 +277,7 @@ def update_project(apiurl, project, fixate=None):
 
         if opts.get('refresh', False):
             opts['build'] = dump_solv_build(opts['url'])
-            path = '{}_{}.packages'.format(key, opts['build'])
+            path = f"{key}_{opts['build']}.packages"
         else:
             path = key + '.packages'
         packages_file = os.path.join(repo_dir, path)

@@ -98,10 +98,10 @@ class StagingHelper(object):
             print("There is no support_pkg_rebuild file!")
             return
 
-        logging.info('Gathering support package list from %s' % self.project)
+        logging.info(f'Gathering support package list from {self.project}')
         support_pkgs = self.get_support_package_list(self.project, 'standard')
         files = self.process_project_binarylist(self.project, 'standard', 'x86_64')
-        staging_projects = ["%s:%s" % (self.api.cstaging, p) for p in self.api.get_staging_projects_short()]
+        staging_projects = [f"{self.api.cstaging}:{p}" for p in self.api.get_staging_projects_short()]
         cand_sources = defaultdict(list)
         for stg in staging_projects:
             status = self.api.project_status(stg, status=False)
@@ -146,7 +146,7 @@ class StagingHelper(object):
                 need_rebuild = True
 
             if need_rebuild and not self.api.is_repo_dirty(stgname, 'standard'):
-                logging.info('Rebuild %s' % stgname)
+                logging.info(f'Rebuild {stgname}')
                 osc.core.rebuild(self.apiurl, stgname, None, None, None)
                 stg.find('rebuild').text = 'unneeded'
 
@@ -174,7 +174,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--debug', action='store_true',
                         help='print info useful for debuging')
     parser.add_argument('-p', '--project', dest='project', metavar='PROJECT',
-                        help='deafult project (default: %s)' % OPENSUSE,
+                        help=f'deafult project (default: {OPENSUSE})',
                         default=OPENSUSE)
 
     args = parser.parse_args()

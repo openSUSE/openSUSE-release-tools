@@ -53,7 +53,7 @@ class ToTestManager(ToolBase.ToolBase):
         self.api = StagingAPI(self.apiurl, project=project)
 
     def version_file(self, target):
-        return 'version_%s' % target
+        return f'version_{target}'
 
     def write_version_to_dashboard(self, target, version):
         if self.dryrun or self.project.do_not_release:
@@ -70,7 +70,7 @@ class ToTestManager(ToolBase.ToolBase):
                 r'.*-(?:Build|Snapshot)([0-9.]+)(?:-Media.*\.iso|\.docker\.tar\.xz|\.tar\.xz|\.raw\.xz|\.appx)', binary)
             if result:
                 return result.group(1)
-        raise NotFoundException("can't find %s iso version" % project)
+        raise NotFoundException(f"can't find {project} iso version")
 
     def version_from_totest_project(self):
         if len(self.project.main_products):
@@ -103,7 +103,7 @@ class ToTestManager(ToolBase.ToolBase):
             result = re.match(r'.*-Build(.*)-Media1.report', binary)
             if result:
                 return result.group(1)
-        raise NotFoundException("can't find %s ftp version" % project)
+        raise NotFoundException(f"can't find {project} ftp version")
 
     # make sure to update the attribute as atomic as possible - as such
     # only update the snapshot and don't erase anything else. The snapshots
@@ -113,7 +113,7 @@ class ToTestManager(ToolBase.ToolBase):
         status_dict = self.get_status_dict()
         if status_dict.get(status) == snapshot:
             return
-        self.logger.info('setting {} snapshot to {} (previously {})'.format(status, snapshot, status_dict.get(status)))
+        self.logger.info(f'setting {status} snapshot to {snapshot} (previously {status_dict.get(status)})')
         if self.dryrun:
             return
         if status_dict.get(status) != snapshot:
@@ -152,7 +152,7 @@ class ToTestManager(ToolBase.ToolBase):
 
         url = self.api.makeurl(baseurl, query=query)
         if self.dryrun or self.project.do_not_release:
-            self.logger.info('release %s/%s (%s)' % (project, package, query))
+            self.logger.info(f'release {project}/{package} ({query})')
         else:
             self.api.retried_POST(url)
 

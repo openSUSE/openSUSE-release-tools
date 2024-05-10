@@ -117,7 +117,7 @@ class TestApiCalls(OBSLocal.TestCase):
 
         # Verify that review is closed
         rq = self.winerq.xml()
-        xpath = "//review[@name='new' and @by_project='{}']".format(self.staging_b.name)
+        xpath = f"//review[@name='new' and @by_project='{self.staging_b.name}']"
         self.assertIsNotNone(rq.xpath(xpath))
 
     def test_add_sr(self):

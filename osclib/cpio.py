@@ -33,7 +33,7 @@ class CpioFile(object):
         fields = struct.unpack(fmt, buf[self.off:off])
 
         if fields[0] != "070701":
-            raise Exception("invalid cpio header %s" % self.c_magic)
+            raise Exception(f"invalid cpio header {self.c_magic}")
 
         names = ("c_ino", "c_mode", "c_uid", "c_gid",
                  "c_nlink", "c_mtime", "c_filesize",

@@ -53,7 +53,7 @@ class ToTest(object):
 
         self.jobs_num = 42
         self.load_config(apiurl)
-        self.test_project = '%s:%s' % (project, self.test_subproject)
+        self.test_project = f'{project}:{self.test_subproject}'
 
     def load_config(self, apiurl):
         config = yaml.safe_load(attribute_value_load(apiurl, self.name, 'ToTestManagerConfig'))

@@ -89,5 +89,5 @@ class SUSEUpdate(Update):
             return []
         settings += self.add_minimal_settings(src_prj, settings[0])
         settings += self.add_kernel_settings(settings[0])
-        self.logger.debug("settings are: {}".format(settings))
+        self.logger.debug(f"settings are: {settings}")
         return settings

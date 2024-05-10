@@ -75,7 +75,7 @@ def search_paginated_generator(apiurl, queries=None, **kwargs):
     while True:
         collection = osc.core.search(apiurl, queries, **kwargs)['request']
         if not request_count:
-            print('processing {:,} requests'.format(int(collection.get('matches'))))
+            print(f"processing {int(collection.get('matches')):,} requests")
 
         for request in collection.findall('request'):
             yield request
@@ -128,7 +128,7 @@ def ingest_requests(api, project):
         }
         # TODO Total time spent in backlog (ie factory-staging, but excluding when staged).
 
-        staged_first_review = request.xpath('review[contains(@by_project, "{}:Staging:")]'.format(project))
+        staged_first_review = request.xpath(f'review[contains(@by_project, "{project}:Staging:")]')
         if len(staged_first_review):
             by_project = staged_first_review[0].get('by_project')
             request_tags['type'] = 'adi' if api.is_adi_project(by_project) else 'letter'
@@ -143,7 +143,7 @@ def ingest_requests(api, project):
                 # All letter where whitelisted since no restriction.
                 request_tags['whitelisted'] = request_tags['type'] == 'letter'
 
-        xpath = 'review[contains(@by_project, "{}:Staging:adi:") and @state="accepted"]/'.format(project)
+        xpath = f'review[contains(@by_project, "{project}:Staging:adi:") and @state="accepted"]/'
         xpath += 'history[comment[text() = "ready to accept"]]/@when'
         ready_to_accept = request.xpath(xpath)
         if len(ready_to_accept):
@@ -169,7 +169,7 @@ def ingest_requests(api, project):
 
         # Staging related reviews.
         for number, review in enumerate(
-                request.xpath('review[contains(@by_project, "{}:Staging:")]'.format(project)), start=1):
+                request.xpath(f'review[contains(@by_project, "{project}:Staging:")]'), start=1):
             staged_at = date_parse(review.get('when'))
 
             project_type = 'adi' if api.is_adi_project(review.get('by_project')) else 'letter'
@@ -196,7 +196,7 @@ def ingest_requests(api, project):
             point('total', {'backlog': 1, 'staged': -1}, unselected_at, {'event': 'unselect'}, True)
 
         # No-staging related reviews.
-        for review in request.xpath('review[not(contains(@by_project, "{}:Staging:"))]'.format(project)):
+        for review in request.xpath(f'review[not(contains(@by_project, "{project}:Staging:"))]'):
             tags = {
                 # who_added is non-trivial due to openSUSE/open-build-service#3898.
                 'state': review.get('state'),
@@ -246,9 +246,9 @@ def ingest_requests(api, project):
             if priority.text in found:
                 point('priority', {'count': -1}, final_at, {'level': priority.text}, True)
             else:
-                print('unable to find priority history entry for {} to {}'.format(request.get('id'), priority.text))
+                print(f"unable to find priority history entry for {request.get('id')} to {priority.text}")
 
-    print('finalizing {:,} points'.format(len(points)))
+    print(f'finalizing {len(points):,} points')
     return walk_points(points, project)
 
 
@@ -340,7 +340,7 @@ def walk_points(points, target):
 def ingest_release_schedule(project):
     points = []
     release_schedule = {}
-    release_schedule_file = os.path.join(SOURCE_DIR, 'metrics/annotation/{}.yaml'.format(project))
+    release_schedule_file = os.path.join(SOURCE_DIR, f'metrics/annotation/{project}.yaml')
     if project.endswith('Factory'):
         # TODO Pending resolution to #1250 regarding deployment.
         return 0
@@ -350,7 +350,7 @@ def ingest_release_schedule(project):
             'grep -oP "' + r'Changes\.\K\d{5,}' + '"'
         snapshots = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE).communicate()[0]
         for date in snapshots.split():
-            release_schedule[datetime.strptime(date, '%Y%m%d')] = 'Snapshot {}'.format(date)
+            release_schedule[datetime.strptime(date, '%Y%m%d')] = f'Snapshot {date}'
     elif os.path.isfile(release_schedule_file):
         # Load release schedule for non-rolling releases from yaml file.
         with open(release_schedule_file, 'r') as stream:
@@ -520,13 +520,13 @@ def ingest_dashboard(api):
         for filename in filenames:
             content = dashboard_at_changed(api, filename, revision)
             if content:
-                map_func = globals()['ingest_dashboard_{}'.format(filename)]
+                map_func = globals()[f'ingest_dashboard_{filename}']
                 fields = map_func(content)
                 if not len(fields):
                     continue
 
                 points.append({
-                    'measurement': 'dashboard_{}'.format(filename),
+                    'measurement': f'dashboard_{filename}',
                     'fields': fields,
                     'time': time,
                 })
@@ -548,7 +548,7 @@ def ingest_dashboard(api):
         client.write_points(points, 's')
         count += len(points)
 
-    print('last revision processed: {}'.format(revision if len(index) else 'none'))
+    print(f"last revision processed: {revision if len(index) else 'none'}")
 
     return count
 
@@ -581,7 +581,7 @@ def main(args):
     Config(apiurl, args.project)
     api = StagingAPI(apiurl, args.project)
 
-    print('dashboard: wrote {:,} points'.format(ingest_dashboard(api)))
+    print(f'dashboard: wrote {ingest_dashboard(api):,} points')
 
     global who_workaround_swap, who_workaround_miss
     who_workaround_swap = who_workaround_miss = 0

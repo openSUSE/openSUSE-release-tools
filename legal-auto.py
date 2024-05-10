@@ -46,7 +46,7 @@ class LegalAuto(ReviewBot.ReviewBot):
             return http_GET(url)
         except HTTPError as e:
             if 500 <= e.code <= 599:
-                self.logger.debug('Retrying {}'.format(url))
+                self.logger.debug(f'Retrying {url}')
                 time.sleep(1)
                 return self.retried_GET(url)
             raise e
@@ -107,7 +107,7 @@ class LegalAuto(ReviewBot.ReviewBot):
             return True
         to_review = self.open_reviews.get(self.request_nick(), None)
         if to_review:
-            self.logger.info("Found {}".format(json.dumps(to_review)))
+            self.logger.info(f"Found {json.dumps(to_review)}")
         to_review = to_review or self.create_db_entry(
             src_project, src_package, src_rev)
         if not to_review:
@@ -117,7 +117,7 @@ class LegalAuto(ReviewBot.ReviewBot):
             url = osc.core.makeurl(self.legaldb, ['package', str(pack)])
             report = REQ.get(url, headers=self.legaldb_headers).json()
             if report.get('priority', 0) != self.request_priority():
-                self.logger.debug('Update priority {}'.format(self.request_priority()))
+                self.logger.debug(f'Update priority {self.request_priority()}')
                 url = osc.core.makeurl(
                     self.legaldb, ['package', str(pack)], {'priority': self.request_priority()})
                 REQ.patch(url, headers=self.legaldb_headers)
@@ -149,7 +149,7 @@ class LegalAuto(ReviewBot.ReviewBot):
                     self.message = "@{} declined the legal report with the following comment: {}".format(
                         user, comment)
                 else:
-                    self.message = "@{} declined the legal report".format(user)
+                    self.message = f"@{user} declined the legal report"
                     return None
                 return False
             # print url, json.dumps(report)
@@ -161,11 +161,11 @@ class LegalAuto(ReviewBot.ReviewBot):
         self.message = None
         result = super(LegalAuto, self).check_one_request(req)
         if result is None and self.message is not None:
-            self.logger.debug("Result of {}: {}".format(req.reqid, self.message))
+            self.logger.debug(f"Result of {req.reqid}: {self.message}")
         return result
 
     def check_action__default(self, req, a):
-        self.logger.error("unhandled request type %s" % a.type)
+        self.logger.error(f"unhandled request type {a.type}")
         return True
 
     def prepare_review(self):
@@ -199,11 +199,10 @@ class LegalAuto(ReviewBot.ReviewBot):
     # overload as we need to get of the bot_request
     def _set_review(self, req, state):
         if self.dryrun:
-            self.logger.debug("dry setting %s to %s with %s" %
-                              (req.reqid, state, self.message))
+            self.logger.debug(f"dry setting {req.reqid} to {state} with {self.message}")
             return
 
-        self.logger.debug("setting %s to %s" % (req.reqid, state))
+        self.logger.debug(f"setting {req.reqid} to {state}")
         osc.core.change_review_state(apiurl=self.apiurl,
                                      reqid=req.reqid, newstate=state,
                                      by_group=self.review_group,
@@ -211,7 +210,7 @@ class LegalAuto(ReviewBot.ReviewBot):
         self.delete_from_db(req.reqid)
 
     def update_project(self, project):
-        yaml_path = os.path.join(CacheManager.directory('legal-auto'), '{}.yaml'.format(project))
+        yaml_path = os.path.join(CacheManager.directory('legal-auto'), f'{project}.yaml')
         try:
             with open(yaml_path, 'r') as file:
                 self.pkg_cache = yaml.load(file, Loader=yaml.SafeLoader)
@@ -256,7 +255,7 @@ class LegalAuto(ReviewBot.ReviewBot):
                 if match and match.group(1) == package:
                     lpackage = package
                 if package != lpackage:
-                    self.logger.info("SKIP {}, it links to {}".format(package, lpackage))
+                    self.logger.info(f"SKIP {package}, it links to {lpackage}")
                     skip = True
                     break
             if skip:
@@ -282,7 +281,7 @@ class LegalAuto(ReviewBot.ReviewBot):
         if 'saved' not in obj:
             return None
         legaldb_id = obj['saved']['id']
-        self.logger.debug("PKG {}/{}[{}]->{} is {}".format(sproject, package, revision, tproject, legaldb_id))
+        self.logger.debug(f"PKG {sproject}/{package}[{revision}]->{tproject} is {legaldb_id}")
         self.pkg_cache[package] = {revision: legaldb_id}
         if obj['saved']['state'] == 'obsolete':
             url = osc.core.makeurl(self.legaldb, ['packages', 'import', str(legaldb_id)], {

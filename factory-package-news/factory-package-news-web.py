@@ -32,7 +32,7 @@ def list(dirpath):
     for i in sorted(os.listdir(_dir), reverse=True):
         if not digits_re.match(i):
             continue
-        ret = ret + '<a href="diff/%s">%s</a>' % (i, i)
+        ret = ret + f'<a href="diff/{i}">{i}</a>'
         if i == current:
             ret = ret + " &lt;--"
         ret = ret + '<br/>'

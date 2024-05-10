@@ -58,7 +58,7 @@ class PubSubConsumer(object):
 
     def still_alive(self):
         # output something so gocd doesn't consider it stalled
-        self.logger.info('Still alive: {}'.format(datetime.now().time()))
+        self.logger.info(f'Still alive: {datetime.now().time()}')
         if self._run_until and time.time() > self._run_until:
             self.stop()
         else:

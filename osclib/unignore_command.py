@@ -25,7 +25,7 @@ class UnignoreCommand(object):
         else:
             for request_id in RequestFinder.find_sr(requests, self.api):
                 if request_id in requests_ignored.keys():
-                    print('{}: unignored'.format(request_id))
+                    print(f'{request_id}: unignored')
                     del requests_ignored[request_id]
                     self.api.del_ignored_request(request_id)
                     self.comment.add_comment(request_id=str(request_id), comment=self.MESSAGE)

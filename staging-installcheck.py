@@ -85,7 +85,7 @@ class InstallChecker(object):
                 if provided_by.get('name') in built_binaries:
                     provided_found = True
                 else:
-                    comments.append('  also provided by {} -> ignoring'.format(provided_by.get('name')))
+                    comments.append(f"  also provided by {provided_by.get('name')} -> ignoring")
                     alternative_found = True
 
             if not alternative_found:
@@ -104,7 +104,7 @@ class InstallChecker(object):
         if result:
             return True
         else:
-            comments.append('Error: missing alternative provides for {}'.format(provide))
+            comments.append(f'Error: missing alternative provides for {provide}')
             return False
 
     @memoize(session=True)
@@ -120,7 +120,7 @@ class InstallChecker(object):
     def check_delete_request(self, req, to_ignore, to_delete, comments):
         package = req.get('package')
         if package in to_ignore or self.ignore_deletes:
-            self.logger.info('Delete request for package {} ignored'.format(package))
+            self.logger.info(f'Delete request for package {package} ignored')
             return True
 
         pkg_flavors = self.pkg_with_multibuild_flavors(package)
@@ -190,10 +190,10 @@ class InstallChecker(object):
 
         all_done = True
         for arch in architectures:
-            pra = '{}/{}/{}'.format(project, repository, arch)
+            pra = f'{project}/{repository}/{arch}'
             buildid = self.buildid(project, repository, arch)
             if not buildid:
-                self.logger.error('No build ID in {}'.format(pra))
+                self.logger.error(f'No build ID in {pra}')
                 return False
             buildids[arch] = buildid
             url = self.report_url(project, repository, arch, buildid)
@@ -201,11 +201,11 @@ class InstallChecker(object):
                 root = ET.parse(osc.core.http_GET(url)).getroot()
                 check = root.find('check[@name="installcheck"]/state')
                 if check is not None and check.text != 'pending':
-                    self.logger.info('{} already "{}", ignoring'.format(pra, check.text))
+                    self.logger.info(f'{pra} already "{check.text}", ignoring')
                 else:
                     all_done = False
             except HTTPError:
-                self.logger.info('{} has no status report'.format(pra))
+                self.logger.info(f'{pra} has no status report')
                 all_done = False
 
         if all_done and not force:
@@ -218,7 +218,7 @@ class InstallChecker(object):
         to_ignore = self.packages_to_ignore(project)
         status = api.project_status(project)
         if status is None:
-            self.logger.error('no project status for {}'.format(project))
+            self.logger.error(f'no project status for {project}')
             return False
 
         # collect packages to be deleted
@@ -282,9 +282,9 @@ class InstallChecker(object):
         if result:
             self.report_state('success', self.gocd_url(), project, repository, buildids)
         else:
-            result_comment.insert(0, 'Generated from {}\n'.format(self.gocd_url()))
+            result_comment.insert(0, f'Generated from {self.gocd_url()}\n')
             self.report_state('failure', self.upload_failure(project, result_comment), project, repository, buildids)
-            self.logger.warning('Not accepting {}'.format(project))
+            self.logger.warning(f'Not accepting {project}')
             return False
 
         return result
@@ -295,7 +295,7 @@ class InstallChecker(object):
         osc.core.http_PUT(url, data='\n'.join(comment))
 
         url = self.api.apiurl.replace('api.', 'build.')
-        return '{}/package/view_file/home:repo-checker/reports/{}'.format(url, project)
+        return f'{url}/package/view_file/home:repo-checker/reports/{project}'
 
     def report_state(self, state, report_url, project, repository, buildids):
         architectures = self.target_archs(project, repository)
@@ -357,10 +357,10 @@ class InstallChecker(object):
         return sorted(archs, reverse=True)
 
     def install_check(self, directories, arch, whitelist, ignored_conflicts):
-        self.logger.info('install check: start (whitelist:{})'.format(','.join(whitelist)))
+        self.logger.info(f"install check: start (whitelist:{','.join(whitelist)})")
         parts = installcheck(directories, arch, whitelist, ignored_conflicts)
         if len(parts):
-            header = '### [install check & file conflicts for {}]'.format(arch)
+            header = f'### [install check & file conflicts for {arch}]'
             return CheckResult(False, header + '\n\n' + ('\n' + ('-' * 80) + '\n\n').join(parts))
 
         self.logger.info('install check: passed')
@@ -373,7 +373,7 @@ class InstallChecker(object):
                 self.allowed_cycles.append(comma_list.split(','))
 
     def cycle_check(self, project, repository, arch):
-        self.logger.info('cycle check: start %s/%s/%s' % (project, repository, arch))
+        self.logger.info(f'cycle check: start {project}/{repository}/{arch}')
         comment = []
 
         depinfo = builddepinfo(self.api.apiurl, project, repository, arch, order=False)
@@ -387,7 +387,7 @@ class InstallChecker(object):
                         break
                 if not allowed:
                     cycled = [p.text for p in cycle.findall('package')]
-                    comment.append('Package {} appears in cycle {}'.format(package, '/'.join(cycled)))
+                    comment.append(f"Package {package} appears in cycle {'/'.join(cycled)}")
 
         if len(comment):
             # New cycles, post comment.

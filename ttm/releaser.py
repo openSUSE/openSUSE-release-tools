@@ -38,7 +38,7 @@ class ToTestReleaser(ToTestManager):
                 return None
 
             if testing_snapshot != self.get_status('failed') and testing_snapshot != self.get_status('published'):
-                self.logger.debug('Snapshot {} is still in progress'.format(testing_snapshot))
+                self.logger.debug(f'Snapshot {testing_snapshot} is still in progress')
                 return QAResult.inprogress
 
             self.logger.info('testing snapshot %s', testing_snapshot)
@@ -60,7 +60,7 @@ class ToTestReleaser(ToTestManager):
 
     def release_version(self):
         url = self.api.makeurl(['build', self.project.name, 'standard', self.project.arch,
-                                '000release-packages:%s-release' % self.project.base])
+                                f'000release-packages:{self.project.base}-release'])
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
         for binary in root.findall('binary'):
@@ -69,7 +69,7 @@ class ToTestReleaser(ToTestManager):
             if result:
                 return result.group(1)
 
-        raise NotFoundException("can't find %s version" % self.project.name)
+        raise NotFoundException(f"can't find {self.project.name} version")
 
     def version_from_project(self):
         if not self.project.take_source_from_product:
@@ -109,11 +109,11 @@ class ToTestReleaser(ToTestManager):
 
         if any(failed):
             self.logger.info(
-                '%s %s %s %s -> %s' % (project, package, repository, arch, failed[0].get('code')))
+                f"{project} {package} {repository} {arch} -> {failed[0].get('code')}")
             return False
 
         if not len(root.findall('result/status[@code="succeeded"]')):
-            self.logger.info('No "succeeded" for %s %s %s %s' % (project, package, repository, arch))
+            self.logger.info(f'No "succeeded" for {project} {package} {repository} {arch}')
             return False
 
         maxsize = self.maxsize_for_package(package, arch)
@@ -220,12 +220,12 @@ class ToTestReleaser(ToTestManager):
                     return False
 
         if len(self.project.livecd_products):
-            if not self.all_repos_done('%s:Live' % self.project.name):
+            if not self.all_repos_done(f'{self.project.name}:Live'):
                 return False
 
             for product in self.project.livecd_products:
                 for arch in product.archs:
-                    if not self.package_ok('%s:Live' % self.project.name, product.package,
+                    if not self.package_ok(f'{self.project.name}:Live', product.package,
                                            self.project.product_repo, arch):
                         return False
 
@@ -300,7 +300,7 @@ class ToTestReleaser(ToTestManager):
             snapshot = None
         if snapshot:
             release = self.project.snapshot_number_prefix + snapshot
-            self.logger.info('Updating snapshot %s' % snapshot)
+            self.logger.info(f'Updating snapshot {snapshot}')
         else:
             release = None
         if not (self.dryrun or self.project.do_not_release):

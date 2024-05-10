@@ -52,7 +52,7 @@ class ListCommand:
                 if not hide_source and action.find('source') is not None:
                     source_project = action.find('source').get('project')
                     source_project = self.project_strip(source_project)
-                    line += ' ({})'.format(Fore.YELLOW + source_project + Fore.RESET)
+                    line += f' ({Fore.YELLOW + source_project + Fore.RESET})'
                 if action.get('type') == 'delete':
                     line += ' (' + Fore.RED + 'delete request' + Fore.RESET + ')'
 
@@ -72,10 +72,10 @@ class ListCommand:
         splitter.stageable = False
         for request_type in ('change_devel', 'set_bugowner'):
             splitter.reset()
-            splitter.filter_add('./action[@type="{}"]'.format(request_type))
+            splitter.filter_add(f'./action[@type="{request_type}"]')
             requests = splitter.filter_only()
             if len(requests):
-                print('\n{} request(s)'.format(request_type))
+                print(f'\n{request_type} request(s)')
                 for request in sorted(requests, key=lambda s: s.get('id')):
                     print('  {} {}'.format(
                         self.api.makeurl(['request', 'show', request.get('id')]),

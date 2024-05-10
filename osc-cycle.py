@@ -28,10 +28,10 @@ def do_cycle(self, subcmd, opts, *args):
             deps = ET.fromstring(get_dependson(apiurl, opts.project, opts.repository, opts.arch, [pkgname]))
 
             pkg = deps.find('package')
-            print("\"%s\"" % pkgname)
+            print(f"\"{pkgname}\"")
             for deps in pkg.findall('pkgdep'):
                 if deps.text in args:
-                    print("\"%s\" -> \"%s\"" % (deps.text, pkgname))
+                    print(f"\"{deps.text}\" -> \"{pkgname}\"")
         except HTTPError:
             # Ignore packages that do not exist
             print("[color=red]")

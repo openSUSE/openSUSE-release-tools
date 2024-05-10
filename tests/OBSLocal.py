@@ -71,14 +71,14 @@ class TestCase(unittest.TestCase):
         with open(OSCRC, 'w+') as f:
             f.write('\n'.join([
                 '[general]',
-                'apiurl = {}'.format(APIURL),
+                f'apiurl = {APIURL}',
                 'http_debug = false',
                 'debug = false',
-                'cookiejar = {}'.format(OSCCOOKIEJAR),
-                '[{}]'.format(APIURL),
-                'user = {}'.format(userid),
+                f'cookiejar = {OSCCOOKIEJAR}',
+                f'[{APIURL}]',
+                f'user = {userid}',
                 'pass = opensuse',
-                'email = {}@example.com'.format(userid),
+                f'email = {userid}@example.com',
                 # allow plain http even if it is insecure; we're testing after all
                 'allow_http = 1',
                 # disable cert checking to allow self-signed certs
@@ -175,10 +175,10 @@ class TestCase(unittest.TestCase):
         for review in request.reviews:
             for key, value in kwargs.items():
                 if hasattr(review, key) and getattr(review, key) == value[0]:
-                    self.assertEqual(review.state, value[1], '{}={} not {}'.format(key, value[0], value[1]))
+                    self.assertEqual(review.state, value[1], f'{key}={value[0]} not {value[1]}')
                     return review
 
-        self.fail('{} not found'.format(kwargs))
+        self.fail(f'{kwargs} not found')
 
     def assertReviewScript(self, request_id, user, before, after, comment=None):
         """Asserts the review script pointed by the ``script`` attribute of the current test can
@@ -356,16 +356,16 @@ class StagingWorkflow(ABC):
         if name not in self.attr_types[namespace]:
             self.attr_types[namespace].append(name)
 
-        meta = """
-        <namespace name='{}'>
+        meta = f"""
+        <namespace name='{namespace}'>
             <modifiable_by user='Admin'/>
-        </namespace>""".format(namespace)
+        </namespace>"""
         url = osc.core.makeurl(APIURL, ['attribute', namespace, '_meta'])
         osc.core.http_PUT(url, data=meta)
 
-        meta = "<definition name='{}' namespace='{}'><description/>".format(name, namespace)
+        meta = f"<definition name='{name}' namespace='{namespace}'><description/>"
         if values:
-            meta += "<count>{}</count>".format(values)
+            meta += f"<count>{values}</count>"
         meta += "<modifiable_by role='maintainer'/></definition>"
         url = osc.core.makeurl(APIURL, ['attribute', namespace, name, '_meta'])
         osc.core.http_PUT(url, data=meta)
@@ -418,11 +418,11 @@ class StagingWorkflow(ABC):
         :param users: list of users to be in group
         :type users: list(str)
         """
-        meta = """
+        meta = f"""
         <group>
-          <title>{}</title>
+          <title>{name}</title>
         </group>
-        """.format(name)
+        """
 
         if len(users):
             root = ET.fromstring(meta)
@@ -450,13 +450,13 @@ class StagingWorkflow(ABC):
         """
         if name in self.users:
             return
-        meta = """
+        meta = f"""
         <person>
-          <login>{}</login>
-          <email>{}@example.com</email>
+          <login>{name}</login>
+          <email>{name}@example.com</email>
           <state>confirmed</state>
         </person>
-        """.format(name, name)
+        """
         self.users.append(name)
         url = osc.core.makeurl(APIURL, ['person', name])
         osc.core.http_PUT(url, data=meta)
@@ -620,7 +620,7 @@ class StagingWorkflow(ABC):
         :type namespace: str
         """
         for name in self.attr_types[namespace]:
-            print('deleting attribute type {}:{}'.format(namespace, name))
+            print(f'deleting attribute type {namespace}:{name}')
             url = osc.core.makeurl(APIURL, ['attribute', namespace, name, '_meta'])
             self._safe_delete(url)
         print('deleting namespace', namespace)
@@ -695,7 +695,7 @@ class FactoryWorkflow(StagingWorkflow):
         self.create_link(target_wine, self.projects['ring1'])
 
     def create_staging(self, suffix, freeze=False, rings=None, with_repo=False):
-        staging_key = 'staging:{}'.format(suffix)
+        staging_key = f'staging:{suffix}'
         # do not reattach if already present
         if staging_key not in self.projects:
             staging_name = self.project + ':Staging:' + suffix
@@ -846,11 +846,11 @@ class Project(object):
         :param with_repo: whether a repository should be created as part of the meta
         :type with_repo: bool
         """
-        meta = """
-            <project name="{0}">
+        meta = f"""
+            <project name="{self.name}">
               <title></title>
               <description></description>
-            </project>""".format(self.name)
+            </project>"""
 
         root = ET.fromstring(meta)
         for group in reviewer.get('groups', []):
@@ -983,11 +983,11 @@ class Package(object):
         self.name = name
         self.project = project
 
-        meta = """
-            <package project="{1}" name="{0}">
+        meta = f"""
+            <package project="{self.project.name}" name="{self.name}">
               <title></title>
               <description></description>
-            </package>""".format(self.name, self.project.name)
+            </package>"""
 
         if devel_project:
             root = ET.fromstring(meta)
@@ -996,7 +996,7 @@ class Package(object):
 
         url = osc.core.make_meta_url('pkg', (self.project.name, self.name), APIURL)
         osc.core.http_PUT(url, data=meta)
-        print('created {}/{}'.format(self.project.name, self.name))
+        print(f'created {self.project.name}/{self.name}')
         self.project.add_package(self)
 
     # delete from instance

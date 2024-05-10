@@ -19,7 +19,7 @@ from osclib.core import project_pseudometa_package
 OPENSUSE = 'openSUSE:Leap:15.2'
 OPENSUSE_PREVERSION = 'openSUSE:Leap:15.1'
 OPENSUSE_RELEASED_VERSION = ['openSUSE:Leap:15.0', 'openSUSE:Leap:15.1']
-FCC = '{}:FactoryCandidates'.format(OPENSUSE)
+FCC = f'{OPENSUSE}:FactoryCandidates'
 
 makeurl = osc.core.makeurl
 http_GET = osc.core.http_GET
@@ -51,7 +51,7 @@ class FccFreezer(object):
         add to the frozenlinks, can be the ignored package.
         """
         package = si.get('package')
-        logging.debug("Processing %s" % (package))
+        logging.debug(f"Processing {package}")
 
         # If the package is an internal one (e.g _product)
         if package.startswith('_') or package.startswith('Test-DVD') or package.startswith('000'):
@@ -72,7 +72,7 @@ class FccFreezer(object):
                 proot = ET.parse(f).getroot()
                 lsrcmd5 = proot.get('lsrcmd5')
                 if lsrcmd5 is None:
-                    raise Exception("{}/{} is not a link but we expected one".format(self.factory, package))
+                    raise Exception(f"{self.factory}/{package} is not a link but we expected one")
                 ET.SubElement(flink, 'package', {'name': package, 'srcmd5': lsrcmd5, 'vrev': si.get('vrev')})
                 return None
 
@@ -111,7 +111,7 @@ class FccFreezer(object):
         if self.debug:
             logging.debug("Dump ignored source")
             for source in ignored_sources:
-                logging.debug("Ignored source: %s" % source)
+                logging.debug(f"Ignored source: {source}")
 
         url = makeurl(self.apiurl, ['source', FCC, '_project', '_frozenlinks'], {'meta': '1'})
         link = ET.tostring(flink)
@@ -206,7 +206,7 @@ class FccSubmitter(object):
 
     def is_new_package(self, tgt_project, tgt_package):
         try:
-            logging.debug("Gathering package_meta %s/%s" % (tgt_project, tgt_package))
+            logging.debug(f"Gathering package_meta {tgt_project}/{tgt_package}")
             osc.core.show_package_meta(self.apiurl, tgt_project, tgt_package)
         except (HTTPError, URLError):
             return True
@@ -217,7 +217,7 @@ class FccSubmitter(object):
         src_project = self.factory  # submit from Factory only
         dst_project = self.to_prj
 
-        msg = 'Automatic request from %s by F-C-C Submitter. Please review this change and decline it if Leap do not need it.' % src_project
+        msg = f'Automatic request from {src_project} by F-C-C Submitter. Please review this change and decline it if Leap do not need it.'
         res = osc.core.create_submit_request(self.apiurl,
                                              src_project,
                                              package,
@@ -253,7 +253,7 @@ class FccSubmitter(object):
     def is_sle_base_pkgs(self, package):
         link = self.get_link(self.to_prj, package)
         if link is None or link.get('project') not in self.sle_base_prjs:
-            logging.debug("%s not from SLE base" % package)
+            logging.debug(f"{package} not from SLE base")
             return False
         return True
 
@@ -262,7 +262,7 @@ class FccSubmitter(object):
         succeeded_packages = []
         succeeded_packages = self.get_build_succeeded_packages(self.from_prj)
         if not len(succeeded_packages) > 0:
-            logging.info('No build succeeded package in %s' % self.from_prj)
+            logging.info(f'No build succeeded package in {self.from_prj}')
             return
 
         print('Build succeeded packages:')
@@ -271,7 +271,7 @@ class FccSubmitter(object):
             print(pkg)
 
         print('-------------------------------------')
-        print("Found {} build succeded packages".format(len(succeeded_packages)))
+        print(f"Found {len(succeeded_packages)} build succeded packages")
 
     def get_deleted_packages(self, project):
         query = 'states=accepted&types=delete&project={}&view=collection'
@@ -288,7 +288,7 @@ class FccSubmitter(object):
         return pkgs
 
     def load_skip_pkgs_list(self, project, package):
-        url = makeurl(self.apiurl, ['source', project, package, '{}?expand=1'.format('fcc_skip_pkgs')])
+        url = makeurl(self.apiurl, ['source', project, package, 'fcc_skip_pkgs?expand=1'])
         try:
             return http_GET(url).read()
         except HTTPError:
@@ -299,7 +299,7 @@ class FccSubmitter(object):
         succeeded_packages = []
         succeeded_packages = self.get_build_succeeded_packages(self.from_prj)
         if not len(succeeded_packages) > 0:
-            logging.info('No build succeeded package in %s' % self.from_prj)
+            logging.info(f'No build succeeded package in {self.from_prj}')
             return
 
         # randomize the list
@@ -321,22 +321,22 @@ class FccSubmitter(object):
             submit_ok = True
 
             if package in deleted_packages:
-                logging.info('%s has been dropped from %s, ignore it!' % (package, self.to_prj))
+                logging.info(f'{package} has been dropped from {self.to_prj}, ignore it!')
                 submit_ok = False
 
             if self.is_sle_base_pkgs(package) is True:
-                logging.info('%s origin from SLE base, skip for now!' % package)
+                logging.info(f'{package} origin from SLE base, skip for now!')
                 submit_ok = False
 
             # make sure it is new package
             new_pkg = self.is_new_package(self.to_prj, package)
             if new_pkg is not True:
-                logging.info('%s is not a new package, do not submit.' % package)
+                logging.info(f'{package} is not a new package, do not submit.')
                 submit_ok = False
 
             multi_specs = self.check_multiple_specfiles(self.factory, package)
             if multi_specs is None:
-                logging.info('%s does not exist in %s' % (package, 'openSUSE:Factory'))
+                logging.info(f'{package} does not exist in openSUSE:Factory')
                 submit_ok = False
 
             if multi_specs:
@@ -348,7 +348,7 @@ class FccSubmitter(object):
 
                 for spec in multi_specs['specs']:
                     if spec not in succeeded_packages:
-                        logging.info('%s is sub-pacakge of %s but build failed, skip it!' % (spec, package))
+                        logging.info(f'{spec} is sub-pacakge of {package} but build failed, skip it!')
                         submit_ok = False
 
             if not submit_ok:
@@ -375,7 +375,7 @@ class FccSubmitter(object):
                                 match = True
 
                         if match is not True:
-                            logging.info('%s/%s is in the skip list, do not submit.' % (devel_prj, package))
+                            logging.info(f'{devel_prj}/{package} is in the skip list, do not submit.')
                             continue
                         else:
                             pass
@@ -388,18 +388,18 @@ class FccSubmitter(object):
                             match = True
 
                     if match is True:
-                        logging.info('%s is in the skip list, do not submit.' % package)
+                        logging.info(f'{package} is in the skip list, do not submit.')
                         continue
                     else:
                         pass
 
                     res = self.create_submitrequest(package)
                     if res and res is not None:
-                        logging.info('Created request %s for %s' % (res, package))
+                        logging.info(f'Created request {res} for {package}')
                     else:
                         logging.error('Error occurred when creating submit request')
             else:
-                logging.debug('%s is exist in %s, skip!' % (package, self.to_prj))
+                logging.debug(f'{package} is exist in {self.to_prj}, skip!')
             time.sleep(5)
 
         # dump multi specs packages
@@ -417,7 +417,7 @@ def main(args):
     osc.conf.config['debug'] = args.debug
 
     if args.freeze:
-        print('freezing {}'.format(FCC))
+        print(f'freezing {FCC}')
         freezer = FccFreezer()
         freezer.freeze()
     else:
@@ -436,10 +436,10 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--debug', action='store_true',
                         help='print info useful for debuging')
     parser.add_argument('-f', '--from', dest='from_prj', metavar='PROJECT',
-                        help='project where to check (default: %s)' % FCC,
+                        help=f'project where to check (default: {FCC})',
                         default=FCC)
     parser.add_argument('-t', '--to', dest='to_prj', metavar='PROJECT',
-                        help='project where to submit the packages (default: %s)' % OPENSUSE,
+                        help=f'project where to submit the packages (default: {OPENSUSE})',
                         default=OPENSUSE)
     parser.add_argument('-r', '--freeze', dest='freeze', action='store_true', help='rebase FCC project')
     parser.add_argument('-s', '--list', dest='list_packages', action='store_true', help='list build succeeded packages')

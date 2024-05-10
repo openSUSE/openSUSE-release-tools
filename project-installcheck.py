@@ -44,13 +44,13 @@ class RepoChecker():
         if not repository:
             repository = self.project_repository(project)
         if not repository:
-            self.logger.error('a repository must be specified via OSRT:Config main-repo for {}'.format(project))
+            self.logger.error(f'a repository must be specified via OSRT:Config main-repo for {project}')
             return
         self.repository = repository
 
         archs = target_archs(self.apiurl, project, repository)
         if not len(archs):
-            self.logger.debug('{} has no relevant architectures'.format(project))
+            self.logger.debug(f'{project} has no relevant architectures')
             return None
 
         for arch in archs:
@@ -79,7 +79,7 @@ class RepoChecker():
                 continue
             if comment.get('package') in comments:
                 continue
-            self.logger.info("Removing comment for package {}".format(comment.get('package')))
+            self.logger.info(f"Removing comment for package {comment.get('package')}")
             url = makeurl(self.apiurl, ['comment', comment.get('id')])
             http_DELETE(url)
 
@@ -101,7 +101,7 @@ class RepoChecker():
 
             if oldcomment:
                 commentapi.delete(oldcomment['id'])
-            self.logger.debug("Adding comment to {}/{}".format(self.project, package))
+            self.logger.debug(f"Adding comment to {self.project}/{package}")
             commentapi.add_comment(project_name=self.project, package_name=package, comment=newcomment)
 
     def _split_and_filter(self, output):
@@ -123,7 +123,7 @@ class RepoChecker():
     def project_repository(self, project):
         repository = Config.get(self.apiurl, project).get('main-repo')
         if not repository:
-            self.logger.debug('no main-repo defined for {}'.format(project))
+            self.logger.debug(f'no main-repo defined for {project}')
 
             search_project = 'openSUSE:Factory'
             for search_repository in ('snapshot', 'standard'):
@@ -142,7 +142,7 @@ class RepoChecker():
             return
 
         state_yaml = yaml.dump(state, default_flow_style=False)
-        comment = 'Updated rebuild infos for {}/{}/{}'.format(self.project, self.repository, self.arch)
+        comment = f'Updated rebuild infos for {self.project}/{self.repository}/{self.arch}'
         source_file_ensure(self.apiurl, self.store_project, self.store_package,
                            self.store_filename, state_yaml, comment=comment)
 
@@ -157,7 +157,7 @@ class RepoChecker():
         for rpm, rcode in buildresult.items():
             if rcode != code:
                 continue
-            source = "{}/{}/{}/{}".format(self.project, self.repository, self.arch, rpm)
+            source = f"{self.project}/{self.repository}/{self.arch}/{rpm}"
             if source not in oldstate[code]:
                 oldstate[code][source] = str(datetime.now())
 
@@ -165,7 +165,7 @@ class RepoChecker():
         config = Config.get(self.apiurl, project)
 
         oldstate = None
-        self.store_filename = 'rebuildpacs.{}-{}.yaml'.format(project, repository)
+        self.store_filename = f'rebuildpacs.{project}-{repository}.yaml'
         if self.store_project and self.store_package:
             state_yaml = source_file_load(self.apiurl, self.store_project, self.store_package,
                                           self.store_filename)
@@ -244,7 +244,7 @@ class RepoChecker():
             config.get(f'installcheck-ignore-conflicts-{arch}', '').split()
 
         for package, entry in parsed.items():
-            source = "{}/{}/{}/{}".format(project, repository, arch, entry['source'])
+            source = f"{project}/{repository}/{arch}/{entry['source']}"
             per_source.setdefault(source, {'output': [], 'buildresult': buildresult.get(entry['source'], 'gone'), 'ignored': True})
             per_source[source]['output'].extend(entry['output'])
             if package not in ignore_conflicts:
@@ -255,7 +255,7 @@ class RepoChecker():
         for source in sorted(per_source):
             if not len(per_source[source]['output']):
                 continue
-            self.logger.debug("{} builds: {}".format(source, per_source[source]['buildresult']))
+            self.logger.debug(f"{source} builds: {per_source[source]['buildresult']}")
             self.logger.debug("  " + "\n  ".join(per_source[source]['output']))
             if per_source[source]['buildresult'] != 'succeeded':  # nothing we can do
                 continue
@@ -276,7 +276,7 @@ class RepoChecker():
                                          'rebuild': str(datetime.now())}
 
         for source in list(oldstate['check']):
-            if not source.startswith('{}/{}/{}/'.format(project, repository, arch)):
+            if not source.startswith(f'{project}/{repository}/{arch}/'):
                 continue
             code = buildresult.get(os.path.basename(source), 'gone')
             if code == 'gone' or code == 'excluded':
@@ -319,7 +319,7 @@ class RepoChecker():
             m = hashlib.sha256()
             for bdep in sorted(infos[package]['deps']):
                 m.update(bytes(bdep + '-' + infos[package]['deps'][bdep], 'utf-8'))
-            state_key = '{}/{}/{}/{}'.format(project, repository, arch, package)
+            state_key = f'{project}/{repository}/{arch}/{package}'
             olddigest = oldstate['leafs'].get(state_key, {}).get('buildinfo')
             if olddigest == m.hexdigest():
                 continue

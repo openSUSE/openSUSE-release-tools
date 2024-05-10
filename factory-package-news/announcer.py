@@ -81,7 +81,7 @@ if not options.version:
     conn.request('HEAD', u.path)
     res = conn.getresponse()
     if res.status != 302:
-        raise Exception("http fail: %s %s" % (res.status, res.reason))
+        raise Exception(f"http fail: {res.status} {res.reason}")
 
     loc = res.getheader('location')
     if loc is None:
@@ -89,7 +89,7 @@ if not options.version:
 
     m = re.search(r'(?:Snapshot|Build)([\d.]+)-Media', loc)
     if m is None:
-        raise Exception("failed to parse %s" % loc)
+        raise Exception(f"failed to parse {loc}")
 
     version = m.group(1)
     logger.debug("found version %s", version)
@@ -117,7 +117,7 @@ conn = http.client.HTTPConnection(u.hostname, 80)
 conn.request('GET', u.path)
 res = conn.getresponse()
 if res.status != 200:
-    raise Exception("http %s fail: %s %s" % (u, res.status, res.reason))
+    raise Exception(f"http {u} fail: {res.status} {res.reason}")
 
 txt = res.read().decode('latin1')
 if '====' not in txt:
@@ -136,7 +136,7 @@ if options.dry:
     print("sending ...")
     print(msg.as_string())
 else:
-    logger.info("announcing version {}".format(version))
+    logger.info(f"announcing version {version}")
     s = smtplib.SMTP(config['relay'])
     s.send_message(msg)
     s.quit()

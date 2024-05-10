@@ -22,7 +22,7 @@ def describe(directory=None):
 def clone(url, directory):
     return_code = subprocess.call(['git', 'clone', url, directory])
     if return_code != 0:
-        raise Exception('Failed to clone {}'.format(url))
+        raise Exception(f'Failed to clone {url}')
 
 
 def sync(cache_dir, repo_url, message=None):
@@ -54,7 +54,7 @@ def sync(cache_dir, repo_url, message=None):
     os.chdir(repo_dir)
     return_code = subprocess.call([git_sync_exec])
     if return_code != 0:
-        raise Exception('failed to sync {}'.format(repo_name))
+        raise Exception(f'failed to sync {repo_name}')
 
     os.chdir(cwd)
 

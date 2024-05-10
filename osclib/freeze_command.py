@@ -42,7 +42,7 @@ class FreezeCommand(object):
         self.create_bootstrap_aggregate_file()
 
     def bootstrap_packages(self):
-        url = self.api.makeurl(['build', '{}:0-Bootstrap'.format(self.api.crings), '_result'])
+        url = self.api.makeurl(['build', f'{self.api.crings}:0-Bootstrap', '_result'])
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot().find('result')
         res = list()
@@ -58,7 +58,7 @@ class FreezeCommand(object):
 
         root = ET.Element('aggregatelist')
         a = ET.SubElement(root, 'aggregate',
-                          {'project': '{}:0-Bootstrap'.format(self.api.crings)})
+                          {'project': f'{self.api.crings}:0-Bootstrap'})
 
         for package in self.bootstrap_packages():
             p = ET.SubElement(a, 'package')
@@ -112,7 +112,7 @@ class FreezeCommand(object):
         if self.api.is_adi_project(prj):
             src_prj = self.api.find_devel_project_from_adi_frozenlinks(self.prj)
             if src_prj is None:
-                raise Exception("{} does not have a valid frozenlinks".format(self.prj))
+                raise Exception(f"{self.prj} does not have a valid frozenlinks")
             else:
                 self.api.update_adi_frozenlinks(self.prj, src_prj)
             return
@@ -150,7 +150,7 @@ class FreezeCommand(object):
         root = ET.Element('project', {'name': self.prj})
         ET.SubElement(root, 'title')
         ET.SubElement(root, 'description')
-        links = self.projectlinks or ['{}:1-MinimalX'.format(self.api.crings)]
+        links = self.projectlinks or [f'{self.api.crings}:1-MinimalX']
         for lprj in links:
             ET.SubElement(root, 'link', {'project': lprj})
 

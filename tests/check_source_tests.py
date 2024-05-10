@@ -79,7 +79,7 @@ class TestCheckSource(OBSLocal.TestCase):
         self.review_bot.check_requests()
 
         review = self.assertReview(req_id, by_user=(self.bot_user, 'declined'))
-        self.assertIn('%s is not a devel project of %s' % (SRC_PROJECT, PROJECT), review.comment)
+        self.assertIn(f'{SRC_PROJECT} is not a devel project of {PROJECT}', review.comment)
 
     @pytest.mark.usefixtures("required_source_maintainer")
     def test_devel_project(self):
@@ -192,11 +192,11 @@ class TestCheckSource(OBSLocal.TestCase):
         review = self.assertReview(req.reqid, by_user=(self.bot_user, 'declined'))
         add_role_req = get_request_list(self.wf.apiurl, SRC_PROJECT, req_state=['new'], req_type='add_role')[0]
 
-        self.assertIn('unless %s is a maintainer of %s' % (FACTORY_MAINTAINERS, SRC_PROJECT), review.comment)
-        self.assertIn('Created the add_role request %s' % add_role_req.reqid, review.comment)
+        self.assertIn(f'unless {FACTORY_MAINTAINERS} is a maintainer of {SRC_PROJECT}', review.comment)
+        self.assertIn(f'Created the add_role request {add_role_req.reqid}', review.comment)
 
         self.assertEqual(add_role_req.actions[0].tgt_project, SRC_PROJECT)
-        self.assertEqual('Created automatically from request %s' % req.reqid, add_role_req.description)
+        self.assertEqual(f'Created automatically from request {req.reqid}', add_role_req.description)
 
         # reopen request and do it again to test that new add_role request won't be created
         req.change_state('new')
@@ -247,11 +247,11 @@ class TestCheckSource(OBSLocal.TestCase):
         review = self.assertReview(req.reqid, by_user=(self.bot_user, 'declined'))
         add_role_req = get_request_list(self.wf.apiurl, SRC_PROJECT, req_state=['new'], req_type='add_role')[0]
 
-        self.assertIn('unless %s is a maintainer of %s' % (FACTORY_MAINTAINERS, SRC_PROJECT), review.comment)
-        self.assertIn('Created the add_role request %s' % add_role_req.reqid, review.comment)
+        self.assertIn(f'unless {FACTORY_MAINTAINERS} is a maintainer of {SRC_PROJECT}', review.comment)
+        self.assertIn(f'Created the add_role request {add_role_req.reqid}', review.comment)
 
         self.assertEqual(add_role_req.actions[0].tgt_project, SRC_PROJECT)
-        self.assertEqual('Created automatically from request %s' % req.reqid, add_role_req.description)
+        self.assertEqual(f'Created automatically from request {req.reqid}', add_role_req.description)
 
     @pytest.mark.usefixtures("default_config")
     def test_bad_rpmlintrc(self):

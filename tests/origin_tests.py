@@ -189,7 +189,7 @@ class TestOrigin(OBSLocal.TestCase):
             CommentAPI(self.wf.api.apiurl).add_comment(
                 request_id=request.reqid, comment=f'@{self.bot_user} change_devel')
 
-            comment = 'change_devel command by {}'.format('Admin')
+            comment = 'change_devel command by Admin'
         else:
             comment = 'only devel origin allowed'
 

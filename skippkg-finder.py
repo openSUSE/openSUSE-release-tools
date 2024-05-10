@@ -299,7 +299,7 @@ class SkippkgFinder(object):
                     if index in package_binaries:
                         selected_binarylist += package_binaries[index]
                     else:
-                        logging.info("Can not find binary of %s" % index)
+                        logging.info(f"Can not find binary of {index}")
 
         # Some packages has been obsoleted by new updated package, however
         # there are application still depend on old library when it builds
