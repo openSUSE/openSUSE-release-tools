@@ -769,9 +769,7 @@ class PkgListGen(ToolBase.ToolBase):
 
         # new product-composer
         fn = os.path.join(group_dir, 'default.productcompose.in')
-        if os.path.isfile(fn):
-            if not os.path.isdir(self.productcompose_dir):
-                raise Exception('default.productcompose.in exists, but output directory is missing in git!')
+        if os.path.isfile(fn) and os.path.isdir(self.productcompose_dir):
             lines = open(fn).readlines()
             new_lines = []
             for line in lines:
@@ -789,6 +787,7 @@ class PkgListGen(ToolBase.ToolBase):
         else:
             # No template file, so we don't create one either
             self.skip_productcompose = True
+            logging.debug('skipping productcompose')
 
         logging.debug('-> do_update')
         # make sure we only calculcate existant architectures
