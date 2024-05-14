@@ -138,7 +138,6 @@ class PkgListGen(ToolBase.ToolBase):
 
     def write_productcompose(self):
         self._check_supplements()
-        summary = dict()
         archs = ['*'] + self.all_architectures
         # a single file covering all builds via multibuild flavors
         with open(os.path.join(self.productcompose_dir, 'default.productcompose'), 'a') as opfh:
@@ -178,17 +177,13 @@ class PkgListGen(ToolBase.ToolBase):
                     for included_arch in self.all_architectures:
                         opfh.write('  - ' + f + '_' + included_arch + '\n')
 
-        return summary
-
     def write_all_groups(self):
         self._check_supplements()
-        summary = dict()
         archs = ['*'] + self.all_architectures
         for name in self.groups:
             group = self.groups[name]
             if not group.solved:
                 continue
-            summary[name] = group.summary()
             fn = f'{group.name}.group'
             with open(os.path.join(self.output_dir, fn), 'w') as fh:
                 comment = group.comment
@@ -199,6 +194,15 @@ class PkgListGen(ToolBase.ToolBase):
                     x = ET.tostring(x, pretty_print=True, encoding='unicode')
                     x = re.sub(r'\s*<!-- reason:', ' <!-- reason:', x)
                     fh.write(x)
+
+    def make_summary(self):
+        self._check_supplements()
+        summary = dict()
+        for name in self.groups:
+            group = self.groups[name]
+            if not group.solved:
+                continue
+            summary[name] = group.summary()
 
         return summary
 
@@ -613,8 +617,6 @@ class PkgListGen(ToolBase.ToolBase):
                         module.solved_packages[arch].pop(p, None)
 
         self._collect_unsorted_packages(modules, self.groups.get('unsorted'))
-        if not self.skip_productcompose:
-            self.write_productcompose()
 
     def strip_medium_from_staging(self, path):
         # staging projects don't need source and debug medium - and the glibc source
@@ -798,14 +800,20 @@ class PkgListGen(ToolBase.ToolBase):
             self.load_all_groups()
             self.write_group_stubs()
         else:
-            summary = self.solve_project(
+            self.solve_project(
                 ignore_unresolvable=str2bool(target_config.get('pkglistgen-ignore-unresolvable')),
                 ignore_recommended=str2bool(target_config.get('pkglistgen-ignore-recommended')),
                 locale=target_config.get('pkglistgen-locale'),
                 locales_from=target_config.get('pkglistgen-locales-from')
             )
+
+            if not self.skip_productcompose:
+                self.write_productcompose()
+
             if product_dir:
                 self.write_all_groups()
+
+            summary = self.make_summary()
 
         if stop_after_solve:
             return
