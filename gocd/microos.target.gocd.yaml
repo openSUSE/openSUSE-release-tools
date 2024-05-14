@@ -1,6 +1,6 @@
 format_version: 3
 pipelines:
-  SL-Micro.Images:
+  SL-Micro6.0.Images:
     group: MicroOS
     lock_behavior: unlockWhenFinished
     materials:
