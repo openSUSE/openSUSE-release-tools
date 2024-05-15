@@ -104,7 +104,7 @@ pipelines:
         tasks:
         - script: |-
             set -e
-            for product in 000productcompose SLCS; do
+            for product in 000productcompose; do
               osc -A https://api.suse.de release SUSE:SLFO:Products:SLCS:6.0 $product
             done
             sleep 600
