@@ -243,11 +243,20 @@ class FreezeCommand(object):
             targeturl = self.api.makeurl(['source', self.prj, '000release-packages', 'weakremovers.inc'],
                                          {'comment': 'Update weakremovers.inc'})
             oldinc = osc.core.http_GET(targeturl).read()
+            targeturl_exists = True
         except HTTPError:
-            # if it doesn't exist, don't update
+            targeturl_exists = False
+        try:
+            sourceurl = self.api.makeurl(['source', self.api.project, '000release-packages', 'weakremovers.inc'])
+            inc = osc.core.http_GET(sourceurl).read()
+            sourceurl_exists = True
+        except HTTPError:
+            sourceurl_exists = False
+        if targeturl_exists != sourceurl_exists:
+            raise Exception("weakremover.inc doesn't exist in both Staging and Parent project, please fix")
+        if not (targeturl_exists) and not (sourceurl_exists):
+            # nothing to do
             return
-        sourceurl = self.api.makeurl(['source', self.api.project, '000release-packages', 'weakremovers.inc'])
-        inc = osc.core.http_GET(sourceurl).read()
         if inc != oldinc:
             osc.core.http_PUT(targeturl, data=inc)
 
