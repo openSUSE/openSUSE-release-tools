@@ -130,7 +130,7 @@ msg['From'] = config['sender']
 msg['To'] = config['to']
 msg['Mail-Followup-To'] = config['to']
 msg['Date'] = email.utils.formatdate(localtime=1)
-msg['Message-ID'] = email.utils.make_msgid()
+msg['Message-ID'] = email.utils.make_msgid(domain=config.get(domain))
 
 if options.dry:
     print("sending ...")
