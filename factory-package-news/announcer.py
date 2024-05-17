@@ -10,6 +10,7 @@ import email.utils
 import argparse
 import logging
 import yaml
+import socket
 
 logger = logging.getLogger()
 
@@ -59,6 +60,9 @@ except IOError:
     pass
 
 config = _load_config(options.config)
+hostname = socket.getfqdn()
+if hostname == 'localhost':
+    hostname = 'botmaster.suse.de'
 
 if options.sender:
     config['sender'] = options.sender
@@ -137,7 +141,7 @@ if options.dry:
     print(msg.as_string())
 else:
     logger.info(f"announcing version {version}")
-    s = smtplib.SMTP(config['relay'])
+    s = smtplib.SMTP(host=config['relay'], local_hostname=hostname)
     s.send_message(msg)
     s.quit()
 
