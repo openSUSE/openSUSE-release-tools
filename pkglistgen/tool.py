@@ -696,17 +696,24 @@ class PkgListGen(ToolBase.ToolBase):
                 logging.info(f'{project}/{product} build in progress')
                 return
         if git_url:
+            git_url_base, *fragment = git_url.split('#')
             if os.path.exists(cache_dir + "/.git"):
                 # reset and update existing clone
                 logging.debug(subprocess.check_output(
                     ['git', 'reset', '--hard'], cwd=cache_dir, encoding='utf-8'))
                 logging.debug(subprocess.check_output(
                     ['git', 'pull', '--rebase'], cwd=cache_dir, encoding='utf-8'))
+                if fragment:
+                    # FIXME: this is not takeing account default branches, which may change server side
+                    logging.debug(subprocess.check_output(
+                        ['git', 'switch', fragment[0]], cwd=cache_dir, encoding='utf-8'))
             else:
                 if os.path.exists(cache_dir):
                     shutil.rmtree(cache_dir)
-                logging.debug(subprocess.check_output(
-                    ['git', 'clone', '--recurse-submodules', git_url, cache_dir], encoding='utf-8'))
+                args = ['git', 'clone', '--recurse-submodules', git_url_base, cache_dir]
+                if fragment:
+                    args += ['--branch', fragment[0]]
+                logging.debug(subprocess.check_output(args, encoding='utf-8'))
             if os.path.exists(cache_dir + '/' + '000update-repos'):
                 logging.error('No support for 000update-repos in git projects atm')
                 return
