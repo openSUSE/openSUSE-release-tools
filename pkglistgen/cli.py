@@ -12,6 +12,7 @@ import logging
 from osc import conf
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
+from pkglistgen.engine import Engine, ENGINE_NAMES
 from pkglistgen.tool import PkgListGen, MismatchedRepoException
 from pkglistgen.update_repo_handler import update_project
 
@@ -47,6 +48,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     @cmdln.option('-p', '--project', help='target project')
     @cmdln.option('-g', '--git-url', help='git repository for target project')
     @cmdln.option('-s', '--scope', help=f"scope on which to operate ({', '.join(SCOPES)}, staging:$letter)")
+    @cmdln.option('--engine', help=f"engine to be used. Available engines are: {', '.join(ENGINE_NAMES)}", default=Engine.legacy.name)
     @cmdln.option('--no-checkout', action='store_true', help='reuse checkout in cache')
     @cmdln.option('--stop-after-solve', action='store_true', help='only create group files')
     @cmdln.option('--staging', help='Only solve that one staging')
@@ -70,6 +72,12 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
 
         if not opts.scope:
             raise ValueError('--scope or --staging required')
+
+        if opts.engine not in ENGINE_NAMES:
+            raise ValueError(f"Illegal engine: {opts.engine} . Supported engines are {', '.join(ENGINE_NAMES)}.")
+        elif opts.engine == Engine.product_composer.name and opts.only_release_packages:
+            raise ValueError(f"--only-release-packages makes no sense with {Engine.product_composer.name} engine, as it does not handle "
+                             "000release-packages!")
 
         apiurl = conf.config['apiurl']
         Config(apiurl, opts.project)
@@ -95,6 +103,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                 self.tool.dry_run = self.options.dry
                 return self.tool.update_and_solve_target(api, target_project, target_config, main_repo,
                                                          git_url=opts.git_url, project=project, scope=scope,
+                                                         engine=Engine[opts.engine],
                                                          force=opts.force, no_checkout=opts.no_checkout,
                                                          only_release_packages=opts.only_release_packages,
                                                          stop_after_solve=opts.stop_after_solve,
