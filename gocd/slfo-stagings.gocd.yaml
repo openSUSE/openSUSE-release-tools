@@ -1,0 +1,843 @@
+---
+format_version: 3
+pipelines:
+  SUSE.SLFO.Main.Stagings.RelPkgs:
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: SLFO.Stagings
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: 0 0 * ? * *
+      only_on_changes: false
+    materials:
+      scripts:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Generate.Release.Package:
+        approval: manual
+        jobs:
+          SUSE.SLFO.Main.Staging.A:
+            resources:
+              - repo-checker
+            tasks:
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
+                  --staging SUSE:SLFO:Main:Staging:A
+                  --only-release-packages --force
+          SUSE.SLFO.Main.Staging.B:
+            resources:
+              - repo-checker
+            tasks:
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
+                  --staging SUSE:SLFO:Main:Staging:B
+                  --only-release-packages --force
+          SUSE.SLFO.Main.Staging.C:
+            resources:
+              - repo-checker
+            tasks:
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
+                  --staging SUSE:SLFO:Main:Staging:C
+                  --only-release-packages --force
+          SUSE.SLFO.Main.Staging.D:
+            resources:
+              - repo-checker
+            tasks:
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
+                  --staging SUSE:SLFO:Main:Staging:D
+                  --only-release-packages --force
+          SUSE.SLFO.Main.Staging.E:
+            resources:
+              - repo-checker
+            tasks:
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
+                  --staging SUSE:SLFO:Main:Staging:E
+                  --only-release-packages --force
+          SUSE.SLFO.Main.Staging.F:
+            resources:
+              - repo-checker
+            tasks:
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
+                  --staging SUSE:SLFO:Main:Staging:F
+                  --only-release-packages --force
+          SUSE.SLFO.Main.Staging.G:
+            resources:
+              - repo-checker
+            tasks:
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
+                  --staging SUSE:SLFO:Main:Staging:G
+                  --only-release-packages --force
+          SUSE.SLFO.Main.Staging.H:
+            resources:
+              - repo-checker
+            tasks:
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
+                  --staging SUSE:SLFO:Main:Staging:H
+                  --only-release-packages --force
+          SUSE.SLFO.Main.Staging.S:
+            resources:
+              - repo-checker
+            tasks:
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
+                  --staging SUSE:SLFO:Main:Staging:S
+                  --only-release-packages --force
+          SUSE.SLFO.Main.Staging.V:
+            resources:
+              - repo-checker
+            tasks:
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
+                  --staging SUSE:SLFO:Main:Staging:V
+                  --only-release-packages --force
+          SUSE.SLFO.Main.Staging.Y:
+            resources:
+              - repo-checker
+            tasks:
+              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
+                  --staging SUSE:SLFO:Main:Staging:Y
+                  --only-release-packages --force
+
+  SUSE.SLFO.Main.Staging.A:
+    environment_variables:
+      STAGING_PROJECT: SUSE:SLFO:Main:Staging:A
+      STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: SLFO.Stagings
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLFO:Main:Staging:A_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLFO:Main -s $STAGING_PROJECT
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
+
+    - Enable.images.repo:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+
+  SUSE.SLFO.Main.Staging.B:
+    environment_variables:
+      STAGING_PROJECT: SUSE:SLFO:Main:Staging:B
+      STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: SLFO.Stagings
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLFO:Main:Staging:B_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLFO:Main -s $STAGING_PROJECT
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
+
+    - Enable.images.repo:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+
+  SUSE.SLFO.Main.Staging.C:
+    environment_variables:
+      STAGING_PROJECT: SUSE:SLFO:Main:Staging:C
+      STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: SLFO.Stagings
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLFO:Main:Staging:C_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLFO:Main -s $STAGING_PROJECT
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
+
+    - Enable.images.repo:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+
+  SUSE.SLFO.Main.Staging.D:
+    environment_variables:
+      STAGING_PROJECT: SUSE:SLFO:Main:Staging:D
+      STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: SLFO.Stagings
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLFO:Main:Staging:D_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLFO:Main -s $STAGING_PROJECT
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
+
+    - Enable.images.repo:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+
+  SUSE.SLFO.Main.Staging.E:
+    environment_variables:
+      STAGING_PROJECT: SUSE:SLFO:Main:Staging:E
+      STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: SLFO.Stagings
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLFO:Main:Staging:E_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLFO:Main -s $STAGING_PROJECT
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
+
+    - Enable.images.repo:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+
+  SUSE.SLFO.Main.Staging.F:
+    environment_variables:
+      STAGING_PROJECT: SUSE:SLFO:Main:Staging:F
+      STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: SLFO.Stagings
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLFO:Main:Staging:F_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLFO:Main -s $STAGING_PROJECT
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
+
+    - Enable.images.repo:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+
+  SUSE.SLFO.Main.Staging.G:
+    environment_variables:
+      STAGING_PROJECT: SUSE:SLFO:Main:Staging:G
+      STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: SLFO.Stagings
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLFO:Main:Staging:G_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLFO:Main -s $STAGING_PROJECT
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
+
+    - Enable.images.repo:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+
+  SUSE.SLFO.Main.Staging.H:
+    environment_variables:
+      STAGING_PROJECT: SUSE:SLFO:Main:Staging:H
+      STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: SLFO.Stagings
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLFO:Main:Staging:H_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLFO:Main -s $STAGING_PROJECT
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
+
+    - Enable.images.repo:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+
+  SUSE.SLFO.Main.Staging.S:
+    environment_variables:
+      STAGING_PROJECT: SUSE:SLFO:Main:Staging:S
+      STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: SLFO.Stagings
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLFO:Main:Staging:S_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLFO:Main -s $STAGING_PROJECT
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
+
+    - Enable.images.repo:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+
+  SUSE.SLFO.Main.Staging.V:
+    environment_variables:
+      STAGING_PROJECT: SUSE:SLFO:Main:Staging:V
+      STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: SLFO.Stagings
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLFO:Main:Staging:V_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLFO:Main -s $STAGING_PROJECT
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
+
+    - Enable.images.repo:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+
+  SUSE.SLFO.Main.Staging.Y:
+    environment_variables:
+      STAGING_PROJECT: SUSE:SLFO:Main:Staging:Y
+      STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: SLFO.Stagings
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLFO:Main:Staging:Y_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLFO:Main -s $STAGING_PROJECT
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
+
+    - Enable.images.repo:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success

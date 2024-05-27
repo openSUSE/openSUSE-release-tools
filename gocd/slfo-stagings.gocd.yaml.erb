@@ -1,11 +1,11 @@
 ---
-<% stagings = %w(A B) -%>
+<% stagings = %w(A B C D E F G H S V Y) -%>
 format_version: 3
 pipelines:
-  SL-Micro.Stagings.RelPkgs:
+  SUSE.SLFO.Main.Stagings.RelPkgs:
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: MicroOS
+    group: SLFO.Stagings
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 0 * ? * *
@@ -18,21 +18,21 @@ pipelines:
         approval: manual
         jobs:
 <% stagings.each do |letter| -%>
-          SL-Micro.Staging.<%= letter %>:
+          SUSE.SLFO.Main.Staging.<%= letter %>:
             resources:
               - repo-checker
             tasks:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                  --staging SUSE:SLFO:Products:SL-Micro:6.1:Staging:<%= letter %>
+                  --staging SUSE:SLFO:Main:Staging:<%= letter %>
                   --only-release-packages --force
 <% end -%>
 <% stagings.each do |letter| %>
-  SL-Micro.Staging.<%= letter %>:
+  SUSE.SLFO.Main.Staging.<%= letter %>:
     environment_variables:
-      STAGING_PROJECT: SUSE:SLFO:Products:SL-Micro:6.1:Staging:<%= letter %>
+      STAGING_PROJECT: SUSE:SLFO:Main:Staging:<%= letter %>
       STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: MicroOS
+    group: SLFO.Stagings
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -40,7 +40,7 @@ pipelines:
         auto_update: true
         destination: repos
         whitelist:
-          - SUSE:SLFO:Products:SL-Micro:6.1:Staging:<%= letter %>_-_standard.yaml
+          - SUSE:SLFO:Main:Staging:<%= letter %>_-_standard.yaml
       scripts:
         auto_update: true
         git: https://github.com/openSUSE/openSUSE-release-tools.git
@@ -65,7 +65,9 @@ pipelines:
             resources:
               - repo-checker
             tasks:
-              - script: ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLFO:Products:SL-Micro:6.1 -s $STAGING_PROJECT
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLFO:Main -s $STAGING_PROJECT
+
     - Update.000product:
         resources:
           - repo-checker
@@ -87,4 +89,9 @@ pipelines:
         tasks:
           - script: |-
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 <% end -%>
