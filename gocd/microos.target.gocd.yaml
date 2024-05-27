@@ -108,11 +108,13 @@ pipelines:
               osc -A https://api.suse.de release SUSE:SLFO:Products:SL-Micro:6.1 $product
             done
             sleep 600
-            while (osc -A https://api.suse.de/ api "/build/SUSE:SLFO:Products:SL-Micro:6.1:ToTest/_result?view=summary&repository=product" | grep "result project" | grep -v 'code="published" state="published">'); do
-                echo PENDING
-                sleep 600
+            for repo in product images; do
+              while (osc -A https://api.suse.de/ api "/build/SUSE:SLFO:Products:SL-Micro:6.1:ToTest/_result?view=summary&repository=${repo}" | grep "result project" | grep -v 'code="published" state="published">'); do
+                  echo PENDING
+                  sleep 600
+              done
+              osc -A https://api.suse.de/ api "/build/SUSE:SLFO:Products:SL-Micro:6.1:ToTest/_result?view=summary&repository=${repo}" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
             done
-            osc -A https://api.suse.de/ api "/build/SUSE:SLFO:Products:SL-Micro:6.1:ToTest/_result?view=summary&repository=product" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
 
     - Release.Images.To.Publish:
         approval: manual
@@ -127,11 +129,13 @@ pipelines:
             set -e
             osc -A https://api.suse.de release SUSE:SLFO:Products:SL-Micro:6.1:ToTest
             sleep 600
-            while (osc -A https://api.suse.de/ api "/build/SUSE:SLFO:Products:SL-Micro:6.1:PUBLISH/_result?view=summary&repository=product" | grep "result project" | grep -v 'code="published" state="published">'); do
-                echo PENDING
-                sleep 600
+            for repo in product images; do
+              while (osc -A https://api.suse.de/ api "/build/SUSE:SLFO:Products:SL-Micro:6.1:PUBLISH/_result?view=summary&repository=${repo}" | grep "result project" | grep -v 'code="published" state="published">'); do
+                  echo PENDING
+                  sleep 600
+              done
+              osc -A https://api.suse.de/ api "/build/SUSE:SLFO:Products:SL-Micro:6.1:PUBLISH/_result?view=summary&repository=${repo}" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
             done
-            osc -A https://api.suse.de/ api "/build/SUSE:SLFO:Products:SL-Micro:6.1:PUBLISH/_result?view=summary&repository=product" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
   SLCS.Images:
     group: MicroOS
     lock_behavior: unlockWhenFinished
