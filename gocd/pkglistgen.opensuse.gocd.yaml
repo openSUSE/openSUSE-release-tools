@@ -149,7 +149,6 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o openSUSE:Leap:15.6 -s SUSE:SLE-15-SP6:GA
             - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:15.6 -s target
   Update.Repos.Leap.openSUSE_Leap_15.6:
     group: Leap
