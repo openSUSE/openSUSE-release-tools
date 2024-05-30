@@ -25,6 +25,7 @@ pipelines:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                   --staging SUSE:SLFO:Main:Staging:<%= letter %>
                   --only-release-packages --force
+                  --git-url https://src.suse.de/products/SL-Micro#6.1
 <% end -%>
 <% stagings.each do |letter| %>
   SUSE.SLFO.Main.Staging.<%= letter %>:
