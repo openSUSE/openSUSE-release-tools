@@ -23,7 +23,7 @@ pipelines:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                   --staging SUSE:SLFO:Main:Staging:A
                   --only-release-packages --force
-                  --git-url https://src.suse.de/products/SL-Micro#6.1
+                  --git-url https://src.suse.de/products/SL-Micro##6.1
           SUSE.SLFO.Main.Staging.B:
             resources:
               - repo-checker
@@ -31,7 +31,7 @@ pipelines:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                   --staging SUSE:SLFO:Main:Staging:B
                   --only-release-packages --force
-                  --git-url https://src.suse.de/products/SL-Micro#6.1
+                  --git-url https://src.suse.de/products/SL-Micro##6.1
           SUSE.SLFO.Main.Staging.C:
             resources:
               - repo-checker
@@ -39,7 +39,7 @@ pipelines:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                   --staging SUSE:SLFO:Main:Staging:C
                   --only-release-packages --force
-                  --git-url https://src.suse.de/products/SL-Micro#6.1
+                  --git-url https://src.suse.de/products/SL-Micro##6.1
           SUSE.SLFO.Main.Staging.D:
             resources:
               - repo-checker
@@ -47,7 +47,7 @@ pipelines:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                   --staging SUSE:SLFO:Main:Staging:D
                   --only-release-packages --force
-                  --git-url https://src.suse.de/products/SL-Micro#6.1
+                  --git-url https://src.suse.de/products/SL-Micro##6.1
           SUSE.SLFO.Main.Staging.E:
             resources:
               - repo-checker
@@ -55,7 +55,7 @@ pipelines:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                   --staging SUSE:SLFO:Main:Staging:E
                   --only-release-packages --force
-                  --git-url https://src.suse.de/products/SL-Micro#6.1
+                  --git-url https://src.suse.de/products/SL-Micro##6.1
           SUSE.SLFO.Main.Staging.F:
             resources:
               - repo-checker
@@ -63,7 +63,7 @@ pipelines:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                   --staging SUSE:SLFO:Main:Staging:F
                   --only-release-packages --force
-                  --git-url https://src.suse.de/products/SL-Micro#6.1
+                  --git-url https://src.suse.de/products/SL-Micro##6.1
           SUSE.SLFO.Main.Staging.G:
             resources:
               - repo-checker
@@ -71,7 +71,7 @@ pipelines:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                   --staging SUSE:SLFO:Main:Staging:G
                   --only-release-packages --force
-                  --git-url https://src.suse.de/products/SL-Micro#6.1
+                  --git-url https://src.suse.de/products/SL-Micro##6.1
           SUSE.SLFO.Main.Staging.H:
             resources:
               - repo-checker
@@ -79,7 +79,7 @@ pipelines:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                   --staging SUSE:SLFO:Main:Staging:H
                   --only-release-packages --force
-                  --git-url https://src.suse.de/products/SL-Micro#6.1
+                  --git-url https://src.suse.de/products/SL-Micro##6.1
           SUSE.SLFO.Main.Staging.S:
             resources:
               - repo-checker
@@ -87,7 +87,7 @@ pipelines:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                   --staging SUSE:SLFO:Main:Staging:S
                   --only-release-packages --force
-                  --git-url https://src.suse.de/products/SL-Micro#6.1
+                  --git-url https://src.suse.de/products/SL-Micro##6.1
           SUSE.SLFO.Main.Staging.V:
             resources:
               - repo-checker
@@ -95,7 +95,7 @@ pipelines:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                   --staging SUSE:SLFO:Main:Staging:V
                   --only-release-packages --force
-                  --git-url https://src.suse.de/products/SL-Micro#6.1
+                  --git-url https://src.suse.de/products/SL-Micro##6.1
           SUSE.SLFO.Main.Staging.Y:
             resources:
               - repo-checker
@@ -103,7 +103,7 @@ pipelines:
               - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
                   --staging SUSE:SLFO:Main:Staging:Y
                   --only-release-packages --force
-                  --git-url https://src.suse.de/products/SL-Micro#6.1
+                  --git-url https://src.suse.de/products/SL-Micro##6.1
 
   SUSE.SLFO.Main.Staging.A:
     environment_variables:
