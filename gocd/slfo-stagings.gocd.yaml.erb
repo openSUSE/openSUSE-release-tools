@@ -2,31 +2,6 @@
 <% stagings = %w(A B C D E F G H S V Y) -%>
 format_version: 3
 pipelines:
-  SUSE.SLFO.Main.Stagings.RelPkgs:
-    environment_variables:
-      OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: SLFO.Stagings
-    lock_behavior: unlockWhenFinished
-    timer:
-      spec: 0 0 * ? * *
-      only_on_changes: false
-    materials:
-      scripts:
-        git: https://github.com/openSUSE/openSUSE-release-tools.git
-    stages:
-    - Generate.Release.Package:
-        approval: manual
-        jobs:
-<% stagings.each do |letter| -%>
-          SUSE.SLFO.Main.Staging.<%= letter %>:
-            resources:
-              - repo-checker
-            tasks:
-              - script: ./pkglistgen.py -A https://api.suse.de update_and_solve
-                  --staging SUSE:SLFO:Main:Staging:<%= letter %>
-                  --only-release-packages --force
-                  --git-url https://src.suse.de/products/SL-Micro##6.1
-<% end -%>
 <% stagings.each do |letter| %>
   SUSE.SLFO.Main.Staging.<%= letter %>:
     environment_variables:
