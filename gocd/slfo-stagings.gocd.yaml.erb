@@ -19,7 +19,8 @@ pipelines:
           - SUSE:SLFO:Main:Staging:<%= letter %>_-_standard.yaml
       scripts:
         auto_update: true
-        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        git: https://github.com/gleidi-suse/openSUSE-release-tools.git
+        branch: explicit_product_composer
         whitelist:
           - DO_NOT_TRIGGER
         destination: scripts
@@ -52,7 +53,7 @@ pipelines:
               export PYTHONPATH=$PWD/scripts
               cd scripts/gocd
 
-              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --engine product_composer --staging $STAGING_PROJECT --force; then
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
