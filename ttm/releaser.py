@@ -200,22 +200,24 @@ class ToTestReleaser(ToTestManager):
         if not self.all_repos_done(self.project.name):
             return False
 
+        all_ok = True
+
         resultxml = self.api.retried_GET(self.api.makeurl(['build', self.project.name, '_result']))
         prjresult = ET.parse(resultxml).getroot()
 
         for product in self.project.ftp_products + self.project.main_products:
             if not self.package_ok(prjresult, self.project.name, product, self.project.product_repo, self.project.product_arch):
-                return False
+                all_ok = False
 
         for product in self.project.image_products + self.project.container_products:
             for arch in product.archs:
                 if not self.package_ok(prjresult, self.project.name, product.package, self.project.product_repo, arch):
-                    return False
+                    all_ok = False
 
         for product in self.project.containerfile_products:
             for arch in product.archs:
                 if not self.package_ok(prjresult, self.project.name, product.package, 'containerfile', arch):
-                    return False
+                    all_ok = False
 
         if len(self.project.livecd_products):
             liveprjname = f'{self.project.name}:Live'
@@ -228,7 +230,10 @@ class ToTestReleaser(ToTestManager):
                 for arch in product.archs:
                     if not self.package_ok(liveprjresult, liveprjname, product.package,
                                            self.project.product_repo, arch):
-                        return False
+                        all_ok = False
+
+        if not all_ok:
+            return False
 
         # The FTP tree isn't released with setrelease, so it needs to contain
         # the product version already.
