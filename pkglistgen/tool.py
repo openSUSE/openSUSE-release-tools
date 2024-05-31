@@ -1,3 +1,4 @@
+from urllib.error import HTTPError
 import ToolBase
 import glob
 import logging
@@ -688,7 +689,7 @@ class PkgListGen(ToolBase.ToolBase):
         cache_dir = CacheManager.directory(prefix_dir, host, project)
 
         drop_list = []
-        checkout_list = [group, product, release]
+        checkout_list = [group, product, release, productcompose]
         if not force:
             root = ET.fromstringlist(show_results_meta(api.apiurl, project, product,
                                                        repository=[main_repo], multibuild=True))
@@ -754,8 +755,13 @@ class PkgListGen(ToolBase.ToolBase):
         if not no_checkout and not git_url:
             logging.debug(f'Skipping checkout of {project}')
             for package in checkout_list:
-                checkout_package(api.apiurl, project, package, expand_link=True,
-                                 prj_dir=cache_dir, outdir=os.path.join(cache_dir, package))
+                # 000productcompose is not mandatory => checkout is allowed to fail
+                try:
+                    checkout_package(api.apiurl, project, package, expand_link=True,
+                                     prj_dir=cache_dir, outdir=os.path.join(cache_dir, package))
+                except HTTPError:
+                    if package != productcompose:
+                        raise
 
         if not os.path.isdir(product_dir):
             # otherwise just unset product_dir to skip all product-builder actions
@@ -926,6 +932,8 @@ class PkgListGen(ToolBase.ToolBase):
                     ['git', 'push'], cwd=cache_dir))
         elif not self.dry_run:
             self.commit_package(product_dir)
+            if not self.skip_productcompose:
+                self.commit_package(self.productcompose_dir)
 
         if os.path.isfile(reference_summary):
             return self.comment.handle_package_diff(project, reference_summary, summary_file)
