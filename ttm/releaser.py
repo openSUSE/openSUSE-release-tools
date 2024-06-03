@@ -94,25 +94,20 @@ class ToTestReleaser(ToTestManager):
         # Other types don't have a fixed size limit
         return None
 
-    def package_ok(self, project, package, repository, arch):
-        """Checks one package in a project and returns True if it's succeeded
+    def package_ok(self, prjresult, project, package, repository, arch):
+        """Checks one package in a project and returns True if it's succeeded"""
 
-        """
+        status = prjresult.xpath(f'result[@repository="{repository}"][@arch="{arch}"]/'
+                                 f'status[@package="{package}"]')
 
-        query = {'package': package, 'repository': repository, 'arch': arch}
-
-        url = self.api.makeurl(['build', project, '_result'], query)
-        f = self.api.retried_GET(url)
-        root = ET.parse(f).getroot()
-        # [@code!='succeeded'] is not supported by ET
-        failed = [status for status in root.findall('result/status') if status.get('code') != 'succeeded']
-
-        if any(failed):
+        failed = [s for s in status if s.get('code') != 'succeeded']
+        if len(failed):
             self.logger.info(
                 f"{project} {package} {repository} {arch} -> {failed[0].get('code')}")
             return False
 
-        if not len(root.findall('result/status[@code="succeeded"]')):
+        succeeded = [s for s in status if s.get('code') == 'succeeded']
+        if not len(succeeded):
             self.logger.info(f'No "succeeded" for {project} {package} {repository} {arch}')
             return False
 
@@ -205,29 +200,40 @@ class ToTestReleaser(ToTestManager):
         if not self.all_repos_done(self.project.name):
             return False
 
+        all_ok = True
+
+        resultxml = self.api.retried_GET(self.api.makeurl(['build', self.project.name, '_result']))
+        prjresult = ET.parse(resultxml).getroot()
+
         for product in self.project.ftp_products + self.project.main_products:
-            if not self.package_ok(self.project.name, product, self.project.product_repo, self.project.product_arch):
-                return False
+            if not self.package_ok(prjresult, self.project.name, product, self.project.product_repo, self.project.product_arch):
+                all_ok = False
 
         for product in self.project.image_products + self.project.container_products:
             for arch in product.archs:
-                if not self.package_ok(self.project.name, product.package, self.project.product_repo, arch):
-                    return False
+                if not self.package_ok(prjresult, self.project.name, product.package, self.project.product_repo, arch):
+                    all_ok = False
 
         for product in self.project.containerfile_products:
             for arch in product.archs:
-                if not self.package_ok(self.project.name, product.package, 'containerfile', arch):
-                    return False
+                if not self.package_ok(prjresult, self.project.name, product.package, 'containerfile', arch):
+                    all_ok = False
 
         if len(self.project.livecd_products):
-            if not self.all_repos_done(f'{self.project.name}:Live'):
+            liveprjname = f'{self.project.name}:Live'
+            if not self.all_repos_done(liveprjname):
                 return False
 
+            liveresultxml = self.api.retried_GET(self.api.makeurl(['build', liveprjname, '_result']))
+            liveprjresult = ET.parse(liveresultxml).getroot()
             for product in self.project.livecd_products:
                 for arch in product.archs:
-                    if not self.package_ok(f'{self.project.name}:Live', product.package,
+                    if not self.package_ok(liveprjresult, liveprjname, product.package,
                                            self.project.product_repo, arch):
-                        return False
+                        all_ok = False
+
+        if not all_ok:
+            return False
 
         # The FTP tree isn't released with setrelease, so it needs to contain
         # the product version already.
