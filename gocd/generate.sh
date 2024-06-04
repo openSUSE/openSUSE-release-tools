@@ -14,7 +14,7 @@ done
 
 grep group: *.yaml | cut -d: -f3 | sort -u | while read group; do
   case $group in
-    BCI|Factory|Leap|Admin|MicroOS|Monitors|openSUSE.Checkers|SLE15.Stagings|SLE15.Target|SLE.Checkers|ALP.Stagings|ALP.Target|ALP.Checkers|SLFO.Stagings|SLFO.Target|SLFO.Checkers|openSUSE.Legal|SUSE.Legal)
+    BCI|Factory|Leap|Admin|MicroOS|Monitors|openSUSE.Checkers|SLE15.Stagings|SLE15.Target|SLE.Checkers|ALP.Stagings|ALP.Target|ALP.Checkers|SLFO.Stagings|SLFO.Target|SLFO.Checkers|openSUSE.Legal|SUSE.Legal|SLES)
     ;;
   *)
     echo "Do not create new groups without being admin and knowing the consequences - found $group"
