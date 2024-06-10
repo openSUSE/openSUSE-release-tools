@@ -66,7 +66,7 @@ pipelines:
                 sleep 600
             done
             osc -A https://api.suse.de/ api "/build/SUSE:ALP:Products:Marble:6.0:PUBLISH/_result?view=summary&repository=product" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
-  SL-Micro6.1.Images:
+  SL-Micro6.1.Images.To.Test:
     group: MicroOS
     lock_behavior: unlockWhenFinished
     materials:
@@ -93,7 +93,7 @@ pipelines:
             export PYTHONPATH=scripts
             ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLFO:Products:SL-Micro:6.1 -r images
 
-    - Release.Images.To.Test:
+    - Release.Images:
         approval: manual
         roles:
         - SLE
@@ -115,8 +115,25 @@ pipelines:
               done
               osc -A https://api.suse.de/ api "/build/SUSE:SLFO:Products:SL-Micro:6.1:ToTest/_result?view=summary&repository=${repo}" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
             done
-
-    - Release.Images.To.Publish:
+  SL-Micro6.1.Images.To.Publish:
+    group: MicroOS
+    materials:
+      repos:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        whitelist:
+          - SUSE:SLFO:Products:SL-Micro:6.1_-_images.yaml
+        destination: repos
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    stages:
+    - Release.Images:
         approval: manual
         roles:
         - SLE
