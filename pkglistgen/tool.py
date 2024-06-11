@@ -32,6 +32,7 @@ from osclib.repomirror import RepoMirror
 from urllib.parse import urlparse
 
 from pkglistgen import file_utils
+from pkglistgen.engine import Engine
 from pkglistgen.group import Group
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -64,8 +65,6 @@ class PkgListGen(ToolBase.ToolBase):
         self.output_dir = '.'
         self.lockjobs = dict()
         self.ignore_broken = False
-        self.productcompose_dir = None
-        self.skip_productcompose = False
         self.unwanted = set()
         self.output = None
         self.locales = set()
@@ -140,7 +139,7 @@ class PkgListGen(ToolBase.ToolBase):
         self._check_supplements()
         archs = ['*'] + self.all_architectures
         # a single file covering all builds via multibuild flavors
-        with open(os.path.join(self.productcompose_dir, 'default.productcompose'), 'a') as opfh:
+        with open(os.path.join(self.output_dir, 'default.productcompose'), 'a') as opfh:
             opfh.write(PRODUCT_COMPOSE_SEPERATOR_LINE + "\n")
             for name in self.groups:
                 group = self.groups[name]
@@ -667,7 +666,8 @@ class PkgListGen(ToolBase.ToolBase):
         no_checkout: bool,
         only_release_packages: bool,
         stop_after_solve: bool,
-        custom_cache_tag
+        custom_cache_tag,
+        engine: Engine,
     ):
         self.all_architectures = target_config.get('pkglistgen-archs').split(' ')
         self.use_newest_version = str2bool(target_config.get('pkglistgen-use-newest-version', 'False'))
@@ -679,6 +679,7 @@ class PkgListGen(ToolBase.ToolBase):
         productcompose = target_config.get('pkglistgen-product', '000productcompose')
         release = target_config.get('pkglistgen-release', '000release-packages')
         oldrepos = target_config.get('pkglistgen-repos', '000update-repos')
+        product_package = productcompose if engine == Engine.product_composer else product
 
         # Cache dir specific to hostname and project.
         host = urlparse(api.apiurl).hostname
@@ -688,12 +689,12 @@ class PkgListGen(ToolBase.ToolBase):
         cache_dir = CacheManager.directory(prefix_dir, host, project)
 
         drop_list = []
-        checkout_list = [group, product, release]
+        checkout_list = [group, product_package, release]
         if not force:
-            root = ET.fromstringlist(show_results_meta(api.apiurl, project, product,
+            root = ET.fromstringlist(show_results_meta(api.apiurl, project, product_package,
                                                        repository=[main_repo], multibuild=True))
             if len(root.xpath('result[@state="building"]')) or len(root.xpath('result[@state="dirty"]')):
-                logging.info(f'{project}/{product} build in progress')
+                logging.info(f'{project}/{product_package} build in progress')
                 return
         if git_url:
             git_url_base, *fragment = git_url.split('#')
@@ -720,11 +721,11 @@ class PkgListGen(ToolBase.ToolBase):
         else:
             url = api.makeurl(['source', project])
             packages = ET.parse(http_GET(url)).getroot()
-            if packages.find(f'entry[@name="{product}"]') is None:
+            if packages.find(f'entry[@name="{product_package}"]') is None:
                 if not self.dry_run:
-                    undelete_package(api.apiurl, project, product, 'revive')
+                    undelete_package(api.apiurl, project, product_package, 'revive')
                 # TODO disable build.
-                logging.info(f'{product} undeleted, skip dvd until next cycle')
+                logging.info(f'{product_package} undeleted from {project}, skip dvd until next cycle')
                 return
 
             drop_list = api.item_exists(project, oldrepos)
@@ -734,7 +735,7 @@ class PkgListGen(ToolBase.ToolBase):
             if packages.find(f'entry[@name="{release}"]') is None:
                 if not self.dry_run:
                     undelete_package(api.apiurl, project, release, 'revive')
-                logging.info(f'{release} undeleted, skip dvd until next cycle')
+                logging.info(f'{release} undeleted from {project}, skip dvd until next cycle')
                 return
 
             if not no_checkout:
@@ -744,12 +745,15 @@ class PkgListGen(ToolBase.ToolBase):
 
         group_dir = os.path.join(cache_dir, group)
         product_dir = os.path.join(cache_dir, product)
-        self.productcompose_dir = os.path.join(cache_dir, productcompose)
+        productcompose_dir = os.path.join(cache_dir, productcompose)
         release_dir = os.path.join(cache_dir, release)
         oldrepos_dir = os.path.join(cache_dir, oldrepos)
 
         self.input_dir = group_dir
-        self.output_dir = product_dir
+        if engine == Engine.product_composer:
+            self.output_dir = productcompose_dir
+        elif engine == Engine.legacy:
+            self.output_dir = product_dir
 
         if not no_checkout and not git_url:
             logging.debug(f'Skipping checkout of {project}')
@@ -757,45 +761,42 @@ class PkgListGen(ToolBase.ToolBase):
                 checkout_package(api.apiurl, project, package, expand_link=True,
                                  prj_dir=cache_dir, outdir=os.path.join(cache_dir, package))
 
-        if not os.path.isdir(product_dir):
-            # otherwise just unset product_dir to skip all product-builder actions
-            product_dir = None
-            self.output_dir = self.productcompose_dir
-
-        if not only_release_packages:
-            file_utils.unlink_all_except(product_dir)
+        if (engine == Engine.legacy) and (not only_release_packages):
+            file_utils.unlink_all_except(self.output_dir)
 
         ignore_list = ['supportstatus.txt', 'summary-staging.txt', 'package-groups.changes',
                        'default.productcompose.in']
         ignore_list += self.group_input_files()
 
         # old product-builder
-        if product_dir:
-            file_utils.copy_directory_contents(group_dir, product_dir, ignore_list)
-            file_utils.change_extension(product_dir, '.spec.in', '.spec')
-            file_utils.change_extension(product_dir, '.product.in', '.product')
+        if engine == Engine.legacy:
+            file_utils.copy_directory_contents(group_dir, self.output_dir, ignore_list)
+            file_utils.change_extension(self.output_dir, '.spec.in', '.spec')
+            file_utils.change_extension(self.output_dir, '.product.in', '.product')
             file_utils.unlink_all_except(release_dir, ['weakremovers.inc', '*.changes'])
 
         # new product-composer
         fn = os.path.join(group_dir, 'default.productcompose.in')
-        if os.path.isfile(fn) and os.path.isdir(self.productcompose_dir):
+        if engine == Engine.product_composer:
+            if not (os.path.isfile(fn)):
+                raise Exception('--engine=product_composer was passed but default.productcompose.in does not exists!')
+            if not (os.path.isdir(self.output_dir)):
+                raise Exception('default.productcompose.in exists, but output directory is missing in git!')
             lines = open(fn).readlines()
             new_lines = []
             for line in lines:
                 if line.startswith(PRODUCT_COMPOSE_SEPERATOR_LINE):
                     break
                 new_lines.append(line)
-            open(os.path.join(self.productcompose_dir, 'default.productcompose'), 'w').write(''.join(new_lines))
+            open(os.path.join(self.output_dir, 'default.productcompose'), 'w').write(''.join(new_lines))
             if git_url:
                 logging.debug(subprocess.check_output(
-                    ['git', 'add', self.productcompose_dir, f"{self.productcompose_dir}/default.productcompose"],
+                    ['git', 'add', self.output_dir, f"{self.output_dir}/default.productcompose"],
                     cwd=cache_dir, encoding='utf-8'))
             if os.path.isfile(os.path.join(group_dir, 'supportstatus.txt')):
-                shutil.copy(os.path.join(group_dir, 'supportstatus.txt'), self.productcompose_dir)
-            self.skip_productcompose = False
+                shutil.copy(os.path.join(group_dir, 'supportstatus.txt'), self.output_dir)
         else:
             # No template file, so we don't create one either
-            self.skip_productcompose = True
             logging.debug('skipping productcompose')
 
         logging.debug('-> do_update')
@@ -814,10 +815,9 @@ class PkgListGen(ToolBase.ToolBase):
                 locales_from=target_config.get('pkglistgen-locales-from')
             )
 
-            if not self.skip_productcompose:
+            if engine == Engine.product_composer:
                 self.write_productcompose()
-
-            if product_dir:
+            elif engine == Engine.legacy:
                 self.write_all_groups()
 
             summary = self.make_summary()
@@ -833,27 +833,27 @@ class PkgListGen(ToolBase.ToolBase):
                 logging.error("Failed to create weakremovers.inc due to mismatch in repos - project most likey started building again.")
                 return
 
-        if product_dir:
+        if engine == Engine.legacy:
             delete_products = target_config.get('pkglistgen-delete-products', '').split(' ')
-            file_utils.unlink_list(product_dir, delete_products)
+            file_utils.unlink_list(self.output_dir, delete_products)
 
             logging.debug('-> product service')
             product_version = attribute_value_load(api.apiurl, project, 'ProductVersion')
             if not product_version:
                 # for stagings the product version doesn't matter (I hope)
                 product_version = '1'
-            for product_file in glob.glob(os.path.join(product_dir, '*.product')):
+            for product_file in glob.glob(os.path.join(self.output_dir, '*.product')):
                 self.replace_product_version(product_file, product_version)
                 logging.debug(subprocess.check_output(
-                    [PRODUCT_SERVICE, product_file, product_dir, project], encoding='utf-8'))
+                    [PRODUCT_SERVICE, product_file, self.output_dir, project], encoding='utf-8'))
 
             for delete_kiwi in target_config.get(f'pkglistgen-delete-kiwis-{scope}', '').split(' '):
-                delete_kiwis = glob.glob(os.path.join(product_dir, delete_kiwi))
-                file_utils.unlink_list(product_dir, delete_kiwis)
+                delete_kiwis = glob.glob(os.path.join(self.output_dir, delete_kiwi))
+                file_utils.unlink_list(self.output_dir, delete_kiwis)
             if scope == 'staging':
-                self.strip_medium_from_staging(product_dir)
+                self.strip_medium_from_staging(self.output_dir)
 
-            spec_files = glob.glob(os.path.join(product_dir, '*.spec'))
+            spec_files = glob.glob(os.path.join(self.output_dir, '*.spec'))
             file_utils.move_list(spec_files, release_dir)
             inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
             # filter special inc file
@@ -872,7 +872,7 @@ class PkgListGen(ToolBase.ToolBase):
         if git_url:
             logging.debug(subprocess.check_output(
                 'git add *.spec', cwd=release_dir, shell=True, encoding='utf-8'))
-        elif product_dir:
+        elif engine == Engine.legacy:
             todo_spec_files = []
             package = Package(release_dir)
             if package.get_status(False, ' '):
@@ -893,9 +893,9 @@ class PkgListGen(ToolBase.ToolBase):
         if only_release_packages:
             return
 
-        if product_dir:
-            file_utils.multibuild_from_glob(product_dir, '*.kiwi')
-            self.build_stub(product_dir, 'kiwi')
+        if engine == Engine.legacy:
+            file_utils.multibuild_from_glob(self.output_dir, '*.kiwi')
+            self.build_stub(self.output_dir, 'kiwi')
 
         reference_summary = os.path.join(group_dir, f'summary-{scope}.txt')
         if os.path.isfile(reference_summary):
@@ -910,14 +910,9 @@ class PkgListGen(ToolBase.ToolBase):
                     f.write(line + '\n')
 
         if git_url:
-            if product_dir and os.path.isdir(product_dir):
-                logging.debug(subprocess.check_output(
-                    ['git', 'add', product_dir],
-                    cwd=cache_dir, encoding='utf-8'))
-            if os.path.isdir(self.productcompose_dir):
-                logging.debug(subprocess.check_output(
-                    ['git', 'add', self.productcompose_dir],
-                    cwd=cache_dir, encoding='utf-8'))
+            logging.debug(subprocess.check_output(
+                ['git', 'add', self.output_dir],
+                cwd=cache_dir, encoding='utf-8'))
 
             logging.debug(subprocess.check_output(
                 ['git', 'commit', '-m', 'Update by pkglistgen of openSUSE-release-tool'], cwd=cache_dir, encoding='utf-8'))
@@ -925,7 +920,7 @@ class PkgListGen(ToolBase.ToolBase):
                 logging.debug(subprocess.check_output(
                     ['git', 'push'], cwd=cache_dir))
         elif not self.dry_run:
-            self.commit_package(product_dir)
+            self.commit_package(self.output_dir)
 
         if os.path.isfile(reference_summary):
             return self.comment.handle_package_diff(project, reference_summary, summary_file)
