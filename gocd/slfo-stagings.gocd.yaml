@@ -59,6 +59,17 @@ pipelines:
                 exit 1
               fi
 
+    - Build.product:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while ! ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; do
+                sleep 60
+              done
+
     - Enable.images.repo:
         resources:
           - staging-bot
@@ -127,6 +138,17 @@ pipelines:
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
+
+    - Build.product:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while ! ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; do
+                sleep 60
+              done
 
     - Enable.images.repo:
         resources:
@@ -197,6 +219,17 @@ pipelines:
                 exit 1
               fi
 
+    - Build.product:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while ! ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; do
+                sleep 60
+              done
+
     - Enable.images.repo:
         resources:
           - staging-bot
@@ -265,6 +298,17 @@ pipelines:
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
+
+    - Build.product:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while ! ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; do
+                sleep 60
+              done
 
     - Enable.images.repo:
         resources:
@@ -335,6 +379,17 @@ pipelines:
                 exit 1
               fi
 
+    - Build.product:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while ! ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; do
+                sleep 60
+              done
+
     - Enable.images.repo:
         resources:
           - staging-bot
@@ -403,6 +458,17 @@ pipelines:
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
+
+    - Build.product:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while ! ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; do
+                sleep 60
+              done
 
     - Enable.images.repo:
         resources:
@@ -473,6 +539,17 @@ pipelines:
                 exit 1
               fi
 
+    - Build.product:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while ! ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; do
+                sleep 60
+              done
+
     - Enable.images.repo:
         resources:
           - staging-bot
@@ -541,6 +618,17 @@ pipelines:
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
+
+    - Build.product:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while ! ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; do
+                sleep 60
+              done
 
     - Enable.images.repo:
         resources:
@@ -611,6 +699,17 @@ pipelines:
                 exit 1
               fi
 
+    - Build.product:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while ! ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; do
+                sleep 60
+              done
+
     - Enable.images.repo:
         resources:
           - staging-bot
@@ -680,6 +779,17 @@ pipelines:
                 exit 1
               fi
 
+    - Build.product:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while ! ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; do
+                sleep 60
+              done
+
     - Enable.images.repo:
         resources:
           - staging-bot
@@ -748,6 +858,17 @@ pipelines:
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
                 exit 1
               fi
+
+    - Build.product:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while ! ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; do
+                sleep 60
+              done
 
     - Enable.images.repo:
         resources:
