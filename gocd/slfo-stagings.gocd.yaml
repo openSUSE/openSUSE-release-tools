@@ -18,8 +18,7 @@ pipelines:
           - SUSE:SLFO:Main:Staging:A_-_standard.yaml
       scripts:
         auto_update: true
-        git: https://github.com/gleidi-suse/openSUSE-release-tools.git
-        branch: explicit_product_composer
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
         whitelist:
           - DO_NOT_TRIGGER
         destination: scripts
@@ -98,8 +97,7 @@ pipelines:
           - SUSE:SLFO:Main:Staging:B_-_standard.yaml
       scripts:
         auto_update: true
-        git: https://github.com/gleidi-suse/openSUSE-release-tools.git
-        branch: explicit_product_composer
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
         whitelist:
           - DO_NOT_TRIGGER
         destination: scripts
@@ -178,8 +176,7 @@ pipelines:
           - SUSE:SLFO:Main:Staging:C_-_standard.yaml
       scripts:
         auto_update: true
-        git: https://github.com/gleidi-suse/openSUSE-release-tools.git
-        branch: explicit_product_composer
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
         whitelist:
           - DO_NOT_TRIGGER
         destination: scripts
@@ -258,8 +255,7 @@ pipelines:
           - SUSE:SLFO:Main:Staging:D_-_standard.yaml
       scripts:
         auto_update: true
-        git: https://github.com/gleidi-suse/openSUSE-release-tools.git
-        branch: explicit_product_composer
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
         whitelist:
           - DO_NOT_TRIGGER
         destination: scripts
@@ -338,8 +334,7 @@ pipelines:
           - SUSE:SLFO:Main:Staging:E_-_standard.yaml
       scripts:
         auto_update: true
-        git: https://github.com/gleidi-suse/openSUSE-release-tools.git
-        branch: explicit_product_composer
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
         whitelist:
           - DO_NOT_TRIGGER
         destination: scripts
@@ -418,8 +413,7 @@ pipelines:
           - SUSE:SLFO:Main:Staging:F_-_standard.yaml
       scripts:
         auto_update: true
-        git: https://github.com/gleidi-suse/openSUSE-release-tools.git
-        branch: explicit_product_composer
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
         whitelist:
           - DO_NOT_TRIGGER
         destination: scripts
@@ -498,8 +492,7 @@ pipelines:
           - SUSE:SLFO:Main:Staging:G_-_standard.yaml
       scripts:
         auto_update: true
-        git: https://github.com/gleidi-suse/openSUSE-release-tools.git
-        branch: explicit_product_composer
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
         whitelist:
           - DO_NOT_TRIGGER
         destination: scripts
@@ -578,8 +571,7 @@ pipelines:
           - SUSE:SLFO:Main:Staging:H_-_standard.yaml
       scripts:
         auto_update: true
-        git: https://github.com/gleidi-suse/openSUSE-release-tools.git
-        branch: explicit_product_composer
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
         whitelist:
           - DO_NOT_TRIGGER
         destination: scripts
@@ -658,8 +650,7 @@ pipelines:
           - SUSE:SLFO:Main:Staging:S_-_standard.yaml
       scripts:
         auto_update: true
-        git: https://github.com/gleidi-suse/openSUSE-release-tools.git
-        branch: explicit_product_composer
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
         whitelist:
           - DO_NOT_TRIGGER
         destination: scripts
@@ -738,8 +729,7 @@ pipelines:
           - SUSE:SLFO:Main:Staging:V_-_standard.yaml
       scripts:
         auto_update: true
-        git: https://github.com/gleidi-suse/openSUSE-release-tools.git
-        branch: explicit_product_composer
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
         whitelist:
           - DO_NOT_TRIGGER
         destination: scripts
@@ -818,8 +808,7 @@ pipelines:
           - SUSE:SLFO:Main:Staging:Y_-_standard.yaml
       scripts:
         auto_update: true
-        git: https://github.com/gleidi-suse/openSUSE-release-tools.git
-        branch: explicit_product_composer
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
         whitelist:
           - DO_NOT_TRIGGER
         destination: scripts
