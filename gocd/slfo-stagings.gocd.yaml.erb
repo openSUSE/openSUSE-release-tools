@@ -19,8 +19,7 @@ pipelines:
           - SUSE:SLFO:Main:Staging:<%= letter %>_-_standard.yaml
       scripts:
         auto_update: true
-        git: https://github.com/gleidi-suse/openSUSE-release-tools.git
-        branch: explicit_product_composer
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
         whitelist:
           - DO_NOT_TRIGGER
         destination: scripts
