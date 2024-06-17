@@ -27,7 +27,14 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     logger = logging.getLogger(__name__)
 
-    # first check if repo is finished
+    # first check if repo is available
+    url = makeurl(apiurl, ['source', args.project, "_meta"])
+    root = ET.parse(http_GET(url)).getroot()
+    if not root.xpath(f'repository[@name="{args.repository}"]'):
+        logger.error(f'Repository {args.repository} is not available in {args.project}')
+        sys.exit(2)
+
+    # then check if repo is finished
     archs = target_archs(apiurl, args.project, args.repository)
     for arch in archs:
         url = makeurl(apiurl, ['build', args.project, args.repository, arch], {'view': 'status'})
