@@ -1,8 +1,24 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 PROJECT=$1
 LOG_DIR="/var/log/openSUSE-release-tools/${PROJECT}"
+IBS_PRODUCT_PREFIX="SUSE:SLFO:Products:"
+GITEA_PRODUCTS_URL="https://src.suse.de/products/"
 [ ! -d "${LOG_DIR}" ] && mkdir ${LOG_DIR}
+
+
+ibs_to_gitea_product() {
+    printf '%s' "${GITEA_PRODUCTS_URL}$(printf '%s' "${PROJECT}" | sed "s/${IBS_PRODUCT_PREFIX}//" | sed -E 's/:/\#/g')"
+}
+
+
+pkglistgen_extra_args() {
+    if [[ ${PROJECT} =~ ^${IBS_PRODUCT_PREFIX}.* ]] ; then
+        printf '%s' "--engine product_composer --git-url $(ibs_to_gitea_product)"
+    else
+        printf ''
+    fi
+}
 
 logger() {
     date -Is >> ${LOG_DIR}/pkglistgen.log
@@ -11,7 +27,7 @@ logger() {
 
 polling_repo() {
     logger "[CHECKING] Checking standard repository from ${PROJECT}"
-    OUTPUT=$(timeout 3m /usr/share/openSUSE-release-tools/verify-repo-built-successful.py -A ${API_URL} -p ${PROJECT} -r standard 2>&1)
+    OUTPUT=$(timeout 3m /usr/share/openSUSE-release-tools/verify-repo-built-successful.py -A ${API_URL} -p ${PROJECT} -r standard $(pkglistgen_extra_args) 2>&1)
     RETURNCODE=$?
     if [ ${RETURNCODE} -eq 0 ]; then
         logger "[READY] Repository is NOT building"
