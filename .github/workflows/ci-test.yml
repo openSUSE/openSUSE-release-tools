@@ -44,7 +44,7 @@ jobs:
       matrix:
         image:
           - registry.opensuse.org/opensuse/tumbleweed:latest
-          - registry.opensuse.org/opensuse/leap:15.5
+          - registry.opensuse.org/opensuse/leap:15.6
 
     container: ${{ matrix.image }}
     steps:
@@ -61,8 +61,8 @@ jobs:
         run: zypper -n ar https://download.opensuse.org/repositories/openSUSE:/Tools/openSUSE_Tumbleweed/openSUSE:Tools.repo
 
       - name: add the openSUSE:Tools repository for Leap
-        if: ${{ contains(matrix.image, '15.5') }}
-        run: zypper -n ar https://download.opensuse.org/repositories/openSUSE:/Tools/15.5/openSUSE:Tools.repo
+        if: ${{ contains(matrix.image, '15.6') }}
+        run: zypper -n ar https://download.opensuse.org/repositories/openSUSE:/Tools/15.6/openSUSE:Tools.repo
 
       - name: install the build & runtime dependencies of openSUSE-release-tool
         run: |
