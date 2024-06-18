@@ -14,9 +14,10 @@ from lxml import etree as ET
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Check if all packages built fine')
     parser.add_argument('--apiurl', '-A', type=str, help='API URL of OBS')
-    parser.add_argument('-p', '--project', type=str, help='Project to check')
+    parser.add_argument('-p', '--project', type=str, help='Project to check',
+                        required=True)
     parser.add_argument('-r', '--repository', type=str,
-                        help='Repository to check')
+                        help='Repository to check', required=True)
 
     args = parser.parse_args()
 
@@ -26,7 +27,14 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     logger = logging.getLogger(__name__)
 
-    # first check if repo is finished
+    # first check if repo is available
+    url = makeurl(apiurl, ['source', args.project, "_meta"])
+    root = ET.parse(http_GET(url)).getroot()
+    if not root.xpath(f'repository[@name="{args.repository}"]'):
+        logger.error(f'Repository {args.repository} is not available in {args.project}')
+        sys.exit(2)
+
+    # then check if repo is finished
     archs = target_archs(apiurl, args.project, args.repository)
     for arch in archs:
         url = makeurl(apiurl, ['build', args.project, args.repository, arch], {'view': 'status'})
