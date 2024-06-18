@@ -31,8 +31,8 @@ pipelines:
       git:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
     stages:
-    - Update.000product:
+    - Update.000productcompose:
         resources:
         - repo-checker
         tasks:
-          - script: ./pkglistgen.py -A https://api.opensuse.org --debug update_and_solve -p openSUSE:Leap:Micro:6.0 -s target
+          - script: ./pkglistgen.py --verbose -A https://api.opensuse.org update_and_solve --project openSUSE:Leap:Micro:6.0 --scope target --engine product_composer --force
