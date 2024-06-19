@@ -36,3 +36,23 @@ pipelines:
         - repo-checker
         tasks:
           - script: ./pkglistgen.py --verbose -A https://api.opensuse.org update_and_solve --project openSUSE:Leap:Micro:6.0 --scope target --engine product_composer --force
+
+
+  LeapMicro.Publish:
+    group: Leap
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    timer:
+      spec: 0 50 * ? * *
+      only_on_changes: false
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Publish.000productcompose:
+        resources:
+        - repo-checker
+        tasks:
+          - script: osc -A https://api.opensuse.org release --target-project=openSUSE:Leap:Micro:6.0:ToTest --target-repository=product -r product openSUSE:Leap:Micro:6.0 000productcompose
+
