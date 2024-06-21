@@ -61,7 +61,7 @@ class Project(object):
         return stagingiso
 
     def gather_isos(self, name, repository):
-        ret = []
+        iso_set = set()
 
         # Fetch /published/prj/repo/iso/*.iso
         url = self.api.makeurl(['published', name, repository, 'iso'])
@@ -69,21 +69,21 @@ class Project(object):
         root = ET.parse(f).getroot()
         for entry in root.findall('entry'):
             if entry.get('name').endswith('.iso'):
-                ret.append(self.map_iso(name, entry.get('name')))
+                iso_set.add(self.map_iso(name, entry.get('name')))
 
-        # Fetch /published/prj/repo/iso/*.qcow2
+        # Fetch /published/prj/repo/*.{qcow2,raw.xz,spdx.json}
         url = self.api.makeurl(['published', name, repository])
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
         for entry in root.findall('entry'):
             filename = entry.get('name')
-            if filename.endswith('.qcow2') or filename.endswith('.raw.xz'):
-                ret.append(self.map_iso(name, filename))
+            if (filename.endswith('.qcow2') or
+                    filename.endswith('.raw.xz') or
+                    filename.endswith('.spdx.json')):
+                iso_set.add(self.map_iso(name, filename))
 
         # Filter out isos which couldn't be mapped
-        ret = [iso for iso in ret if iso]
-
-        return ret
+        return [iso for iso in iso_set if iso]
 
     def gather_buildid(self, name, repository):
         url = self.api.makeurl(['published', name, repository], {'view': 'status'})
