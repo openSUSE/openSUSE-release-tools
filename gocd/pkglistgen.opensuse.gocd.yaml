@@ -128,7 +128,7 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-          - script: ./pkglistgen.py --verbose -A https://api.opensuse.org update_and_solve --project openSUSE:Leap:Micro:6.0 --scope target --engine product_composer --force
+            - script: ./pkglistgen.py --verbose -A https://api.opensuse.org update_and_solve --project openSUSE:Leap:16.0 --scope target --engine product_composer --force
   Pkglistgen.openSUSE_Leap_15.6:
     group: Leap
     lock_behavior: unlockWhenFinished
