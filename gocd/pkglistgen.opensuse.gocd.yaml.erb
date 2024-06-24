@@ -85,7 +85,7 @@ pipelines:
             resources:
             - repo-checker
             tasks:
-            - script: python3 ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project[0] %><%= options %>
+            - script: ./pkglistgen.py --verbose -A https://api.opensuse.org update_and_solve --project <%= project[0] %> --scope target --engine product_composer --force
 <% end -%>
   Pkglistgen.openSUSE_Leap_15.6:
     group: Leap
