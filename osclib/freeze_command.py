@@ -154,6 +154,8 @@ class FreezeCommand(object):
         for lprj in links:
             ET.SubElement(root, 'link', {'project': lprj})
 
+        with_product = self.api.project_has_repo('product', self.prj)
+
         # build flag
         f = ET.SubElement(root, 'build')
         # this one is the global toggle
@@ -162,11 +164,15 @@ class FreezeCommand(object):
         ET.SubElement(f, 'disable', {'repository': 'bootstrap_copy'})
         # to be flipped by botmaster
         ET.SubElement(f, 'disable', {'repository': 'images'})
+        if with_product:
+            ET.SubElement(f, 'disable', {'repository': 'product'})
 
         # publish flag
         f = ET.SubElement(root, 'publish')
         ET.SubElement(f, 'disable')
         ET.SubElement(f, 'enable', {'repository': 'images'})
+        if with_product:
+            ET.SubElement(f, 'enable', {'repository': 'product'})
 
         # debuginfo flag
         f = ET.SubElement(root, 'debuginfo')
@@ -196,6 +202,21 @@ class FreezeCommand(object):
         if 'ppc64le' in self.api.cstaging_archs:
             a = ET.SubElement(r, 'arch')
             a.text = 'ppc64le'
+
+        if with_product:
+            r = ET.SubElement(root, 'repository', {'name': 'product', 'linkedbuild': 'all'})
+            ET.SubElement(r, 'path', {'project': self.prj, 'repository': 'standard'})
+
+            if self.prj.startswith('SUSE:'):
+                a = ET.SubElement(r, 'arch')
+                a.text = 'local'
+
+            a = ET.SubElement(r, 'arch')
+            a.text = 'x86_64'
+
+            if 'ppc64le' in self.api.cstaging_archs:
+                a = ET.SubElement(r, 'arch')
+                a.text = 'ppc64le'
 
         return ET.tostring(root)
 

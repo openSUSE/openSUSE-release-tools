@@ -144,9 +144,9 @@ class StagingAPI(object):
             self._is_staging_manager = self.is_user_member_of(self.user, self.cstaging_group)
         return self._is_staging_manager
 
-    def project_has_repo(self, repo_name):
+    def project_has_repo(self, repo_name, project=None):
         # Determine if the project has a repo with given name
-        meta = self.get_prj_meta(self.project)
+        meta = self.get_prj_meta(project or self.project)
         xpath = f'repository[@name="{repo_name}"]'
         return len(meta.xpath(xpath)) > 0
 
