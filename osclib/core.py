@@ -243,7 +243,8 @@ def binary_list(apiurl, project, repository, arch, package=None):
 
 
 @memoize(session=True)
-def package_binary_list(apiurl, project, repository, arch, package=None, strip_multibuild=True, exclude_src_debug=False):
+def package_binary_list(apiurl, project, repository, arch, package=None, strip_multibuild=True, exclude_src_debug=False,
+                        exclude_patchinfo=False):
     path = ['build', project, repository, arch]
     if package:
         path.append(package)
@@ -256,6 +257,9 @@ def package_binary_list(apiurl, project, repository, arch, package=None, strip_m
         package = binary_list.get('package')
         if strip_multibuild:
             package = package.split(':', 1)[0]
+
+        if exclude_patchinfo and package.startswith("patchinfo."):
+            continue
 
         for binary in binary_list:
             filename = binary.get('name')
@@ -1002,7 +1006,8 @@ def duplicated_binaries_in_repo(apiurl, project, repository):
     for arch in sorted(target_archs(apiurl, project, repository), reverse=True):
         package_binaries, _ = package_binary_list(
             apiurl, project, repository, arch,
-            strip_multibuild=False, exclude_src_debug=True)
+            strip_multibuild=False, exclude_src_debug=True,
+            exclude_patchinfo=True)
         binaries = {}
         for pb in package_binaries:
             if pb.arch != 'noarch' and pb.arch != arch:
