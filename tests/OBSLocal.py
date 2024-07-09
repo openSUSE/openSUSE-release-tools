@@ -404,7 +404,8 @@ class StagingWorkflow(ABC):
 
         config_lines = []
         for key, value in config.items():
-            config_lines.append(f'{key} = {value}')
+            if key not in ['__name__']:
+                config_lines.append(f'{key} = {value}')
 
         attribute_value_save(APIURL, self.project, 'Config', '\n'.join(config_lines))
 
