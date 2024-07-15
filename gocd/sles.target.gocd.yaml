@@ -38,7 +38,7 @@ pipelines:
         tasks:
         - script: |-
             set -e
-            for product in 000productcompose; do
+            for product in kiwi-templates-Minimal 000productcompose; do
               osc -A https://api.suse.de release SUSE:SLFO:Products:SLES:16.0 $product
             done
             sleep 600
