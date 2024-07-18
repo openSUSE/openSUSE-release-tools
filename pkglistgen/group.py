@@ -341,6 +341,8 @@ class Group(object):
                     self.logger.error(msg)
                 continue
             content += f"{prefix} - {name}"
+            if name in packages and packages[name]:
+                content += f" # reason: {packages[name]}"
             if comment:
                 content += f" # {comment}"
             content += "\n"
