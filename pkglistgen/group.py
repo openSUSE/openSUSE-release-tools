@@ -330,19 +330,19 @@ class Group(object):
                 continue
             if name in missing:
                 if ignore_broken and name not in self.required:
-                    msg = ' {} not found on {}'.format(name, ','.join(sorted(missing[name])))
-                    content += prefix + "#- " + msg + "\n"
+                    msg = f" {name} not found on {','.join(sorted(missing[name]))}"
+                    content += f"{prefix} #- {msg}\n"
                     self.logger.error(msg)
                 continue
             if name in unresolvable:
                 if ignore_broken and name not in self.required:
-                    msg = ' {} uninstallable: {}'.format(name, unresolvable[name])
-                    content += prefix + "#- " + msg + "\n"
+                    msg = f" {name} uninstallable: {unresolvable[name]}"
+                    content += f"{prefix} #- {msg}\n"
                     self.logger.error(msg)
                 continue
-            content += prefix + "- " + name
+            content += f"{prefix} - {name}"
             if comment:
-                content += " # " + comment
+                content += f" # {comment}"
             content += "\n"
 
         content += "\n"
