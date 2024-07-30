@@ -154,6 +154,12 @@ class FreezeCommand(object):
         for lprj in links:
             ET.SubElement(root, 'link', {'project': lprj})
 
+        # 'images' and 'product' repositories are closely related,
+        # and they need to be handled the same way.
+        image_repositories = ['images']
+        if self.api.project_has_repo('product', self.prj):
+            image_repositories.append('product')
+
         # build flag
         f = ET.SubElement(root, 'build')
         # this one is the global toggle
@@ -161,12 +167,14 @@ class FreezeCommand(object):
         # this one stays
         ET.SubElement(f, 'disable', {'repository': 'bootstrap_copy'})
         # to be flipped by botmaster
-        ET.SubElement(f, 'disable', {'repository': 'images'})
+        for repository in image_repositories:
+            ET.SubElement(f, 'disable', {'repository': repository})
 
         # publish flag
         f = ET.SubElement(root, 'publish')
         ET.SubElement(f, 'disable')
-        ET.SubElement(f, 'enable', {'repository': 'images'})
+        for repository in image_repositories:
+            ET.SubElement(f, 'enable', {'repository': repository})
 
         # debuginfo flag
         f = ET.SubElement(root, 'debuginfo')
@@ -184,18 +192,20 @@ class FreezeCommand(object):
             a = ET.SubElement(r, 'arch')
             a.text = arch
 
-        r = ET.SubElement(root, 'repository', {'name': 'images', 'linkedbuild': 'all'})
-        ET.SubElement(r, 'path', {'project': self.prj, 'repository': 'standard'})
+        for repository in image_repositories:
+            r = ET.SubElement(root, 'repository', {'name': repository, 'linkedbuild': 'all'})
+            ET.SubElement(r, 'path', {'project': self.prj, 'repository': 'standard'})
 
-        if self.prj.startswith('SUSE:'):
-            a = ET.SubElement(r, 'arch')
-            a.text = 'local'
-        a = ET.SubElement(r, 'arch')
-        a.text = 'x86_64'
+            if self.prj.startswith('SUSE:'):
+                a = ET.SubElement(r, 'arch')
+                a.text = 'local'
 
-        if 'ppc64le' in self.api.cstaging_archs:
             a = ET.SubElement(r, 'arch')
-            a.text = 'ppc64le'
+            a.text = 'x86_64'
+
+            if 'ppc64le' in self.api.cstaging_archs:
+                a = ET.SubElement(r, 'arch')
+                a.text = 'ppc64le'
 
         return ET.tostring(root)
 
