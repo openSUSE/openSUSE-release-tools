@@ -42,7 +42,7 @@ pipelines:
             - staging-bot
             tasks:
             - script: ./check_bugowner.py -A https://api.suse.de --verbose --user=bugowner-checker review
-  SLE15SP6.Project:
+  SLE15SP7.Project:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
@@ -57,11 +57,11 @@ pipelines:
     - Run:
         approval: manual
         jobs:
-          SLE_15_SP6:
+          SLE_15_SP7:
             resources:
             - repo-checker
             tasks:
-            - script: ./project-installcheck.py -A https://api.suse.de --debug check --store SUSE:SLE-15-SP6:GA:Staging/dashboard --no-rebuild SUSE:SLE-15-SP6:GA
+            - script: ./project-installcheck.py -A https://api.suse.de --debug check --store SUSE:SLE-15-SP7:GA:Staging/dashboard --no-rebuild SUSE:SLE-15-SP7:GA
   SL-Micro.Project:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
@@ -102,7 +102,7 @@ pipelines:
           - staging-bot
         tasks:
           - script: ./origin-manager.py -A https://api.suse.de --debug review
-  S15.SP6.Staging.Bot.Regular:
+  S15.SP7.Staging.Bot.Regular:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
@@ -130,10 +130,10 @@ pipelines:
                 ln -s $PWD/osclib $tempdir/.osc-plugins
                 export HOME=$tempdir
 
-                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP6:GA rebuild
-                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP6:GA list --supersede
-                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP6:GA unselect --cleanup
-                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP6:GA repair --cleanup
+                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP7:GA rebuild
+                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP7:GA list --supersede
+                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP7:GA unselect --cleanup
+                osc -A https://api.suse.de staging -p SUSE:SLE-15-SP7:GA repair --cleanup
                 rm -rf $tempdir
   SL-Micro.Staging.Bot.Regular:
     group: SLE.Checkers
@@ -169,7 +169,7 @@ pipelines:
                 osc -A https://api.suse.de staging -p SUSE:ALP:Products:Marble:6.0 unselect --cleanup
                 osc -A https://api.suse.de staging -p SUSE:ALP:Products:Marble:6.0 repair --cleanup
                 rm -rf $tempdir
-  S15.SP6.Staging.Bot.Report:
+  S15.SP7.Staging.Bot.Report:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
@@ -189,7 +189,7 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:SLE-15-SP6:GA
+            - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:SLE-15-SP7:GA
   SL-Micro.Staging.Bot.Report:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
