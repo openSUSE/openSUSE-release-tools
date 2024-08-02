@@ -173,8 +173,7 @@ class CheckSource(ReviewBot.ReviewBot):
                     scm_sync = meta.find('scmsync')
                     if scm_sync is None:
                         # Not from proper devel project/package and not self-submission and not scmsync.
-                        self.review_messages['declined'] = 'Expected submission from devel package %s/%s' % (
-                            devel_project, devel_package)
+                        self.review_messages['declined'] = f'Expected submission from devel package {devel_project}/{devel_package}'
                         return False
 
                     scm_pool_repository = f"https://src.opensuse.org/pool/{source_package}"
@@ -193,9 +192,9 @@ class CheckSource(ReviewBot.ReviewBot):
                 # which indicates that the project has already been used as devel.
                 if not self.is_devel_project(source_project, target_project):
                     self.review_messages['declined'] = (
-                        '%s is not a devel project of %s, submit the package to a devel project first. '
+                        f'{source_project} is not a devel project of {target_project}, submit the package to a devel project first. '
                         'See https://en.opensuse.org/openSUSE:How_to_contribute_to_Factory#How_to_request_a_new_devel_project for details.'
-                    ) % (source_project, target_project)
+                    )
                     return False
         else:
             if source_project.endswith(':Update'):
@@ -214,8 +213,7 @@ class CheckSource(ReviewBot.ReviewBot):
         # by the scm-staging bot
         if not self.source_is_scm_staging_submission(source_project) and not self.source_has_required_maintainers(source_project):
             declined_msg = (
-                'This request cannot be accepted unless %s is a maintainer of %s.' %
-                (self.required_maintainer, source_project)
+                f'This request cannot be accepted unless {self.required_maintainer} is a maintainer of {source_project}.'
             )
 
             req = self.__ensure_add_role_request(source_project)
@@ -260,8 +258,8 @@ class CheckSource(ReviewBot.ReviewBot):
             expected_name = 'preinstallimage'
         if not (filename.endswith('.kiwi') or filename == 'Dockerfile') and new_info['name'] != expected_name:
             shutil.rmtree(copath)
-            self.review_messages['declined'] = "A package submitted as %s has to build as 'Name: %s' - found Name '%s'" % (
-                target_package, expected_name, new_info['name'])
+            self.review_messages['declined'] = (
+                f"A package submitted as {target_package} has to build as 'Name: {expected_name}' - found Name '{new_info['name']}'")
             return False
 
         if not self.check_service_file(target_package):
@@ -578,8 +576,8 @@ class CheckSource(ReviewBot.ReviewBot):
         matches = ET.parse(osc.core.http_GET(url)).getroot()
         if int(matches.attrib['matches']) > 1:
             ids = [rq.attrib['id'] for rq in matches.findall('request')]
-            self.review_messages['declined'] = "There is a pending request %s to %s/%s in process." % (
-                ','.join(ids), action.tgt_project, action.tgt_package)
+            self.review_messages['declined'] = (
+                f"There is a pending request {','.join(ids)} to {action.tgt_project}/{action.tgt_package} in process.")
             return False
 
         # Decline delete requests against linked flavor package
