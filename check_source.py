@@ -180,7 +180,8 @@ class CheckSource(ReviewBot.ReviewBot):
                     scm_pool_repository = f"https://src.opensuse.org/pool/{source_package}"
                     if not scm_sync.text.startswith(scm_pool_repository):
                         # devel project uses scm sync not from the trusted src location
-                        self.review_messages['declined'] = f"Expected a devel project scm sync from {scm_pool_repository}"
+                        self.review_messages['declined'] = (
+                            f"devel project scmsync setting is {scm_sync.text}. Must be {scm_pool_repository} instead.")
                         return False
                     if not self.source_is_scm_staging_submission(source_project):
                         # Not a submission coming from the scm-sync bot
