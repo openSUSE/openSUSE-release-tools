@@ -24,6 +24,11 @@ jobs:
     - name: Setup path
       run: sed -i -e "s,../..:,$PWD:," dist/ci/docker-compose.yml
 
+    - name: install docker-compose
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y docker-compose
+
     - name: Run tests
       run: docker-compose -f dist/ci/docker-compose.yml run test
       env:
@@ -92,6 +97,11 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v3
+
+    - name: install docker-compose
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y docker-compose
 
     - name: Validate gocd config
       run: cd gocd && sh generate.sh && git diff --exit-code
