@@ -114,7 +114,7 @@ pipelines:
                 osc -A https://api.opensuse.org staging -p openSUSE:Factory:NonFree unselect --cleanup
                 osc -A https://api.opensuse.org staging -p openSUSE:Factory:NonFree repair --cleanup
                 rm -rf $tempdir
-  AdiChecker.Backports.SLE-15-SP6:
+  AdiChecker.Backports.SLE-15-SP7:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -127,7 +127,7 @@ pipelines:
         git: git://botmaster.suse.de/opensuse-repos.git
         auto_update: true
         whitelist:
-          - openSUSE:Backports:SLE-15-SP6:Staging:adi*.yaml
+          - openSUSE:Backports:SLE-15-SP7:Staging:adi*.yaml
         destination: repos
     stages:
     - Run:
@@ -137,8 +137,8 @@ pipelines:
             - repo-checker
             tasks:
             - script: |-
-                ./scripts/staging-installcheck.py -A https://api.opensuse.org -p openSUSE:Backports:SLE-15-SP6
-  SBot.Regular.Backports.SLE-15-SP6:
+                ./scripts/staging-installcheck.py -A https://api.opensuse.org -p openSUSE:Backports:SLE-15-SP7
+  SBot.Regular.Backports.SLE-15-SP7:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
@@ -165,66 +165,9 @@ pipelines:
                 ln -s $PWD/osclib $tempdir/.osc-plugins
                 export HOME=$tempdir
 
-                osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP6 rebuild
-                osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP6 list --supersede
-                osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP6 adi
-                osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP6 unselect --cleanup
-                osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP6 repair --cleanup
-                rm -rf $tempdir
-  AdiChecker.Leap.15.6:
-    group: openSUSE.Checkers
-    lock_behavior: unlockWhenFinished
-    environment_variables:
-      OSC_CONFIG: /home/go/config/oscrc-repo-checker
-    materials:
-      script:
-        git: https://github.com/openSUSE/openSUSE-release-tools.git
-        destination: scripts
-      repos:
-        git: git://botmaster.suse.de/opensuse-repos.git
-        auto_update: true
-        whitelist:
-          - openSUSE:Leap:15.6:Staging:adi*.yaml
-        destination: repos
-    stages:
-    - Run:
-        jobs:
-          Run:
-            resources:
-            - repo-checker
-            tasks:
-            - script: |-
-                ./scripts/staging-installcheck.py -A https://api.opensuse.org -p openSUSE:Leap:15.6
-  SBot.Regular.Leap.15.6:
-    group: openSUSE.Checkers
-    lock_behavior: unlockWhenFinished
-    timer:
-      spec: 0 0 * ? * *
-    environment_variables:
-      OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    materials:
-      git:
-        git: https://github.com/openSUSE/openSUSE-release-tools.git
-    stages:
-    - Run:
-        approval:
-          type: manual
-        jobs:
-          Run:
-            resources:
-            - staging-bot
-            tasks:
-            - script: |-
-                set -e
-                tempdir=$(mktemp -d)
-                mkdir -p $tempdir/.osc-plugins
-                ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
-                ln -s $PWD/osclib $tempdir/.osc-plugins
-                export HOME=$tempdir
-
-                osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.6 rebuild
-                osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.6 list --supersede
-                osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.6 adi
-                osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.6 unselect --cleanup
-                osc -A https://api.opensuse.org staging -p openSUSE:Leap:15.6 repair --cleanup
+                osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP7 rebuild
+                osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP7 list --supersede
+                osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP7 adi
+                osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP7 unselect --cleanup
+                osc -A https://api.opensuse.org staging -p openSUSE:Backports:SLE-15-SP7 repair --cleanup
                 rm -rf $tempdir

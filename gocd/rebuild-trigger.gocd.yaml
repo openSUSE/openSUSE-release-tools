@@ -143,7 +143,7 @@ pipelines:
               ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r openSUSE_PPC GNOME:Factory
               ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r openSUSE_Factory GNOME:Next
               ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r openSUSE_PPC GNOME:Next
-  Trigger.Rebuild.SLE_15_SP6_Backports:
+  Trigger.Rebuild.SLE_15_SP7_Backports:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -161,10 +161,10 @@ pipelines:
           - repo-checker
         tasks:
           - script: |-
-              echo "SLE15 SP6 Backports"
-              ./project-installcheck.py --debug check --store openSUSE:Backports:SLE-15-SP6:Staging/dashboard --no-rebuild openSUSE:Backports:SLE-15-SP6
-              echo "SLE15 SP6 Step Backports (Rebuilds)"
-              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r step openSUSE:Backports:SLE-15-SP6
+              echo "SLE15 SP7 Backports"
+              ./project-installcheck.py --debug check --store openSUSE:Backports:SLE-15-SP7:Staging/dashboard --no-rebuild openSUSE:Backports:SLE-15-SP7
+              echo "SLE15 SP7 Step Backports (Rebuilds)"
+              ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r step openSUSE:Backports:SLE-15-SP7
   Trigger.Rebuild.Step:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
