@@ -95,6 +95,16 @@ BuildArch:      noarch
 %description announcer
 OBS product release announcer for generating email diffs summaries.
 
+%package build-fail-reminder
+Summary:        OBS build fail reminder service
+Group:          Development/Tools/Other
+BuildArch:      noarch
+Requires:       osclib = %{version}
+Requires:       python3-lxml
+
+%description build-fail-reminder
+Daily email reminders for failed builds in OBS.
+
 %package check-source
 Summary:        Check source review bot
 Group:          Development/Tools/Other
@@ -319,6 +329,7 @@ OSC plugin for the staging workflow, see `osc staging --help`.
 %build
 %make_build
 %sysusers_generate_pre slsa/osrt-slsa-user.conf %{name} %{name}.conf
+%sysusers_generate_pre build-fail-reminder/osrt-build-fail-reminder-user.conf build-fail-reminder osrt-build-fail-reminder.conf
 
 %install
 %make_install \
@@ -327,6 +338,7 @@ OSC plugin for the staging workflow, see `osc staging --help`.
   VERSION="%{version}"
 
 install -Dpm0644 slsa/osrt-slsa-user.conf %{buildroot}%{_sysusersdir}/%{name}.conf
+install -pm0644 build-fail-reminder/osrt-build-fail-reminder-user.conf %{buildroot}%{_sysusersdir}/osrt-build-fail-reminder.conf
 
 %pre -f %{name}.pre
 %service_add_pre %{name}.service
@@ -340,6 +352,18 @@ exit 0
 getent passwd osrt-check-source > /dev/null || \
   useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-check-source" osrt-check-source
 exit 0
+
+%pre -f build-fail-reminder.pre build-fail-reminder
+%service_add_pre osrt-build-fail-reminder.timer
+
+%post build-fail-reminder
+%service_add_post osrt-build-fail-reminder.timer
+
+%preun build-fail-reminder
+%service_del_preun osrt-build-fail-reminder.timer
+
+%postun build-fail-reminder
+%service_del_postun_with_restart osrt-build-fail-reminder.timer
 
 %pre docker-publisher
 getent passwd osrt-docker-publisher > /dev/null || \
@@ -394,7 +418,6 @@ exit 0
 %doc README.md
 %{_bindir}/osrt-biarchtool
 %{_bindir}/osrt-bugowner
-%{_bindir}/osrt-build-fail-reminder
 %{_bindir}/osrt-checknewer
 %{_bindir}/osrt-check_bugowner
 %{_bindir}/osrt-check_tags_in_requests
@@ -411,6 +434,7 @@ exit 0
 %{_datadir}/%{source_dir}
 %exclude %{_datadir}/%{source_dir}/abichecker
 %exclude %{_datadir}/%{source_dir}/%{announcer_filename}
+%exclude %{_datadir}/%{source_dir}/build-fail-reminder.py
 %exclude %{_datadir}/%{source_dir}/check_maintenance_incidents.py
 %exclude %{_datadir}/%{source_dir}/check_source.py
 %exclude %{_datadir}/%{source_dir}/devel-project.py
@@ -452,6 +476,15 @@ exit 0
 %{_datadir}/%{source_dir}/%{announcer_filename}
 %config(noreplace) %{_sysconfdir}/openSUSE-release-tools/announcer
 %config(noreplace) %{_sysconfdir}/rsyslog.d/%{announcer_filename}.conf
+
+%files build-fail-reminder
+%{_bindir}/osrt-build-fail-reminder
+%{_datadir}/%{source_dir}/build-fail-reminder.py
+%{_sysusersdir}/osrt-build-fail-reminder.conf
+%{_unitdir}/osrt-build-fail-reminder.service
+%{_unitdir}/osrt-build-fail-reminder.timer
+%dir %attr(0700,osrt-build-fail-reminder,osrt-build-fail-reminder) %{_sysconfdir}/%{name}/build-fail-reminder
+%dir %attr(0750,osrt-build-fail-reminder,osrt-build-fail-reminder) %{_sharedstatedir}/osrt-build-fail-reminder
 
 %files check-source
 %{_bindir}/osrt-check_source
