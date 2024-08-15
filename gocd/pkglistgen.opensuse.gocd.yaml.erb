@@ -73,20 +73,6 @@ pipelines:
         approval:
           type: manual
         jobs:
-<% ['openSUSE:Leap:16.0/target'].each do |project|
-  project=project.split('/')
-  name=project[0].gsub(':', '_')
-  if project.size > 1
-    options=" -s #{project[1]}"
-    name = name + "_#{project[1]}"
-  end
-  -%>
-          <%= name %>:
-            resources:
-            - repo-checker
-            tasks:
-            - script: ./pkglistgen.py --verbose -A https://api.opensuse.org update_and_solve --project <%= project[0] %> --scope target --engine product_composer --force
-<% end -%>
   Pkglistgen.openSUSE_Leap_15.6:
     group: Leap
     lock_behavior: unlockWhenFinished

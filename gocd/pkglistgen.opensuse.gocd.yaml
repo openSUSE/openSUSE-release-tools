@@ -124,11 +124,6 @@ pipelines:
         approval:
           type: manual
         jobs:
-          openSUSE_Leap_16.0_target:
-            resources:
-            - repo-checker
-            tasks:
-            - script: ./pkglistgen.py --verbose -A https://api.opensuse.org update_and_solve --project openSUSE:Leap:16.0 --scope target --engine product_composer --force
   Pkglistgen.openSUSE_Leap_15.6:
     group: Leap
     lock_behavior: unlockWhenFinished
