@@ -1,6 +1,6 @@
 format_version: 3
 pipelines:
-<% %w(Factory Factory:NonFree Backports:SLE-15-SP7).each do |project| -%>
+<% %w(Factory Factory:NonFree Leap:16.0 Backports:SLE-15-SP7).each do |project| -%>
 <% nickname =  project.gsub(':', '.') -%>
   AdiChecker.<%= nickname %>:
     group: openSUSE.Checkers
