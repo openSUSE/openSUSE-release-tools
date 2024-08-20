@@ -193,7 +193,7 @@ pipelines:
               ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15-SP1
               echo "Step 15"
               ./project-installcheck.py --debug check --store home:repo-checker/rebuilds -r standard openSUSE:Step:15
-  Trigger.Rebuild.Leap_15_6:
+  Trigger.Rebuild.Leap_16_0:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -211,5 +211,5 @@ pipelines:
           - repo-checker
         tasks:
           - script: |-
-              echo "Leap 15.6"
-              ./project-installcheck.py --debug check --store openSUSE:Leap:15.6:Staging/dashboard --no-rebuild openSUSE:Leap:15.6
+              echo "Leap 16.0"
+              ./project-installcheck.py --debug check --store openSUSE:Leap:16.0:Staging/dashboard --no-rebuild openSUSE:Leap:16.0
