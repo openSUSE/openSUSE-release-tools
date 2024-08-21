@@ -65,7 +65,7 @@ class LegalAuto(ReviewBot.ReviewBot):
             id = self.request.reqid
         return self.apinick + id
 
-    def create_db_entry(self, src_project, src_package, src_rev):
+    def create_db_entry(self, src_project, src_package, src_rev, target_project):
         params = {'api': self.apiurl, 'project': src_project, 'package': src_package,
                   'external_link': self.request_nick(),
                   'created': self.request.statehistory[0].when + ' UTC'}
@@ -81,10 +81,12 @@ class LegalAuto(ReviewBot.ReviewBot):
                                                             'package': package['id']})
         REQ.post(url, headers=self.legaldb_headers)
 
-        comment_api = CommentAPI(self.apiurl)
-        review_url = osc.core.makeurl(self.legaldb, ['reviews', 'details', str(package['id'])])
-        review_comment = f"Legal review details available at {review_url} (access may be restricted)"
-        comment_api.add_comment(request_id=self.request.reqid, comment=review_comment)
+        # Most openSUSE:Factory submissions are accepted without legal review
+        if target_project != "openSUSE:Factory":
+            comment_api = CommentAPI(self.apiurl)
+            review_url = osc.core.makeurl(self.legaldb, ['reviews', 'details', str(package['id'])])
+            review_comment = f"Legal review details available at {review_url} (access may be restricted)"
+            comment_api.add_comment(request_id=self.request.reqid, comment=review_comment)
 
         return [package['id']]
 
@@ -116,7 +118,7 @@ class LegalAuto(ReviewBot.ReviewBot):
         if to_review:
             self.logger.info(f"Found {json.dumps(to_review)}")
         to_review = to_review or self.create_db_entry(
-            src_project, src_package, src_rev)
+            src_project, src_package, src_rev, target_project)
         if not to_review:
             return None
         self.message = None
@@ -136,7 +138,7 @@ class LegalAuto(ReviewBot.ReviewBot):
                 # reopen
                 return None
             if state == 'new' and self.valid_for_opensuse(target_project, report):
-                self.message = 'The legal review is accepted preliminary. The package may require actions later on.'
+                self.message = 'Legal review pending, opensuse-review-team is responsible for license compliance'
                 # reduce legal review priority - we're no longer waiting
                 url = osc.core.makeurl(
                     self.legaldb, ['package', str(pack)], {'priority': 1})
@@ -148,20 +150,20 @@ class LegalAuto(ReviewBot.ReviewBot):
             if state == 'unacceptable':
                 user = report.get('reviewing_user', None)
                 if not user:
-                    self.message = 'declined'
+                    self.message = 'Legal review has been declined'
                     self.logger.warning("unacceptable without user %d" % report.get('id'))
                     return None
                 comment = report.get('result', None).encode('utf-8')
                 if comment:
-                    self.message = "@{} declined the legal report with the following comment: {}".format(
+                    self.message = "Legal review has been declined by @{} with the following comment: {}".format(
                         user, comment)
                 else:
-                    self.message = f"@{user} declined the legal report"
+                    self.message = f"Legal review has been declined by @{user}"
                     return None
                 return False
             # print url, json.dumps(report)
         if not self.message:
-            self.message = 'ok'
+            self.message = 'Legal review has been approved'
         return True
 
     def check_one_request(self, req):
