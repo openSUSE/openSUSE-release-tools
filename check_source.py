@@ -279,10 +279,13 @@ class CheckSource(ReviewBot.ReviewBot):
             return False
 
         if not self.check_urls('_old', target_package, specs):
-            osc.core.change_review_state(apiurl=self.apiurl,
-                                         reqid=self.request.reqid, newstate='new',
-                                         by_group=self.review_group,
-                                         by_user=self.review_user, message=self.review_messages['new'])
+            if self.dryrun:
+                self.logger.info(f"(dryrun) changing review state to new")
+            else:
+                osc.core.change_review_state(apiurl=self.apiurl,
+                                             reqid=self.request.reqid, newstate='new',
+                                             by_group=self.review_group,
+                                             by_user=self.review_user, message=self.review_messages['new'])
             return None
 
         shutil.rmtree(copath)
@@ -322,7 +325,9 @@ class CheckSource(ReviewBot.ReviewBot):
         if self.only_changes():
             self.logger.debug('only .changes modifications')
             if self.staging_group and self.review_user in group_members(self.apiurl, self.staging_group):
-                if not self.dryrun:
+                if self.dryrun:
+                    self.logger.info(f"(dryrun) changing review state to accepted")
+                else:
                     osc.core.change_review_state(self.apiurl, str(self.request.reqid), 'accepted',
                                                  by_group=self.staging_group,
                                                  message='skipping the staging process since only .changes modifications')
