@@ -20,7 +20,6 @@ from lxml import etree as ET
 import osc.conf
 import osc.core
 from osclib.cache_manager import CacheManager
-from osclib.comments import CommentAPI
 import ReviewBot
 
 http_GET = osc.core.http_GET
@@ -80,12 +79,6 @@ class LegalAuto(ReviewBot.ReviewBot):
         url = osc.core.makeurl(self.legaldb, ['requests'], {'external_link': self.request_nick(),
                                                             'package': package['id']})
         REQ.post(url, headers=self.legaldb_headers)
-
-        comment_api = CommentAPI(self.apiurl)
-        review_url = osc.core.makeurl(self.legaldb, ['reviews', 'details', str(package['id'])])
-        review_comment = f"Legal review details available at {review_url} (access may be restricted)"
-        comment_api.add_comment(request_id=self.request.reqid, comment=review_comment)
-
         return [package['id']]
 
     def valid_for_opensuse(self, target_project, report):
