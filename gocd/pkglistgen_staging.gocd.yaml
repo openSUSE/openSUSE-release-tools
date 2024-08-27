@@ -1168,12 +1168,13 @@ pipelines:
               done
               ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
+
   "Leap.Staging.A":
     environment_variables:
       STAGING_PROJECT: openSUSE:Leap:16.0:Staging:A
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Leap.16.0.pkglistgen
+    group: Leap
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -1207,18 +1208,25 @@ pipelines:
             tasks:
               - script: |-
                   ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:16.0 -s $STAGING_PROJECT
+
     - Enable.images.repo:
-      resources:
-        - staging-bot
-      tasks:
-        - script: |-
-            osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+
   "Leap.Staging.B":
     environment_variables:
       STAGING_PROJECT: openSUSE:Leap:16.0:Staging:B
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Leap.16.0.pkglistgen
+    group: Leap
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -1252,18 +1260,25 @@ pipelines:
             tasks:
               - script: |-
                   ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:16.0 -s $STAGING_PROJECT
+
     - Enable.images.repo:
-      resources:
-        - staging-bot
-      tasks:
-        - script: |-
-            osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+
   "Leap.Staging.C":
     environment_variables:
       STAGING_PROJECT: openSUSE:Leap:16.0:Staging:C
       STAGING_API: https://api.opensuse.org
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
-    group: Leap.16.0.pkglistgen
+    group: Leap
     lock_behavior: unlockWhenFinished
     materials:
       stagings:
@@ -1297,10 +1312,16 @@ pipelines:
             tasks:
               - script: |-
                   ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Leap:16.0 -s $STAGING_PROJECT
+
     - Enable.images.repo:
-      resources:
-        - staging-bot
-      tasks:
-        - script: |-
-            osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 
