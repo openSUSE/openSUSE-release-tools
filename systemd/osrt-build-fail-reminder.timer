@@ -1,0 +1,8 @@
+[Unit]
+Description=openSUSE Release Tools: OBS Build Fail Reminder Scheduler
+
+[Timer]
+OnCalendar=daily
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,54 @@
+[Unit]
+Description=openSUSE Release Tools: OBS Build Fail Reminder
+
+ConditionFileIsExecutable=/usr/bin/osrt-build-fail-reminder
+ConditionFileNotEmpty=/etc/openSUSE-release-tools/build-fail-reminder/oscrc
+
+[Service]
+User=%N
+Group=%N
+
+ConfigurationDirectory=openSUSE-release-tools/build-fail-reminder
+ConfigurationDirectoryMode=0700
+StateDirectory=osrt-build-fail-reminder
+StateDirectoryMode=0750
+
+Environment=BFR_SENDER='DimStar / Dominique Leuenberger <dimstar@opensuse.org>'
+Environment=BFR_PROJECT=openSUSE:Factory
+Environment=BFR_RELAY=ipv6-localhost
+
+Environment=OSC_CONFIG=/etc/openSUSE-release-tools/build-fail-reminder/oscrc
+
+ExecStart=/usr/bin/osrt-build-fail-reminder --sender=${BFR_SENDER} --project=${BFR_PROJECT} --relay=${BFR_RELAY} --json=${STATE_DIRECTORY}/reminded.json "$BFR_EXTRA"
+
+SyslogIdentifier=build-fail-reminder
+
+AmbientCapabilities=
+CapabilityBoundingSet=
+KeyringMode=private
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+MountFlags=private
+NoNewPrivileges=yes
+PrivateDevices=yes
+PrivateTmp=yes
+PrivateUsers=yes
+ProtectClock=yes
+ProtectControlGroups=yes
+ProtectHome=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectSystem=strict
+RemoveIPC=yes
+RestrictAddressFamilies=AF_INET6
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+SystemCallArchitectures=native
+
+UMask=0027
+
+# access to database, - to allow creation if one does not already exist
+ReadWritePaths=-/var/lib/osrt-build-fail-reminder/reminded.json
