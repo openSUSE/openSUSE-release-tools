@@ -10,7 +10,7 @@ pipelines:
     group: SLFO.Stagings
     lock_behavior: unlockWhenFinished
     timer:
-      spec: "0 0 * 0-23 * SUN"
+      spec: "0 0 0-23 ? * SUN"
     materials:
       scripts:
         auto_update: true
@@ -31,7 +31,7 @@ pipelines:
                 sleep 60
               done
     - Freeze.stagings:
-        # 6 hours (at most 30 minutes per staging)
+        ## 6 hours (at most 30 minutes per staging)
         timeout: 360
         resources:
           - staging-bot
@@ -40,7 +40,7 @@ pipelines:
               set -eu
               export PYTHONPATH=$PWD/scripts
               for letter in <% stagings.each do |letter| %><%= letter %> <% end -%>; do
-                # if the staging was frozen today, skip it
+                ## if the staging was frozen today, skip it
                 if ! osc -A $STAGING_API meta attribute "${SLFO_PROJECT}:Staging:${letter}" --attribute OSRT:FreezeTime | grep $(date +%Y-%m-%d); then
                   osc -A $STAGING_API staging freeze -p $SLFO_PROJECT $letter
                 else
