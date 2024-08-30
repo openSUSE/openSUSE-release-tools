@@ -2,6 +2,51 @@
 <% stagings = %w(A B C D E F G H S V Y) -%>
 format_version: 3
 pipelines:
+  SUSE.SLFO.Main.Staging.Weekly.Freeze:
+    environment_variables:
+      SLFO_PROJECT: SUSE:SLFO:Main
+      SLFO_RING_1_PROJECT: SUSE:SLFO:Main:Staging:Rings:1-MinimalX
+      STAGING_API: https://api.suse.de
+    group: SLFO.Stagings
+    lock_behavior: unlockWhenFinished
+    timer:
+      spec: "0 0 * 0-23 * SUN"
+    materials:
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Check.Ring.1.Finished:
+        timeout: 50
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+              while osc -A $STAGING_API api /build/$SLFO_RING_1_PROJECT/standard/x86_64?view=status | grep 'code=' | sed -E 's/^.*code="(.*)".*$/\1/' | grep -q finished; ret=$?; [ ${ret} -ne 0 ]; do
+                sleep 60
+              done
+    - Freeze.stagings:
+        # 6 hours (at most 30 minutes per staging)
+        timeout: 360
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              set -eu
+              export PYTHONPATH=$PWD/scripts
+              for letter in <% stagings.each do |letter| %><%= letter %> <% end -%>; do
+                # if the staging was frozen today, skip it
+                if ! osc -A $STAGING_API meta attribute "${SLFO_PROJECT}:Staging:${letter}" --attribute OSRT:FreezeTime | grep $(date +%Y-%m-%d); then
+                  osc -A $STAGING_API staging freeze -p $SLFO_PROJECT $letter
+                else
+                  echo Skipping "${SLFO_PROJECT}:Staging:${letter}"
+                fi
+              done
 <% stagings.each do |letter| %>
   SUSE.SLFO.Main.Staging.<%= letter %>:
     environment_variables:
