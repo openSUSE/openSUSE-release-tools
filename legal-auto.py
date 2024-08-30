@@ -2,6 +2,9 @@
 
 # SPDX-License-Identifier: MIT
 
+# States from legaldb.suse.de / Cavil are documented in
+# https://github.com/openSUSE/cavil/blob/master/docs/Architecture.md#states
+
 import os
 import os.path
 import sys
@@ -88,7 +91,7 @@ class LegalAuto(ReviewBot.ReviewBot):
         if not indexed:
             return False
         datetime = parse(indexed)
-        # give the legaldb 2 hours to find a match (so we prefer acceptable/correct over preliminary)
+        # give the legaldb 2 hours to find a match (so we prefer acceptable_by_lawyer/acceptable/correct over preliminary)
         if datetime.now(timezone.utc) - datetime < timedelta(hours=2):
             return False
         return True
@@ -136,7 +139,7 @@ class LegalAuto(ReviewBot.ReviewBot):
                 if not self.dryrun:
                     REQ.patch(url, headers=self.legaldb_headers)
                 continue
-            if state not in ['acceptable', 'correct', 'unacceptable']:
+            if state not in ['acceptable_by_lawyer', 'acceptable', 'correct', 'unacceptable']:
                 return None
             if state == 'unacceptable':
                 user = report.get('reviewing_user', None)
