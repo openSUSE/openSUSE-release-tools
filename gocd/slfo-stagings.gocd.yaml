@@ -6,6 +6,7 @@ pipelines:
       SLFO_PROJECT: SUSE:SLFO:Main
       SLFO_RING_1_PROJECT: SUSE:SLFO:Main:Staging:Rings:1-MinimalX
       STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
     group: SLFO.Stagings
     lock_behavior: unlockWhenFinished
     timer:
