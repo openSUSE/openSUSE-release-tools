@@ -31,7 +31,7 @@ pipelines:
               cd scripts/gocd
               status="$(osc -A $STAGING_API api /build/$SLFO_RING_1_PROJECT/standard/x86_64?view=status | grep 'code=' | sed -E 's/^.*code="(.*)".*$/\1/')"
               echo $SLFO_RING_1_PROJECT status: "${status}"
-              if [ printf '%s' "${status}" | grep -q finished ]; then
+              if printf '%s' "${status}" | grep -q finished; then
                 exit 0
               else
                 exit 1
