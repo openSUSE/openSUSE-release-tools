@@ -1425,6 +1425,17 @@ class StagingAPI(object):
                  <arch>x86_64</arch>
               </repository>"""
 
+        reproducible_builds_repos = f"""
+               <repository name="rb_future1y">
+                 <path project="{name}" repository="standard"/>
+                 <arch>x86_64</arch>
+               </repository>
+               <repository name="rb_j1">
+                 <path project="{name}" repository="standard"/>
+                 <arch>x86_64</arch>
+               </repository>
+              """
+
         meta = f"""
         <project name="{name}">
           <title></title>
@@ -1441,6 +1452,7 @@ class StagingAPI(object):
             <path project="{self.cstaging}" repository="standard"/>
             <path project="{self.project}" repository="standard"/>
           </repository>
+          {reproducible_builds_repos}
           {images_repo}
           {containerfile_repo}
         </project>"""
@@ -1455,6 +1467,27 @@ class StagingAPI(object):
         http_PUT(url, data=meta)
         # put twice because on first put, the API adds useless maintainer
         http_PUT(url, data=meta)
+
+        prjconf = textwrap.dedent("""
+            # prjconf for testing reproducible builds:
+            BuildFlags: nodisturl
+            Release: 1.1
+
+            %if %_repository == "rb_future1y"
+              Support: reproducible-faketools-futurepost
+            %endif
+
+            %if %_repository == "rb_j1"
+              Support: reproducible-faketools-j1
+            %endif
+
+            Macros:
+            %distribution reproducible
+            :Macros
+            # end of reproducible builds part
+        """)
+        url = make_meta_url('prjconf', name, self.apiurl)
+        http_PUT(url, data=prjconf)
 
         self.register_new_staging_project(name)
 
