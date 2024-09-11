@@ -238,6 +238,10 @@ Requires:       osclib = %{version}
 Requires:       python3-requests
 Requires:       python3-solv
 Requires:       zstd
+%if 0%{?suse_version} > 1500
+# slfo-packagelist-uploader.py
+Requires:       python3-GitPython
+%endif
 # we use the same user as repo-checker
 PreReq:         openSUSE-release-tools-repo-checker
 BuildArch:      noarch
@@ -316,6 +320,12 @@ OSC plugin for the staging workflow, see `osc staging --help`.
 
 %prep
 %setup -q
+# slfo-packagelist-uploader requires python-GitPython but 15.6 providing
+# python311-GitPython only, therefore do not ship slfo-packagelist-uploader
+# in 15.6 since python3-GitPython is not available
+%if 0%{?suse_version} <= 1500
+rm slfo-packagelist-uploader.py
+%endif
 
 %build
 %make_build
@@ -428,6 +438,7 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/project-installcheck.py
 %exclude %{_datadir}/%{source_dir}/suppkg_rebuild.py
 %exclude %{_datadir}/%{source_dir}/skippkg-finder.py
+%exclude %{_datadir}/%{source_dir}/slfo-packagelist-uploader.py
 %exclude %{_datadir}/%{source_dir}/osclib
 %exclude %{_datadir}/%{source_dir}/osc-cycle.py
 %exclude %{_datadir}/%{source_dir}/osc-origin.py
@@ -456,6 +467,10 @@ exit 0
 
 %files check-source
 %{_bindir}/osrt-check_source
+%if 0%{?suse_version} > 1500
+%{_bindir}/osrt-slfo-packagelist-uploader
+%{_datadir}/%{source_dir}/slfo-packagelist-uploader.py
+%endif
 %{_datadir}/%{source_dir}/check_source.py
 
 %files docker-publisher
