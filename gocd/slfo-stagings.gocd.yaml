@@ -44,14 +44,24 @@ pipelines:
           - script: |-
               set -eu
               export PYTHONPATH=$PWD/scripts
+
+              ## Setup osc staging plugin
+              tempdir=$(mktemp -d)
+              mkdir -p $tempdir/.osc-plugins
+              ln -s $PWD/osc-staging.py $tempdir/.osc-plugins
+              ln -s $PWD/osclib $tempdir/.osc-plugins
+              export HOME=$tempdir
+
               for letter in A B C D E F G H S V Y ; do
                 ## if the staging was frozen today, skip it
                 if ! osc -A $STAGING_API meta attribute "${SLFO_PROJECT}:Staging:${letter}" --attribute OSRT:FreezeTime | grep $(date +%Y-%m-%d); then
                   osc -A $STAGING_API staging freeze -p $SLFO_PROJECT $letter
                 else
-                  echo Skipping "${SLFO_PROJECT}:Staging:${letter}"
+                  echo "${SLFO_PROJECT}:Staging:${letter}" was frozen today, skipping it...
                 fi
               done
+              ## Tear down osc staging plugin
+              rm -rf $tempdir
 
   SUSE.SLFO.Main.Staging.A:
     environment_variables:
