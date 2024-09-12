@@ -108,3 +108,24 @@ pipelines:
             - repo-checker
             tasks:
               - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:RISCV
+  Update.Repos.Leap_16_0:
+    group: Leap
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    timer:
+      spec: 0 0 21 ? * *
+      only_on_changes: false
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Update:
+        approval:
+          type: manual
+        jobs:
+          openSUSE_Leap_16.0:
+            resources:
+            - repo-checker
+            tasks:
+              - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:16.0
