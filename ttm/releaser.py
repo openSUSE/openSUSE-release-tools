@@ -76,6 +76,11 @@ class ToTestReleaser(ToTestManager):
             return self.release_version()
 
         if len(self.project.main_products):
+            # 000productcompose has ftp built only and the build number
+            # agama-installer carry over build number from 000prodcutcompose
+            # but they are not from the same package container
+            if 'productcompose' in self.project.main_products[0]:
+                return self.productcompose_build_version(self.project.name, self.project.main_products[0])
             return self.iso_build_version(self.project.name, self.project.main_products[0])
 
         return self.iso_build_version(self.project.name, self.project.image_products[0].package,
@@ -286,8 +291,12 @@ class ToTestReleaser(ToTestManager):
                 self.release_package(self.project.name, product, repository=self.project.product_repo)
 
             for cd in self.project.main_products:
-                self.release_package(self.project.name, cd, set_release=set_release,
-                                     repository=self.project.product_repo)
+                # do not set release number if it is productcompose
+                if 'productcompose' in self.project.main_products[0]:
+                    self.release_package(self.project.name, cd, repository=self.project.product_repo)
+                else:
+                    self.release_package(self.project.name, cd, set_release=set_release,
+                                         repository=self.project.product_repo)
 
         for cd in self.project.livecd_products:
             self.release_package('%s:Live' %
@@ -295,8 +304,11 @@ class ToTestReleaser(ToTestManager):
                                  repository=self.project.livecd_repo)
 
         for image in self.project.image_products:
+            source_repo = self.project.product_repo
+            if self.project.same_target_images_repo_for_source_repo:
+                source_repo = self.project.totest_images_repo
             self.release_package(self.project.name, image.package, set_release=set_release,
-                                 repository=self.project.product_repo,
+                                 repository=source_repo,
                                  target_project=self.project.test_project,
                                  target_repository=self.project.totest_images_repo)
 
