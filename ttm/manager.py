@@ -72,6 +72,14 @@ class ToTestManager(ToolBase.ToolBase):
                 return result.group(1)
         raise NotFoundException(f"can't find {project} iso version")
 
+    def productcompose_build_version(self, project, tree, repo=None, arch=None):
+        for binary in self.binaries_of_product(project, tree, repo=repo, arch=arch):
+            result = re.match(
+                r'.*-(?:Build|Snapshot)([0-9.]+)(.report)', binary)
+            if result:
+                return result.group(1)
+        raise NotFoundException(f"can't find {project} productcompose version")
+
     def version_from_totest_project(self):
         if len(self.project.main_products):
             return self.iso_build_version(self.project.test_project, self.project.main_products[0])
