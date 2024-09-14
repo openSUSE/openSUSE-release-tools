@@ -214,9 +214,13 @@ class ToTestReleaser(ToTestManager):
             if not self.package_ok(prjresult, self.project.name, product, self.project.product_repo, self.project.product_arch):
                 all_ok = False
 
+        # agama-installer in Leap uses images repo as source repo as well as target repo
+        source_repo = self.project.product_repo
+        if self.project.same_target_images_repo_for_source_repo:
+            source_repo = self.project.totest_images_repo
         for product in self.project.image_products + self.project.container_products:
             for arch in product.archs:
-                if not self.package_ok(prjresult, self.project.name, product.package, self.project.product_repo, arch):
+                if not self.package_ok(prjresult, self.project.name, product.package, source_repo, arch):
                     all_ok = False
 
         for product in self.project.containerfile_products:
