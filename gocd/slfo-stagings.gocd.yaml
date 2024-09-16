@@ -17,7 +17,6 @@ pipelines:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
         whitelist:
           - DO_NOT_TRIGGER
-        destination: scripts
     stages:
     - Check.Ring.1.Finished:
         timeout: 50
@@ -26,8 +25,6 @@ pipelines:
         tasks:
           - script: |-
               set -eu
-              export PYTHONPATH=$PWD/scripts
-              cd scripts/gocd
               status="$(osc -A $STAGING_API api /build/$SLFO_RING_1_PROJECT/standard/x86_64?view=status | grep 'code=' | sed -E 's/^.*code="(.*)".*$/\1/')"
               echo $SLFO_RING_1_PROJECT status: "${status}"
               if printf '%s' "${status}" | grep -q finished; then
@@ -43,7 +40,7 @@ pipelines:
         tasks:
           - script: |-
               set -eu
-              export PYTHONPATH=$PWD/scripts
+              export PYTHONPATH=$PWD
 
               ## Setup osc staging plugin
               tempdir=$(mktemp -d)
