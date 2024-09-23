@@ -53,6 +53,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     @cmdln.option('--stop-after-solve', action='store_true', help='only create group files')
     @cmdln.option('--staging', help='Only solve that one staging')
     @cmdln.option('--only-release-packages', action='store_true', help='Generate 000release-packages only')
+    @cmdln.option('--only-update-weakremovers', action='store_true', help='Update weakremovers.inc file only')
     @cmdln.option('--custom-cache-tag', help='add custom tag to cache dir to avoid issues when running in parallel')
     def do_update_and_solve(self, subcmd, opts):
         """${cmd_name}: update and solve for given scope
@@ -73,11 +74,14 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
         if not opts.scope:
             raise ValueError('--scope or --staging required')
 
+        if opts.only_release_packages and opts.only_update_weakremovers:
+            raise ValueError('--only-release-packages and --only-update-weakremovers can not be used together.')
+
         if opts.engine not in ENGINE_NAMES:
             raise ValueError(f"Illegal engine: {opts.engine} . Supported engines are {', '.join(ENGINE_NAMES)}.")
-        elif opts.engine == Engine.product_composer.name and opts.only_release_packages:
-            raise ValueError(f"--only-release-packages makes no sense with {Engine.product_composer.name} engine, as it does not handle "
-                             "000release-packages!")
+        elif opts.engine == Engine.product_composer.name and (opts.only_release_packages or opts.only_update_weakremovers):
+            raise ValueError(f"--only-release-packages or --only-update-weakremovers makes no sense with {Engine.product_composer.name} "
+                             "engine, as it does not handle 000release-packages!")
 
         apiurl = conf.config['apiurl']
         Config(apiurl, opts.project)
@@ -106,6 +110,7 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                                                          engine=Engine[opts.engine],
                                                          force=opts.force, no_checkout=opts.no_checkout,
                                                          only_release_packages=opts.only_release_packages,
+                                                         only_update_weakremovers=opts.only_update_weakremovers,
                                                          stop_after_solve=opts.stop_after_solve,
                                                          custom_cache_tag=opts.custom_cache_tag)
             except MismatchedRepoException:
