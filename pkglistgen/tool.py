@@ -665,6 +665,7 @@ class PkgListGen(ToolBase.ToolBase):
         force: bool,
         no_checkout: bool,
         only_release_packages: bool,
+        only_update_weakremovers: bool,
         stop_after_solve: bool,
         custom_cache_tag,
         engine: Engine,
@@ -690,6 +691,8 @@ class PkgListGen(ToolBase.ToolBase):
 
         drop_list = []
         checkout_list = [group, product_package, release]
+        if only_update_weakremovers:
+            checkout_list = [release]
         if not force:
             root = ET.fromstringlist(show_results_meta(api.apiurl, project, product_package,
                                                        repository=[main_repo], multibuild=True))
@@ -721,7 +724,7 @@ class PkgListGen(ToolBase.ToolBase):
         else:
             url = api.makeurl(['source', project])
             packages = ET.parse(http_GET(url)).getroot()
-            if packages.find(f'entry[@name="{product_package}"]') is None:
+            if packages.find(f'entry[@name="{product_package}"]') is None and not only_update_weakremovers:
                 if not self.dry_run:
                     undelete_package(api.apiurl, project, product_package, 'revive')
                 # TODO disable build.
@@ -753,7 +756,10 @@ class PkgListGen(ToolBase.ToolBase):
         if engine == Engine.product_composer:
             self.output_dir = productcompose_dir
         elif engine == Engine.legacy:
-            self.output_dir = product_dir
+            if not only_update_weakremovers:
+                self.output_dir = product_dir
+            else:
+                self.output_dir = release_dir
 
         if not no_checkout and not git_url:
             logging.debug(f'Skipping checkout of {project}')
@@ -761,19 +767,22 @@ class PkgListGen(ToolBase.ToolBase):
                 checkout_package(api.apiurl, project, package, expand_link=True,
                                  prj_dir=cache_dir, outdir=os.path.join(cache_dir, package))
 
-        if (engine == Engine.legacy) and (not only_release_packages):
+        if (engine == Engine.legacy) and (not only_release_packages) and not only_update_weakremovers:
             file_utils.unlink_all_except(self.output_dir)
-
-        ignore_list = ['supportstatus.txt', 'summary-staging.txt', 'package-groups.changes',
-                       'default.productcompose.in']
-        ignore_list += self.group_input_files()
 
         # old product-builder
         if engine == Engine.legacy:
-            file_utils.copy_directory_contents(group_dir, self.output_dir, ignore_list)
-            file_utils.change_extension(self.output_dir, '.spec.in', '.spec')
-            file_utils.change_extension(self.output_dir, '.product.in', '.product')
-            file_utils.unlink_all_except(release_dir, ['weakremovers.inc', '*.changes'])
+            if only_update_weakremovers:
+                # remove stub.spec before re-creating _multibuild per specfiles
+                file_utils.unlink_list(release_dir, ['stub.spec'])
+            else:
+                ignore_list = ['supportstatus.txt', 'summary-staging.txt', 'package-groups.changes',
+                               'default.productcompose.in']
+                ignore_list += self.group_input_files()
+                file_utils.copy_directory_contents(group_dir, self.output_dir, ignore_list)
+                file_utils.change_extension(self.output_dir, '.spec.in', '.spec')
+                file_utils.change_extension(self.output_dir, '.product.in', '.product')
+                file_utils.unlink_all_except(release_dir, ['weakremovers.inc', '*.changes'])
 
         # new product-composer
         fn = os.path.join(group_dir, 'default.productcompose.in')
@@ -804,7 +813,9 @@ class PkgListGen(ToolBase.ToolBase):
         self.filter_architectures(target_archs(api.apiurl, project, main_repo))
         self.update_repos(self.filtered_architectures)
 
-        if only_release_packages:
+        if only_update_weakremovers:
+            pass
+        elif only_release_packages:
             self.load_all_groups()
             self.write_group_stubs()
         else:
@@ -853,18 +864,20 @@ class PkgListGen(ToolBase.ToolBase):
             if scope == 'staging':
                 self.strip_medium_from_staging(self.output_dir)
 
-            spec_files = glob.glob(os.path.join(self.output_dir, '*.spec'))
-            file_utils.move_list(spec_files, release_dir)
-            inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
-            # filter special inc file
-            inc_files = filter(lambda file: file.endswith('weakremovers.inc'), inc_files)
-            file_utils.move_list(inc_files, release_dir)
+            # with --only-update-weakremovers that output_dir will be set as same as release_dir
+            if self.output_dir != release_dir:
+                spec_files = glob.glob(os.path.join(self.output_dir, '*.spec'))
+                file_utils.move_list(spec_files, release_dir)
+                inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
+                # filter special inc file
+                inc_files = filter(lambda file: file.endswith('weakremovers.inc'), inc_files)
+                file_utils.move_list(inc_files, release_dir)
 
-            # do not overwrite weakremovers.inc if it exists
-            # we will commit there afterwards if needed
-            if os.path.exists(os.path.join(group_dir, 'weakremovers.inc')) and \
-               not os.path.exists(os.path.join(release_dir, 'weakremovers.inc')):
-                file_utils.move_list([os.path.join(group_dir, 'weakremovers.inc')], release_dir)
+                # do not overwrite weakremovers.inc if it exists
+                # we will commit there afterwards if needed
+                if os.path.exists(os.path.join(group_dir, 'weakremovers.inc')) and \
+                        not os.path.exists(os.path.join(release_dir, 'weakremovers.inc')):
+                    file_utils.move_list([os.path.join(group_dir, 'weakremovers.inc')], release_dir)
 
             file_utils.multibuild_from_glob(release_dir, '*.spec')
             self.build_stub(release_dir, 'spec')
@@ -890,7 +903,7 @@ class PkgListGen(ToolBase.ToolBase):
 
             self.commit_package(release_dir)
 
-        if only_release_packages:
+        if only_release_packages or only_update_weakremovers:
             return
 
         if engine == Engine.legacy:
