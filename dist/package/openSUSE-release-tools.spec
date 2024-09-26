@@ -150,8 +150,8 @@ Requires(pre):  shadow
 Suggests:       grafana
 BuildArch:      noarch
 %if 0%{?suse_version} > 1500
-Requires:       influxdb
-Requires:       python3-influxdb
+Requires:       influxdb2
+Requires:       python3-influxdb-client
 Requires:       telegraf
 %else
 Suggests:       influxdb
