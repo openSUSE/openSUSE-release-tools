@@ -1,9 +1,12 @@
-from dateutil.parser import parse as date_parse
-from metrics import timestamp
-import requests
 from urllib.parse import urljoin
+from datetime import datetime
 
+import requests
 import yaml
+from dateutil.parser import parse as date_parse
+from influxdb_client.client.write_api import SYNCHRONOUS
+
+from metrics import timestamp
 
 BASEURL = 'http://review.tumbleweed.boombatower.com/data/'
 
@@ -13,12 +16,21 @@ def data_load(name):
     return yaml.safe_load(response.text)
 
 
-def data_write(client, measurement, points):
-    client.drop_measurement(measurement)
-    client.write_points(points, 's')
+def data_drop(client, bucketname, measurement):
+    start = "1970-01-01T00:00:00Z"
+    stop = datetime.utcnow().isoformat() + "Z"
+    delete_api = client.delete_api()
+    delete_api.delete(start=start, stop=stop, bucket=bucketname,
+                      predicate=f'_measurement="{measurement}"')
 
 
-def ingest_data(client, name):
+def data_write(client, bucketname, measurement, points):
+    data_drop(client, bucketname, measurement)
+    write_api = client.write_api(write_options=SYNCHRONOUS)
+    write_api.write(bucket=bucketname, record=points, write_precision='s')
+
+
+def ingest_data(client, bucketname, name):
     data = data_load(name)
 
     measurement = f'release_{name}'
@@ -31,7 +43,7 @@ def ingest_data(client, name):
             'time': timestamp(date_parse(release)),
         })
 
-    data_write(client, measurement, points)
+    data_write(client, bucketname, measurement, points)
     print(f'wrote {len(points)} for {name}')
 
 
@@ -59,10 +71,10 @@ def map_snapshot(details):
     }
 
 
-def ingest(client):
-    if client._database != 'openSUSE:Factory':
+def ingest(client, bucketname):
+    if bucketname != 'openSUSE:Factory':
         print('skipping release ingest for unsupported project')
         return
 
     for name in ['bug', 'mail', 'score', 'snapshot']:
-        ingest_data(client, name)
+        ingest_data(client, bucketname, name)
