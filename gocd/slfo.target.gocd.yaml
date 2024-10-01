@@ -17,6 +17,7 @@ pipelines:
           - DO_NOT_TRIGGER
         destination: scripts
     environment_variables:
+      SLFO_BUILD_PROJECT: SUSE:SLFO:Main
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
     stages:
     - Expect.Standard.To.Finish:
@@ -25,7 +26,7 @@ pipelines:
         tasks:
         - script: |
             export PYTHONPATH=scripts
-            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLFO:Main:Build -r standard
+            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p "${SLFO_BUILD_PROJECT}" -r standard
 
     - Release.Standard.To.Snapshot:
         roles:
@@ -37,10 +38,55 @@ pipelines:
         tasks:
         - script: |-
             set -e
-            osc -A https://api.suse.de release SUSE:SLFO:Main:Build
+            osc -A https://api.suse.de release "${SLFO_BUILD_PROJECT}"
             sleep 600
-            while (osc -A https://api.suse.de/ api "/build/SUSE:SLFO:Main:Build:Snapshot/_result?view=summary&repository=standard" | grep "result project" | grep -v 'code="published" state="published">'); do
+            while (osc -A https://api.suse.de/ api "/build/${SLFO_BUILD_PROJECT}:Snapshot/_result?view=summary&repository=standard" | grep "result project" | grep -v 'code="published" state="published">'); do
                 echo PENDING
                 sleep 600
             done
-            osc -A https://api.suse.de/ api "/build/SUSE:SLFO:Main:Build:Snapshot/_result?view=summary&repository=standard" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
+            osc -A https://api.suse.de/ api "/build/${SLFO_BUILD_PROJECT}:Snapshot/_result?view=summary&repository=standard" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
+  SLFO.1.1.Standard:
+    group: SLFO.1.1.Target
+    lock_behavior: unlockWhenFinished
+    materials:
+      repos:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        whitelist:
+          - SUSE:SLFO:1.1:Build_-_standard.yaml
+        destination: repos
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    environment_variables:
+      SLFO_1_1_BUILD_PROJECT: SUSE:SLFO:1.1:Build
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    stages:
+    - Expect.Standard.To.Finish:
+        resources:
+        - staging-bot
+        tasks:
+        - script: |
+            export PYTHONPATH=scripts
+            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p "${SLFO_1_1_BUILD_PROJECT}" -r standard
+
+    - Release.Standard.To.Snapshot:
+        roles:
+        - SLE
+        environment_variables:
+          OSC_CONFIG: /home/go/config/oscrc-totest-manager
+        resources:
+        - staging-bot
+        tasks:
+        - script: |-
+            set -e
+            osc -A https://api.suse.de release "${SLFO_1_1_BUILD_PROJECT}"
+            sleep 600
+            while (osc -A https://api.suse.de/ api "/build/${SLFO_1_1_BUILD_PROJECT}:Snapshot/_result?view=summary&repository=standard" | grep "result project" | grep -v 'code="published" state="published">'); do
+                echo PENDING
+                sleep 600
+            done
+            osc -A https://api.suse.de/ api "/build/${SLFO_1_1_BUILD_PROJECT}:Snapshot/_result?view=summary&repository=standard" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
