@@ -145,7 +145,7 @@ pipelines:
               done
               ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
 <% end -%>
-<% stagings = %w(A B C D E F G H S V Y) -%>
+<% stagings = %w(A B) -%>
   SUSE.SLFO.1.1.Staging.Weekly.Freeze:
     environment_variables:
       SLFO_1_1_PROJECT: SUSE:SLFO:1.1
