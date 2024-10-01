@@ -140,7 +140,7 @@ class PkgListGen(ToolBase.ToolBase):
         archs = ['*'] + self.all_architectures
         # a single file covering all builds via multibuild flavors
         with open(os.path.join(self.output_dir, 'default.productcompose'), 'a') as opfh:
-            opfh.write(PRODUCT_COMPOSE_SEPERATOR_LINE + "\n")
+            opfh.write(f"{PRODUCT_COMPOSE_SEPERATOR_LINE}\n")
             for name in self.groups:
                 group = self.groups[name]
                 if not group.solved:
@@ -158,11 +158,11 @@ class PkgListGen(ToolBase.ToolBase):
                         opfh.write(f"  - {f}\n")
                         if arch == '*':
                             for included_arch in self.all_architectures:
-                                opfh.write('  - ' + f + '_' + included_arch + '\n')
+                                opfh.write(f"  - {f}_{included_arch}\n")
                         else:
-                            opfh.write('  - ' + f + '_' + arch + '\n')
+                            opfh.write(f"  - {f}_{arch}\n")
                             opfh.write('  architectures:\n')
-                            opfh.write('  - ' + arch + '\n')
+                            opfh.write(f"  - {arch}\n")
                     opfh.write('  packages:\n')
                     opfh.write(group.tocompose('  ', arch, group.ignore_broken))
             # write main group including all sets
@@ -172,9 +172,9 @@ class PkgListGen(ToolBase.ToolBase):
                 if not group.solved:
                     continue
                 for f in group.flavors:
-                    opfh.write('  - ' + f + '\n')
+                    opfh.write(f"  - {f}\n")
                     for included_arch in self.all_architectures:
-                        opfh.write('  - ' + f + '_' + included_arch + '\n')
+                        opfh.write(f"  - {f}_{included_arch}\n")
 
     def write_all_groups(self):
         self._check_supplements()
@@ -250,8 +250,8 @@ class PkgListGen(ToolBase.ToolBase):
                             tocheck.add(s.name)
 
             for locale in self.locales:
-                id = pool.str2id(f'locale({locale})')
-                for s in pool.whatprovides(id):
+                pool_id = pool.str2id(f'locale({locale})')
+                for s in pool.whatprovides(pool_id):
                     tocheck_locales.add(s.name)
 
         all_grouped = set()
@@ -381,7 +381,7 @@ class PkgListGen(ToolBase.ToolBase):
                     fh.write(']')
                     reason = self._find_reason(p, modules)
                     if reason:
-                        fh.write(' # ' + reason)
+                        fh.write(f" # {reason}")
                 fh.write(' \n')
 
     # give a hint if the package is related to a group
@@ -389,18 +389,18 @@ class PkgListGen(ToolBase.ToolBase):
         # go through the modules multiple times to find the "best"
         for g in modules:
             if package in g.recommends:
-                return 'recommended by ' + g.recommends[package]
+                return f"recommended by {g.recommends[package]}"
         for g in modules:
             if package in g.suggested:
-                return 'suggested by ' + g.suggested[package]
+                return f"suggested by {g.suggested[package]}"
         for g in modules:
             if package in g.develpkgs:
-                return 'devel package of ' + g.develpkgs[package]
+                return f"devel package of {g.develpkgs[package]}"
         return None
 
     def update_one_repo(self, project, repo, arch, solv_file, solv_file_hash):
         # Either hash changed or new, so remove any old hash files.
-        file_utils.unlink_list(None, glob.glob(solv_file + '::*'))
+        file_utils.unlink_list(None, glob.glob(f"{solv_file}::*"))
 
         d = os.path.join(CACHEDIR, project, repo, arch)
         if not os.path.exists(d):
@@ -686,7 +686,7 @@ class PkgListGen(ToolBase.ToolBase):
         host = urlparse(api.apiurl).hostname
         prefix_dir = 'pkglistgen'
         if custom_cache_tag:
-            prefix_dir += '-' + custom_cache_tag
+            prefix_dir += f"-{custom_cache_tag}"
         cache_dir = CacheManager.directory(prefix_dir, host, project)
 
         drop_list = []
@@ -701,7 +701,7 @@ class PkgListGen(ToolBase.ToolBase):
                 return
         if git_url:
             git_url_base, *fragment = git_url.split('#')
-            if os.path.exists(cache_dir + "/.git"):
+            if os.path.exists(f"{cache_dir}/.git"):
                 # reset and update existing clone
                 logging.debug(subprocess.check_output(
                     ['git', 'reset', '--hard'], cwd=cache_dir, encoding='utf-8'))
@@ -718,7 +718,7 @@ class PkgListGen(ToolBase.ToolBase):
                 if fragment:
                     args += ['--branch', fragment[0]]
                 logging.debug(subprocess.check_output(args, encoding='utf-8'))
-            if os.path.exists(cache_dir + '/' + '000update-repos'):
+            if os.path.exists(f"{cache_dir}/000update-repos"):
                 logging.error('No support for 000update-repos in git projects atm')
                 return
         else:
@@ -891,7 +891,7 @@ class PkgListGen(ToolBase.ToolBase):
             if package.get_status(False, ' '):
                 todo_spec_files = glob.glob(os.path.join(release_dir, '*.spec'))
             for spec_file in todo_spec_files:
-                changes_file = os.path.splitext(spec_file)[0] + '.changes'
+                changes_file = f"{os.path.splitext(spec_file)[0]}.changes"
                 with open(changes_file, 'w', encoding="utf-8") as f:
                     date = datetime.now(timezone.utc)
                     date = date.strftime("%a %b %d %H:%M:%S %Z %Y")
@@ -920,7 +920,7 @@ class PkgListGen(ToolBase.ToolBase):
 
             with open(summary_file, 'w') as f:
                 for line in sorted(output):
-                    f.write(line + '\n')
+                    f.write(f"{line}\n")
 
         if git_url:
             logging.debug(subprocess.check_output(
