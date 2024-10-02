@@ -77,7 +77,7 @@ jobs:
 
       - name: FIXME, install missing dependencies
         run: |
-          zypper -n in python3-typing_extensions python3-solv python3-pika python3-openqa_client build python3-influxdb python3-bugzilla
+          zypper -n in python3-typing_extensions python3-solv python3-pika python3-openqa_client build python3-influxdb-client python3-bugzilla
 
       - name: run a simple smoke test whether --help actually works
         run: |
