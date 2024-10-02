@@ -593,7 +593,6 @@ def main(args):
         buckets_api = client.buckets_api()
         buckets_api.create_bucket(args.project)
 
-
         metrics_release.ingest(client, bucketname=args.project)
         if args.release_only:
             return
