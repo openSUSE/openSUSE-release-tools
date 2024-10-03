@@ -114,7 +114,7 @@ class oscapi:
         query = {'cmd': 'create'}
         url = osc.core.makeurl(self.apiurl, ['request'], query=query)
 
-        data = '<request type="submit"><submit><source project="{project}" package="{package}" rev="{rev}"/>' \
-               '<target project="{target}" package="{package}"/></submit><state name="new"/><description>{message}</description>' \
+        data = '<request><action type="submit"><source project="{project}" package="{package}" rev="{rev}"/>' \
+               '<target project="{target}" package="{package}"/></action><state name="new"/><description>{message}</description>' \
                '</request>'.format(project=project, package=package, target=target, rev=currev, message=message)
         osc.core.http_POST(url, data=data)
