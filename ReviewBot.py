@@ -16,6 +16,7 @@ from osclib.core import action_is_patchinfo
 from osclib.core import devel_project_fallback
 from osclib.core import group_members
 from osclib.core import maintainers_get
+from osclib.core import package_role_expand
 from osclib.core import request_action_key
 from osclib.core import request_age
 from osclib.memoize import memoize
@@ -403,6 +404,11 @@ class ReviewBot(object):
     def devel_project_review_needed(self, request, project, package):
         author = request.creator
         maintainers = set(maintainers_get(self.apiurl, project, package))
+
+        if len(maintainers) == 0:
+            devel_project, devel_package = devel_project_fallback(self.apiurl, project, package)
+            if devel_package:
+                maintainers = set(package_role_expand(self.apiurl, devel_project, devel_package))
 
         if author in maintainers:
             return False

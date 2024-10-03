@@ -404,7 +404,9 @@ class StagingWorkflow(ABC):
 
         config_lines = []
         for key, value in config.items():
-            config_lines.append(f'{key} = {value}')
+            # Workaround for osc without https://github.com/openSUSE/osc/pull/1601
+            if key != "__name__":
+                config_lines.append(f'{key} = {value}')
 
         attribute_value_save(APIURL, self.project, 'Config', '\n'.join(config_lines))
 

@@ -23,6 +23,8 @@ from osclib.core import group_members
 from osclib.core import package_kind
 from osclib.core import create_add_role_request
 from osclib.core import package_role_expand
+from osclib.core import source_file_load
+from osclib.core import project_pseudometa_package
 from osc.core import show_package_meta, show_project_meta
 from osc.core import get_request_list
 from urllib.error import HTTPError
@@ -61,6 +63,7 @@ class CheckSource(ReviewBot.ReviewBot):
         self.devel_baseproject: str = config.get('check-source-devel-baseproject', '')
         self.allow_source_in_sle = str2bool(config.get('check-source-allow-source-in-sle', 'True'))
         self.sle_project_to_check = config.get('check-source-sle-project', '')
+        self.slfo_packagelist_to_check = config.get('check-source-slfo-packagelist-file', '')
         self.allow_valid_source_origin = str2bool(config.get('check-source-allow-valid-source-origin', 'False'))
         self.valid_source_origins: Set[str] = set(config.get('check-source-valid-source-origins', '').split(' '))
         self.add_devel_project_review = str2bool(config.get('check-source-add-devel-project-review', 'False'))
@@ -147,11 +150,23 @@ class CheckSource(ReviewBot.ReviewBot):
             self.review_messages['declined'] = f'May not modify a non-source package of type {kind}'
             return False
 
-        if not self.allow_source_in_sle and self.sle_project_to_check:
-            if entity_exists(self.apiurl, self.sle_project_to_check, target_package):
+        if not self.allow_source_in_sle:
+            if self.sle_project_to_check and entity_exists(self.apiurl, self.sle_project_to_check, target_package):
                 self.review_messages['declined'] = ("SLE-base package, please submit to the corresponding SLE project."
                                                     "Or let us know the reason why needs to rebuild SLE-base package.")
                 return False
+            if self.slfo_packagelist_to_check:
+                pseudometa_project, pseudometa_package = project_pseudometa_package(self.apiurl, target_project)
+                if pseudometa_project and pseudometa_package:
+                    metafile = ET.fromstring(source_file_load(self.apiurl, pseudometa_project, pseudometa_package,
+                                                              self.slfo_packagelist_to_check))
+                    slfo_pkglist = [package.attrib['name'] for package in metafile.findall('package')]
+                    if target_package in slfo_pkglist:
+                        self.review_messages['declined'] = ("Please create a new feature request "
+                                                            f"https://code.opensuse.org/leap/features/issues for updating {target_package} "
+                                                            "from SLFO (SLES, SL Micro). Alternatively, please provide "
+                                                            "a reason for forking and rebuilding an existing SLFO package in Leap.")
+                        return False
 
         if self.ensure_source_exist_in_baseproject and self.devel_baseproject:
             if not entity_exists(self.apiurl, self.devel_baseproject, target_package) and source_project not in self.valid_source_origins:

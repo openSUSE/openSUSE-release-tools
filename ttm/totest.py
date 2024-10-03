@@ -31,6 +31,7 @@ class ToTest(object):
         self.set_snapshot_number = False
         self.snapshot_number_prefix = "Snapshot"
         self.take_source_from_product = False
+        self.same_target_images_repo_for_source_repo = False
         self.arch = 'x86_64'
         self.openqa_server = None
 

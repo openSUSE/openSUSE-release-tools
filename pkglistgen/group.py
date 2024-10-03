@@ -154,7 +154,7 @@ class Group(object):
                                 # only add recommends that exist as packages
                                 rec = pool.select(dep.str(), solv.Selection.SELECTION_NAME)
                                 if not rec.isempty():
-                                    extra.append([dep.str(), group + ':recommended:' + n])
+                                    extra.append([dep.str(), f"{group}:recommended:{n}"])
 
                     jobs += sel.jobs(solv.Job.SOLVER_INSTALL)
 
@@ -183,10 +183,10 @@ class Group(object):
                 for s in solver.get_recommended():
                     if s.name in locked:
                         continue
-                    self.recommends.setdefault(s.name, group + ':' + n)
+                    self.recommends.setdefault(s.name, f"{group}:{n}")
                 if n in self.expand_suggested:
                     for s in solver.get_suggested():
-                        suggested[s.name] = group + ':suggested:' + n
+                        suggested[s.name] = f"{group}:suggested:{n}"
                         self.suggested.setdefault(s.name, suggested[s.name])
 
                 trans = solver.transaction()
@@ -195,7 +195,7 @@ class Group(object):
                     return
 
                 for s in trans.newsolvables():
-                    solved[arch].setdefault(s.name, group + ':' + n)
+                    solved[arch].setdefault(s.name, f"{group}:{n}")
                     if None:
                         reason, rule = solver.describe_decision(s)
                         print(self.name, s.name, reason, rule.info().problemstr())
@@ -204,7 +204,7 @@ class Group(object):
                         src = s.name
                     else:
                         src = s.lookup_str(solv.SOLVABLE_SOURCENAME)
-                    self.srcpkgs[src] = group + ':' + s.name
+                    self.srcpkgs[src] = f"{group}:{s.name}"
 
             start = time.time()
             for n, group in self.packages[arch]:
@@ -233,7 +233,7 @@ class Group(object):
             solver.solve(jobs)
             trans = solver.transaction()
             for s in trans.newsolvables():
-                solved[arch].setdefault(s.name, group + ':expansion')
+                solved[arch].setdefault(s.name, f"{group}:expansion")
 
             end = time.time()
             self.logger.info('%s - solving took %f', self.name, end - start)
@@ -274,15 +274,14 @@ class Group(object):
             for arch in self.pkglist.filtered_architectures:
                 mp.update(m.solved_packages[arch])
             if len(packages & mp):
-                overlap.comment += '\n overlapping between ' + self.name + ' and ' + m.name + '\n'
+                overlap.comment += f"\n overlapping between {self.name} and {m.name}\n"
                 for p in sorted(packages & mp):
                     for arch in list(m.solved_packages):
                         if m.solved_packages[arch].get(p, None):
-                            overlap.comment += '  # ' + m.name + '.' + arch + ': ' + m.solved_packages[arch][p] + '\n'
+                            overlap.comment += f"  # {m.name}.{arch}: {m.solved_packages[arch][p]}\n"
                         if self.solved_packages[arch].get(p, None):
-                            overlap.comment += '  # ' + self.name + '.' + \
-                                arch + ': ' + self.solved_packages[arch][p] + '\n'
-                    overlap.comment += '  - ' + p + '\n'
+                            overlap.comment += f"  # {self.name}.{arch}: {self.solved_packages[arch][p]}\n"
+                    overlap.comment += f"  - {p}\n"
                     overlap._add_to_packages(p)
 
     def collect_devel_packages(self):
@@ -355,7 +354,7 @@ class Group(object):
 
         name = self.name
         if arch != '*':
-            name += '.' + arch
+            name += f".{arch}"
 
         root = ET.Element('group', {'name': name})
         if comment:

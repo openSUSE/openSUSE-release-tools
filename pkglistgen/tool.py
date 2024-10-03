@@ -140,7 +140,7 @@ class PkgListGen(ToolBase.ToolBase):
         archs = ['*'] + self.all_architectures
         # a single file covering all builds via multibuild flavors
         with open(os.path.join(self.output_dir, 'default.productcompose'), 'a') as opfh:
-            opfh.write(PRODUCT_COMPOSE_SEPERATOR_LINE + "\n")
+            opfh.write(f"{PRODUCT_COMPOSE_SEPERATOR_LINE}\n")
             for name in self.groups:
                 group = self.groups[name]
                 if not group.solved:
@@ -158,11 +158,11 @@ class PkgListGen(ToolBase.ToolBase):
                         opfh.write(f"  - {f}\n")
                         if arch == '*':
                             for included_arch in self.all_architectures:
-                                opfh.write('  - ' + f + '_' + included_arch + '\n')
+                                opfh.write(f"  - {f}_{included_arch}\n")
                         else:
-                            opfh.write('  - ' + f + '_' + arch + '\n')
+                            opfh.write(f"  - {f}_{arch}\n")
                             opfh.write('  architectures:\n')
-                            opfh.write('  - ' + arch + '\n')
+                            opfh.write(f"  - {arch}\n")
                     opfh.write('  packages:\n')
                     opfh.write(group.tocompose('  ', arch, group.ignore_broken))
             # write main group including all sets
@@ -172,9 +172,9 @@ class PkgListGen(ToolBase.ToolBase):
                 if not group.solved:
                     continue
                 for f in group.flavors:
-                    opfh.write('  - ' + f + '\n')
+                    opfh.write(f"  - {f}\n")
                     for included_arch in self.all_architectures:
-                        opfh.write('  - ' + f + '_' + included_arch + '\n')
+                        opfh.write(f"  - {f}_{included_arch}\n")
 
     def write_all_groups(self):
         self._check_supplements()
@@ -250,8 +250,8 @@ class PkgListGen(ToolBase.ToolBase):
                             tocheck.add(s.name)
 
             for locale in self.locales:
-                id = pool.str2id(f'locale({locale})')
-                for s in pool.whatprovides(id):
+                pool_id = pool.str2id(f'locale({locale})')
+                for s in pool.whatprovides(pool_id):
                     tocheck_locales.add(s.name)
 
         all_grouped = set()
@@ -381,7 +381,7 @@ class PkgListGen(ToolBase.ToolBase):
                     fh.write(']')
                     reason = self._find_reason(p, modules)
                     if reason:
-                        fh.write(' # ' + reason)
+                        fh.write(f" # {reason}")
                 fh.write(' \n')
 
     # give a hint if the package is related to a group
@@ -389,18 +389,18 @@ class PkgListGen(ToolBase.ToolBase):
         # go through the modules multiple times to find the "best"
         for g in modules:
             if package in g.recommends:
-                return 'recommended by ' + g.recommends[package]
+                return f"recommended by {g.recommends[package]}"
         for g in modules:
             if package in g.suggested:
-                return 'suggested by ' + g.suggested[package]
+                return f"suggested by {g.suggested[package]}"
         for g in modules:
             if package in g.develpkgs:
-                return 'devel package of ' + g.develpkgs[package]
+                return f"devel package of {g.develpkgs[package]}"
         return None
 
     def update_one_repo(self, project, repo, arch, solv_file, solv_file_hash):
         # Either hash changed or new, so remove any old hash files.
-        file_utils.unlink_list(None, glob.glob(solv_file + '::*'))
+        file_utils.unlink_list(None, glob.glob(f"{solv_file}::*"))
 
         d = os.path.join(CACHEDIR, project, repo, arch)
         if not os.path.exists(d):
@@ -665,6 +665,7 @@ class PkgListGen(ToolBase.ToolBase):
         force: bool,
         no_checkout: bool,
         only_release_packages: bool,
+        only_update_weakremovers: bool,
         stop_after_solve: bool,
         custom_cache_tag,
         engine: Engine,
@@ -685,11 +686,13 @@ class PkgListGen(ToolBase.ToolBase):
         host = urlparse(api.apiurl).hostname
         prefix_dir = 'pkglistgen'
         if custom_cache_tag:
-            prefix_dir += '-' + custom_cache_tag
+            prefix_dir += f"-{custom_cache_tag}"
         cache_dir = CacheManager.directory(prefix_dir, host, project)
 
         drop_list = []
         checkout_list = [group, product_package, release]
+        if only_update_weakremovers:
+            checkout_list = [release]
         if not force:
             root = ET.fromstringlist(show_results_meta(api.apiurl, project, product_package,
                                                        repository=[main_repo], multibuild=True))
@@ -698,7 +701,7 @@ class PkgListGen(ToolBase.ToolBase):
                 return
         if git_url:
             git_url_base, *fragment = git_url.split('#')
-            if os.path.exists(cache_dir + "/.git"):
+            if os.path.exists(f"{cache_dir}/.git"):
                 # reset and update existing clone
                 logging.debug(subprocess.check_output(
                     ['git', 'reset', '--hard'], cwd=cache_dir, encoding='utf-8'))
@@ -715,13 +718,13 @@ class PkgListGen(ToolBase.ToolBase):
                 if fragment:
                     args += ['--branch', fragment[0]]
                 logging.debug(subprocess.check_output(args, encoding='utf-8'))
-            if os.path.exists(cache_dir + '/' + '000update-repos'):
+            if os.path.exists(f"{cache_dir}/000update-repos"):
                 logging.error('No support for 000update-repos in git projects atm')
                 return
         else:
             url = api.makeurl(['source', project])
             packages = ET.parse(http_GET(url)).getroot()
-            if packages.find(f'entry[@name="{product_package}"]') is None:
+            if packages.find(f'entry[@name="{product_package}"]') is None and not only_update_weakremovers:
                 if not self.dry_run:
                     undelete_package(api.apiurl, project, product_package, 'revive')
                 # TODO disable build.
@@ -753,7 +756,10 @@ class PkgListGen(ToolBase.ToolBase):
         if engine == Engine.product_composer:
             self.output_dir = productcompose_dir
         elif engine == Engine.legacy:
-            self.output_dir = product_dir
+            if not only_update_weakremovers:
+                self.output_dir = product_dir
+            else:
+                self.output_dir = release_dir
 
         if not no_checkout and not git_url:
             logging.debug(f'Skipping checkout of {project}')
@@ -761,19 +767,22 @@ class PkgListGen(ToolBase.ToolBase):
                 checkout_package(api.apiurl, project, package, expand_link=True,
                                  prj_dir=cache_dir, outdir=os.path.join(cache_dir, package))
 
-        if (engine == Engine.legacy) and (not only_release_packages):
+        if (engine == Engine.legacy) and (not only_release_packages) and not only_update_weakremovers:
             file_utils.unlink_all_except(self.output_dir)
-
-        ignore_list = ['supportstatus.txt', 'summary-staging.txt', 'package-groups.changes',
-                       'default.productcompose.in']
-        ignore_list += self.group_input_files()
 
         # old product-builder
         if engine == Engine.legacy:
-            file_utils.copy_directory_contents(group_dir, self.output_dir, ignore_list)
-            file_utils.change_extension(self.output_dir, '.spec.in', '.spec')
-            file_utils.change_extension(self.output_dir, '.product.in', '.product')
-            file_utils.unlink_all_except(release_dir, ['weakremovers.inc', '*.changes'])
+            if only_update_weakremovers:
+                # remove stub.spec before re-creating _multibuild per specfiles
+                file_utils.unlink_list(release_dir, ['stub.spec'])
+            else:
+                ignore_list = ['supportstatus.txt', 'summary-staging.txt', 'package-groups.changes',
+                               'default.productcompose.in']
+                ignore_list += self.group_input_files()
+                file_utils.copy_directory_contents(group_dir, self.output_dir, ignore_list)
+                file_utils.change_extension(self.output_dir, '.spec.in', '.spec')
+                file_utils.change_extension(self.output_dir, '.product.in', '.product')
+                file_utils.unlink_all_except(release_dir, ['weakremovers.inc', '*.changes'])
 
         # new product-composer
         fn = os.path.join(group_dir, 'default.productcompose.in')
@@ -804,7 +813,9 @@ class PkgListGen(ToolBase.ToolBase):
         self.filter_architectures(target_archs(api.apiurl, project, main_repo))
         self.update_repos(self.filtered_architectures)
 
-        if only_release_packages:
+        if only_update_weakremovers:
+            pass
+        elif only_release_packages:
             self.load_all_groups()
             self.write_group_stubs()
         else:
@@ -853,18 +864,20 @@ class PkgListGen(ToolBase.ToolBase):
             if scope == 'staging':
                 self.strip_medium_from_staging(self.output_dir)
 
-            spec_files = glob.glob(os.path.join(self.output_dir, '*.spec'))
-            file_utils.move_list(spec_files, release_dir)
-            inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
-            # filter special inc file
-            inc_files = filter(lambda file: file.endswith('weakremovers.inc'), inc_files)
-            file_utils.move_list(inc_files, release_dir)
+            # with --only-update-weakremovers that output_dir will be set as same as release_dir
+            if self.output_dir != release_dir:
+                spec_files = glob.glob(os.path.join(self.output_dir, '*.spec'))
+                file_utils.move_list(spec_files, release_dir)
+                inc_files = glob.glob(os.path.join(group_dir, '*.inc'))
+                # filter special inc file
+                inc_files = filter(lambda file: file.endswith('weakremovers.inc'), inc_files)
+                file_utils.move_list(inc_files, release_dir)
 
-            # do not overwrite weakremovers.inc if it exists
-            # we will commit there afterwards if needed
-            if os.path.exists(os.path.join(group_dir, 'weakremovers.inc')) and \
-               not os.path.exists(os.path.join(release_dir, 'weakremovers.inc')):
-                file_utils.move_list([os.path.join(group_dir, 'weakremovers.inc')], release_dir)
+                # do not overwrite weakremovers.inc if it exists
+                # we will commit there afterwards if needed
+                if os.path.exists(os.path.join(group_dir, 'weakremovers.inc')) and \
+                        not os.path.exists(os.path.join(release_dir, 'weakremovers.inc')):
+                    file_utils.move_list([os.path.join(group_dir, 'weakremovers.inc')], release_dir)
 
             file_utils.multibuild_from_glob(release_dir, '*.spec')
             self.build_stub(release_dir, 'spec')
@@ -878,7 +891,7 @@ class PkgListGen(ToolBase.ToolBase):
             if package.get_status(False, ' '):
                 todo_spec_files = glob.glob(os.path.join(release_dir, '*.spec'))
             for spec_file in todo_spec_files:
-                changes_file = os.path.splitext(spec_file)[0] + '.changes'
+                changes_file = f"{os.path.splitext(spec_file)[0]}.changes"
                 with open(changes_file, 'w', encoding="utf-8") as f:
                     date = datetime.now(timezone.utc)
                     date = date.strftime("%a %b %d %H:%M:%S %Z %Y")
@@ -890,7 +903,7 @@ class PkgListGen(ToolBase.ToolBase):
 
             self.commit_package(release_dir)
 
-        if only_release_packages:
+        if only_release_packages or only_update_weakremovers:
             return
 
         if engine == Engine.legacy:
@@ -907,7 +920,7 @@ class PkgListGen(ToolBase.ToolBase):
 
             with open(summary_file, 'w') as f:
                 for line in sorted(output):
-                    f.write(line + '\n')
+                    f.write(f"{line}\n")
 
         if git_url:
             logging.debug(subprocess.check_output(

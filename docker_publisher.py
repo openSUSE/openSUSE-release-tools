@@ -97,7 +97,8 @@ class DockerImagePublisherRegistry(DockerImagePublisher):
                            'armv7l': ("arm", "v7"),
                            'aarch64': ("arm64", "v8"),
                            'ppc64le': ("ppc64le", None),
-                           's390x': ("s390x", None)}
+                           's390x': ("s390x", None),
+                           'riscv64': ("riscv64", None)}
 
     def __init__(self, dhc, tag, aliases=[]):
         """Construct a DIPR by passing a DockerRegistryClient instance as dhc
@@ -374,6 +375,7 @@ def run():
                 'armv6l': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Tumbleweed/containers/armv6l/opensuse-tumbleweed-image:docker", maintenance_release=True),  # noqa: E501
                 'ppc64le': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Tumbleweed/containers/ppc64le/opensuse-tumbleweed-image:docker", maintenance_release=True),  # noqa: E501
                 's390x': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Tumbleweed/containers/s390x/opensuse-tumbleweed-image:docker", maintenance_release=True),  # noqa: E501
+                'riscv64': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Tumbleweed/containers/riscv64/opensuse-tumbleweed-image:docker", maintenance_release=True),  # noqa: E501
             },
             'publisher': DockerImagePublisherRegistry(drc_tw, "latest"),
         },
