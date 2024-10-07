@@ -1,6 +1,6 @@
 format_version: 3
 pipelines:
-  SLFO.Standard:
+  SLFO.Snapshot:
     group: SLFO.Target
     lock_behavior: unlockWhenFinished
     materials:
@@ -17,7 +17,7 @@ pipelines:
           - DO_NOT_TRIGGER
         destination: scripts
     environment_variables:
-      SLFO_BUILD_PROJECT: SUSE:SLFO:Main
+      SLFO_BUILD_PROJECT: SUSE:SLFO:Main:Build
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
     stages:
     - Expect.Standard.To.Finish:
