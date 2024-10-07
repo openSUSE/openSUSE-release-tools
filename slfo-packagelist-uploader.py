@@ -17,8 +17,10 @@ META_FILE = 'SLFO_Packagelist.group'
 
 
 class PackagelistUploader(object):
-    def __init__(self, project, print_only, verbose):
+    def __init__(self, project, branch, print_only, verbose):
         self.project = project
+        # Use default branch if there is no specify branch given
+        self.branch = branch if branch else 'main'
         self.print_only = print_only
         self.verbose = verbose
         self.apiurl = osc.conf.config['apiurl']
@@ -41,7 +43,7 @@ class PackagelistUploader(object):
         if os.path.isdir(filepath):
             shutil.rmtree(filepath)
         gitpath = 'https://src.opensuse.org/products/SLFO_main.git'
-        git.Repo.clone_from(gitpath, filepath, branch='main')
+        git.Repo.clone_from(gitpath, filepath, branch=self.branch)
         packages = []
         files = os.listdir(filepath)
         for f in files:
@@ -68,7 +70,7 @@ def main(args):
         print("Please pass --project argument. See usage with --help.")
         quit()
 
-    uc = PackagelistUploader(args.project, args.print_only, args.verbose)
+    uc = PackagelistUploader(args.project, args.branch, args.print_only, args.verbose)
     uc.crawl()
 
 
@@ -80,6 +82,8 @@ if __name__ == '__main__':
                         help='print info useful for debuging')
     parser.add_argument('-p', '--project', dest='project', metavar='PROJECT',
                         help='Target project on buildservice')
+    parser.add_argument('-b', '--branch', dest='branch', metavar='BRANCH',
+                        help='Git tree branch name')
     parser.add_argument('-o', '--print-only', action='store_true',
                         help='show the result instead of the uploading')
     parser.add_argument('-v', '--verbose', action='store_true',
