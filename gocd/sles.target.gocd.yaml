@@ -64,7 +64,9 @@ pipelines:
         tasks:
         - script: |-
             set -e
-            osc -A https://api.suse.de release SUSE:SLFO:Products:SLES:16.0:TEST
+            for product in kiwi-templates-Minimal 000productcompose agama-installer-SLES; do
+              osc -A https://api.suse.de release SUSE:SLFO:Products:SLES:16.0:TEST $product
+            done
             sleep 600
             while (osc -A https://api.suse.de/ api "/build/SUSE:SLFO:Products:SLES:16.0:PUBLISH/_result?view=summary&repository=product" | grep "result project" | grep -v 'code="published" state="published">'); do
                 echo PENDING
