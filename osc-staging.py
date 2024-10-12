@@ -5,41 +5,13 @@ import tempfile
 import warnings
 import yaml
 
-import colorama
-from colorama import Fore
-from colorama import ansi
-
-from osc import cmdln
-from osc import conf
-from osc import core
-from osc import oscerr
-
-from osclib.accept_command import AcceptCommand
-from osclib.adi_command import AdiCommand
-from osclib.check_command import CheckCommand
-from osclib.check_duplicate_binaries_command import CheckDuplicateBinariesCommand
-from osclib.cleanup_rings import CleanupRings
-from osclib.conf import Config
-from osclib.freeze_command import FreezeCommand
-from osclib.ignore_command import IgnoreCommand
-from osclib.unignore_command import UnignoreCommand
-from osclib.list_command import ListCommand
-from osclib.obslock import OBSLock
-from osclib.select_command import SelectCommand
-from osclib.stagingapi import StagingAPI
-from osclib.cache import Cache
-from osclib.unselect_command import UnselectCommand
-from osclib.repair_command import RepairCommand
-from osclib.rebuild_command import RebuildCommand
-from osclib.request_splitter import RequestSplitter
-from osclib.supersede_command import SupersedeCommand
-from osclib.prio_command import PrioCommand
-
 try:
     import __builtin__
     input = getattr(__builtin__, 'raw_input')
 except (ImportError, AttributeError):
     pass
+
+from osc import cmdln
 
 
 def _print_version(self):
@@ -322,6 +294,35 @@ def do_staging(self, subcmd, opts, *args):
         osc staging setprio [STAGING...] [priority]
         osc staging supersede [REQUEST...]
     """
+    import colorama  # pylint: disable=import-outside-toplevel
+    from colorama import Fore  # pylint: disable=import-outside-toplevel
+    from colorama import ansi  # pylint: disable=import-outside-toplevel
+
+    from osc import conf  # pylint: disable=import-outside-toplevel
+    from osc import core  # pylint: disable=import-outside-toplevel
+    from osc import oscerr  # pylint: disable=import-outside-toplevel
+
+    from osclib.accept_command import AcceptCommand  # pylint: disable=import-outside-toplevel
+    from osclib.adi_command import AdiCommand  # pylint: disable=import-outside-toplevel
+    from osclib.check_command import CheckCommand  # pylint: disable=import-outside-toplevel
+    from osclib.check_duplicate_binaries_command import CheckDuplicateBinariesCommand  # pylint: disable=import-outside-toplevel
+    from osclib.cleanup_rings import CleanupRings  # pylint: disable=import-outside-toplevel
+    from osclib.conf import Config  # pylint: disable=import-outside-toplevel
+    from osclib.freeze_command import FreezeCommand  # pylint: disable=import-outside-toplevel
+    from osclib.ignore_command import IgnoreCommand  # pylint: disable=import-outside-toplevel
+    from osclib.unignore_command import UnignoreCommand  # pylint: disable=import-outside-toplevel
+    from osclib.list_command import ListCommand  # pylint: disable=import-outside-toplevel
+    from osclib.obslock import OBSLock  # pylint: disable=import-outside-toplevel
+    from osclib.select_command import SelectCommand  # pylint: disable=import-outside-toplevel
+    from osclib.stagingapi import StagingAPI  # pylint: disable=import-outside-toplevel
+    from osclib.cache import Cache  # pylint: disable=import-outside-toplevel
+    from osclib.unselect_command import UnselectCommand  # pylint: disable=import-outside-toplevel
+    from osclib.repair_command import RepairCommand  # pylint: disable=import-outside-toplevel
+    from osclib.rebuild_command import RebuildCommand  # pylint: disable=import-outside-toplevel
+    from osclib.request_splitter import RequestSplitter  # pylint: disable=import-outside-toplevel
+    from osclib.supersede_command import SupersedeCommand  # pylint: disable=import-outside-toplevel
+    from osclib.prio_command import PrioCommand  # pylint: disable=import-outside-toplevel
+
     if opts.version:
         self._print_version()
 
