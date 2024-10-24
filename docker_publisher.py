@@ -126,14 +126,20 @@ class DockerImagePublisherRegistry(DockerImagePublisher):
 
         return self.cached_manifestlist
 
+    def _manifestIsForArch(self, manifest, docker_arch, docker_variant):
+        if 'variant' in manifest['platform'] and manifest['platform']['variant'] != docker_variant:
+            return False
+
+        return manifest['platform']['architecture'] == docker_arch
+
     def releasedDockerImageVersion(self, arch):
         docker_arch, docker_variant = self.getDockerArch(arch)
 
         manifestlist = self._getManifestlist()
 
         if manifestlist is None:
-            # No manifest -> force outdated version
-            return "0"
+            # No manifest
+            return None
 
         for manifest in manifestlist['manifests']:
             if docker_variant is not None:
@@ -144,8 +150,7 @@ class DockerImagePublisherRegistry(DockerImagePublisher):
                 if 'vnd-opensuse-version' in manifest:
                     return manifest['vnd-opensuse-version']
 
-        # Arch not in the manifest -> force outdated version
-        return "0"
+        return None
 
     def prepareReleasing(self):
         if self.new_manifestlist is not None:
@@ -192,6 +197,12 @@ class DockerImagePublisherRegistry(DockerImagePublisher):
                                                   "application/vnd.docker.container.image.v1+json"),
                 'layers': layers}
 
+    def removeImage(self, arch):
+        docker_arch, docker_variant = self.getDockerArch(arch)
+
+        self.new_manifestlist['manifests'] = [m for m in self.new_manifestlist['manifests']
+                                              if not self._manifestIsForArch(m, docker_arch, docker_variant)]
+
     def addImage(self, version, arch, image_path):
         docker_arch, docker_variant = self.getDockerArch(arch)
 
@@ -221,18 +232,17 @@ class DockerImagePublisherRegistry(DockerImagePublisher):
         # Register the manifest in the list
         replaced = False
         for manifest in self.new_manifestlist['manifests']:
-            if 'variant' in manifest['platform'] and manifest['platform']['variant'] != docker_variant:
+            if not self._manifestIsForArch(manifest, docker_arch, docker_variant):
                 continue
 
-            if manifest['platform']['architecture'] == docker_arch:
-                manifest['mediaType'] = manifest_v2['mediaType']
-                manifest['size'] = len(manifest_content)
-                manifest['digest'] = manifest_digest
-                manifest['vnd-opensuse-version'] = version
-                if docker_variant is not None:
-                    manifest['platform']['variant'] = docker_variant
+            manifest['mediaType'] = manifest_v2['mediaType']
+            manifest['size'] = len(manifest_content)
+            manifest['digest'] = manifest_digest
+            manifest['vnd-opensuse-version'] = version
+            if docker_variant is not None:
+                manifest['platform']['variant'] = docker_variant
 
-                replaced = True
+            replaced = True
 
         if not replaced:
             # Add it instead
@@ -393,11 +403,22 @@ def run():
             'fetchers': {
                 'x86_64': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:15.6/containers/x86_64/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
                 'aarch64': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:15.6/containers/aarch64/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
-                'armv7l': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:15.6/containers_armv7/armv7l/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
+                'armv7l': None,
                 'ppc64le': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:15.6/containers/ppc64le/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
                 's390x': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:15.6/containers/s390x/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
             },
-            'publisher': DockerImagePublisherRegistry(drc_leap, "latest", ["15.6", "15"]),
+            'publisher': DockerImagePublisherRegistry(drc_leap, "15.6"),
+        },
+        # Like Leap 15.6, but using the 15.5 image for armv7l
+        'leap-15': {
+            'fetchers': {
+                'x86_64': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:15.6/containers/x86_64/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
+                'aarch64': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:15.6/containers/aarch64/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
+                'armv7l': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:15.5/containers_armv7/armv7l/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
+                'ppc64le': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:15.6/containers/ppc64le/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
+                's390x': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:15.6/containers/s390x/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
+            },
+            'publisher': DockerImagePublisherRegistry(drc_leap, "latest", ["15"]),
         },
     }
 
@@ -423,7 +444,7 @@ def run():
         for arch in fetchers:
             print(f"\tArchitecture {arch}")
             try:
-                current = fetchers[arch].currentVersion()
+                current = fetchers[arch].currentVersion() if fetchers[arch] else None
                 print(f"\t\tAvailable version: {current}")
 
                 released = publisher.releasedDockerImageVersion(arch)
@@ -446,6 +467,12 @@ def run():
         need_to_upload = False
 
         for arch, version in archs_to_update.items():
+            if fetchers[arch] is None:
+                print(f"\tRemoving {arch} image")
+                publisher.removeImage(arch)
+                need_to_upload = True
+                continue
+
             print(f"\tUpdating {arch} image to version {version}")
             try:
                 fetchers[arch].getDockerImage(lambda image_path: publisher.addImage(version=version,
