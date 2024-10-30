@@ -29,8 +29,6 @@ class CleanupRings(object):
             'raspberrypi-firmware-config',
             # https://github.com/openSUSE/open-build-service/issues/14129
             'snobol4',
-            # We need devscripts:checkbashism in Ring1, removing the main flavor is not possible
-            'devscripts',
         ]
 
     def perform(self):
@@ -211,7 +209,7 @@ class CleanupRings(object):
                         # Outside of ring0, if one multibuild flavor is needed, add all of them
                         mainpkg = pkg.split(":")[0]
                         for src in self.sources:
-                            if src.startswith(f"{mainpkg}:"):
+                            if src.startswith(f"{mainpkg}:") or src == mainpkg:
                                 new_deps[src] = pkg
 
                         # Same for link groups
