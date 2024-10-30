@@ -27,8 +27,6 @@ class CleanupRings(object):
             'u-boot',
             'raspberrypi-firmware-dt',
             'raspberrypi-firmware-config',
-            # Added manually to notice failures early
-            'vagrant',
             # https://github.com/openSUSE/open-build-service/issues/14129
             'snobol4',
             # We need devscripts:checkbashism in Ring1, removing the main flavor is not possible
