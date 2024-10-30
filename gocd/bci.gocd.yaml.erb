@@ -103,7 +103,7 @@ pipelines:
     - Release.Images.to.Product:
         approval: manual
         roles:
-        - SLE
+        - BCI
         environment_variables:
           OSC_CONFIG: /home/go/config/oscrc-totest-manager
           BCI_TOKEN: '{{SECRET:[opensuse.secrets][BCI_TOKEN]}}'
