@@ -27,12 +27,8 @@ class CleanupRings(object):
             'u-boot',
             'raspberrypi-firmware-dt',
             'raspberrypi-firmware-config',
-            # Added manually to notice failures early
-            'vagrant',
             # https://github.com/openSUSE/open-build-service/issues/14129
             'snobol4',
-            # We need devscripts:checkbashism in Ring1, removing the main flavor is not possible
-            'devscripts',
         ]
 
     def perform(self):
@@ -146,12 +142,12 @@ class CleanupRings(object):
                     self.pkgdeps[b] = 'MYinstall'
 
     @memoize(session=True)
-    def package_get_requiredby(self, project, package, repo, arch):
+    def package_get_requiredby(apiurl, project, package, repo, arch):
         "For a given package, return which source packages it provides runtime deps for."
         ret = set()
-        for fileinfo in fileinfo_ext_all(self.api.apiurl, project, repo, arch, package):
+        for fileinfo in fileinfo_ext_all(apiurl, project, repo, arch, package):
             for requiredby in fileinfo.findall('provides_ext/requiredby[@name]'):
-                ret.add(self.bin2src[requiredby.get('name')])
+                ret.add(requiredby.get('name'))
 
         return ret
 
@@ -213,7 +209,7 @@ class CleanupRings(object):
                         # Outside of ring0, if one multibuild flavor is needed, add all of them
                         mainpkg = pkg.split(":")[0]
                         for src in self.sources:
-                            if src.startswith(f"{mainpkg}:"):
+                            if src.startswith(f"{mainpkg}:") or src == mainpkg:
                                 new_deps[src] = pkg
 
                         # Same for link groups
@@ -247,7 +243,8 @@ class CleanupRings(object):
                 # is needed (no built images) so we continue where x86_64 left off
                 maybe_unneeded = self.sources.difference(all_needed_sources)
                 for pkg in sorted(maybe_unneeded):
-                    requiredby = self.package_get_requiredby(prj, pkg, 'standard', arch)
+                    requiredby = CleanupRings.package_get_requiredby(self.api.apiurl, prj, pkg, 'standard', arch)
+                    requiredby = {self.bin2src[pkg] for pkg in requiredby}
                     requiredby = requiredby.intersection(all_needed_sources)
                     # Required by needed packages?
                     if len(requiredby):

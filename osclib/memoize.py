@@ -118,7 +118,8 @@ def memoize(ttl=None, session=False, add_invalidate=False):
             # representation.
             key = pickle.dumps(obj, protocol=-1)
             key = pickle.dumps(pickle.loads(key), protocol=-1)
-            return key
+            # shelve only support str keys
+            return key if session else str(key)
 
         def _invalidate(*args, **kwargs):
             key = _key((args, kwargs))
