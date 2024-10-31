@@ -18,7 +18,32 @@ class ListCommand:
     def __init__(self, api):
         self.api = api
 
-    def perform(self, supersede=False):
+    def print_request(self, request):
+        hide_source = self.api.project == 'openSUSE:Factory'
+        request_id = int(request.get('id'))
+        action = request.find('action')
+        target_package = action.find('target').get('package')
+        ring = action.find('target').get('ring', None)
+
+        line = f"{request_id} {Fore.CYAN}{target_package:<30}{Fore.RESET}"
+        if ring:
+            ring_color = Fore.MAGENTA if ring.startswith('0') else ''
+            line += f" -> {ring_color}{ring:<12}{Fore.RESET}"
+
+        if not hide_source and action.find('source') is not None:
+            source_project = action.find('source').get('project')
+            source_project = self.project_strip(source_project)
+            line += f' ({Fore.YELLOW + source_project + Fore.RESET})'
+        if action.get('type') == 'delete':
+            line += ' (' + Fore.RED + 'delete request' + Fore.RESET + ')'
+
+        message = self.api.ignore_format(request_id)
+        if message:
+            line += '\n' + Fore.WHITE + message + Fore.RESET
+
+        print(' ', line)
+
+    def perform(self, supersede=False, adi_details=False):
         """
         Perform the list command
         """
@@ -34,39 +59,23 @@ class ListCommand:
         splitter.group_by('./action/target/@devel_project')
         splitter.split()
 
-        hide_source = self.api.project == 'openSUSE:Factory'
         for group in sorted(splitter.grouped.keys()):
             print(Fore.YELLOW + group)
 
             for request in splitter.grouped[group]['requests']:
-                request_id = int(request.get('id'))
-                action = request.find('action')
-                target_package = action.find('target').get('package')
-                ring = action.find('target').get('ring')
-                ring_color = Fore.MAGENTA if ring.startswith('0') else ''
-
-                line = '{} {}{:<30}{} -> {}{:<12}{}'.format(
-                    request_id, Fore.CYAN, target_package, Fore.RESET,
-                    ring_color, ring, Fore.RESET)
-
-                if not hide_source and action.find('source') is not None:
-                    source_project = action.find('source').get('project')
-                    source_project = self.project_strip(source_project)
-                    line += f' ({Fore.YELLOW + source_project + Fore.RESET})'
-                if action.get('type') == 'delete':
-                    line += ' (' + Fore.RED + 'delete request' + Fore.RESET + ')'
-
-                message = self.api.ignore_format(request_id)
-                if message:
-                    line += '\n' + Fore.WHITE + message + Fore.RESET
-
-                print(' ', line)
+                self.print_request(request)
 
         if len(splitter.other):
-            non_ring_packages = []
-            for request in splitter.other:
-                non_ring_packages.append(request.find('./action/target').get('package'))
-            print('Not in a ring: ' + ' '.join(sorted(non_ring_packages)))
+            non_ring_requests = splitter.other
+            if adi_details:
+                print('Not in a ring: ')
+                for request in non_ring_requests:
+                    self.print_request(request)
+            else:
+                non_ring_packages = sorted(
+                    request.find('./action/target').get('package')
+                    for request in non_ring_requests)
+                print('Not in a ring: ' + ' '.join(non_ring_packages))
 
         # Print requests not handled by staging process to highlight them.
         splitter.stageable = False
