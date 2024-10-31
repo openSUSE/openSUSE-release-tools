@@ -120,6 +120,7 @@ def clean_args(args):
 @cmdln.option('--merge', action='store_true', help='propose merge where applicable and store details to allow future merges')
 @cmdln.option('--try-strategies', action='store_true', default=False, help='apply strategies and keep any with desireable outcome')
 @cmdln.option('--strategy', help='apply a specific strategy')
+@cmdln.option('--match-filter', help='xpath by which to filter requests on the basis of the reviews they received', default=None)
 @cmdln.option('--no-color', action='store_true', help='strip colors from output (or add staging.color = 0 to the .oscrc general section')
 @cmdln.option('--remove-exclusion', action='store_true', help='unignore selected requests automatically', default=False)
 @cmdln.option('--save', action='store_true', help='save the result to the pseudometa package')
@@ -157,6 +158,14 @@ def do_staging(self, subcmd, opts, *args):
         changed from state new or review more than 3 days ago will be removed.
 
     "list" will list/supersede requests for ring packages or all if no rings.
+
+        By just calling list, the staging plugin will list all the request included
+        in the backlog section of the web UI. It is also possible to optionally limit
+        results with an XPATH filter. As an example, the following would list all
+        packages which have received a positive review from a member of the
+        licensedigger group or the factory-auto one
+
+        list --match-filter "state/@name='review' and review[(@by_group='factory-auto' or @by_group='licensedigger') and @state='accepted']"
 
     "lock" acquire a hold on the project in order to execute multiple commands
         and prevent others from interrupting. An example:
@@ -309,7 +318,7 @@ def do_staging(self, subcmd, opts, *args):
         osc staging frozenage [STAGING...]
         osc staging ignore [-m MESSAGE] REQUEST...
         osc staging unignore [--cleanup] [REQUEST...|all]
-        osc staging list [--supersede] [--adi-details]
+        osc staging list [--adi-details] [--match-filter] [--supersede]
         osc staging lock [-m MESSAGE]
         osc staging select [--no-freeze] [--remove-exclusion] [--move [--filter-from STAGING]]
             STAGING REQUEST...
@@ -580,7 +589,7 @@ def do_staging(self, subcmd, opts, *args):
         elif cmd == 'unignore':
             UnignoreCommand(api).perform(args[1:], opts.cleanup)
         elif cmd == 'list':
-            ListCommand(api).perform(supersede=opts.supersede, adi_details=opts.adi_details)
+            ListCommand(api).perform(adi_details=opts.adi_details, match_filter=opts.match_filter, supersede=opts.supersede)
         elif cmd == 'lock':
             lock.hold(opts.message)
         elif cmd == 'adi':
