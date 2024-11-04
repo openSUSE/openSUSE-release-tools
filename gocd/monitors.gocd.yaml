@@ -89,7 +89,7 @@ pipelines:
                 git config --global user.email "coolo@suse.de"
                 git config --global user.name "GoCD Repo Monitor"
                 cd repos
-                ../scripts/gocd/rabbit-repoid.py -A https://api.suse.de SUSE:SLE SUSE:ALP Devel:YaST
+                ../scripts/gocd/rabbit-repoid.py -A https://api.suse.de SUSE:SLE SUSE:ALP SUSE:SLFO Devel:YaST
   openSUSE.Repo.Monitor:
     group: Monitors
     lock_behavior: unlockWhenFinished
