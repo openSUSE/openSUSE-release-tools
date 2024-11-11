@@ -122,14 +122,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -206,14 +211,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -290,14 +300,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -374,14 +389,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -458,14 +478,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -542,14 +567,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -626,14 +656,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -710,14 +745,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -794,14 +834,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -878,14 +923,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -962,14 +1012,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -1105,14 +1160,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -1190,14 +1250,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -1275,14 +1340,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -1360,14 +1430,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -1445,14 +1520,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -1530,14 +1610,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -1615,14 +1700,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -1700,14 +1790,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -1785,14 +1880,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -1870,14 +1970,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
@@ -1955,14 +2060,19 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=0
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
                 if [ ${ret} -eq 2 ]; then
                     echo "product repository not found. Project configuration issue?" >&2
                     exit 1
+                elif [ ${minutes} -gt 180 ]; then
+                    echo "Product is still failing after timeout, exiting..." >&2
+                    exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
 
     - Enable.images.repo:
