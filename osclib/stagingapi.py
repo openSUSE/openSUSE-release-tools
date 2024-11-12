@@ -1289,7 +1289,11 @@ class StagingAPI(object):
         return results
 
     def is_repo_dirty(self, project, repository):
-        url = self.makeurl(['build', project, f'_result?code=broken&repository={repository}'])
+        query = {
+            'code': 'broken',
+            'repository': repository
+        }
+        url = self.makeurl(['build', project, '_result'], query=query)
         root = ET.parse(http_GET(url)).getroot()
         for repo in root.findall('result'):
             repostate = repo.get('state', 'missing')

@@ -122,15 +122,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -206,15 +215,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -290,15 +308,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -374,15 +401,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -458,15 +494,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -542,15 +587,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -626,15 +680,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -710,15 +773,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -794,15 +866,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -878,15 +959,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -962,15 +1052,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -1105,15 +1204,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -1190,15 +1298,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -1275,15 +1392,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -1360,15 +1486,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -1445,15 +1580,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -1530,15 +1674,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -1615,15 +1768,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -1700,15 +1862,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -1785,15 +1956,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -1870,15 +2050,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
@@ -1955,15 +2144,24 @@ pipelines:
           - staging-bot
         tasks:
           - script: |-
+              minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              while ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r product; ret=$?; [ ${ret} -ne 0 ]; do
-                if [ ${ret} -eq 2 ]; then
-                    echo "product repository not found. Project configuration issue?" >&2
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
                     exit 1
                 fi
                 sleep 60
+                minutes=$(expr $minutes + 1)
               done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
 
     - Enable.images.repo:
         resources:
