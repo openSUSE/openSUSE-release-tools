@@ -1163,7 +1163,7 @@ pipelines:
               minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              # Let the scheduler warm up first
+              ## Let the scheduler warm up first
               sleep 60
               while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
                 if [ ${minutes} -gt 180 ]; then
@@ -1173,7 +1173,7 @@ pipelines:
                 sleep 60
                 minutes=$(expr $minutes + 1)
               done
-              # Always fail on broken/failed products
+              ## Always fail on broken/failed products
               if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
                     echo "Some products failed to build, exiting..." >&2
                     exit 1
@@ -1257,7 +1257,7 @@ pipelines:
               minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              # Let the scheduler warm up first
+              ## Let the scheduler warm up first
               sleep 60
               while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
                 if [ ${minutes} -gt 180 ]; then
@@ -1267,7 +1267,7 @@ pipelines:
                 sleep 60
                 minutes=$(expr $minutes + 1)
               done
-              # Always fail on broken/failed products
+              ## Always fail on broken/failed products
               if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
                     echo "Some products failed to build, exiting..." >&2
                     exit 1
@@ -1351,7 +1351,7 @@ pipelines:
               minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              # Let the scheduler warm up first
+              ## Let the scheduler warm up first
               sleep 60
               while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
                 if [ ${minutes} -gt 180 ]; then
@@ -1361,7 +1361,7 @@ pipelines:
                 sleep 60
                 minutes=$(expr $minutes + 1)
               done
-              # Always fail on broken/failed products
+              ## Always fail on broken/failed products
               if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
                     echo "Some products failed to build, exiting..." >&2
                     exit 1
@@ -1445,7 +1445,7 @@ pipelines:
               minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              # Let the scheduler warm up first
+              ## Let the scheduler warm up first
               sleep 60
               while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
                 if [ ${minutes} -gt 180 ]; then
@@ -1455,7 +1455,7 @@ pipelines:
                 sleep 60
                 minutes=$(expr $minutes + 1)
               done
-              # Always fail on broken/failed products
+              ## Always fail on broken/failed products
               if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
                     echo "Some products failed to build, exiting..." >&2
                     exit 1
@@ -1539,7 +1539,7 @@ pipelines:
               minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              # Let the scheduler warm up first
+              ## Let the scheduler warm up first
               sleep 60
               while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
                 if [ ${minutes} -gt 180 ]; then
@@ -1549,7 +1549,7 @@ pipelines:
                 sleep 60
                 minutes=$(expr $minutes + 1)
               done
-              # Always fail on broken/failed products
+              ## Always fail on broken/failed products
               if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
                     echo "Some products failed to build, exiting..." >&2
                     exit 1
@@ -1633,7 +1633,7 @@ pipelines:
               minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              # Let the scheduler warm up first
+              ## Let the scheduler warm up first
               sleep 60
               while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
                 if [ ${minutes} -gt 180 ]; then
@@ -1643,7 +1643,7 @@ pipelines:
                 sleep 60
                 minutes=$(expr $minutes + 1)
               done
-              # Always fail on broken/failed products
+              ## Always fail on broken/failed products
               if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
                     echo "Some products failed to build, exiting..." >&2
                     exit 1
@@ -1727,7 +1727,7 @@ pipelines:
               minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              # Let the scheduler warm up first
+              ## Let the scheduler warm up first
               sleep 60
               while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
                 if [ ${minutes} -gt 180 ]; then
@@ -1737,7 +1737,7 @@ pipelines:
                 sleep 60
                 minutes=$(expr $minutes + 1)
               done
-              # Always fail on broken/failed products
+              ## Always fail on broken/failed products
               if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
                     echo "Some products failed to build, exiting..." >&2
                     exit 1
@@ -1821,7 +1821,7 @@ pipelines:
               minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              # Let the scheduler warm up first
+              ## Let the scheduler warm up first
               sleep 60
               while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
                 if [ ${minutes} -gt 180 ]; then
@@ -1831,7 +1831,7 @@ pipelines:
                 sleep 60
                 minutes=$(expr $minutes + 1)
               done
-              # Always fail on broken/failed products
+              ## Always fail on broken/failed products
               if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
                     echo "Some products failed to build, exiting..." >&2
                     exit 1
@@ -1915,7 +1915,7 @@ pipelines:
               minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              # Let the scheduler warm up first
+              ## Let the scheduler warm up first
               sleep 60
               while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
                 if [ ${minutes} -gt 180 ]; then
@@ -1925,7 +1925,7 @@ pipelines:
                 sleep 60
                 minutes=$(expr $minutes + 1)
               done
-              # Always fail on broken/failed products
+              ## Always fail on broken/failed products
               if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
                     echo "Some products failed to build, exiting..." >&2
                     exit 1
@@ -2009,7 +2009,7 @@ pipelines:
               minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              # Let the scheduler warm up first
+              ## Let the scheduler warm up first
               sleep 60
               while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
                 if [ ${minutes} -gt 180 ]; then
@@ -2019,7 +2019,7 @@ pipelines:
                 sleep 60
                 minutes=$(expr $minutes + 1)
               done
-              # Always fail on broken/failed products
+              ## Always fail on broken/failed products
               if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
                     echo "Some products failed to build, exiting..." >&2
                     exit 1
@@ -2103,7 +2103,7 @@ pipelines:
               minutes=1
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
-              # Let the scheduler warm up first
+              ## Let the scheduler warm up first
               sleep 60
               while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
                 if [ ${minutes} -gt 180 ]; then
@@ -2113,7 +2113,7 @@ pipelines:
                 sleep 60
                 minutes=$(expr $minutes + 1)
               done
-              # Always fail on broken/failed products
+              ## Always fail on broken/failed products
               if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
                     echo "Some products failed to build, exiting..." >&2
                     exit 1
