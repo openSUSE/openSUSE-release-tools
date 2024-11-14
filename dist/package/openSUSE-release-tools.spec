@@ -53,19 +53,10 @@ BuildRequires:  systemd-rpm-macros
 BuildRequires:  sysuser-shadow
 BuildRequires:  sysuser-tools
 
-Requires:       python3-PyYAML
 Requires:       python3-cmdln
-Requires:       python3-colorama
-Requires:       python3-lxml
 # issue-diff.py, legal-auto.py, and openqa-maintenance.py
 Requires:       python3-pycurl
-Requires:       python3-python-dateutil
-Requires:       python3-pyxdg
 Requires:       python3-requests
-# typing extensions are needed on SLE & Leap
-%if 0%{?suse_version} <= 1500
-Requires:       python3-typing_extensions
-%endif
 
 # Spec related requirements.
 Requires:       osclib = %{version}
@@ -103,6 +94,16 @@ BuildArch:      noarch
 
 %description announcer
 OBS product release announcer for generating email diffs summaries.
+
+%package build-fail-reminder
+Summary:        OBS build fail reminder service
+Group:          Development/Tools/Other
+BuildArch:      noarch
+Requires:       osclib = %{version}
+Requires:       python3-lxml
+
+%description build-fail-reminder
+Daily email reminders for failed builds in OBS.
 
 %package check-source
 Summary:        Check source review bot
@@ -266,10 +267,18 @@ Service to run repo-checker and pkglistgen.
 %package -n osclib
 Summary:        Supplemental osc libraries
 Group:          Development/Tools/Other
-# TODO Update requirements, but for now base deps.
-Requires:       %{name} = %{version}
 Requires:       osc >= 0.165.1
+Recommends:     python3-pika
+Requires:       python3-PyYAML
+Requires:       python3-colorama
+Requires:       python3-lxml
 Requires:       python3-osc
+Requires:       python3-python-dateutil
+Requires:       python3-pyxdg
+# typing extensions are needed on SLE & Leap
+%if 0%{?suse_version} <= 1500
+Requires:       python3-typing_extensions
+%endif
 BuildArch:      noarch
 
 %description -n osclib
@@ -330,6 +339,7 @@ rm slfo-packagelist-uploader.py
 %build
 %make_build
 %sysusers_generate_pre slsa/osrt-slsa-user.conf %{name} %{name}.conf
+%sysusers_generate_pre build-fail-reminder/osrt-build-fail-reminder-user.conf build-fail-reminder osrt-build-fail-reminder.conf
 
 %install
 %make_install \
@@ -338,6 +348,7 @@ rm slfo-packagelist-uploader.py
   VERSION="%{version}"
 
 install -Dpm0644 slsa/osrt-slsa-user.conf %{buildroot}%{_sysusersdir}/%{name}.conf
+install -pm0644 build-fail-reminder/osrt-build-fail-reminder-user.conf %{buildroot}%{_sysusersdir}/osrt-build-fail-reminder.conf
 
 %pre -f %{name}.pre
 %service_add_pre %{name}.service
@@ -351,6 +362,18 @@ exit 0
 getent passwd osrt-check-source > /dev/null || \
   useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-check-source" osrt-check-source
 exit 0
+
+%pre -f build-fail-reminder.pre build-fail-reminder
+%service_add_pre osrt-build-fail-reminder.timer
+
+%post build-fail-reminder
+%service_add_post osrt-build-fail-reminder.timer
+
+%preun build-fail-reminder
+%service_del_preun osrt-build-fail-reminder.timer
+
+%postun build-fail-reminder
+%service_del_postun_with_restart osrt-build-fail-reminder.timer
 
 %pre docker-publisher
 getent passwd osrt-docker-publisher > /dev/null || \
@@ -405,7 +428,6 @@ exit 0
 %doc README.md
 %{_bindir}/osrt-biarchtool
 %{_bindir}/osrt-bugowner
-%{_bindir}/osrt-build-fail-reminder
 %{_bindir}/osrt-checknewer
 %{_bindir}/osrt-check_bugowner
 %{_bindir}/osrt-check_tags_in_requests
@@ -422,6 +444,7 @@ exit 0
 %{_datadir}/%{source_dir}
 %exclude %{_datadir}/%{source_dir}/abichecker
 %exclude %{_datadir}/%{source_dir}/%{announcer_filename}
+%exclude %{_datadir}/%{source_dir}/build-fail-reminder.py
 %exclude %{_datadir}/%{source_dir}/check_maintenance_incidents.py
 %exclude %{_datadir}/%{source_dir}/check_source.py
 %exclude %{_datadir}/%{source_dir}/devel-project.py
@@ -464,6 +487,15 @@ exit 0
 %{_datadir}/%{source_dir}/%{announcer_filename}
 %config(noreplace) %{_sysconfdir}/openSUSE-release-tools/announcer
 %config(noreplace) %{_sysconfdir}/rsyslog.d/%{announcer_filename}.conf
+
+%files build-fail-reminder
+%{_bindir}/osrt-build-fail-reminder
+%{_datadir}/%{source_dir}/build-fail-reminder.py
+%{_sysusersdir}/osrt-build-fail-reminder.conf
+%{_unitdir}/osrt-build-fail-reminder.service
+%{_unitdir}/osrt-build-fail-reminder.timer
+%dir %attr(0700,osrt-build-fail-reminder,osrt-build-fail-reminder) %{_sysconfdir}/%{name}/build-fail-reminder
+%dir %attr(0750,osrt-build-fail-reminder,osrt-build-fail-reminder) %{_sharedstatedir}/osrt-build-fail-reminder
 
 %files check-source
 %{_bindir}/osrt-check_source
