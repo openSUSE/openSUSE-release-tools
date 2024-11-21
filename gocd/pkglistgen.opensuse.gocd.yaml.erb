@@ -103,3 +103,26 @@ pipelines:
             tasks:
               - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project %> -s target --only-update-weakremovers
 <% end -%>
+  SkippkgFinder.Leap_16_0:
+    group: Leap
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    timer:
+      spec: 0 40 * ? * *
+      only_on_changes: false
+    materials:
+      git:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    stages:
+    - Update:
+        approval:
+          type: manual
+        jobs:
+<% %w(openSUSE:Leap:16.0).each do |project| -%>
+          <%= project.gsub(':', '_') %>:
+            resources:
+            - repo-checker
+            tasks:
+              - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o <%= project %>
+<% end -%>
