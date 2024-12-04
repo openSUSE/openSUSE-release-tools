@@ -43,7 +43,7 @@ class ListCommand:
 
         print(' ', line)
 
-    def perform(self, supersede=False, adi_details=False):
+    def perform(self, adi_details=False, match_filter=None, supersede=False):
         """
         Perform the list command
         """
@@ -51,7 +51,7 @@ class ListCommand:
         if supersede:
             SupersedeCommand(self.api).perform()
 
-        requests = self.api.get_open_requests()
+        requests = self.api.get_open_requests(match_filter=match_filter)
         if not len(requests):
             return
 
