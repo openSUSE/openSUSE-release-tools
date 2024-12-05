@@ -75,3 +75,9 @@ pipelines:
             tasks:
               - script: |
                   ruby obs-to-vagrantcloud.rb --url https://download.opensuse.org/distribution/leap/15.6/appliances/boxes/Leap-15.6.aarch64-libvirt_aarch64.json --organization opensuse --new-box-name Leap-15.6.aarch64
+          publish_Leap_Micro_6_1_Default_x86_64:
+            resources:
+            - staging-bot
+            tasks:
+              - script: |
+                  ruby obs-to-vagrantcloud.rb --url https://download.opensuse.org/distribution/leap-micro/6.1/appliances/openSUSE-Leap-Micro.x86_64-Default-Vagrant.json --organization opensuse --new-box-name Leap_Micro_6.1_Default.x86_64
