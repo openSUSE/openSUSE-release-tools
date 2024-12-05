@@ -26,6 +26,7 @@ pipelines:
 ['https://download.opensuse.org/distribution/leap/15.6/appliances/boxes/Leap-15.6.x86_64.json', 'Leap-15.6.x86_64'],
 ['https://download.opensuse.org/distribution/leap/15.6/appliances/boxes/Leap-15.6.aarch64-libvirt_aarch64.json', 'Leap-15.6.aarch64'],
 ['https://download.opensuse.org/distribution/leap-micro/6.1/appliances/openSUSE-Leap-Micro.x86_64-Default-Vagrant.json', 'Leap_Micro_6.1_Default.x86_64'],
+['https://download.opensuse.org/distribution/leap-micro/6.1/appliances/openSUSE-Leap-Micro.x86_64-Base-Vagrant.json', 'Leap_Micro_6.1_Base.x86_64'],
 ].each do |url, box_name| %>
           publish_<%= box_name.gsub('.', '_') %>:
             resources:
