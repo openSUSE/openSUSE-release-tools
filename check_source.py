@@ -139,12 +139,11 @@ class CheckSource(ReviewBot.ReviewBot):
             return False
 
         kind = package_kind(self.apiurl, target_project, target_package)
-        if kind == 'meta':
-            self.review_messages['accepted'] = 'Skipping most checks for meta packages'
+        if kind == 'meta' or kind == 'patchinfo':
+            self.review_messages['accepted'] = f'Skipping most checks for {kind} packages'
             if not self.skip_add_reviews and self.add_review_team and self.review_team is not None:
                 if not (self.allow_valid_source_origin and source_project in self.valid_source_origins):
                     self.add_review(self.request, by_group=self.review_team, msg='Please review sources')
-
             return True
         elif (kind is not None and kind != 'source'):
             self.review_messages['declined'] = f'May not modify a non-source package of type {kind}'
