@@ -63,24 +63,24 @@ class Project(object):
     def gather_isos(self, name, repository):
         iso_set = set()
 
-        # Fetch /published/prj/repo/iso/*.iso
-        url = self.api.makeurl(['published', name, repository, 'iso'])
-        f = self.api.retried_GET(url)
-        root = ET.parse(f).getroot()
-        for entry in root.findall('entry'):
-            if entry.get('name').endswith('.iso'):
-                iso_set.add(self.map_iso(name, entry.get('name')))
+        # Look for .iso and other images/sbom assets in the repository root and in the
+        # iso sub-folder of /published/prj/repo/
+        places = (
+            ['published', name, repository, 'iso'],
+            ['published', name, repository],
+        )
+        for place in places:
+            url = self.api.makeurl(place)
+            f = self.api.retried_GET(url)
+            root = ET.parse(f).getroot()
 
-        # Fetch /published/prj/repo/*.{qcow2,raw.xz,spdx.json}
-        url = self.api.makeurl(['published', name, repository])
-        f = self.api.retried_GET(url)
-        root = ET.parse(f).getroot()
-        for entry in root.findall('entry'):
-            filename = entry.get('name')
-            if (filename.endswith('.qcow2') or
-                    filename.endswith('.raw.xz') or
-                    filename.endswith('.spdx.json')):
-                iso_set.add(self.map_iso(name, filename))
+            for entry in root.findall('entry'):
+                filename = entry.get('name')
+                if (filename.endswith('.qcow2') or
+                        filename.endswith('.raw.xz') or
+                        filename.endswith('.spdx.json') or
+                        filename.endswith('.iso')):
+                    iso_set.add(self.map_iso(name, filename))
 
         # Filter out isos which couldn't be mapped
         return [iso for iso in iso_set if iso]
