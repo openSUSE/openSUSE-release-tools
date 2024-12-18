@@ -54,33 +54,6 @@ pipelines:
             done
             osc -A https://api.suse.de/ api "/build/SUSE:SLFO:Products:SLES:16.0:TEST/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
 
-    - Release.Images.To.Publish:
-        approval: manual
-        roles:
-        - SLE
-        environment_variables:
-          OSC_CONFIG: /home/go/config/oscrc-totest-manager
-        resources:
-        - staging-bot
-        tasks:
-        - script: |-
-            set -e
-            for image in agama-installer-SLES kiwi-templates-Minimal; do
-              osc -A https://api.suse.de release --target-project=SUSE:SLFO:Products:SLES:16.0:PUBLISH --target-repository=images -r images SUSE:SLFO:Products:SLES:16.0:TEST $image
-            done
-            osc -A https://api.suse.de release  --target-project=SUSE:SLFO:Products:SLES:16.0:PUBLISH --target-repository=product -r product SUSE:SLFO:Products:SLES:16.0:TEST 000productcompose
-            sleep 600
-            while (osc -A https://api.suse.de/ api "/build/SUSE:SLFO:Products:SLES:16.0:PUBLISH/_result?view=summary&repository=product" | grep "result project" | grep -v 'code="published" state="published">'); do
-                echo PENDING
-                sleep 600
-            done
-            osc -A https://api.suse.de/ api "/build/SUSE:SLFO:Products:SLES:16.0:PUBLISH/_result?view=summary&repository=product" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
-            while (osc -A https://api.suse.de/ api "/build/SUSE:SLFO:Products:SLES:16.0:PUBLISH/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
-                echo PENDING
-                sleep 600
-            done
-            osc -A https://api.suse.de/ api "/build/SUSE:SLFO:Products:SLES:16.0:PUBLISH/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
-
   SLES16.0.Images.To.Publish:
     group: SLES
     materials:
