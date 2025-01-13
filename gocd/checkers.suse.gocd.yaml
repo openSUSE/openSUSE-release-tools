@@ -62,7 +62,7 @@ pipelines:
             - repo-checker
             tasks:
             - script: ./project-installcheck.py -A https://api.suse.de --debug check --store SUSE:SLE-15-SP7:GA:Staging/dashboard --no-rebuild SUSE:SLE-15-SP7:GA
-  SL-Micro.Project:
+  SUSE.SLFO.Main.Staging.Project:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
@@ -72,17 +72,19 @@ pipelines:
       git:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
     environment_variables:
+      SLFO_PROJECT: SUSE:SLFO:Main
+      STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-repo-checker
     stages:
     - Run:
         timeout: 30
         approval: manual
         jobs:
-          SL-Micro:
+          SLFO.Main:
             resources:
             - repo-checker
             tasks:
-            - script: ./project-installcheck.py -A https://api.suse.de --debug check --store SUSE:ALP:Products:Marble:6.0:Staging/dashboard --no-rebuild SUSE:ALP:Products:Marble:6.0
+            - script: ./project-installcheck.py -A $STAGING_API --debug check --store $SLFO_PROJECT:Staging/dashboard --no-rebuild $SLFO_PROJECT:Build
   SLE.Origin.Manager:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
@@ -135,12 +137,14 @@ pipelines:
                 osc -A https://api.suse.de staging -p SUSE:SLE-15-SP7:GA unselect --cleanup
                 osc -A https://api.suse.de staging -p SUSE:SLE-15-SP7:GA repair --cleanup
                 rm -rf $tempdir
-  SL-Micro.Staging.Bot.Regular:
+  SUSE.SLFO.Main.Staging.Bot.Regular:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 0 * ? * *
     environment_variables:
+      SLFO_PROJECT: SUSE:SLFO:Main
+      STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
     materials:
       git:
@@ -163,11 +167,11 @@ pipelines:
                 ln -s $PWD/osclib $tempdir/.osc-plugins
                 export HOME=$tempdir
 
-                osc -A https://api.suse.de staging -p SUSE:ALP:Products:Marble:6.0 rebuild
-                osc -A https://api.suse.de staging -p SUSE:ALP:Products:Marble:6.0 list --supersede
-                osc -A https://api.suse.de staging -p SUSE:ALP:Products:Marble:6.0 select --non-interactive --merge --try-strategies
-                osc -A https://api.suse.de staging -p SUSE:ALP:Products:Marble:6.0 unselect --cleanup
-                osc -A https://api.suse.de staging -p SUSE:ALP:Products:Marble:6.0 repair --cleanup
+                osc -A $STAGING_API staging -p $SLFO_PROJECT rebuild
+                osc -A $STAGING_API staging -p $SLFO_PROJECT list --supersede
+                osc -A $STAGING_API staging -p $SLFO_PROJECT select --non-interactive --merge --try-strategies
+                osc -A $STAGING_API staging -p $SLFO_PROJECT unselect --cleanup
+                osc -A $STAGING_API staging -p $SLFO_PROJECT repair --cleanup
                 rm -rf $tempdir
   S15.SP7.Staging.Bot.Report:
     group: SLE.Checkers
@@ -190,12 +194,14 @@ pipelines:
             - staging-bot
             tasks:
             - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:SLE-15-SP7:GA
-  SL-Micro.Staging.Bot.Report:
+  SUSE.SLFO.Main.Staging.Bot.Report:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
     timer:
       spec: 0 */3 * ? * *
     environment_variables:
+      SLFO_PROJECT: SUSE:SLFO:Main
+      STAGING_API: https://api.suse.de
       OSC_CONFIG: /home/go/config/oscrc-staging-bot
     materials:
       git:
@@ -210,7 +216,7 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: ./staging-report.py --debug -A https://api.suse.de -p SUSE:ALP:Products:Marble:6.0
+            - script: ./staging-report.py --debug -A $STAGING_API -p $SLFO_PROJECT
   SLE.Source.Check:
     group: SLE.Checkers
     lock_behavior: unlockWhenFinished
