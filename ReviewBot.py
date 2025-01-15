@@ -184,13 +184,8 @@ class ReviewBot(object):
         self._review_mode = val
 
     def set_request_ids(self, ids):
-        # TODO: refactor to work with git
         for rqid in ids:
-            u = osc.core.makeurl(self.apiurl, ['request', rqid], {'withfullhistory': '1'})
-            r = osc.core.http_GET(u)
-            root = ET.parse(r).getroot()
-            req = osc.core.Request()
-            req.read(root)
+            req = self.vcs.get_request(rqid, with_full_history=True)
             self.requests.append(req)
 
     # function called before requests are reviewed
