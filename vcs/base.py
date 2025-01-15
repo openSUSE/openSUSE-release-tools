@@ -8,3 +8,8 @@ class VCSBase(metaclass=abc.ABCMeta):
     def name(self) -> str:
         """Get the name of VCS"""
         pass
+
+    @abc.abstractmethod
+    def get_path(self, *_args):
+        """Issue a get to a specific path from the repository."""
+        pass
