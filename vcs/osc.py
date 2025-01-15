@@ -1,5 +1,7 @@
 import vcs.base
 
+from lxml import etree as ET
+
 import osc.core
 from urllib.error import HTTPError, URLError
 
@@ -25,3 +27,11 @@ class OSC(vcs.base.VCSBase):
             if e.code != 404:
                 raise e
             return None
+
+    def get_request(self, request_id, with_full_history=False):
+        query = {'withfullhistory': '1'} if with_full_history else None
+        res = self._get(('request', request_id), query)
+        root = ET.parse(res).getroot()
+        req = osc.core.Request()
+        req.read(root)
+        return req
