@@ -22,6 +22,7 @@ from osclib.core import request_age
 from osclib.memoize import memoize
 from osclib.memoize import memoize_session_reset
 from osclib.stagingapi import StagingAPI
+from vcs import OSC
 import signal
 import datetime
 import time
@@ -34,13 +35,12 @@ from urllib.error import HTTPError, URLError
 
 from itertools import count
 
-
 class PackageLookup(object):
     """ helper class to manage 00Meta/lookup.yml
     """
 
-    def __init__(self, apiurl=None):
-        self.apiurl = apiurl
+    def __init__(self, vcs):
+        self.vcs = vcs
         # dict[project][package]
         self.lookup = {}
 
@@ -58,14 +58,7 @@ class PackageLookup(object):
         self.lookup[project] = yaml.safe_load(fh) if fh else {}
 
     def _load_lookup_file(self, prj):
-        try:
-            return osc.core.http_GET(osc.core.makeurl(self.apiurl,
-                                                      ['source', prj, '00Meta', 'lookup.yml']))
-        except HTTPError as e:
-            # in case the project doesn't exist yet (like sle update)
-            if e.code != 404:
-                raise e
-            return None
+        return self.vcs.get_path('source', prj, '00Meta', 'lookup.yml')
 
 
 @unique
@@ -105,6 +98,8 @@ class ReviewBot(object):
         ]}
 
     def __init__(self, apiurl=None, dryrun=False, logger=None, user=None, group=None):
+        # TODO refactor to use vcs wrappers
+
         self.apiurl = apiurl
         self.ibs = apiurl.startswith('https://api.suse.de')
         self.dryrun = dryrun
@@ -125,9 +120,18 @@ class ReviewBot(object):
         self.override_group_key = f'{self.bot_name.lower()}-override-group'
         self.request_age_min_default = 0
         self.request_age_min_key = f'{self.bot_name.lower()}-request-age-min'
-        self.lookup = PackageLookup(self.apiurl)
+        self.lookup = PackageLookup(self.vcs)
 
         self.load_config()
+
+    @property
+    def apiurl(self):
+        return self._apiurl
+
+    @apiurl.setter
+    def apiurl(self, url):
+        self._apiurl = url
+        self.vcs = OSC(self._apiurl)
 
     def _load_config(self, handle=None):
         d = self.__class__.config_defaults
@@ -149,14 +153,11 @@ class ReviewBot(object):
 
     def has_staging(self, project):
         try:
-            url = osc.core.makeurl(self.apiurl, ('staging', project, 'staging_projects'))
-            osc.core.http_GET(url)
-            return True
+            ret = self.vcs.get_path('staging', project, 'staging_projects')
+            return ret is not None
         except HTTPError as e:
-            if e.code != 404:
-                self.logger.error(f'ERROR in URL {url} [{e}]')
-                raise
-        return False
+            self.logger.error(f'ERROR in URL {url} [{e}]')
+            raise
 
     def staging_api(self, project):
         # Allow for the Staging subproject to be passed directly from config
@@ -183,6 +184,7 @@ class ReviewBot(object):
         self._review_mode = val
 
     def set_request_ids(self, ids):
+        # TODO: refactor to work with git
         for rqid in ids:
             u = osc.core.makeurl(self.apiurl, ['request', rqid], {'withfullhistory': '1'})
             r = osc.core.http_GET(u)
