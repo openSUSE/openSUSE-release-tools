@@ -186,6 +186,9 @@ def requests(args):
 def reviews(args):
     apiurl = osc.conf.config['apiurl']
     devel_projects = devel_projects_load(args)
+    config = Config.get(apiurl, args.project)
+    # do not update reminder repeatedly if the paricular target project
+    reminder_once_only_target_projects = set(config.get('reminder-once-only-target-projects', '').split())
 
     for devel_project in devel_projects:
         requests = get_review_list(apiurl, byproject=devel_project)
@@ -212,9 +215,12 @@ def reviews(args):
                 '/'.join((action.tgt_project, action.tgt_package)),
                 f'({age} days old)',
             )))
-
             if args.remind:
-                remind_comment(apiurl, args.repeat_age, request.reqid, review.by_project, review.by_package)
+                if action.tgt_project in reminder_once_only_target_projects:
+                    repeat_reminder = False
+                else:
+                    repeat_reminder = True
+                remind_comment(apiurl, args.repeat_age, request.reqid, review.by_project, review.by_package, repeat_reminder)
 
 
 def maintainers_get(apiurl, project, package=None):
@@ -240,12 +246,15 @@ def maintainers_get(apiurl, project, package=None):
     return userids
 
 
-def remind_comment(apiurl, repeat_age, request_id, project, package=None):
+def remind_comment(apiurl, repeat_age, request_id, project, package=None, do_repeat=True):
     comment_api = CommentAPI(apiurl)
     comments = comment_api.get_comments(request_id=request_id)
     comment, _ = comment_api.comment_find(comments, BOT_NAME)
 
     if comment:
+        if not do_repeat:
+            print('  skipping due to reminder has been created')
+            return
         delta = datetime.utcnow() - comment['when']
         if delta.days < repeat_age:
             print(f'  skipping due to previous reminder from {delta.days} days ago')
