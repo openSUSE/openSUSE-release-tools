@@ -187,7 +187,6 @@ pipelines:
               - script: |-
                   export PYTHONPATH=$PWD/scripts
                   cd scripts/gocd
-                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
                   ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
           Repo.Checker:
             environment_variables:
