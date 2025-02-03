@@ -53,19 +53,10 @@ BuildRequires:  systemd-rpm-macros
 BuildRequires:  sysuser-shadow
 BuildRequires:  sysuser-tools
 
-Requires:       python3-PyYAML
 Requires:       python3-cmdln
-Requires:       python3-colorama
-Requires:       python3-lxml
 # issue-diff.py, legal-auto.py, and openqa-maintenance.py
 Requires:       python3-pycurl
-Requires:       python3-python-dateutil
-Requires:       python3-pyxdg
 Requires:       python3-requests
-# typing extensions are needed on SLE & Leap
-%if 0%{?suse_version} <= 1500
-Requires:       python3-typing_extensions
-%endif
 
 # Spec related requirements.
 Requires:       osclib = %{version}
@@ -266,10 +257,18 @@ Service to run repo-checker and pkglistgen.
 %package -n osclib
 Summary:        Supplemental osc libraries
 Group:          Development/Tools/Other
-# TODO Update requirements, but for now base deps.
-Requires:       %{name} = %{version}
 Requires:       osc >= 0.165.1
+Recommends:     python3-pika
+Requires:       python3-PyYAML
+Requires:       python3-colorama
+Requires:       python3-lxml
 Requires:       python3-osc
+Requires:       python3-python-dateutil
+Requires:       python3-pyxdg
+# typing extensions are needed on SLE & Leap
+%if 0%{?suse_version} <= 1500
+Requires:       python3-typing_extensions
+%endif
 BuildArch:      noarch
 
 %description -n osclib
