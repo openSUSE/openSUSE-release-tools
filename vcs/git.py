@@ -18,3 +18,13 @@ class Git(vcs.base.VCSBase):
     def get_request(self, request_id, with_full_history=False):
         # XXX stub
         raise NotImplementedError
+
+    def checkout_package(
+            self,
+            target_project: str,
+            target_package: str,
+            pathname,
+            **kwargs
+    ):
+        # XXX stub
+        raise NotImplementedError
