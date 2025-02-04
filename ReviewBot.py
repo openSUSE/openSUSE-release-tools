@@ -22,7 +22,7 @@ from osclib.core import request_age
 from osclib.memoize import memoize
 from osclib.memoize import memoize_session_reset
 from osclib.stagingapi import StagingAPI
-from vcs import OSC
+from vcs import OSC, Git
 import signal
 import datetime
 import time
@@ -97,7 +97,7 @@ class ReviewBot(object):
             ('openSUSE.org:', 'https://api.opensuse.org', 'obsrq'),
         ]}
 
-    def __init__(self, apiurl=None, dryrun=False, logger=None, user=None, group=None):
+    def __init__(self, apiurl=None, dryrun=False, logger=None, user=None, group=None, vcs_type=None):
         # TODO refactor to use vcs wrappers
 
         self.apiurl = apiurl
@@ -132,6 +132,19 @@ class ReviewBot(object):
     def apiurl(self, url):
         self._apiurl = url
         self.vcs = OSC(self._apiurl)
+
+    @property
+    def vcs_type(self):
+        return self._vcs_type
+
+    @vcs_type.setter
+    def vcs_type(self, vcs_type):
+        self._vcs_type = vcs_type
+        self.vcs = None
+        if self._vcs_type == "GIT":
+            self.vcs = Git()
+        else:
+            self.vcs = OSC(self._apiurl)
 
     def _load_config(self, handle=None):
         d = self.__class__.config_defaults
@@ -880,6 +893,7 @@ class CommandLineInterface(cmdln.Cmdln):
         parser.add_option("--apiurl", '-A', metavar="URL", help="api url")
         parser.add_option("--user", metavar="USER", help="reviewer user name")
         parser.add_option("--group", metavar="GROUP", help="reviewer group name")
+        parser.add_option("--git", action="store_true", help="run with git")
         parser.add_option("--dry", action="store_true", help="dry run")
         parser.add_option("--debug", action="store_true", help="debug output")
         parser.add_option("--osc-debug", action="store_true", help="osc debug output")
@@ -930,11 +944,17 @@ class CommandLineInterface(cmdln.Cmdln):
         if user is None and group is None:
             user = conf.get_apiurl_usr(apiurl)
 
+        if self.options.git:
+            vcs_type = "GIT"
+        else:
+            vcs_type = "OSC"
+
         return self.clazz(apiurl=apiurl,
                           dryrun=self.options.dry,
                           user=user,
                           group=group,
-                          logger=self.logger)
+                          logger=self.logger,
+                          vcs_type=vcs_type)
 
     def do_id(self, subcmd, opts, *args):
         """${cmd_name}: check the specified request ids
