@@ -250,7 +250,7 @@ class CheckSource(ReviewBot.ReviewBot):
         os.chdir(copath)
 
         try:
-            CheckSource.checkout_package(self.apiurl, target_project, target_package, pathname=copath,
+            CheckSource.checkout_package(self.vcs, target_project, target_package, pathname=copath,
                                          server_service_files=True, expand_link=True)
             shutil.rmtree(os.path.join(target_package, '.osc'))
             os.rename(target_package, '_old')
@@ -260,7 +260,7 @@ class CheckSource(ReviewBot.ReviewBot):
             else:
                 raise e
 
-        CheckSource.checkout_package(self.apiurl, source_project, source_package, revision=source_revision,
+        CheckSource.checkout_package(self.vcs, source_project, source_package, revision=source_revision,
                                      pathname=copath, server_service_files=True, expand_link=True)
         os.rename(source_package, target_package)
         shutil.rmtree(os.path.join(target_package, '.osc'))
@@ -516,14 +516,13 @@ class CheckSource(ReviewBot.ReviewBot):
             return action.person_name == user and action.person_role == 'maintainer'
 
     @staticmethod
-    def checkout_package(*args, **kwargs):
-        _stdout = sys.stdout
-        sys.stdout = open(os.devnull, 'w')
-        try:
-            result = osc.core.checkout_package(*args, **kwargs)
-        finally:
-            sys.stdout = _stdout
-        return result
+    def checkout_package(vcs, target_project, target_package, pathname, **kwargs):
+        return vcs.checkout_package(
+            target_project,
+            target_package,
+            pathname,
+            **kwargs
+        )
 
     def _package_source_parse(self, project, package, revision=None, repository=None):
         query = {'view': 'info', 'parse': 1}
