@@ -2,6 +2,8 @@ import vcs.base
 
 from lxml import etree as ET
 
+import os
+import sys
 import osc.core
 from urllib.error import HTTPError, URLError
 
@@ -35,3 +37,24 @@ class OSC(vcs.base.VCSBase):
         req = osc.core.Request()
         req.read(root)
         return req
+
+    def checkout_package(
+            self,
+            target_project: str,
+            target_package: str,
+            pathname,
+            **kwargs
+    ):
+        _stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+        try:
+            result = osc.core.checkout_package(
+                self.apiurl,
+                target_project,
+                target_package,
+                pathname=pathname,
+                **kwargs
+            )
+        finally:
+            sys.stdout = _stdout
+        return result

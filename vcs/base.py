@@ -18,3 +18,14 @@ class VCSBase(metaclass=abc.ABCMeta):
     def get_request(self, request_id, with_full_history=False):
         """Get request by id"""
         pass
+
+    @abc.abstractmethod
+    def checkout_package(
+            self,
+            target_project: str,
+            target_package: str,
+            pathname,
+            **kwargs
+    ):
+        """Checkout a package"""
+        pass
