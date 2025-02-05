@@ -252,7 +252,6 @@ class CheckSource(ReviewBot.ReviewBot):
         try:
             CheckSource.checkout_package(self.vcs, target_project, target_package, pathname=copath,
                                          server_service_files=True, expand_link=True)
-            shutil.rmtree(os.path.join(target_package, '.osc'))
             os.rename(target_package, '_old')
         except HTTPError as e:
             if e.code == 404:
@@ -263,18 +262,19 @@ class CheckSource(ReviewBot.ReviewBot):
         CheckSource.checkout_package(self.vcs, source_project, source_package, revision=source_revision,
                                      pathname=copath, server_service_files=True, expand_link=True)
         os.rename(source_package, target_package)
-        shutil.rmtree(os.path.join(target_package, '.osc'))
 
-        new_info = self.package_source_parse(source_project, source_package, source_revision, target_package)
-        filename = new_info.get('filename', '')
-        expected_name = target_package
-        if filename == '_preinstallimage':
-            expected_name = 'preinstallimage'
-        if not (filename.endswith('.kiwi') or filename == 'Dockerfile') and new_info['name'] != expected_name:
-            shutil.rmtree(copath)
-            self.review_messages['declined'] = (
-                f"A package submitted as {target_package} has to build as 'Name: {expected_name}' - found Name '{new_info['name']}'")
-            return False
+        if self.platform_type == "OBS":
+            # XXX implement this for other platforms as well?
+            new_info = self.package_source_parse(source_project, source_package, source_revision, target_package)
+            filename = new_info.get('filename', '')
+            expected_name = target_package
+            if filename == '_preinstallimage':
+                expected_name = 'preinstallimage'
+            if not (filename.endswith('.kiwi') or filename == 'Dockerfile') and new_info['name'] != expected_name:
+                shutil.rmtree(copath)
+                self.review_messages['declined'] = (
+                    f"A package submitted as {target_package} has to build as 'Name: {expected_name}' - found Name '{new_info['name']}'")
+                return False
 
         if not self.check_service_file(target_package):
             return False
