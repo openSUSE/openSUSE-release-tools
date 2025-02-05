@@ -4,18 +4,19 @@ from lxml import etree as ET
 
 import os
 import sys
+import shutil
 import osc.core
 from urllib.error import HTTPError, URLError
 
 class OSC(vcs.base.VCSBase):
     """VCS interface implementation for OSC"""
 
-    def __init__(self, apiurl=None):
+    def __init__(self, apiurl: str):
         self.apiurl = apiurl
 
     @property
     def name(self) -> str:
-        return "osc"
+        return "OSC"
 
     def _get(self, l, query=None):
         """Construct a complete URL, and issue an HTTP GET to it."""
@@ -29,14 +30,6 @@ class OSC(vcs.base.VCSBase):
             if e.code != 404:
                 raise e
             return None
-
-    def get_request(self, request_id, with_full_history=False):
-        query = {'withfullhistory': '1'} if with_full_history else None
-        res = self._get(('request', request_id), query)
-        root = ET.parse(res).getroot()
-        req = osc.core.Request()
-        req.read(root)
-        return req
 
     def checkout_package(
             self,
@@ -55,6 +48,7 @@ class OSC(vcs.base.VCSBase):
                 pathname=pathname,
                 **kwargs
             )
+            shutil.rmtree(os.path.join(target_package, '.osc'))
         finally:
             sys.stdout = _stdout
         return result
