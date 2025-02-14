@@ -40,3 +40,5 @@ class Action(vcs.base.VCSBase):
         dst = f'{pathname}/{target_package}'
         self.logger.debug(f'checkout: {target_project}/{target_package} {src} -> {dst}')
         shutil.copytree(src, dst)
+        for i in ['.github', '.gitea', '.git']:
+            shutil.rmtree(os.path.join(dst, i), ignore_errors=True)
