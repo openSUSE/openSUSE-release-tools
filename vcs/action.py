@@ -24,8 +24,19 @@ class Action(vcs.base.VCSBase):
             pathname,
             **kwargs
     ):
-        # XXX verify `target_project` & `target_package`?
-        src = os.environ["GITHUB_WORKSPACE"]
+        head_full_name = os.environ["PR_SRC_FULL_NAME"]
+        head_project, head_package = head_full_name.split('/', 1)
+        base_full_name = os.environ["PR_DST_FULL_NAME"]
+        base_project, base_package = base_full_name.split('/', 1)
+        workspace = os.environ["GITHUB_WORKSPACE"]
+
+        if target_project == head_project and target_package == head_package:
+            src = f"{workspace}/head"
+        elif target_project == base_project and target_package == base_package:
+            src = f"{workspace}/base"
+        else:
+            raise RuntimeError(f"Invalid checkout target: ${target_project}/${target_package}")
+
         dst = f'{pathname}/{target_package}'
-        self.logger.debug(f'checkout: {src} -> {dst}')
+        self.logger.debug(f'checkout: {target_project}/{target_package} {src} -> {dst}')
         shutil.copytree(src, dst)
