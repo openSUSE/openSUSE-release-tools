@@ -114,8 +114,8 @@ pipelines:
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
               else
                 ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
-                exit 1
               fi
+              exit 0
 
     - Build.product:
         timeout: 180
