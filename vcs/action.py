@@ -30,9 +30,9 @@ class Action(vcs.base.VCSBase):
         base_project, base_package = base_full_name.split('/', 1)
         workspace = os.environ["GITHUB_WORKSPACE"]
 
-        if target_project == head_project and target_package == head_package:
+        if target_project == f"head:{head_project}" and target_package == head_package:
             src = f"{workspace}/head"
-        elif target_project == base_project and target_package == base_package:
+        elif target_project == f"base:{base_project}" and target_package == base_package:
             src = f"{workspace}/base"
         else:
             raise RuntimeError(f"Invalid checkout target: ${target_project}/${target_package}")
