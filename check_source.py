@@ -15,6 +15,7 @@ from lxml import etree as ET
 
 import osc.conf
 import osc.core
+from urllib3.exceptions import MaxRetryError
 from osclib.core import devel_project_get
 from osclib.core import devel_project_fallback
 from osclib.core import entity_exists
@@ -565,6 +566,8 @@ class CheckSource(ReviewBot.ReviewBot):
             return True
         except HTTPError:
             pass
+        except MaxRetryError:
+            pass
         return False
 
     def check_action_add_role(self, request, action):
@@ -585,6 +588,8 @@ class CheckSource(ReviewBot.ReviewBot):
             result = osc.core.show_project_sourceinfo(self.apiurl, action.tgt_project, True, (action.tgt_package))
             root = ET.fromstring(result)
         except HTTPError:
+            return None
+        except MaxRetryError:
             return None
 
         # Decline the delete request if there is another delete/submit request against the same package
