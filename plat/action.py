@@ -57,7 +57,7 @@ class Request:
         description = os.environ["PR_DESCRIPTION"]
 
         self.reqid = '1'
-        self.actions = [RequestAction(src_project, src_package, src_rev, dst_project, dst_package)]
+        self.actions = [RequestAction(f"head:{src_project}", src_package, src_rev, f"base:{dst_project}", dst_package)]
         self.creator = creator
         self.created_at = created_at
         self.description = description
