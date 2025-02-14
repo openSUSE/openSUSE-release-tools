@@ -11,7 +11,6 @@ from collections import namedtuple
 from collections import OrderedDict
 from osclib.cache import Cache
 from osclib.comments import CommentAPI
-from osclib.conf import Config
 from osclib.core import action_is_patchinfo
 from osclib.core import devel_project_fallback
 from osclib.core import group_members
@@ -214,7 +213,7 @@ class ReviewBot(object):
             project = project[:-8]
 
         if project not in self.staging_apis:
-            Config.get(self.apiurl, project)
+            self.platform.get_project_config(project)
             self.staging_apis[project] = StagingAPI(self.apiurl, project)
 
         return self.staging_apis[project]
@@ -307,7 +306,7 @@ class ReviewBot(object):
     @memoize(session=True)
     def request_override_check_users(self, project: str) -> List[str]:
         """Determine users allowed to override review in a comment command."""
-        config = Config.get(self.apiurl, project)
+        config = self.platform.get_project_config(project)
 
         users = []
         group = config.get('staging-group')
@@ -925,7 +924,7 @@ class ReviewBot(object):
 
         if age_min is None or isinstance(age_min, str):
             key = self.request_age_min_key if age_min is None else age_min
-            age_min = int(Config.get(self.apiurl, target_project).get(key, self.request_age_min_default))
+            age_min = int(self.platform.get_project_config(target_project).get(key, self.request_age_min_default))
 
         age = request_age(request).total_seconds()
         if age < age_min:

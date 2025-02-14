@@ -3,6 +3,7 @@ import plat.base
 from lxml import etree as ET
 
 from osclib.comments import CommentAPI
+from osclib.conf import Config
 import osc.core
 
 class OBS(plat.base.PlatformBase):
@@ -28,3 +29,6 @@ class OBS(plat.base.PlatformBase):
         req = osc.core.Request()
         req.read(root)
         return req
+
+    def get_project_config(self, project):
+        return Config.get(self.apiurl, project)

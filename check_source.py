@@ -15,7 +15,6 @@ from lxml import etree as ET
 
 import osc.conf
 import osc.core
-from osclib.conf import Config
 from osclib.core import devel_project_get, factory_git_devel_project_mapping
 from osclib.core import devel_project_fallback
 from osclib.core import entity_exists
@@ -47,7 +46,7 @@ class CheckSource(ReviewBot.ReviewBot):
 
     def target_project_config(self, project: str) -> None:
         # Load project config and allow for remote entries.
-        config = Config.get(self.apiurl, project)
+        config = self.platform.get_project_config(project)
 
         self.single_action_require = str2bool(config.get('check-source-single-action-require', 'False'))
         self.ignore_devel: bool = not str2bool(config.get('devel-project-enforce', 'False'))
