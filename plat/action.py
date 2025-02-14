@@ -47,17 +47,14 @@ class RequestAction:
 class Request:
     """Stub request structure for running as an Gitea Action"""
     def __init__(self):
-        context = _read_context()
-
-        pr = context["event"]["pull_request"]
-        src_full_name = pr["head"]["repo"]["full_name"]
+        src_full_name = os.environ["PR_SRC_FULL_NAME"]
         src_project, src_package = src_full_name.split('/', 1)
-        src_rev = context["sha"]
-        dst_full_name = pr["base"]["repo"]["full_name"]
+        src_rev = os.environ["PR_SRC_REV"]
+        dst_full_name = os.environ["PR_DST_FULL_NAME"]
         dst_project, dst_package = dst_full_name.split('/', 1)
-        creator = pr["user"]["login"]
-        created_at = pr["created_at"]
-        description = pr["body"]
+        creator = os.environ["PR_CREATOR"]
+        created_at = os.environ["PR_CREATED_AT"]
+        description = os.environ["PR_DESCRIPTION"]
 
         self.reqid = '1'
         self.actions = [RequestAction(src_project, src_package, src_rev, dst_project, dst_package)]
@@ -65,10 +62,6 @@ class Request:
         self.created_at = created_at
         self.description = description
         self.reviews = []
-
-def _read_context():
-    env = os.environ["GITHUB_CONTEXT"]
-    return json.loads(env)
 
 class Action(plat.base.PlatformBase):
     """Platform interface implementation for running as Gitea Actions"""
