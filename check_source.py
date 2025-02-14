@@ -137,7 +137,13 @@ class CheckSource(ReviewBot.ReviewBot):
             self.review_messages['declined'] = 'Submission not from a pinned source revision'
             return False
 
-        kind = package_kind(self.apiurl, target_project, target_package)
+        # XXX refactor this out
+        if self.platform_type == "OBS":
+            kind = package_kind(self.apiurl, target_project, target_package)
+        else:
+            # XXX stub
+            kind = 'source'
+
         if kind == 'meta' or kind == 'patchinfo':
             self.review_messages['accepted'] = f'Skipping most checks for {kind} packages'
             if not self.skip_add_reviews and self.add_review_team and self.review_team is not None:
