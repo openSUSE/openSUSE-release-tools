@@ -66,12 +66,10 @@ class Request:
         self.description = description
         self.reviews = []
 
-
 class StubProjectConfig:
     """Stub project config loader"""
     def get(self, _key, default=None):
         return default
-
 
 class Action(plat.base.PlatformBase):
     """Platform interface implementation for running as Gitea Actions"""
