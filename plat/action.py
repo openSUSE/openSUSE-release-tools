@@ -63,6 +63,11 @@ class Request:
         self.description = description
         self.reviews = []
 
+class StubProjectConfig:
+    """Stub project config loader"""
+    def get(self, _key, default=None):
+        return default
+
 class Action(plat.base.PlatformBase):
     """Platform interface implementation for running as Gitea Actions"""
     def __init__(self, logger):
@@ -80,3 +85,7 @@ class Action(plat.base.PlatformBase):
     def get_request(self, request_id, with_full_history=False):
         # thanks to duck-typing we can return a stub request struct
         return Action.get_stub_request()
+
+    def get_project_config(self, project):
+        return StubProjectConfig()
+
