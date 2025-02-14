@@ -13,7 +13,6 @@ from cmdln import CmdlnOptionParser
 
 from lxml import etree as ET
 
-import osc.conf
 import osc.core
 from urllib3.exceptions import MaxRetryError
 from osclib.core import devel_project_get, factory_git_devel_project_mapping
