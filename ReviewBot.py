@@ -970,10 +970,12 @@ class CommandLineInterface(cmdln.Cmdln):
         logging.basicConfig(level=level, format='[%(levelname).1s] %(message)s')
         self.logger = logging.getLogger(self.optparser.prog)
 
-        conf.get_config(override_apiurl=self.options.apiurl)
+        if self.options.scm_type == 'OSC':
+            # XXX refactor this out?
+            conf.get_config(override_apiurl=self.options.apiurl)
 
-        if (self.options.osc_debug):
-            conf.config['debug'] = True
+            if (self.options.osc_debug):
+                conf.config['debug'] = True
 
         self.checker = self.setup_checker()
         if self.options.config:
@@ -990,14 +992,20 @@ class CommandLineInterface(cmdln.Cmdln):
 
     def setup_checker(self):
         """ reimplement this """
-        apiurl = conf.config['apiurl']
-        if apiurl is None:
-            raise osc.oscerr.ConfigError("missing apiurl")
         user = self.options.user
         group = self.options.group
-        # if no args are given, use the current oscrc "owner"
-        if user is None and group is None:
-            user = conf.get_apiurl_usr(apiurl)
+
+        if self.options.scm_type == 'OSC':
+            # XXX refactor this out?
+            apiurl = conf.config['apiurl']
+            if apiurl is None:
+                raise osc.oscerr.ConfigError("missing apiurl")
+
+            # if no args are given, use the current oscrc "owner"
+            if user is None and group is None:
+                user = conf.get_apiurl_usr(apiurl)
+        else:
+            apiurl = self.options.apiurl
 
         return self.clazz(apiurl=apiurl,
                           dryrun=self.options.dry,
