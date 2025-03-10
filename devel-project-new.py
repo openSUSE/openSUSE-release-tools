@@ -1,11 +1,24 @@
 import sys
+from datetime import datetime, timezone
 import cmdln
 from cmdln import CmdlnOptionParser
+from lxml import etree as ET
 
 import osc.core
+from osc.core import HTTPError
+from osc.core import show_project_meta
+from osc.core import show_package_meta
+import osc.conf
+from osclib.comments import CommentAPI
+from osclib.core import get_request_list_with_history
+from osclib.core import request_age
+from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 
 import ReviewBot
+
+BOT_NAME='devel-project'
+REMINDER='review reminder'
 
 class DevelProject(ReviewBot.ReviewBot):
     def __init__(self, *args, **kwargs):
@@ -44,10 +57,78 @@ class DevelProject(ReviewBot.ReviewBot):
 
         return sorted(devel_projects)
 
+    def _devel_projects_load(self, opts):
+        api = self._staging_api(opts)
+        devel_projects = api.pseudometa_file_load('devel_projects')
+
+        if devel_projects:
+            return devel_projects.splitlines()
+
+        raise Exception('no devel projects found')
+
+
     def _staging_api(self, opts):
+        Config(self.apiurl, opts.project)
         return StagingAPI(self.apiurl, opts.project)
 
-    def list(self, opts, cmd_options):
+    def _maintainers_get(self, project, package=None):
+        if package:
+            try:
+                meta = show_package_meta(self.apiurl, project, package)
+            except HTTPError as e:
+                if e.code == 404:
+                    # Fallback to project in the case of new package.
+                    meta = show_project_meta(self.apiurl, project)
+        else:
+            meta = show_project_meta(self.apiurl, project)
+        meta = ET.fromstringlist(meta)
+
+        userids = []
+        for person in meta.findall('person[@role="maintainer"]'):
+            userids.append(person.get('userid'))
+
+        if len(userids) == 0 and package is not None:
+            # Fallback to project if package has no maintainers.
+            return self._maintainers_get(project)
+
+        return userids
+
+    def _remind_comment(self, repeat_age, request_id, project, package=None, do_repeat=True):
+        # TODO port to Gitea
+        comment_api = CommentAPI(self.apiurl)
+        comments = comment_api.get_comments(request_id=request_id)
+        comment, _ = comment_api.comment_find(comments, BOT_NAME)
+
+        if comment:
+            if not do_repeat:
+                print('  skipping due to reminder has been created')
+                return
+            delta = datetime.now(timezone.utc) - comment['when']
+            if delta.days < repeat_age:
+                print(f'  skipping due to previous reminder from {delta.days} days ago')
+                return
+
+            # Repeat notification so remove old comment.
+            try:
+                comment_api.delete(comment['id'])
+            except HTTPError as e:
+                if e.code == 403:
+                    # Gracefully skip when previous reminder was by another user.
+                    print('  unable to remove previous reminder')
+                    return
+                raise e
+
+        userids = sorted(self._maintainers_get(project, package))
+        if len(userids):
+            users = ['@' + userid for userid in userids]
+            message = f"{', '.join(users)}: {REMINDER}"
+        else:
+            message = REMINDER
+        print('  ' + message)
+        message = comment_api.add_marker(message, BOT_NAME)
+        comment_api.add_comment(request_id=request_id, comment=message)
+
+    def do_list(self, opts, cmd_opts):
         devel_projects = self._devel_projects_get(opts.project)
         if len(devel_projects) == 0:
             print('no devel projects found')
@@ -55,10 +136,40 @@ class DevelProject(ReviewBot.ReviewBot):
             out = '\n'.join(devel_projects)
             print(out)
 
-            if cmd_options.write:
+            if cmd_opts.write:
                 api = self._staging_api(opts)
                 api.pseudometa_file_ensure('devel_projects', out, 'devel_projects write')
 
+    def do_requests(self, opts, cmd_opts):
+        devel_projects = self._devel_projects_load(opts)
+
+        # Disable including source project in get_request_list() query.
+        osc.conf.config['include_request_from_project'] = False
+        for devel_project in devel_projects:
+            requests = get_request_list_with_history(
+                self.apiurl, devel_project, req_state=('new', 'review'),
+                req_type='submit')
+            for request in requests:
+                action = request.actions[0]
+                age = request_age(request).days
+                if age < cmd_opts.min_age:
+                    continue
+
+                print(' '.join((
+                    request.reqid,
+                    '/'.join((action.tgt_project, action.tgt_package)),
+                    '/'.join((action.src_project, action.src_package)),
+                    f'({age} days old)',
+                )))
+
+                if cmd_opts.remind:
+                    self._remind_comment(cmd_opts.repeat_age, request.reqid, action.tgt_project, action.tgt_package)
+
+def common_options(f):
+    f = cmdln.option('--min-age', type=int, default=0, metavar='DAYS', help='min age of requests')(f)
+    f = cmdln.option('--repeat-age', type=int, default=7, metavar='DAYS', help='age after which a new reminder will be sent')(f)
+    f = cmdln.option('--remind', action='store_true', help='remind maintainers to review')(f)
+    return f
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
     def __init__(self, *args, **kwargs):
@@ -79,7 +190,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         ${cmd_usage}
         ${cmd_option_ist}
         """
-        return self.checker.list(self.options, opts)
+        return self.checker.do_list(self.options, opts)
 
     @cmdln.option('-g', '--group', action='append', help='group for which to check')
     def do_maintainer(self, subcmd, opts, *args):
@@ -92,15 +203,25 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         print("TODO: maintainer")
         pass
 
+    def do_notify(self, subcmd, opts, *args):
+        """${cmd_name}: Notify maintainers of their packages
+
+        ${cmd_isage}
+        ${cmd_option_list}
+        """
+        # TODO
+        print("TODO: notify")
+        pass
+
+    @common_options
     def do_requests(self, subcmd, opts, *args):
         """${cmd_name}: List open requests.
 
         ${cmd_usage}
         ${cmd_option_list}"""
-        # TODO
-        print("TODO: requests")
-        pass
+        return self.checker.do_requests(self.options, opts)
 
+    @common_options
     def do_reviews(self, subcmd, opts, *args):
         """${cmd_name}: List open reviews.
 
