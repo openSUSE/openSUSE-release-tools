@@ -8,6 +8,7 @@ import osc.core
 from osc.core import HTTPError
 from osc.core import show_project_meta
 from osc.core import show_package_meta
+from osc.core import get_review_list
 import osc.conf
 from osclib.comments import CommentAPI
 from osclib.core import get_request_list_with_history
@@ -165,6 +166,44 @@ class DevelProject(ReviewBot.ReviewBot):
                 if cmd_opts.remind:
                     self._remind_comment(cmd_opts.repeat_age, request.reqid, action.tgt_project, action.tgt_package)
 
+    def do_reviews(self, opts, cmd_opts):
+        devel_projects = self._devel_projects_load(opts)
+        config = self.platform.get_project_config(opts.project)
+        # do not update reminder repeatedly if the paricular target project
+        reminder_once_only_target_projects = set(config.get('reminder-once-only-target-projects', '').split())
+
+        for devel_project in devel_projects:
+            requests = get_review_list(self.apiurl, byproject=devel_project)
+            for request in requests:
+                # get_review_list() behavior has been changed in osc
+                # https://github.com/openSUSE/osc/commit/00decd25d1a2c775e455f8865359e0d21872a0a5
+                if request.state.name != 'review':
+                    continue
+                action = request.actions[0]
+                if action.type != 'submit':
+                    continue
+
+                age = request_age(request).days
+                if age < cmd_opts.min_age:
+                    continue
+
+                for review in request.reviews:
+                    if review.by_project == devel_project:
+                        break
+
+                print(' '.join((
+                    request.reqid,
+                    '/'.join((review.by_project, review.by_package)) if review.by_package else review.by_project,
+                    '/'.join((action.tgt_project, action.tgt_package)),
+                    f'({age} days old)',
+                )))
+                if cmd_opts.remind:
+                    if action.tgt_project in reminder_once_only_target_projects:
+                        repeat_reminder = False
+                    else:
+                        repeat_reminder = True
+                    self._remind_comment(cmd_opts.repeat_age, request.reqid, review.by_project, review.by_package, repeat_reminder)
+
 def common_options(f):
     f = cmdln.option('--min-age', type=int, default=0, metavar='DAYS', help='min age of requests')(f)
     f = cmdln.option('--repeat-age', type=int, default=7, metavar='DAYS', help='age after which a new reminder will be sent')(f)
@@ -227,9 +266,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
         ${cmd_usage}
         ${cmd_option_list"""
-        #TODO
-        print("TODO: reviews")
-        pass
+        return self.checker.do_reviews(self.options, opts)
 
 if __name__ == "__main__":
     app = CommandLineInterface()
