@@ -153,10 +153,6 @@ BuildArch:      noarch
 Requires:       influxdb2
 Requires:       python3-influxdb-client
 Requires:       telegraf
-%else
-Suggests:       influxdb
-Suggests:       python3-influxdb
-Suggests:       telegraf
 %endif
 
 %description metrics
@@ -323,8 +319,9 @@ OSC plugin for the staging workflow, see `osc staging --help`.
 # slfo-packagelist-uploader requires python-GitPython but 15.6 providing
 # python311-GitPython only, therefore do not ship slfo-packagelist-uploader
 # in 15.6 since python3-GitPython is not available
+# metrics.py requires python3-infludbdb-client which is unavailable on 15.6
 %if 0%{?suse_version} <= 1500
-rm slfo-packagelist-uploader.py
+rm slfo-packagelist-uploader.py metrics.py
 %endif
 
 %build
@@ -505,11 +502,16 @@ exit 0
 %{_datadir}/%{source_dir}/check_maintenance_incidents.py
 
 %files metrics
-%{_bindir}/osrt-metrics
 %{_datadir}/%{source_dir}/metrics
 %exclude %{_datadir}/%{source_dir}/metrics/access
 %exclude %{_datadir}/%{source_dir}/metrics/grafana/access.json
+%if 0%{?suse_version} > 1500
+%{_bindir}/osrt-metrics
 %{_datadir}/%{source_dir}/metrics.py
+%else
+%exclude %{_bindir}/osrt-metrics
+%exclude %{_datadir}/%{source_dir}/metrics.py
+%endif
 %{_datadir}/%{source_dir}/metrics_release.py
 # To avoid adding grafana as BuildRequires since it does not live in same repo.
 %dir %{_sysconfdir}/grafana

@@ -69,6 +69,12 @@ jobs:
         if: ${{ contains(matrix.image, '15.6') }}
         run: zypper -n ar https://download.opensuse.org/repositories/openSUSE:/Tools/15.6/openSUSE:Tools.repo
 
+      - name: skip scripts that require python 3.11
+        if: ${{ contains(matrix.image, '15.6') }}
+        run: |
+          # we don't have a influxdb-client for 3.6 anymore
+          rm -v metrics.py
+
       - name: install the build & runtime dependencies of openSUSE-release-tool
         run: |
           zypper -n --gpg-auto-import-keys refresh
@@ -77,13 +83,16 @@ jobs:
 
       - name: FIXME, install missing dependencies
         run: |
-          zypper -n in python3-typing_extensions python3-solv python3-pika python3-openqa_client build python3-influxdb-client python3-bugzilla
+          zypper -n in python3-typing_extensions python3-solv python3-pika python3-openqa_client build python3-bugzilla
+          if test -e metrics.py; then
+              zypper -n in python3-influxdb-client python3-GitPython
+          fi
 
       - name: run a simple smoke test whether --help actually works
         run: |
           for f in $(find . -maxdepth 1 -type f -executable -print); do
               # skip completely broken scripts or those without --help
-              [[ " ./checknewer.py ./repo2fileprovides.py ./openqa-maintenance.py ./docker_publisher.py ./publish_distro ./findfileconflicts ./write_repo_susetags_file.pl ./issue-diff.py ./generate-release-packages ./verify-build-and-generatelists ./slfo-packagelist-uploader.py" =~ "$f" ]] || "$f" --help
+              [[ " ./checknewer.py ./repo2fileprovides.py ./openqa-maintenance.py ./docker_publisher.py ./publish_distro ./findfileconflicts ./write_repo_susetags_file.pl ./issue-diff.py ./generate-release-packages ./verify-build-and-generatelists " =~ "$f" ]] || "$f" --help
           done
 
   linters:
