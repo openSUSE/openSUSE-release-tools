@@ -35,7 +35,6 @@ BuildRequires:  python3-PyYAML
 BuildRequires:  python3-cmdln
 BuildRequires:  python3-colorama
 BuildRequires:  python3-lxml
-BuildRequires:  python3-osc
 BuildRequires:  python3-pycurl
 BuildRequires:  python3-python-dateutil
 BuildRequires:  python3-pyxdg
@@ -265,7 +264,6 @@ Group:          Development/Tools/Other
 # TODO Update requirements, but for now base deps.
 Requires:       %{name} = %{version}
 Requires:       osc >= 0.165.1
-Requires:       python3-osc
 BuildArch:      noarch
 
 %description -n osclib
