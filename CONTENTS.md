@@ -70,16 +70,6 @@ Only those containers providing binaries to the latest five versions for each ar
 * Package: openSUSE-release-tools
 * Usage: [gocd](https://github.com/openSUSE/openSUSE-release-tools/search?q=path%3A%2Fgocd+container_cleaner)
 
-#### metrics
-
-Generates insightful metrics from relevant OBS and annotation data, based on InfluxDB and Grafana.
-See <https://metrics.opensuse.org/>.
-
-* Sources: [metrics.py](metrics.py)
-* Documentation: [docs/metrics.md](./docs/metrics.md)
-* Package: openSUSE-release-tools-metrics
-* Usage: ?
-
 #### metrics-access
 
 Ingests `download.opensuse.org` Apache access logs and generates metrics. It is composed of a PHP

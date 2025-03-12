@@ -6,7 +6,6 @@ python-dateutil
 pyxdg
 cmdln
 git+https://github.com/openSUSE/osc
-influxdb
 
 # Dependencies for testing
 httpretty

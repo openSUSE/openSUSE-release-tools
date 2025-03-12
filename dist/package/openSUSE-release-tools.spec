@@ -141,27 +141,6 @@ BuildArch:      noarch
 %description maintenance
 Maintenance related services like incident check.
 
-%package metrics
-Summary:        Ingest relevant data to generate insightful metrics
-Group:          Development/Tools/Other
-# TODO Update requirements.
-Requires:       osclib = %{version}
-Requires(pre):  shadow
-Suggests:       grafana
-BuildArch:      noarch
-%if 0%{?suse_version} > 1500
-Requires:       influxdb
-Requires:       python3-influxdb
-Requires:       telegraf
-%else
-Suggests:       influxdb
-Suggests:       python3-influxdb
-Suggests:       telegraf
-%endif
-
-%description metrics
-Ingest relevant OBS and annotation data to generate insightful metrics.
-
 %package metrics-access
 Summary:        Ingest access logs to generate metrics
 Group:          Development/Tools/Other
@@ -362,18 +341,6 @@ getent passwd osrt-maintenance > /dev/null || \
   useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-maintenance" osrt-maintenance
 exit 0
 
-%pre metrics
-getent passwd osrt-metrics > /dev/null || \
-  useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-metrics" osrt-metrics
-exit 0
-
-%postun metrics
-%systemd_postun osrt-metrics-telegraf.service
-# If grafana-server.service is enabled then restart it to load new dashboards.
-if [ -x %{_bindir}/systemctl ] && %{_bindir}/systemctl is-enabled grafana-server ; then
-  %{_bindir}/systemctl try-restart --no-block grafana-server
-fi
-
 %pre origin-manager
 getent passwd osrt-origin-manager > /dev/null || \
   useradd -r -m -s /sbin/nologin -c "user for openSUSE-release-tools-origin-manager" osrt-origin-manager
@@ -428,7 +395,6 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/docker_publisher.py
 %exclude %{_datadir}/%{source_dir}/docker_registry.py
 %exclude %{_datadir}/%{source_dir}/metrics
-%exclude %{_datadir}/%{source_dir}/metrics.py
 %exclude %{_datadir}/%{source_dir}/metrics_release.py
 %exclude %{_datadir}/%{source_dir}/origin-manager.py
 %exclude %{_bindir}/osrt-staging-report
@@ -503,26 +469,6 @@ exit 0
 %files maintenance
 %{_bindir}/osrt-check_maintenance_incidents
 %{_datadir}/%{source_dir}/check_maintenance_incidents.py
-
-%files metrics
-%{_bindir}/osrt-metrics
-%{_datadir}/%{source_dir}/metrics
-%exclude %{_datadir}/%{source_dir}/metrics/access
-%exclude %{_datadir}/%{source_dir}/metrics/grafana/access.json
-%{_datadir}/%{source_dir}/metrics.py
-%{_datadir}/%{source_dir}/metrics_release.py
-# To avoid adding grafana as BuildRequires since it does not live in same repo.
-%dir %{_sysconfdir}/grafana
-%dir %{_sysconfdir}/grafana/provisioning
-%dir %{_sysconfdir}/grafana/provisioning/dashboards
-%dir %{_sysconfdir}/grafana/provisioning/datasources
-%{_sysconfdir}/grafana/provisioning/dashboards/%{name}.yaml
-%{_sysconfdir}/grafana/provisioning/datasources/%{name}.yaml
-%{_unitdir}/osrt-metrics@.service
-%{_unitdir}/osrt-metrics@.timer
-%{_unitdir}/osrt-metrics-release@.service
-%{_unitdir}/osrt-metrics-release@.timer
-%{_unitdir}/osrt-metrics-telegraf.service
 
 %files metrics-access
 %{_bindir}/osrt-metrics-access-aggregate
