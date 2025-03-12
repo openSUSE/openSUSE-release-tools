@@ -6,7 +6,7 @@ import logging
 import cmdln
 
 from fnmatch import fnmatch
-from configparser import SafeConfigParser
+from configparser import ConfigParser
 import solv
 
 logger = None
@@ -57,7 +57,7 @@ class DepTool(cmdln.Cmdln):
         solvfile = '/var/cache/zypp/solv/%s/solv'
         onlyenabled = False
 
-        parser = SafeConfigParser()
+        parser = ConfigParser()
 
         if not repos:
             repos = [f for f in os.listdir(repodir) if fnmatch(f, '*.repo')]
