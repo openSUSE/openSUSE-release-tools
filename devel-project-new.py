@@ -13,8 +13,12 @@ import osc.conf
 from osclib.comments import CommentAPI
 from osclib.core import get_request_list_with_history
 from osclib.core import request_age
+from osclib.core import package_list_kind_filtered
+from osclib.core import entity_email
+from osclib.core import devel_project_fallback
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
+from osclib.util import mail_send
 
 import ReviewBot
 
@@ -141,6 +145,68 @@ class DevelProject(ReviewBot.ReviewBot):
                 api = self._staging_api(opts)
                 api.pseudometa_file_ensure('devel_projects', out, 'devel_projects write')
 
+    def do_maintainer(self, opts, cmd_opts):
+        if opts.group is None:
+            # Default is appended to rather than overridden (upstream bug).
+            opts.group = ['factory-maintainers', 'factory-staging']
+        desired = set(opts.group)
+
+        devel_projects = self._devel_projects_load(opts)
+        for devel_project in devel_projects:
+            meta = ET.fromstringlist(show_project_meta(self.apiurl, devel_project))
+            groups = meta.xpath('group[@role="maintainer"]/@groupid')
+            intersection = set(groups).intersection(desired)
+            if len(intersection) != len(desired):
+                print(f"{devel_project} missing {', '.join(desired - intersection)}")
+
+    def do_notify(self, opts, cmd_opts, packages):
+        import smtplib
+
+        # devel_projects_get() only works for Factory as such
+        # devel_project_fallback() must be used on a per package basis.
+        if not packages:
+            packages = package_list_kind_filtered(self.apiurl, opts.project)
+        maintainer_map = {}
+        for package in packages:
+            devel_project, devel_package = devel_project_fallback(self.apiurl, opts.project, package)
+            if devel_project and devel_package:
+                devel_package_identifier = '/'.join([devel_project, devel_package])
+                userids = self._maintainers_get(devel_project, devel_package)
+                for userid in userids:
+                    maintainer_map.setdefault(userid, set())
+                    maintainer_map[userid].add(devel_package_identifier)
+
+        subject = f'Packages you maintain are present in {opts.project}'
+        for userid, package_identifiers in maintainer_map.items():
+            email = entity_email(self.apiurl, userid)
+            message = """This is a friendly reminder about your packages in {}.
+
+    Please verify that the included packages are working as intended and
+    have versions appropriate for a stable release. Changes may be submitted until
+    April 26th [at the latest].
+
+    Keep in mind that some packages may be shared with SUSE Linux
+    Enterprise. Concerns with those should be raised via Bugzilla.
+
+    Please contact opensuse-releaseteam@opensuse.org if your package
+    needs special attention by the release team.
+
+    According to the information in OBS ("osc maintainer") you are
+    in charge of the following packages:
+
+    - {}""".format(
+                opts.project, '\n- '.join(sorted(package_identifiers)))
+
+            log = f'notified {userid} of {len(package_identifiers)} packages'
+            try:
+                dry = opts.dry or self.dryrun
+                mail_send(self.apiurl, opts.project, email, subject, message, dry=dry)
+                print(log)
+            except smtplib.SMTPRecipientsRefused:
+                print(f'[FAILED ADDRESS] {log} ({email})')
+            except smtplib.SMTPException as e:
+                print(f'[FAILED SMTP] {log} ({e})')
+
     def do_requests(self, opts, cmd_opts):
         devel_projects = self._devel_projects_load(opts)
 
@@ -238,9 +304,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         ${cmd_usage}
         ${cmd_option_list}
         """
-        # TODO
-        print("TODO: maintainer")
-        pass
+        self.checker.do_maintainer(self.options, opts)
 
     def do_notify(self, subcmd, opts, *args):
         """${cmd_name}: Notify maintainers of their packages
@@ -248,9 +312,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         ${cmd_isage}
         ${cmd_option_list}
         """
-        # TODO
-        print("TODO: notify")
-        pass
+        self.checker.do_notify(self.options, opts, args)
 
     @common_options
     def do_requests(self, subcmd, opts, *args):
