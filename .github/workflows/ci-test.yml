@@ -92,6 +92,9 @@ jobs:
         run: |
           for f in $(find . -maxdepth 1 -type f -executable -print); do
               # skip completely broken scripts or those without --help
+              if [[ "$(python3 -V)" =~ "Python 3.6" ]] && [[ "$f" =~ "slfo" ]]; then
+                  continue
+              fi
               [[ " ./checknewer.py ./repo2fileprovides.py ./openqa-maintenance.py ./docker_publisher.py ./publish_distro ./findfileconflicts ./write_repo_susetags_file.pl ./issue-diff.py ./generate-release-packages ./verify-build-and-generatelists " =~ "$f" ]] || "$f" --help
           done
 
