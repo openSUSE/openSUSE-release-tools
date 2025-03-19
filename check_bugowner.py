@@ -46,7 +46,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
                 self.review_messages['declined'] += f"\n{matched_maintainer} could not be found on this instance."
                 return False
             return True
-        self.review_messages['declined'] += f"\n{target_package } appears to be a new package and " + \
+        self.review_messages['declined'] += f"\n{target_package} appears to be a new package and " + \
             "no matching 'bugowner:' line could be found in the request description. See https://confluence.suse.com/x/WgH2OQ"
         return False
 
