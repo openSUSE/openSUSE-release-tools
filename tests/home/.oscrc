@@ -4,3 +4,4 @@ apiurl = http://api:3000
 [http://api:3000]
 user=Admin
 pass=opensuse
+allow_http=1
