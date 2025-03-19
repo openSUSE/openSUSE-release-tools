@@ -426,12 +426,13 @@ class StagingWorkflow(ABC):
         </group>
         """
 
+        root = ET.fromstring(meta)
+        persons = ET.SubElement(root, 'person')
         if len(users):
-            root = ET.fromstring(meta)
-            persons = ET.SubElement(root, 'person')
             for user in users:
                 ET.SubElement(persons, 'person', {'userid': user})
-            meta = ET.tostring(root)
+
+        meta = ET.tostring(root)
 
         if name not in self.groups:
             self.groups.append(name)
