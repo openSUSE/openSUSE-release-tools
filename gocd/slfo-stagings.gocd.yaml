@@ -49,7 +49,7 @@ pipelines:
               ln -s $PWD/osclib $tempdir/.osc-plugins
               export HOME=$tempdir
 
-              for letter in A B C D E F G H S V Y ; do
+              for letter in A B C D E F G H I J K L M S V Y ; do
                 ## if the staging was frozen today, skip it
                 if ! osc -A $STAGING_API meta attribute "${SLFO_PROJECT}:Staging:${letter}" --attribute OSRT:FreezeTime | grep $(date +%Y-%m-%d); then
                   osc -A $STAGING_API staging freeze -p $SLFO_PROJECT $letter
@@ -725,6 +725,471 @@ pipelines:
         destination: repos
         whitelist:
           - SUSE:SLFO:Main:Staging:H_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLFO:Main -s $STAGING_PROJECT
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --engine product_composer --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+              fi
+              exit 0
+
+    - Build.product:
+        timeout: 180
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              minutes=1
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
+                    exit 1
+                fi
+                sleep 60
+                minutes=$(expr $minutes + 1)
+              done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
+
+    - Enable.images.repo:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+
+  SUSE.SLFO.Main.Staging.I:
+    environment_variables:
+      STAGING_PROJECT: SUSE:SLFO:Main:Staging:I
+      STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: SLFO.Stagings
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLFO:Main:Staging:I_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLFO:Main -s $STAGING_PROJECT
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --engine product_composer --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+              fi
+              exit 0
+
+    - Build.product:
+        timeout: 180
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              minutes=1
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
+                    exit 1
+                fi
+                sleep 60
+                minutes=$(expr $minutes + 1)
+              done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
+
+    - Enable.images.repo:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+
+  SUSE.SLFO.Main.Staging.J:
+    environment_variables:
+      STAGING_PROJECT: SUSE:SLFO:Main:Staging:J
+      STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: SLFO.Stagings
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLFO:Main:Staging:J_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLFO:Main -s $STAGING_PROJECT
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --engine product_composer --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+              fi
+              exit 0
+
+    - Build.product:
+        timeout: 180
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              minutes=1
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
+                    exit 1
+                fi
+                sleep 60
+                minutes=$(expr $minutes + 1)
+              done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
+
+    - Enable.images.repo:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+
+  SUSE.SLFO.Main.Staging.K:
+    environment_variables:
+      STAGING_PROJECT: SUSE:SLFO:Main:Staging:K
+      STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: SLFO.Stagings
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLFO:Main:Staging:K_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLFO:Main -s $STAGING_PROJECT
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --engine product_composer --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+              fi
+              exit 0
+
+    - Build.product:
+        timeout: 180
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              minutes=1
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
+                    exit 1
+                fi
+                sleep 60
+                minutes=$(expr $minutes + 1)
+              done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
+
+    - Enable.images.repo:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+
+  SUSE.SLFO.Main.Staging.L:
+    environment_variables:
+      STAGING_PROJECT: SUSE:SLFO:Main:Staging:L
+      STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: SLFO.Stagings
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLFO:Main:Staging:L_-_standard.yaml
+      scripts:
+        auto_update: true
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        whitelist:
+          - DO_NOT_TRIGGER
+        destination: scripts
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=$PWD/scripts
+                  cd scripts/gocd
+                  ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s pending
+                  ./verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-staging-bot
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p SUSE:SLFO:Main -s $STAGING_PROJECT
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=$PWD/scripts
+              cd scripts/gocd
+
+              if ../pkglistgen.py --debug -A $STAGING_API update_and_solve --engine product_composer --staging $STAGING_PROJECT --force; then
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+              fi
+              exit 0
+
+    - Build.product:
+        timeout: 180
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              minutes=1
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              ## Let the scheduler warm up first
+              sleep 60
+              while osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -E 'statuscount code="(blocked|scheduled|building)"'; do
+                if [ ${minutes} -gt 180 ]; then
+                    echo "Product is still building after timeout, exiting..." >&2
+                    exit 1
+                fi
+                sleep 60
+                minutes=$(expr $minutes + 1)
+              done
+              ## Always fail on broken/failed products
+              if osc -A $STAGING_API api -X GET "/build/$STAGING_PROJECT/_result?view=summary&repository=product&arch=local" | grep -qE 'statuscount code="(broken|failed)"'; then
+                    echo "Some products failed to build, exiting..." >&2
+                    exit 1
+              fi
+
+    - Enable.images.repo:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+
+  SUSE.SLFO.Main.Staging.M:
+    environment_variables:
+      STAGING_PROJECT: SUSE:SLFO:Main:Staging:M
+      STAGING_API: https://api.suse.de
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: SLFO.Stagings
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/suse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - SUSE:SLFO:Main:Staging:M_-_standard.yaml
       scripts:
         auto_update: true
         git: https://github.com/openSUSE/openSUSE-release-tools.git
