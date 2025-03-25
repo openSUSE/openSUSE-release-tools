@@ -1,26 +1,27 @@
 #!/usr/bin/python3
 
 import argparse
-from collections import namedtuple
-from datetime import datetime
-from dateutil.parser import parse as date_parse
-from influxdb import InfluxDBClient
-from lxml import etree as ET
 import os
 import subprocess
 import sys
-import yaml
+from collections import namedtuple
+from datetime import datetime
 
-import metrics_release
 import osc.conf
 import osc.core
-from osc.core import HTTPError
-from osc.core import get_commitlog
+import yaml
+from dateutil.parser import parse as date_parse
+from influxdb_client import InfluxDBClient
+from influxdb_client.client.write_api import SYNCHRONOUS
+from lxml import etree as ET
+from osc.core import HTTPError, get_commitlog
+
+import metrics_release
 import osclib.conf
 from osclib.cache import Cache
 from osclib.conf import Config
-from osclib.core import get_request_list_with_history
-from osclib.core import project_pseudometa_package
+from osclib.core import (get_request_list_with_history,
+                         project_pseudometa_package)
 from osclib.stagingapi import StagingAPI
 
 SOURCE_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -102,7 +103,7 @@ def timestamp(datetime):
     return int(datetime.strftime('%s'))
 
 
-def ingest_requests(api, project):
+def ingest_requests(client, api, project):
     requests = get_request_list_with_history(
         api.apiurl, project, req_state=('accepted', 'revoked', 'superseded'))
     for request in requests:
@@ -249,7 +250,7 @@ def ingest_requests(api, project):
                 print(f"unable to find priority history entry for {request.get('id')} to {priority.text}")
 
     print(f'finalizing {len(points):,} points')
-    return walk_points(points, project)
+    return walk_points(client, points, project)
 
 
 def who_workaround(request, review, relax=False):
@@ -283,9 +284,9 @@ def who_workaround(request, review, relax=False):
 # allocating memory for entire incoming data set at once.
 
 
-def walk_points(points, target):
-    global client
-
+def walk_points(client, points, target):
+    delete_api = client.delete_api()
+    write_api = client.write_api(write_options=SYNCHRONOUS)
     measurements = set()
     counters = {}
     final = []
@@ -294,14 +295,17 @@ def walk_points(points, target):
     for point in sorted(points, key=lambda p: p.time):
         if point.measurement not in measurements:
             # Wait until just before writing to drop measurement.
-            client.drop_measurement(point.measurement)
+            delete_api.delete(start="1970-01-01T00:00:00Z",
+                              stop=datetime.utcnow().isoformat() + "Z",
+                              bucket=target,
+                              predicate=f'_measurement="{point.measurement}"')
             measurements.add(point.measurement)
 
         if point.time != time_last and len(final) >= 1000:
             # Write final point in batches of ~1000, but guard against writing
             # when in the middle of points at the same time as they may end up
             # being merged. As such the previous time should not match current.
-            client.write_points(final, 's')
+            write_api.write(bucket=target, record=final, write_precision='s')
             wrote += len(final)
             final = []
         time_last = point.time
@@ -333,11 +337,11 @@ def walk_points(points, target):
         point['fields'].update(counters_tag['values'])
 
     # Write any remaining final points.
-    client.write_points(final, 's')
+    write_api.write(bucket=target, record=final, write_precision='s')
     return wrote + len(final)
 
 
-def ingest_release_schedule(project):
+def ingest_release_schedule(client, project):
     points = []
     release_schedule = {}
     release_schedule_file = os.path.join(SOURCE_DIR, f'metrics/annotation/{project}.yaml')
@@ -363,8 +367,13 @@ def ingest_release_schedule(project):
             'time': timestamp(date),
         })
 
-    client.drop_measurement('release_schedule')
-    client.write_points(points, 's')
+    delete_api = client.delete_api()
+    delete_api.delete(start="1970-01-01T00:00:00Z",
+                      stop=datetime.utcnow().isoformat() + "Z",
+                      bucket=project,
+                      predicate='_measurement="release_schedule"')
+    write_api = client.write_api(write_options=SYNCHRONOUS)
+    write_api(bucket=project, record=points, write_precision='s')
     return len(points)
 
 
@@ -439,10 +448,18 @@ def dashboard_at_changed(api, filename, revision=None):
 
 def ingest_dashboard_config(content):
     if not hasattr(ingest_dashboard_config, 'previous'):
-        result = client.query('SELECT * FROM dashboard_config ORDER BY time DESC LIMIT 1')
-        if result:
+        query_api = ingest_dashboard_config.client.query_api()
+        result = query_api.query(query=f'''
+             from(bucket: "{ingest_dashboard_config.project}")
+               |> range(start: -100y)
+               |> filter(fn: (r) => r._measurement == "dashboard_config")
+               |> filter(fn: (r) => r._field == "revision")
+               |> sort(columns: ["_time"], desc: true)
+               |> limit(n: 1)
+             ''')
+        if result and result[0].records:
             # Extract last point and remove zero values since no need to fill.
-            point = next(result.get_points())
+            point = result[0].records[0].get_value()
             point = {k: v for (k, v) in point.iteritems() if k != 'time' and v != 0}
             ingest_dashboard_config.previous = set(point.keys())
         else:
@@ -488,18 +505,25 @@ def ingest_dashboard_version_snapshot(content):
     }
 
 
-def ingest_dashboard_revision_get():
-    result = client.query('SELECT revision FROM dashboard_revision ORDER BY time DESC LIMIT 1')
-    if result:
-        return next(result.get_points())['revision']
+def ingest_dashboard_revision_get(client, project):
+    query_api = client.query_api()
+    result = query_api.query(query=f'''
+        from(bucket: "{project}")
+        |> range(start: -100y)
+        |> filter(fn: (r) => r._measurement == "dashboard_revision")
+        |> filter(fn: (r) => r._field == "revision")
+        |> sort(columns: ["_time"], desc: true)
+        |> limit(n: 1)''')
+    if result and result[0].records:
+        return result[0].records[0].get_value()
 
     return None
 
 
-def ingest_dashboard(api):
+def ingest_dashboard(client, project, api):
     index = revision_index(api)
 
-    revision_last = ingest_dashboard_revision_get()
+    revision_last = ingest_dashboard_revision_get(client, project)
     past = True if revision_last is None else False
     print('dashboard ingest: processing {:,} revisions starting after {}'.format(
         len(index), 'the beginning' if past else revision_last))
@@ -507,6 +531,8 @@ def ingest_dashboard(api):
     filenames = ['config', 'repo_checker', 'version_snapshot']
     if api.project == 'openSUSE:Factory':
         filenames.append('devel_projects')
+    ingest_dashboard_config.client = client
+    ingest_dashboard_config.project = api.project
 
     count = 0
     points = []
@@ -554,40 +580,43 @@ def ingest_dashboard(api):
 
 
 def main(args):
-    global client
-    client = InfluxDBClient(args.host, args.port, args.user, args.password, args.project)
+    with InfluxDBClient(url=f"http://{args.host}:{args.port}",
+                        username=args.user,
+                        password=args.password,
+                        org="openSUSE-release-tools-metrics") as client:
 
-    osc.conf.get_config(override_apiurl=args.apiurl)
-    apiurl = osc.conf.config['apiurl']
-    osc.conf.config['debug'] = args.debug
+        osc.conf.get_config(override_apiurl=args.apiurl)
+        apiurl = osc.conf.config['apiurl']
+        osc.conf.config['debug'] = args.debug
 
-    # Ensure database exists.
-    client.create_database(client._database)
+        # Ensure database exists.
+        buckets_api = client.buckets_api()
+        buckets_api.create_bucket(args.project)
 
-    metrics_release.ingest(client)
-    if args.release_only:
-        return
+        metrics_release.ingest(client, bucketname=args.project)
+        if args.release_only:
+            return
 
-    # Use separate cache since it is persistent.
-    _, package = project_pseudometa_package(apiurl, args.project)
-    if args.wipe_cache:
-        Cache.delete_all()
-    if args.heavy_cache:
-        Cache.PATTERNS[r'/search/request'] = sys.maxsize
-        Cache.PATTERNS[r'/source/[^/]+/{}/_history'.format(package)] = sys.maxsize
-    Cache.PATTERNS[r'/source/[^/]+/{}/[^/]+\?rev=.*'.format(package)] = sys.maxsize
-    Cache.init('metrics')
+        # Use separate cache since it is persistent.
+        _, package = project_pseudometa_package(apiurl, args.project)
+        if args.wipe_cache:
+            Cache.delete_all()
+        if args.heavy_cache:
+            Cache.PATTERNS[r'/search/request'] = sys.maxsize
+            Cache.PATTERNS[r'/source/[^/]+/{}/_history'.format(package)] = sys.maxsize
+        Cache.PATTERNS[r'/source/[^/]+/{}/[^/]+\?rev=.*'.format(package)] = sys.maxsize
+        Cache.init('metrics')
 
-    Config(apiurl, args.project)
-    api = StagingAPI(apiurl, args.project)
+        Config(apiurl, args.project)
+        api = StagingAPI(apiurl, args.project)
 
-    print(f'dashboard: wrote {ingest_dashboard(api):,} points')
+        print(f'dashboard: wrote {ingest_dashboard(client, args.project, api):,} points')
 
-    global who_workaround_swap, who_workaround_miss
-    who_workaround_swap = who_workaround_miss = 0
+        global who_workaround_swap, who_workaround_miss
+        who_workaround_swap = who_workaround_miss = 0
 
-    points_requests = ingest_requests(api, args.project)
-    points_schedule = ingest_release_schedule(args.project)
+        points_requests = ingest_requests(client, api, args.project)
+        points_schedule = ingest_release_schedule(client, args.project)
 
     print('who_workaround_swap', who_workaround_swap)
     print('who_workaround_miss', who_workaround_miss)
