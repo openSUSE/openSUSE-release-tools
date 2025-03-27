@@ -294,6 +294,13 @@ def devel_project_get(apiurl: str, target_project: str, target_package: str) -> 
     as a tuple. If no devel project has been defined, then return ``None,
     None``.
 
+    Devel project information for Factory transition to Git is stored in Factory project git
+    https://src.opensuse.org/openSUSE/Factory/raw/branch/main/pkgs/_meta/devel_packages
+    in format:
+       <pkg><SP><devel project>
+    This is the backstop for openSUSE:Factory for now as devel projects migrated to git
+    have had their package meta removed in OBS
+
     """
     try:
         meta = ET.fromstringlist(show_package_meta(apiurl, target_project, target_package))
@@ -304,6 +311,17 @@ def devel_project_get(apiurl: str, target_project: str, target_package: str) -> 
         if e.code != 404:
             raise e
 
+    if target_project.endswith('openSUSE:Factory'):
+        try:
+            headers = {'Accept': 'text/plain'}
+            with http_GET('https://src.opensuse.org/openSUSE/Factory/raw/branch/main/pkgs/_meta/devel_packages', headers=headers) as f:
+                for line in f:
+                    pkg, _, prj = line.decode('utf-8').strip().partition(' ')
+                    if pkg == target_package:
+                        return prj, pkg
+        except HTTPError as e:
+            if e.code != 404:
+                raise e
     return None, None
 
 
