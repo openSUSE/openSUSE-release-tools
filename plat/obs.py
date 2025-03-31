@@ -6,6 +6,7 @@ from osclib.comments import CommentAPI
 from osclib.conf import Config
 import osc.core
 
+
 class OBS(plat.base.PlatformBase):
     """Implementation of platform interface for OBS"""
 
@@ -13,9 +14,9 @@ class OBS(plat.base.PlatformBase):
         self.apiurl = apiurl
         self.comment_api = CommentAPI(self.apiurl)
 
-    def _get(self, l, query=None):
+    def _get(self, path_list, query=None):
         """Construct a complete URL, and issue an HTTP GET to it."""
-        url = osc.core.makeurl(self.apiurl, l, query)
+        url = osc.core.makeurl(self.apiurl, path_list, query)
         return osc.core.http_GET(url)
 
     @property

@@ -1,5 +1,6 @@
 import vcs.base
 
+
 class Git(vcs.base.VCSBase):
     """VCS interface implementation for Git"""
 
