@@ -1,5 +1,6 @@
 import abc
 
+
 class PlatformBase(metaclass=abc.ABCMeta):
     """Base class for platform implementations"""
 
