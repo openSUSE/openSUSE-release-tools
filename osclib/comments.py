@@ -238,7 +238,7 @@ class CommentAPI(object):
 
         return comment + suffix
 
-    def delete(self, comment_id):
+    def delete(self, comment_id, package=None, project=None, request=None):
         """Remove a comment object.
         :param comment_id: Id of the comment object.
         """

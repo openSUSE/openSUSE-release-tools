@@ -10,20 +10,19 @@ from osc.core import show_project_meta
 from osc.core import show_package_meta
 from osc.core import get_review_list
 import osc.conf
-from osclib.comments import CommentAPI
 from osclib.core import get_request_list_with_history
 from osclib.core import request_age
 from osclib.core import package_list_kind_filtered
 from osclib.core import entity_email
 from osclib.core import devel_project_fallback
-from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from osclib.util import mail_send
 
 import ReviewBot
 
-BOT_NAME='devel-project'
-REMINDER='review reminder'
+BOT_NAME = 'devel-project'
+REMINDER = 'review reminder'
+
 
 class DevelProject(ReviewBot.ReviewBot):
     def __init__(self, *args, **kwargs):
@@ -51,7 +50,6 @@ class DevelProject(ReviewBot.ReviewBot):
         # XXX should we refactor this out?
         devel_projects = {}
 
-
         root = self._search(**{'package': f"@project='{project}'"})['package']
         for devel in root.findall('package/devel[@project]'):
             devel_projects[devel.attrib['project']] = True
@@ -71,12 +69,15 @@ class DevelProject(ReviewBot.ReviewBot):
 
         raise Exception('no devel projects found')
 
-
     def _staging_api(self, opts):
-        Config(self.apiurl, opts.project)
-        return StagingAPI(self.apiurl, opts.project)
+        # dispatch to `ReviewBot`
+        return self.staging_api(opts.project)
 
     def _maintainers_get(self, project, package=None):
+        if self.platform_type == "GITEA":
+            # XXX delaying the implementation of this for a bit to avoid bothering anyone
+            return []
+
         meta = None
         if package:
             try:
@@ -108,8 +109,9 @@ class DevelProject(ReviewBot.ReviewBot):
 
     def _remind_comment(self, repeat_age, request_id, project, package=None, do_repeat=True):
         # TODO port to Gitea
-        comment_api = CommentAPI(self.apiurl)
-        comments = comment_api.get_comments(request_id=request_id)
+        comment_api = self.platform.comment_api
+        comments = comment_api.get_comments(request_id=request_id,
+                                            project_name=project, package_name=package)
         comment, _ = comment_api.comment_find(comments, BOT_NAME)
 
         if comment:
@@ -123,7 +125,8 @@ class DevelProject(ReviewBot.ReviewBot):
 
             # Repeat notification so remove old comment.
             try:
-                comment_api.delete(comment['id'])
+                comment_api.delete(
+                    comment['id'], project=project, package=package, request=request_id)
             except HTTPError as e:
                 if e.code == 403:
                     # Gracefully skip when previous reminder was by another user.
@@ -139,7 +142,8 @@ class DevelProject(ReviewBot.ReviewBot):
             message = REMINDER
         print('  ' + message)
         message = comment_api.add_marker(message, BOT_NAME)
-        comment_api.add_comment(request_id=request_id, comment=message)
+        comment_api.add_comment(
+            request_id=request_id, project_name=project, package_name=package, comment=message)
 
     def do_list(self, opts, cmd_opts):
         devel_projects = self._devel_projects_get(opts.project)
@@ -215,6 +219,12 @@ class DevelProject(ReviewBot.ReviewBot):
             except smtplib.SMTPException as e:
                 print(f'[FAILED SMTP] {log} ({e})')
 
+    def do_remind_request(self, _opts, cmd_opts):
+        # XXX temporary command for demo purpose. Will be purged once we have a proper testing
+        # environment.
+        self._remind_comment(
+            cmd_opts.repeat_age, cmd_opts.request, cmd_opts.project, cmd_opts.package)
+
     def do_requests(self, opts, cmd_opts):
         devel_projects = self._devel_projects_load(opts)
 
@@ -278,11 +288,13 @@ class DevelProject(ReviewBot.ReviewBot):
                         repeat_reminder = True
                     self._remind_comment(cmd_opts.repeat_age, request.reqid, review.by_project, review.by_package, repeat_reminder)
 
+
 def common_options(f):
     f = cmdln.option('--min-age', type=int, default=0, metavar='DAYS', help='min age of requests')(f)
     f = cmdln.option('--repeat-age', type=int, default=7, metavar='DAYS', help='age after which a new reminder will be sent')(f)
     f = cmdln.option('--remind', action='store_true', help='remind maintainers to review')(f)
     return f
+
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
     def __init__(self, *args, **kwargs):
@@ -337,6 +349,13 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         ${cmd_usage}
         ${cmd_option_list"""
         return self.checker.do_reviews(self.options, opts)
+
+    @cmdln.option('-P', '--project', help='Project')
+    @cmdln.option('-p', '--package', help='Package (Repository)')
+    @cmdln.option('-r', '--request', help='Pull Request ID')
+    @common_options
+    def do_remind_request(self, subcmd, opts, *args):
+        return self.checker.do_remind_request(self.options, opts)
 
 if __name__ == "__main__":
     app = CommandLineInterface()

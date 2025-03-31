@@ -105,7 +105,8 @@ class ReviewBot(object):
             user=None,
             group=None,
             scm_type="OSC",
-            platform_type="OBS"
+            platform_type="OBS",
+            gitea_url="https://src.opensuse.org"
     ):
         self._apiurl = apiurl
 
@@ -128,10 +129,13 @@ class ReviewBot(object):
         self.request_age_min_default = 0
         self.request_age_min_key = f'{self.bot_name.lower()}-request-age-min'
 
+        self.gitea_url = gitea_url
         self.scm_type = scm_type
         self.platform_type = platform_type
 
         self.lookup = PackageLookup(self.scm)
+
+        self.staging_apis = {}
 
         self.load_config()
 
@@ -174,6 +178,8 @@ class ReviewBot(object):
             self.platform = plat.OBS(self._apiurl)
         elif platform_type == "ACTION":
             self.platform = plat.Action(self.logger)
+        elif platform_type == "GITEA":
+            self.platform = plat.Gitea(self.logger, self.gitea_url)
         else:
             raise RuntimeError(f'invalid Platform type: {platform_type}')
         self._platform_type = platform_type
@@ -964,6 +970,9 @@ class CommandLineInterface(cmdln.Cmdln):
         parser.add_option('-c', '--config', dest='config', metavar='FILE', help='read config file FILE')
         parser.add_option('--scm-type', default='OSC', dest='scm_type', metavar='SCM', help='set scm type')
         parser.add_option('--platform', default='OBS', dest='platform_type', metavar='Platform', help='set platform type')
+        parser.add_option('--gitea-url', '-G', metavar="URL",
+                          default="https://src.opensuse.org",
+                          help="Gitea API url (only relevent when platform type = gitea)")
 
         return parser
 
@@ -1020,7 +1029,8 @@ class CommandLineInterface(cmdln.Cmdln):
                           group=group,
                           logger=self.logger,
                           scm_type=self.options.scm_type,
-                          platform_type=self.options.platform_type)
+                          platform_type=self.options.platform_type,
+                          gitea_url=self.options.gitea_url)
 
     def do_action(self, subcmd, opts, *args):
         """${cmd_name}: run as an action
