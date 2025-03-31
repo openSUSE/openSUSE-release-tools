@@ -1,8 +1,8 @@
 import vcs.base
 
 import shutil
-import json
 import os
+
 
 class Action(vcs.base.VCSBase):
     """Stub VCS interface implementation for running as an action"""

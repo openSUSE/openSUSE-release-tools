@@ -2,7 +2,7 @@ import plat.base
 
 from dateutil.parser import parse as date_parse
 import os
-import json
+
 
 class CommentAPI:
     """Stub CommentAPI implementation"""
@@ -25,7 +25,9 @@ class CommentAPI:
         return None, None
 
     def command_find(self, comments, user, command, who_allowed):
-        if False: yield
+        if False:
+            yield
+
 
 class RequestAction:
     """Stub action structure for running as an Gitea Action"""
@@ -36,13 +38,14 @@ class RequestAction:
             src_rev,
             dst_project,
             dst_package,
-   ):
-        self.type = "submit" # XXX is there any other types when running as an action?
+    ):
+        self.type = "submit"  # XXX is there any other types when running as an action?
         self.src_project = src_project
         self.src_package = src_package
         self.src_rev = src_rev
         self.tgt_project = dst_project
         self.tgt_package = dst_package
+
 
 class Request:
     """Stub request structure for running as an Gitea Action"""
@@ -63,10 +66,12 @@ class Request:
         self.description = description
         self.reviews = []
 
+
 class StubProjectConfig:
     """Stub project config loader"""
     def get(self, _key, default=None):
         return default
+
 
 class Action(plat.base.PlatformBase):
     """Platform interface implementation for running as Gitea Actions"""
@@ -88,4 +93,3 @@ class Action(plat.base.PlatformBase):
 
     def get_project_config(self, project):
         return StubProjectConfig()
-
