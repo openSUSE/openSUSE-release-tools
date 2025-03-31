@@ -1,12 +1,11 @@
 import vcs.base
 
-from lxml import etree as ET
-
 import os
 import sys
 import shutil
 import osc.core
-from urllib.error import HTTPError, URLError
+from urllib.error import HTTPError
+
 
 class OSC(vcs.base.VCSBase):
     """VCS interface implementation for OSC"""
@@ -18,9 +17,9 @@ class OSC(vcs.base.VCSBase):
     def name(self) -> str:
         return "OSC"
 
-    def _get(self, l, query=None):
+    def _get(self, path_list, query=None):
         """Construct a complete URL, and issue an HTTP GET to it."""
-        url = osc.core.makeurl(self.apiurl, l, query)
+        url = osc.core.makeurl(self.apiurl, path_list, query)
         return osc.core.http_GET(url)
 
     def get_path(self, *args):
