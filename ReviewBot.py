@@ -10,7 +10,6 @@ import cmdln
 from collections import namedtuple
 from collections import OrderedDict
 from osclib.cache import Cache
-from osclib.comments import CommentAPI
 from osclib.core import action_is_patchinfo
 from osclib.core import devel_project_fallback
 from osclib.core import group_members
@@ -34,6 +33,7 @@ import osc.core
 from urllib.error import HTTPError, URLError
 
 from itertools import count
+
 
 class PackageLookup(object):
     """ helper class to manage 00Meta/lookup.yml
@@ -133,7 +133,6 @@ class ReviewBot(object):
 
         self.lookup = PackageLookup(self.vcs)
 
-
         self.load_config()
 
     @property
@@ -172,9 +171,9 @@ class ReviewBot(object):
     def platform_type(self, platform_type: str):
         platform_type = platform_type.upper()
         if platform_type == 'OBS':
-            self.platform = plat.obs.OBS(self._apiurl)
+            self.platform = plat.OBS(self._apiurl)
         elif platform_type == "ACTION":
-            self.platform = plat.action.Action(self.logger)
+            self.platform = plat.Action(self.logger)
         else:
             raise RuntimeError(f'invalid Platform type: {platform_type}')
         self._platform_type = platform_type
@@ -196,7 +195,7 @@ class ReviewBot(object):
             ret = self.vcs.get_path('staging', project, 'staging_projects')
             return ret is not None
         except HTTPError as e:
-            self.logger.error(f'ERROR in URL {url} [{e}]')
+            self.logger.error(f'HTTP ERROR [{e}]')
             raise
 
     def staging_api(self, project):

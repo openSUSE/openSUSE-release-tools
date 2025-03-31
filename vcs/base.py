@@ -1,5 +1,6 @@
 import abc
 
+
 class VCSBase(metaclass=abc.ABCMeta):
     """Base class for VCS implementations"""
 
