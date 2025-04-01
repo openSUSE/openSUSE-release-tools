@@ -20,7 +20,7 @@ from osclib.core import request_age
 from osclib.memoize import memoize
 from osclib.memoize import memoize_session_reset
 from osclib.stagingapi import StagingAPI
-import vcs
+import scm
 import plat
 import signal
 import datetime
@@ -39,8 +39,8 @@ class PackageLookup(object):
     """ helper class to manage 00Meta/lookup.yml
     """
 
-    def __init__(self, vcs):
-        self.vcs = vcs
+    def __init__(self, scm):
+        self.scm = scm
         # dict[project][package]
         self.lookup = {}
 
@@ -58,7 +58,7 @@ class PackageLookup(object):
         self.lookup[project] = yaml.safe_load(fh) if fh else {}
 
     def _load_lookup_file(self, prj):
-        return self.vcs.get_path('source', prj, '00Meta', 'lookup.yml')
+        return self.scm.get_path('source', prj, '00Meta', 'lookup.yml')
 
 
 @unique
@@ -104,7 +104,7 @@ class ReviewBot(object):
             logger=None,
             user=None,
             group=None,
-            vcs_type="OSC",
+            scm_type="OSC",
             platform_type="OBS"
     ):
         self._apiurl = apiurl
@@ -128,10 +128,10 @@ class ReviewBot(object):
         self.request_age_min_default = 0
         self.request_age_min_key = f'{self.bot_name.lower()}-request-age-min'
 
-        self.vcs_type = vcs_type
+        self.scm_type = scm_type
         self.platform_type = platform_type
 
-        self.lookup = PackageLookup(self.vcs)
+        self.lookup = PackageLookup(self.scm)
 
         self.load_config()
 
@@ -142,26 +142,26 @@ class ReviewBot(object):
     @apiurl.setter
     def apiurl(self, url):
         self._apiurl = url
-        if self.vcs_type == "OSC":
-            self.vcs = vcs.OSC(self.apiurl)
+        if self.scm_type == "OSC":
+            self.scm = scm.OSC(self.apiurl)
 
     @property
-    def vcs_type(self):
-        return self._vcs_type
+    def scm_type(self):
+        return self._scm_type
 
-    @vcs_type.setter
-    def vcs_type(self, vcs_type: str):
-        vcs_type = vcs_type.upper()
-        if vcs_type == "OSC":
-            self.vcs = vcs.OSC(self.apiurl)
-        elif vcs_type == "GIT":
-            self.vcs = vcs.Git()
-        elif vcs_type == "ACTION":
-            self.vcs = vcs.Action(self.logger)
+    @scm_type.setter
+    def scm_type(self, scm_type: str):
+        scm_type = scm_type.upper()
+        if scm_type == "OSC":
+            self.scm = scm.OSC(self.apiurl)
+        elif scm_type == "GIT":
+            self.scm = scm.Git()
+        elif scm_type == "ACTION":
+            self.scm = scm.Action(self.logger)
         else:
-            raise RuntimeError(f'invalid SCM type: {vcs_type}')
+            raise RuntimeError(f'invalid SCM type: {scm_type}')
 
-        self._vcs_type = vcs_type
+        self._scm_type = scm_type
 
     @property
     def platform_type(self):
@@ -192,7 +192,7 @@ class ReviewBot(object):
 
     def has_staging(self, project):
         try:
-            ret = self.vcs.get_path('staging', project, 'staging_projects')
+            ret = self.scm.get_path('staging', project, 'staging_projects')
             return ret is not None
         except HTTPError as e:
             self.logger.error(f'HTTP ERROR [{e}]')
@@ -282,7 +282,7 @@ class ReviewBot(object):
         # give implementations a chance to do something before single requests
         self.prepare_review()
 
-        self.request = plat.action.Action.get_stub_request()
+        self.request = plat.Action.get_stub_request()
         try:
             ret = self.check_one_request(self.request)
         except Exception:
@@ -1010,7 +1010,7 @@ class CommandLineInterface(cmdln.Cmdln):
                           user=user,
                           group=group,
                           logger=self.logger,
-                          vcs_type=self.options.scm_type,
+                          scm_type=self.options.scm_type,
                           platform_type=self.options.platform_type)
 
     def do_action(self, subcmd, opts, *args):

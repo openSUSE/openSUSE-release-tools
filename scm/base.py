@@ -1,7 +1,7 @@
 import abc
 
 
-class VCSBase(metaclass=abc.ABCMeta):
+class SCMBase(metaclass=abc.ABCMeta):
     """Base class for VCS implementations"""
 
     @abc.abstractmethod

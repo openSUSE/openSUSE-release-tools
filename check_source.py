@@ -256,7 +256,7 @@ class CheckSource(ReviewBot.ReviewBot):
         os.chdir(copath)
 
         try:
-            CheckSource.checkout_package(self.vcs, target_project, target_package, pathname=copath,
+            CheckSource.checkout_package(self.scm, target_project, target_package, pathname=copath,
                                          server_service_files=True, expand_link=True)
             os.rename(target_package, '_old')
         except HTTPError as e:
@@ -265,7 +265,7 @@ class CheckSource(ReviewBot.ReviewBot):
             else:
                 raise e
 
-        CheckSource.checkout_package(self.vcs, source_project, source_package, revision=source_revision,
+        CheckSource.checkout_package(self.scm, source_project, source_package, revision=source_revision,
                                      pathname=copath, server_service_files=True, expand_link=True)
         os.rename(source_package, target_package)
 
@@ -517,8 +517,8 @@ class CheckSource(ReviewBot.ReviewBot):
             return action.person_name == user and action.person_role == 'maintainer'
 
     @staticmethod
-    def checkout_package(vcs, target_project, target_package, pathname, **kwargs):
-        return vcs.checkout_package(
+    def checkout_package(scm, target_project, target_package, pathname, **kwargs):
+        return scm.checkout_package(
             target_project,
             target_package,
             pathname,
