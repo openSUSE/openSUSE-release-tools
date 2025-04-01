@@ -1,11 +1,11 @@
-import vcs.base
+import scm.base
 
 import shutil
 import os
 
 
-class Action(vcs.base.VCSBase):
-    """Stub VCS interface implementation for running as an action"""
+class Action(scm.base.SCMBase):
+    """Stub SCM interface implementation for running as an action"""
 
     def __init__(self, logger):
         self.logger = logger
