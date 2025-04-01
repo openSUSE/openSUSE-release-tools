@@ -15,7 +15,7 @@ from lxml import etree as ET
 
 import osc.conf
 import osc.core
-from osclib.conf import Config
+from urllib3.exceptions import MaxRetryError
 from osclib.core import devel_project_get
 from osclib.core import devel_project_fallback
 from osclib.core import entity_exists
@@ -47,7 +47,7 @@ class CheckSource(ReviewBot.ReviewBot):
 
     def target_project_config(self, project: str) -> None:
         # Load project config and allow for remote entries.
-        config = Config.get(self.apiurl, project)
+        config = self.platform.get_project_config(project)
 
         self.single_action_require = str2bool(config.get('check-source-single-action-require', 'False'))
         self.ignore_devel: bool = not str2bool(config.get('devel-project-enforce', 'False'))
@@ -138,7 +138,13 @@ class CheckSource(ReviewBot.ReviewBot):
             self.review_messages['declined'] = 'Submission not from a pinned source revision'
             return False
 
-        kind = package_kind(self.apiurl, target_project, target_package)
+        # XXX refactor this out
+        if self.platform_type == "OBS":
+            kind = package_kind(self.apiurl, target_project, target_package)
+        else:
+            # XXX stub
+            kind = 'source'
+
         if kind == 'meta' or kind == 'patchinfo':
             self.review_messages['accepted'] = f'Skipping most checks for {kind} packages'
             if not self.skip_add_reviews and self.add_review_team and self.review_team is not None:
@@ -250,9 +256,8 @@ class CheckSource(ReviewBot.ReviewBot):
         os.chdir(copath)
 
         try:
-            CheckSource.checkout_package(self.apiurl, target_project, target_package, pathname=copath,
+            CheckSource.checkout_package(self.scm, target_project, target_package, pathname=copath,
                                          server_service_files=True, expand_link=True)
-            shutil.rmtree(os.path.join(target_package, '.osc'))
             os.rename(target_package, '_old')
         except HTTPError as e:
             if e.code == 404:
@@ -260,21 +265,22 @@ class CheckSource(ReviewBot.ReviewBot):
             else:
                 raise e
 
-        CheckSource.checkout_package(self.apiurl, source_project, source_package, revision=source_revision,
+        CheckSource.checkout_package(self.scm, source_project, source_package, revision=source_revision,
                                      pathname=copath, server_service_files=True, expand_link=True)
         os.rename(source_package, target_package)
-        shutil.rmtree(os.path.join(target_package, '.osc'))
 
-        new_info = self.package_source_parse(source_project, source_package, source_revision, target_package)
-        filename = new_info.get('filename', '')
-        expected_name = target_package
-        if filename == '_preinstallimage':
-            expected_name = 'preinstallimage'
-        if not (filename.endswith('.kiwi') or filename == 'Dockerfile') and new_info['name'] != expected_name:
-            shutil.rmtree(copath)
-            self.review_messages['declined'] = (
-                f"A package submitted as {target_package} has to build as 'Name: {expected_name}' - found Name '{new_info['name']}'")
-            return False
+        if self.platform_type == "OBS":
+            # XXX implement this for other platforms as well?
+            new_info = self.package_source_parse(source_project, source_package, source_revision, target_package)
+            filename = new_info.get('filename', '')
+            expected_name = target_package
+            if filename == '_preinstallimage':
+                expected_name = 'preinstallimage'
+            if not (filename.endswith('.kiwi') or filename == 'Dockerfile') and new_info['name'] != expected_name:
+                shutil.rmtree(copath)
+                self.review_messages['declined'] = (
+                    f"A package submitted as {target_package} has to build as 'Name: {expected_name}' - found Name '{new_info['name']}'")
+                return False
 
         if not self.check_service_file(target_package):
             return False
@@ -507,14 +513,13 @@ class CheckSource(ReviewBot.ReviewBot):
             return action.person_name == user and action.person_role == 'maintainer'
 
     @staticmethod
-    def checkout_package(*args, **kwargs):
-        _stdout = sys.stdout
-        sys.stdout = open(os.devnull, 'w')
-        try:
-            result = osc.core.checkout_package(*args, **kwargs)
-        finally:
-            sys.stdout = _stdout
-        return result
+    def checkout_package(scm, target_project, target_package, pathname, **kwargs):
+        return scm.checkout_package(
+            target_project,
+            target_package,
+            pathname,
+            **kwargs
+        )
 
     def _package_source_parse(self, project, package, revision=None, repository=None):
         query = {'view': 'info', 'parse': 1}
@@ -561,6 +566,8 @@ class CheckSource(ReviewBot.ReviewBot):
             return True
         except HTTPError:
             pass
+        except MaxRetryError:
+            pass
         return False
 
     def check_action_add_role(self, request, action):
@@ -581,6 +588,8 @@ class CheckSource(ReviewBot.ReviewBot):
             result = osc.core.show_project_sourceinfo(self.apiurl, action.tgt_project, True, (action.tgt_package))
             root = ET.fromstring(result)
         except HTTPError:
+            return None
+        except MaxRetryError:
             return None
 
         # Decline the delete request if there is another delete/submit request against the same package
