@@ -16,7 +16,7 @@ from lxml import etree as ET
 import osc.conf
 import osc.core
 from osclib.conf import Config
-from osclib.core import devel_project_get
+from osclib.core import devel_project_get, factory_git_devel_project_mapping
 from osclib.core import devel_project_fallback
 from osclib.core import entity_exists
 from osclib.core import group_members
@@ -350,6 +350,10 @@ class CheckSource(ReviewBot.ReviewBot):
             return True
 
         # Allow any projects already used as devel projects for other packages.
+        if target_project.endswith('openSUSE:Factory'):
+            devel_pkgs = factory_git_devel_project_mapping(self.apiurl)
+            return True if source_project in devel_pkgs.values() else False
+
         search = {
             'package': f"@project='{target_project}' and devel/@project='{source_project}'",
         }

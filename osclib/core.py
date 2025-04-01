@@ -4,7 +4,7 @@ from dateutil.parser import parse as date_parse
 import re
 import socket
 import logging
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 try:
     from typing import Literal
 except ImportError:
@@ -288,18 +288,32 @@ def binary_src_debug(binary):
 
 
 @memoize(session=True)
-def devel_project_get(apiurl: str, target_project: str, target_package: str) -> Union[Tuple[str, str], Tuple[Literal[None], Literal[None]]]:
-    """Fetch the devel project & package name of the supplied ``target_project``
-    and ``target_package`` and return the devel project and devel package name
-    as a tuple. If no devel project has been defined, then return ``None,
-    None``.
-
+def factory_git_devel_project_mapping(apiurl: str) -> Dict[str, str]:
+    """
     Devel project information for Factory transition to Git is stored in Factory project git
     https://src.opensuse.org/openSUSE/Factory/raw/branch/main/pkgs/_meta/devel_packages
     in format:
        <pkg><SP><devel project>
     This is the backstop for openSUSE:Factory for now as devel projects migrated to git
     have had their package meta removed in OBS
+
+    apiurl is unused, but needed for @memoize to function
+    """
+    headers = {'Accept': 'text/plain'}
+    devel_projects = {}
+    with http_GET('https://src.opensuse.org/openSUSE/Factory/raw/branch/main/pkgs/_meta/devel_packages', headers=headers) as f:
+        for line in f:
+            pkg, _, prj = line.decode('utf-8').strip().partition(' ')
+            devel_projects[pkg] = prj
+    return devel_projects
+
+
+@memoize(session=True)
+def devel_project_get(apiurl: str, target_project: str, target_package: str) -> Union[Tuple[str, str], Tuple[Literal[None], Literal[None]]]:
+    """Fetch the devel project & package name of the supplied ``target_project``
+    and ``target_package`` and return the devel project and devel package name
+    as a tuple. If no devel project has been defined, then return ``None,
+    None``.
 
     """
     try:
@@ -312,16 +326,9 @@ def devel_project_get(apiurl: str, target_project: str, target_package: str) -> 
             raise e
 
     if target_project.endswith('openSUSE:Factory'):
-        try:
-            headers = {'Accept': 'text/plain'}
-            with http_GET('https://src.opensuse.org/openSUSE/Factory/raw/branch/main/pkgs/_meta/devel_packages', headers=headers) as f:
-                for line in f:
-                    pkg, _, prj = line.decode('utf-8').strip().partition(' ')
-                    if pkg == target_package:
-                        return prj, pkg
-        except HTTPError as e:
-            if e.code != 404:
-                raise e
+        devel_pkgs = factory_git_devel_project_mapping(apiurl)
+        if target_package in devel_pkgs:
+            return devel_pkgs[target_package], target_package
     return None, None
 
 
