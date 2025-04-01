@@ -1,4 +1,4 @@
-import vcs.base
+import scm.base
 
 import os
 import sys
@@ -7,8 +7,8 @@ import osc.core
 from urllib.error import HTTPError
 
 
-class OSC(vcs.base.VCSBase):
-    """VCS interface implementation for OSC"""
+class OSC(scm.base.SCMBase):
+    """SCM interface implementation for OSC"""
 
     def __init__(self, apiurl: str):
         self.apiurl = apiurl

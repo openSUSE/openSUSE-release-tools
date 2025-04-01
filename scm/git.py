@@ -1,8 +1,8 @@
-import vcs.base
+import scm.base
 
 
-class Git(vcs.base.VCSBase):
-    """VCS interface implementation for Git"""
+class Git(scm.base.SCMBase):
+    """SCM interface implementation for Git"""
 
     def __init__(self):
         # XXX stub
