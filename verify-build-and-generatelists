@@ -27,7 +27,7 @@ logger() {
 
 polling_repo() {
     logger "[CHECKING] Checking standard repository from ${PROJECT}"
-    OUTPUT=$(timeout 3m /usr/share/openSUSE-release-tools/verify-repo-built-successful.py -A ${API_URL} -p ${PROJECT} -r standard $(pkglistgen_extra_args) 2>&1)
+    OUTPUT=$(timeout 3m /usr/share/openSUSE-release-tools/verify-repo-built-successful.py -A ${API_URL} -p ${PROJECT} -r standard 2>&1)
     RETURNCODE=$?
     if [ ${RETURNCODE} -eq 0 ]; then
         logger "[READY] Repository is NOT building"
@@ -71,7 +71,7 @@ if [ $? -eq 3 ]; then
                     continue
                 else
                     logger"[RUNNING] Running osrt-pkglistgen"
-                    /usr/bin/osrt-pkglistgen -A ${API_URL} --debug update_and_solve -p ${PROJECT} -s target --custom-cache-tag product --force >> ${LOG_DIR}/pkglistgen.log 2>&1
+                    /usr/bin/osrt-pkglistgen -A ${API_URL} --debug update_and_solve -p ${PROJECT} -s target --custom-cache-tag product $(pkglistgen_extra_args) --force >> ${LOG_DIR}/pkglistgen.log 2>&1
                     exit $?
                 fi
                 ;;
