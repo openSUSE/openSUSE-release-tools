@@ -3,6 +3,7 @@
 PROJECT=$1
 LOG_DIR="/var/log/openSUSE-release-tools/${PROJECT}"
 IBS_PRODUCT_PREFIX="SUSE:SLFO:Products:"
+SLFO_MAIN_BUILD="SUSE:SLFO:Main:Build"
 GITEA_PRODUCTS_URL="https://src.suse.de/products/"
 [ ! -d "${LOG_DIR}" ] && mkdir ${LOG_DIR}
 
@@ -25,9 +26,11 @@ logger() {
     echo "$1" >> ${LOG_DIR}/pkglistgen.log
 }
 
-polling_repo() {
-    logger "[CHECKING] Checking standard repository from ${PROJECT}"
-    OUTPUT=$(timeout 3m /usr/share/openSUSE-release-tools/verify-repo-built-successful.py -A ${API_URL} -p ${PROJECT} -r standard 2>&1)
+polling_project_repo() {
+    local build_system_project="$1"
+    local build_system_repo="$2"
+    logger "[CHECKING] Checking ${build_system_repo} repository from ${build_system_project}"
+    OUTPUT=$(timeout 3m /usr/share/openSUSE-release-tools/verify-repo-built-successful.py -A ${API_URL} -p ${build_system_project} -r ${build_system_repo} 2>&1)
     RETURNCODE=$?
     if [ ${RETURNCODE} -eq 0 ]; then
         logger "[READY] Repository is NOT building"
@@ -51,6 +54,13 @@ polling_repo() {
         logger "${OUTPUT}"
     fi
     return ${RETURNCODE}
+}
+
+polling_repo() {
+    if [[ ${PROJECT} =~ ^${IBS_PRODUCT_PREFIX}.* ]] ; then
+        polling_project_repo ${SLFO_MAIN_BUILD} standard
+    fi
+    polling_project_repo ${PROJECT} standard
 }
 
 logger "[START] Start osrt-pkglistgen@${PROJECT}.service: polling repository results"
