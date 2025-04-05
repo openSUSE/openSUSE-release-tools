@@ -407,6 +407,7 @@ exit 0
 %{_bindir}/osrt-compare_pkglist
 %{_bindir}/osrt-container_cleaner
 %{_bindir}/osrt-deptool
+%{_bindir}/osrt-devel_update
 %{_bindir}/osrt-fcc_submitter
 %{_bindir}/osrt-issue-diff
 %{_bindir}/osrt-legal-auto
