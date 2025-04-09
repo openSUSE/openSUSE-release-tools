@@ -233,3 +233,23 @@ pipelines:
           - script: |-
               echo "Leap 16.0 Ring1"
               ./project-installcheck.py --debug check -r standard --store openSUSE:Leap:16.0:Staging/dashboard --no-rebuild openSUSE:Leap:16.0:Rings:1-MinimalX
+  Trigger.Rebuild.SLE_16_0_Backports:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-factory-maintainer
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    timer:
+      spec: 0 0 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              echo "Backports SLE-16.0"
+              ./project-installcheck.py --debug check -r standard --store openSUSE:Backports:SLE-16.0:Staging/dashboard --no-rebuild openSUSE:Backports:SLE-16.0
