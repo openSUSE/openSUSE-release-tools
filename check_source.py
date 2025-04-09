@@ -281,6 +281,8 @@ class CheckSource(ReviewBot.ReviewBot):
                 self.review_messages['declined'] = (
                     f"A package submitted as {target_package} has to build as 'Name: {expected_name}' - found Name '{new_info['name']}'")
                 return False
+        else:
+            self.logger.warning('skipping expected filename check on this platform')
 
         if not self.check_service_file(target_package):
             return False
@@ -564,6 +566,10 @@ class CheckSource(ReviewBot.ReviewBot):
         return ret
 
     def only_changes(self):
+        if self.platform_type != "OBS":
+            self.logger.warning("skipping only_changes check on this platform")
+            return False
+
         u = osc.core.makeurl(self.apiurl, ['request', self.request.reqid],
                              {'cmd': 'diff', 'view': 'xml'})
         try:
