@@ -4,7 +4,7 @@ PROJECT=$1
 LOG_DIR="/var/log/openSUSE-release-tools/${PROJECT}"
 IBS_PRODUCT_PREFIX="SUSE:SLFO:Products:"
 SLFO_MAIN_BUILD="SUSE:SLFO:Main:Build"
-GITEA_PRODUCTS_URL="https://src.suse.de/products/"
+GITEA_PRODUCTS_URL="gitea@src.suse.de:products/"
 [ ! -d "${LOG_DIR}" ] && mkdir ${LOG_DIR}
 
 
