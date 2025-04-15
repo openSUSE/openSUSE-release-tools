@@ -87,13 +87,13 @@ class ToTestReleaser(ToTestManager):
                                       arch=self.project.image_products[0].archs[0])
 
     def maxsize_for_package(self, package, arch):
-        if re.match(r'.*-mini-.*', package):
+        if re.match(r'.*[-_]mini[-_].*', package):
             return 737280000  # a CD needs to match
 
-        if re.match(r'.*-dvd5-.*', package):
+        if re.match(r'.*[-_]dvd5[-_].*', package):
             return 4700372992  # a DVD needs to match
 
-        if re.match(r'.*-(dvd9-dvd|cd-DVD)-.*', package):
+        if re.match(r'.*[-_](dvd9[-_]dvd|cd[-_]DVD)[-_].*', package):
             return 8539996159
 
         # Other types don't have a fixed size limit
