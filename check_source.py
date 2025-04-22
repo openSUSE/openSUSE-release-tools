@@ -91,6 +91,19 @@ class CheckSource(ReviewBot.ReviewBot):
         return target_package == package
 
     def package_source_parse(self, project, package, revision=None, target_package=None):
+        # XXX should we refactor this out?
+        if self.platform_type == "OBS":
+            return self._package_source_parse_obs(project, package, revision, target_package)
+        else:
+            # XXX mocked
+            self.logger.warning("package_source_parse() is currently mocked on this platform.")
+            return {
+                "name": target_package,
+                "revision": revision, "filename":
+                f"{target_package}.spec"
+            }
+
+    def _package_source_parse_obs(self, project, package, revision=None, target_package=None):
         ret = self._package_source_parse(project, package, revision)
 
         if self.is_good_name(ret['name'], target_package):
@@ -269,20 +282,16 @@ class CheckSource(ReviewBot.ReviewBot):
                                      pathname=copath, server_service_files=True, expand_link=True)
         os.rename(source_package, target_package)
 
-        if self.platform_type == "OBS":
-            # XXX implement this for other platforms as well?
-            new_info = self.package_source_parse(source_project, source_package, source_revision, target_package)
-            filename = new_info.get('filename', '')
-            expected_name = target_package
-            if filename == '_preinstallimage':
-                expected_name = 'preinstallimage'
-            if not (filename.endswith('.kiwi') or filename == 'Dockerfile') and new_info['name'] != expected_name:
-                shutil.rmtree(copath)
-                self.review_messages['declined'] = (
-                    f"A package submitted as {target_package} has to build as 'Name: {expected_name}' - found Name '{new_info['name']}'")
-                return False
-        else:
-            self.logger.warning('skipping expected filename check on this platform')
+        new_info = self.package_source_parse(source_project, source_package, source_revision, target_package)
+        filename = new_info.get('filename', '')
+        expected_name = target_package
+        if filename == '_preinstallimage':
+            expected_name = 'preinstallimage'
+        if not (filename.endswith('.kiwi') or filename == 'Dockerfile') and new_info['name'] != expected_name:
+            shutil.rmtree(copath)
+            self.review_messages['declined'] = (
+                f"A package submitted as {target_package} has to build as 'Name: {expected_name}' - found Name '{new_info['name']}'")
+            return False
 
         if not self.check_service_file(target_package):
             return False
