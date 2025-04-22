@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import logging
 import sys
 
 import osc.conf
@@ -8,7 +9,7 @@ from urllib.error import HTTPError, URLError
 import yaml
 
 from osclib.memoize import memoize
-from osclib.core import action_is_patchinfo
+from osclib.core import action_is_patchinfo, devel_project_get
 from osclib.core import owner_fallback
 from osclib.core import maintainers_get
 
@@ -29,6 +30,17 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         if action_is_patchinfo(a):
             a = req.actions[1]
         project = a.tgt_releaseproject if a.type == 'maintenance_incident' else req.actions[0].tgt_project
+
+        if project.startswith('openSUSE:'):
+            prj, pkg = devel_project_get(self.apiurl, "openSUSE:Factory", package)
+            if prj is None and package.find(".") > 0:
+                prj, pkg = devel_project_get(self.apiurl, "openSUSE:Factory", package[0:package.rfind(".")])
+            logging.debug(f'using devel project {prj}/{pkg}')
+            if prj is not None:
+                msg = f'Submission for {pkg} by someone who is not maintainer in the devel project ({prj}). Please review'
+                self.add_review(req, by_project=prj, by_package=pkg, msg=msg)
+                return
+
         root = owner_fallback(self.apiurl, project, package)
 
         for p in root.findall('./owner'):

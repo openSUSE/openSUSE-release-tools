@@ -115,6 +115,17 @@ class TestMaintenance(OBSLocal.TestCase):
                 </directory>
             """)
 
+        httpretty.register_uri(httpretty.GET,
+                               APIURL + "/source/openSUSE:Factory/mysql-workbench/_meta",
+                               match_querystring=True,
+                               body="""
+                  <package name="mysql-workbench" project="openSUSE:Factory">
+                    <title>MySQL Workbench</title>
+                    <description>UI for MySQL server</description>
+                    <devel project="server:database" package="mysql-workbench"/>
+                  </package>
+            """)
+
         result = {'devel_review_added': None}
 
         def change_request(result, method, uri, headers):

@@ -327,6 +327,7 @@ def devel_project_get(apiurl: str, target_project: str, target_package: str) -> 
 
     if target_project.endswith('openSUSE:Factory'):
         devel_pkgs = factory_git_devel_project_mapping(apiurl)
+        logging.debug(f"fetched git devel packages, looking for {target_package}")
         if target_package in devel_pkgs:
             return devel_pkgs[target_package], target_package
     return None, None
