@@ -59,10 +59,6 @@ case "$1" in
         ;;
     set)
         shift
-        prj=$(getdevel "$2")
-        if [ x"$prj" != "x" ]; then
-            rmdevel "$prj" "$2"
-        fi
         setdevel "$@"
         ;;
     rm)
@@ -72,7 +68,6 @@ case "$1" in
     sync)
         warning=0
         badpkgs=""
-        tmp="$DEVEL_PACKAGES.new.$$"
         pkgs=$(osc ls openSUSE:Factory)
 
         # add new packages
@@ -96,7 +91,7 @@ case "$1" in
                     fi
                 fi
 
-                echo "$pkg $devel" >> $tmp
+                setdevel "$devel" "$pkg"
                 echo "$devel"
             fi
         done
@@ -111,12 +106,6 @@ case "$1" in
                 fi
             fi
         done
-
-        if [ -e "$tmp" ]; then
-            cat "$DEVEL_PACKAGES" "$tmp" | sort > "$DEVEL_PACKAGES.$$"
-            rm "$tmp"
-            mv "$DEVEL_PACKAGES.$$" "$DEVEL_PACKAGES"
-        fi
 
         # set devel change in last 10 days
         osc rq list -t change_devel -D 10 -P openSUSE:Factory -s accepted |
