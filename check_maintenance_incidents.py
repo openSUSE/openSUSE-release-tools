@@ -31,16 +31,19 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
             a = req.actions[1]
         project = a.tgt_releaseproject if a.type == 'maintenance_incident' else req.actions[0].tgt_project
 
-        if project.startswith('openSUSE:'):
+        # First we look if devel project is defined and request review from it
+        if req.actions[0].tgt_project.startswith('openSUSE:Maintenance'):
             prj, pkg = devel_project_get(self.apiurl, "openSUSE:Factory", package)
-            if prj is None and package.find(".") > 0:
-                prj, pkg = devel_project_get(self.apiurl, "openSUSE:Factory", package[0:package.rfind(".")])
+            # period in package name as created by "osc mbranch"
+            if prj is None and '.' in package:
+                prj, pkg = devel_project_get(self.apiurl, "openSUSE:Factory", package.rpartition('.')[0])
             logging.debug(f'using devel project {prj}/{pkg}')
             if prj is not None:
                 msg = f'Submission for {pkg} by someone who is not maintainer in the devel project ({prj}). Please review'
                 self.add_review(req, by_project=prj, by_package=pkg, msg=msg)
                 return
 
+        # no devel project -- fallback to /search/owner?package -- OBS side "owner" prj/pkg search with pkg only fallback
         root = owner_fallback(self.apiurl, project, package)
 
         for p in root.findall('./owner'):
