@@ -54,7 +54,7 @@ def dump_solv_build(baseurl):
     url = urljoin(baseurl, 'repodata/repomd.xml')
     with requests.get(url) as media:
         if media.status_code == requests.codes.ok:
-            root = ET.parse(url)
+            root = ET.fromstring(media.content)
             rev = root.find('.//{http://linux.duke.edu/metadata/repo}revision')
             if rev is not None:
                 return rev.text
