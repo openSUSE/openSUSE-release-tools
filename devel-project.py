@@ -224,15 +224,23 @@ def reviews(args):
 
 
 def maintainers_get(apiurl, project, package=None):
+    meta = None
     if package:
         try:
             meta = show_package_meta(apiurl, project, package)
         except HTTPError as e:
+            # Fallback to project in the case of new package.
+            if e.code != 404:
+                raise
+
+    if meta is None:
+        try:
+            meta = show_project_meta(apiurl, project)
+        except HTTPError as e:
             if e.code == 404:
-                # Fallback to project in the case of new package.
-                meta = show_project_meta(apiurl, project)
-    else:
-        meta = show_project_meta(apiurl, project)
+                print(f'  project {project} not found - hidden?')
+                return []
+
     meta = ET.fromstringlist(meta)
 
     userids = []
