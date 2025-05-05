@@ -408,7 +408,12 @@ class ReviewBot(object):
         if len(maintainers) == 0:
             devel_project, devel_package = devel_project_fallback(self.apiurl, project, package)
             if devel_package:
-                maintainers = set(package_role_expand(self.apiurl, devel_project, devel_package))
+                try:
+                    maintainers = set(package_role_expand(self.apiurl, devel_project, devel_package))
+                except HTTPError as e:
+                    if e.code == 404:
+                        self.logger.debug('devel package defined (likely in git), but package does not exist')
+                        return False
 
         if author in maintainers:
             return False
