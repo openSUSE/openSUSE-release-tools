@@ -295,12 +295,8 @@ class ToTestReleaser(ToTestManager):
                 self.release_package(self.project.name, product, repository=self.project.product_repo)
 
             for cd in self.project.main_products:
-                # do not set release number if it is productcompose
-                if 'productcompose' in self.project.main_products[0]:
-                    self.release_package(self.project.name, cd, repository=self.project.product_repo)
-                else:
-                    self.release_package(self.project.name, cd, set_release=set_release,
-                                         repository=self.project.product_repo)
+                self.release_package(self.project.name, cd, set_release=set_release,
+                                     repository=self.project.product_repo)
 
         for cd in self.project.livecd_products:
             self.release_package('%s:Live' %
