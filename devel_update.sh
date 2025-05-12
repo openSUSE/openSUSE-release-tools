@@ -82,7 +82,7 @@ case "$1" in
                 devel=$(osc develproject openSUSE:Factory $pkg 2> /dev/null)
                 devel=${devel/\/*/}
                 if [ -z "$devel" ]; then
-                    devel=$(osc rq list -s accepted -P openSUSE:Factory -p $pkg -t submit | grep "^\s*submit:.* -> openSUSE:Factory\$" | sed -e "s,^\s*submit:\s*\([^/]\+\)/${pkg}@.*,\1," | uniq)
+                    devel=$(osc rq list -s accepted -P openSUSE:Factory -p $pkg -t submit | grep "^\s*submit:.* ->\s\+openSUSE:Factory\$" | sed -e "s,^\s*submit:\s*\([^/]\+\)/${pkg}@.*,\1," | uniq)
                     c=$(echo "$devel" | grep -c .)
                     if [ $c -ne 1 ]; then
                         badpkgs="$badpkgs $pkg"
