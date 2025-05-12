@@ -77,10 +77,11 @@ class ToTestReleaser(ToTestManager):
 
         if len(self.project.main_products):
             # 000productcompose has ftp built only and the build number
-            # agama-installer carry over build number from 000prodcutcompose
-            # but they are not from the same package container
-            if 'productcompose' in self.project.main_products[0]:
-                return self.productcompose_build_version(self.project.name, self.project.main_products[0])
+            # offline installer carry over build number from ftp product
+            # as well as agama-installer
+            if 'productcompose' in self.project.main_products[0] and\
+                    'productcompose' in self.project.ftp_products[0]:
+                return self.productcompose_build_version(self.project.name, self.project.ftp_products[0])
             return self.iso_build_version(self.project.name, self.project.main_products[0])
 
         return self.iso_build_version(self.project.name, self.project.image_products[0].package,
