@@ -172,7 +172,8 @@ class Project(object):
                         obsolete_jobs.append(id)
                         continue
 
-                raise Exception(f'Names of job #{id} and #{taken_names[name]} collide: {name}')
+                self.logger.error(f'Names of job #{id} and #{taken_names[name]} collide: {name}')
+                return
             taken_names[name] = id
 
         for id in obsolete_jobs:
