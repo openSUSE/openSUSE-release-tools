@@ -4,8 +4,9 @@ from lxml import etree as ET
 
 from osclib.comments import CommentAPI
 from osclib.conf import Config
+from osclib.core import get_request_list_with_history, request_age
+from osclib.stagingapi import StagingAPI
 import osc.core
-
 
 class OBS(plat.base.PlatformBase):
     """Implementation of platform interface for OBS"""
@@ -33,3 +34,17 @@ class OBS(plat.base.PlatformBase):
 
     def get_project_config(self, project):
         return Config.get(self.apiurl, project)
+
+    def get_request_age(self, request):
+        # XXX we might want to reconsider whether this belongs there
+        return request_age(request)
+
+    def get_request_list_with_history(
+            self, project='', package='', req_who='', req_state=('new', 'review', 'declined'),
+            req_type=None, exclude_target_projects=[]):
+        """Get requests with full history"""
+        return get_request_list_with_history(project, package, req_who, req_state, req_type,
+                                             exclude_target_projects)
+
+    def get_staging_api(self, project):
+        return StagingAPI(self.apiurl, project)

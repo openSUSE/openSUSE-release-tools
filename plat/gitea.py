@@ -4,7 +4,7 @@ import requests
 import base64
 import html
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import urljoin
 
 class API:
@@ -141,12 +141,47 @@ class StagingAPI:
         content = base64.b64decode(data["content"]).decode("utf-8")
         print(content)
 
+class RequestAction:
+    """Stub action class"""
+    def __init__(self, type, tgt_project, tgt_package):
+        self.type = type
+        self.tgt_project = tgt_project
+        self.tgt_package = tgt_package
+
 class Request:
     """Request structure implemented for Gitea"""
     def __init__(self):
-        # TODO
-        pass
+        self._init_attributes()
 
+    def _init_attributes(self):
+        self.reqid = None
+        self.creator = ''
+        self.created_at = ''
+        self.title = ''
+        self.description = ''
+        self.priority = None
+        self.state = None
+        self.accept_at = None
+        self.actions = []
+        self.statehistory = []
+        self.reviews = []
+        self._issues = None
+
+    def read(self, json):
+        """Read in a request from JSON response"""
+        self._init_attributes()
+        self.reqid = str(json["number"])
+        self.creator = json["user"]["login"]
+        self.created_at = json["created_at"]
+        self.title = json["title"]
+        self.description = json["body"]
+        self.state = json["state"]
+        self.actions=[RequestAction(
+            type="submit",
+            tgt_project=json["repository"]["owner"],
+            tgt_package=json["repository"]["name"])]
+        if json["pull_request"]["merged"]:
+            self.accept_at = json["merged_at"]
 
 class ProjectConfig:
     """Project Config implemented for Gitea"""
@@ -173,3 +208,30 @@ class Gitea(plat.base.PlatformBase):
 
     def get_project_config(self, project):
         return ProjectConfig()
+
+    def get_request_age(self, request):
+        return datetime.now(timezone.utc) - datetime.fromisoformat(request.created_at)
+
+    def get_request_list_with_history(
+            self, project='', package='', req_who='', req_state=('new', 'review', 'declined'),
+            req_type=None, exclude_target_projects=[]):
+        if package != '':
+            repos = [package]
+        else:
+            repo_list_res = self.api.get(f'orgs/{project}/repos')
+            repo_list_res.raise_for_status()
+            repo_list_json = repo_list_res.json()
+            repos = [i["name"] for i in repo_list_json]
+
+        for r in repos:
+            list_res = self.api.get(f'repos/{project}/{r}/issues?type=pulls')
+            list_res.raise_for_status()
+            list_json = list_res.json()
+
+            for i in list_json:
+                request = Request()
+                request.read(i)
+                yield request
+
+    def get_staging_api(self, project):
+        return StagingAPI(project, self.api)
