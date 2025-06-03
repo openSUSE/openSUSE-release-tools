@@ -48,3 +48,24 @@ class OBS(plat.base.PlatformBase):
 
     def get_staging_api(self, project):
         return StagingAPI(self.apiurl, project)
+
+    def search_review(self, **kwargs):
+        review_user = kwargs.get("review_user")
+        review_group = kwargs.get("review_group")
+        review = None
+        if review_user:
+            review = f"@by_user='{review_user}' and @state='new'"
+        if review_group:
+            review = osc.core.xpath_join(review, f"@by_group='{review_group}' and @state='new'")
+        url = osc.core.makeurl(self.apiurl, ('search', 'request'), {
+                               'match': f"state/@name='review' and review[{review}]", 'withfullhistory': 1})
+        root = ET.parse(osc.core.http_GET(url)).getroot()
+
+        ret = []
+
+        for request in root.findall('request'):
+            req = osc.core.Request()
+            req.read(request)
+            ret.append(req)
+
+        return ret
