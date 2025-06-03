@@ -320,6 +320,24 @@ class DevelProject(ReviewBot.ReviewBot):
                         repeat_reminder = True
                     self._remind_comment(cmd_opts.repeat_age, request.reqid, review.by_project, review.by_package, repeat_reminder)
 
+    def do_remind_reviews(self, opts, cmd_opts):
+        requests = self.platform.search_review()
+        for request in requests:
+            action = request.actions[0]
+            age = self.platform.get_request_age(request).days
+            if age < cmd_opts.min_age:
+                continue
+
+            print(' '.join((
+                request.reqid,
+                '/'.join((action.tgt_project, action.tgt_package)),
+                f'({age} days old)',
+            )))
+
+            if self.dryrun:
+                print(f"Making reminder comment on request {action.tgt_project}/{action.tgt_package}/{request.reqid}")
+            else:
+                self._remind_comment(cmd_opts.repeat_age, request.reqid, action.tgt_project, action.tgt_package)
 
 def common_options(f):
     f = cmdln.option('--min-age', type=int, default=0, metavar='DAYS', help='min age of requests')(f)
@@ -393,6 +411,10 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
     @common_options
     def do_remind_project(self, subcmd, opts, *args):
         return self.checker.do_remind_project(self.options, opts)
+
+    @common_options
+    def do_remind_reviews(self, subcmd, opts, *args):
+        return self.checker.do_remind_reviews(self.options, opts)
 
     def do_list_devel_projects(self, subcmd, opts, *args):
         return self.checker.do_list_devel_projects(self.options, opts)

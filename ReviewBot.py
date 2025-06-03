@@ -109,7 +109,7 @@ class ReviewBot(object):
     ):
         self._apiurl = apiurl
 
-        self.ibs = apiurl.startswith('https://api.suse.de')
+        self.ibs = apiurl and apiurl.startswith('https://api.suse.de')
         self.dryrun = dryrun
         self.logger = logger
         self.review_user = user
@@ -728,21 +728,7 @@ class ReviewBot(object):
         return False
 
     def set_request_ids_search_review(self):
-        review = None
-        if self.review_user:
-            review = f"@by_user='{self.review_user}' and @state='new'"
-        if self.review_group:
-            review = osc.core.xpath_join(review, f"@by_group='{self.review_group}' and @state='new'")
-        url = osc.core.makeurl(self.apiurl, ('search', 'request'), {
-                               'match': f"state/@name='review' and review[{review}]", 'withfullhistory': 1})
-        root = ET.parse(osc.core.http_GET(url)).getroot()
-
-        self.requests = []
-
-        for request in root.findall('request'):
-            req = osc.core.Request()
-            req.read(request)
-            self.requests.append(req)
+        self.requests = self.platform.search_review(review_user=self.review_user, review_group=self.review_group)
 
     # also used by openqabot
     def ids_project(self, project, typename):

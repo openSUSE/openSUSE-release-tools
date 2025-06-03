@@ -101,3 +101,6 @@ class Action(plat.base.PlatformBase):
 
     def get_staging_api(self, project):
         raise NotImplementedError("get_staging_api not implemented for actions")
+
+    def search_review(self, **kwargs):
+        raise NotImplementedError("search_review not implemented for actions")

@@ -36,3 +36,8 @@ class PlatformBase(metaclass=abc.ABCMeta):
     def get_staging_api(self, project):
         """Get staging API for the project"""
         pass
+
+    @abc.abstractmethod
+    def search_review(self, **kwargs):
+        """Search review requests according to specified criteria"""
+        pass

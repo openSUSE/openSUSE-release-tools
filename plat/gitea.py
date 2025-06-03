@@ -235,3 +235,24 @@ class Gitea(plat.base.PlatformBase):
 
     def get_staging_api(self, project):
         return StagingAPI(project, self.api)
+
+    def search_review(self, **kwargs):
+        params: dict[str, str | int] = {'state': 'open', "type": "pulls", "review_requested": "true"}
+
+        page = 1
+        ret = []
+        while True:
+            params["page"] = page
+            page += 1
+            search_res = self.api.get(f'repos/issues/search', params=params)
+            search_res.raise_for_status()
+            search_json = search_res.json()
+            if not search_json:
+                break
+
+            for i in search_json:
+                request = Request()
+                request.read(i)
+                ret.append(request)
+
+        return ret
