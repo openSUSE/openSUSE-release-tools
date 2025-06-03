@@ -28,7 +28,6 @@ class CommentAPI:
         if False:
             yield
 
-
 class RequestAction:
     """Stub action structure for running as an Gitea Action"""
     def __init__(
@@ -91,3 +90,14 @@ class Action(plat.base.PlatformBase):
 
     def get_project_config(self, project):
         return StubProjectConfig()
+
+    def get_request_age(self, request):
+        raise NotImplementedError("get_request_age not implemented for actions")
+
+    def get_request_list_with_history(
+            self, project='', package='', req_who='', req_state=('new', 'review', 'declined'),
+            req_type=None, exclude_target_projects=[]):
+        raise NotImplementedError("get_request_list_with_history not implemented for actions")
+
+    def get_staging_api(self, project):
+        raise NotImplementedError("get_staging_api not implemented for actions")

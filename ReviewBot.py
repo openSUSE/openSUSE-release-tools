@@ -19,7 +19,6 @@ from osclib.core import request_action_key
 from osclib.core import request_age
 from osclib.memoize import memoize
 from osclib.memoize import memoize_session_reset
-from osclib.stagingapi import StagingAPI
 import scm
 import plat
 import signal
@@ -219,7 +218,7 @@ class ReviewBot(object):
 
         if project not in self.staging_apis:
             self.platform.get_project_config(project)
-            self.staging_apis[project] = StagingAPI(self.apiurl, project)
+            self.staging_apis[project] = self.platform.get_staging_api(project)
 
         return self.staging_apis[project]
 

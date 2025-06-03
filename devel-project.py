@@ -225,6 +225,38 @@ class DevelProject(ReviewBot.ReviewBot):
         self._remind_comment(
             cmd_opts.repeat_age, cmd_opts.request, cmd_opts.project, cmd_opts.package)
 
+    def do_remind_project(self, _opts, cmd_opts):
+        # XXX temporary command for demo purpose. Will be purged once we have a proper testing
+        # environment.
+
+        requests = self.platform.get_request_list_with_history(
+            cmd_opts.project, req_state=('new', 'review'),
+            req_type='submit')
+        for request in requests:
+            action = request.actions[0]
+            age = self.platform.get_request_age(request).days
+            if age < cmd_opts.min_age:
+                continue
+
+            print(' '.join((
+                request.reqid,
+                '/'.join((action.tgt_project, action.tgt_package)),
+                f'({age} days old)',
+            )))
+
+            if cmd_opts.remind:
+                if self.dryrun:
+                    print(f"Making reminder comment on request {action.tgt_project}/{action.tgt_package}/{request.reqid}")
+                else:
+                    self._remind_comment(cmd_opts.repeat_age, request.reqid, action.tgt_project, action.tgt_package)
+
+    def do_list_devel_projects(self, opts, cmd_opts):
+        # XXX temporary command for demo purpose. Will be purged once we have a proper testing
+        # environment.
+        devel_projects = self._devel_projects_load(opts)
+        out = '\n'.join(devel_projects)
+        print(out)
+
     def do_requests(self, opts, cmd_opts):
         devel_projects = self._devel_projects_load(opts)
 
@@ -356,6 +388,14 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
     @common_options
     def do_remind_request(self, subcmd, opts, *args):
         return self.checker.do_remind_request(self.options, opts)
+
+    @cmdln.option('-P', '--project', help='Project')
+    @common_options
+    def do_remind_project(self, subcmd, opts, *args):
+        return self.checker.do_remind_project(self.options, opts)
+
+    def do_list_devel_projects(self, subcmd, opts, *args):
+        return self.checker.do_list_devel_projects(self.options, opts)
 
 if __name__ == "__main__":
     app = CommandLineInterface()
