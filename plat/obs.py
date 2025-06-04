@@ -2,11 +2,28 @@ import plat.base
 
 from lxml import etree as ET
 
-from osclib.comments import CommentAPI
+from osclib.comments import CommentAPI as OSCCommentAPI
 from osclib.conf import Config
 from osclib.core import get_request_list_with_history, request_age
 from osclib.stagingapi import StagingAPI
 import osc.core
+from urllib.error import HTTPError
+
+class CommentAPI:
+    """Proxy class for osclib CommentAPI"""
+
+    def __init__(self, apiurl):
+        self._original = OSCCommentAPI(apiurl)
+
+    def __getattr__(self, name):
+        return getattr(self._original, name)
+
+    def get_comments(self, request=None, project_name=None, package_name=None):
+        return self._original.get_comments(
+            request_id=request and request.reqid,
+            project_name=project_name,
+            package_name=package_name
+        )
 
 class OBS(plat.base.PlatformBase):
     """Implementation of platform interface for OBS"""
@@ -69,3 +86,31 @@ class OBS(plat.base.PlatformBase):
             ret.append(req)
 
         return ret
+
+    def _has_open_review_by(self, root, by_what, reviewer):
+        states = set([review.get('state') for review in root.findall('review') if review.get(by_what) == reviewer])
+        if not states:
+            return None
+        elif 'new' in states:
+            return True
+        return False
+
+    def can_accept_review(self, req, **kwargs):
+        review_user = kwargs.get("review_user")
+        review_group = kwargs.get("review_group")
+        url = osc.core.makeurl(self.apiurl, ('request', str(req.reqid)))
+        try:
+            root = ET.parse(osc.core.http_GET(url)).getroot()
+            if review_user and self._has_open_review_by(root, 'by_user', review_user):
+                return True
+            if review_group and self._has_open_review_by(root, 'by_group', review_group):
+                return True
+        except HTTPError as e:
+            print(f'ERROR in URL {url} [{e}]')
+        return False
+
+
+    def change_review_state(self, req, newstate, message, **kwargs):
+        return osc.core.change_review_state(apiurl=self.apiurl,
+                                            reqid=req.reqid, newstate=newstate,
+                                            message=message, **kwargs)

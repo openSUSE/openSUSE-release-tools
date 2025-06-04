@@ -9,7 +9,7 @@ class CommentAPI:
     def __init__(self):
         pass
 
-    def get_comments(self, request_id):
+    def get_comments(self, **kwargs):
         return {}
 
     def request_as_comment_dict(self, request):
@@ -104,3 +104,9 @@ class Action(plat.base.PlatformBase):
 
     def search_review(self, **kwargs):
         raise NotImplementedError("search_review not implemented for actions")
+
+    def can_accept_review(self, req, **kwargs):
+        raise NotImplementedError("can_accept_review not implemented for actions")
+
+    def change_review_state(self, req, newstate, message, **kwargs):
+        raise NotImplementedError("change_review_state not implemented for actions")

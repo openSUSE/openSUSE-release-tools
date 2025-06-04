@@ -41,3 +41,13 @@ class PlatformBase(metaclass=abc.ABCMeta):
     def search_review(self, **kwargs):
         """Search review requests according to specified criteria"""
         pass
+
+    @abc.abstractmethod
+    def can_accept_review(self, req, **kwargs):
+        """Check whether it is possible to accept review for a request"""
+        pass
+
+    @abc.abstractmethod
+    def change_review_state(self, req, newstate, message, **kwargs):
+        """Change review state for a request"""
+        pass

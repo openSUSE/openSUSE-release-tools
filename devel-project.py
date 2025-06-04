@@ -107,10 +107,9 @@ class DevelProject(ReviewBot.ReviewBot):
 
         return userids
 
-    def _remind_comment(self, repeat_age, request_id, project, package=None, do_repeat=True):
-        # TODO port to Gitea
+    def _remind_comment(self, repeat_age, request, project, package=None, do_repeat=True):
         comment_api = self.platform.comment_api
-        comments = comment_api.get_comments(request_id=request_id,
+        comments = comment_api.get_comments(request=request,
                                             project_name=project, package_name=package)
         comment, _ = comment_api.comment_find(comments, BOT_NAME)
 
@@ -219,12 +218,6 @@ class DevelProject(ReviewBot.ReviewBot):
             except smtplib.SMTPException as e:
                 print(f'[FAILED SMTP] {log} ({e})')
 
-    def do_remind_request(self, _opts, cmd_opts):
-        # XXX temporary command for demo purpose. Will be purged once we have a proper testing
-        # environment.
-        self._remind_comment(
-            cmd_opts.repeat_age, cmd_opts.request, cmd_opts.project, cmd_opts.package)
-
     def do_remind_project(self, _opts, cmd_opts):
         # XXX temporary command for demo purpose. Will be purged once we have a proper testing
         # environment.
@@ -248,7 +241,7 @@ class DevelProject(ReviewBot.ReviewBot):
                 if self.dryrun:
                     print(f"Making reminder comment on request {action.tgt_project}/{action.tgt_package}/{request.reqid}")
                 else:
-                    self._remind_comment(cmd_opts.repeat_age, request.reqid, action.tgt_project, action.tgt_package)
+                    self._remind_comment(cmd_opts.repeat_age, request, action.tgt_project, action.tgt_package)
 
     def do_list_devel_projects(self, opts, cmd_opts):
         # XXX temporary command for demo purpose. Will be purged once we have a proper testing
@@ -280,7 +273,7 @@ class DevelProject(ReviewBot.ReviewBot):
                 )))
 
                 if cmd_opts.remind:
-                    self._remind_comment(cmd_opts.repeat_age, request.reqid, action.tgt_project, action.tgt_package)
+                    self._remind_comment(cmd_opts.repeat_age, request, action.tgt_project, action.tgt_package)
 
     def do_reviews(self, opts, cmd_opts):
         devel_projects = self._devel_projects_load(opts)
@@ -318,7 +311,7 @@ class DevelProject(ReviewBot.ReviewBot):
                         repeat_reminder = False
                     else:
                         repeat_reminder = True
-                    self._remind_comment(cmd_opts.repeat_age, request.reqid, review.by_project, review.by_package, repeat_reminder)
+                    self._remind_comment(cmd_opts.repeat_age, request, review.by_project, review.by_package, repeat_reminder)
 
     def do_remind_reviews(self, opts, cmd_opts):
         requests = self.platform.search_review()
@@ -337,7 +330,7 @@ class DevelProject(ReviewBot.ReviewBot):
             if self.dryrun:
                 print(f"Making reminder comment on request {action.tgt_project}/{action.tgt_package}/{request.reqid}")
             else:
-                self._remind_comment(cmd_opts.repeat_age, request.reqid, action.tgt_project, action.tgt_package)
+                self._remind_comment(cmd_opts.repeat_age, request, action.tgt_project, action.tgt_package)
 
 def common_options(f):
     f = cmdln.option('--min-age', type=int, default=0, metavar='DAYS', help='min age of requests')(f)
