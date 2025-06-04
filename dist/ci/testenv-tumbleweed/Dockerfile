@@ -6,7 +6,7 @@ RUN zypper -n ar http://download.opensuse.org/repositories/openSUSE:/Tools/openS
 RUN zypper --gpg-auto-import-keys ref
 
 RUN zypper in -y osc python3-pytest python3-httpretty python3-pyxdg python3-PyYAML \
-  python3-pika python3-cmdln python3-lxml python3-python-dateutil python3-colorama python3-pygit2 \
+  python3-pika python3-cmdln python3-lxml python3-python-dateutil python3-colorama \
   python3-influxdb-client python3-pytest-cov libxml2-tools curl python3-flake8 python3-requests \
   shadow vim vim-data strace git sudo patch unzip which cpio gawk openSUSE-release openSUSE-release-ftp \
   perl-Net-SSLeay perl-Text-Diff perl-XML-Simple perl-XML-Parser build \
