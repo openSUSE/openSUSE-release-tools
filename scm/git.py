@@ -5,6 +5,7 @@ import shutil
 
 import pygit2
 
+
 class Git(scm.base.SCMBase):
     """SCM interface implementation for Git"""
 

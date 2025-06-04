@@ -9,6 +9,7 @@ from osclib.stagingapi import StagingAPI
 import osc.core
 from urllib.error import HTTPError
 
+
 class CommentAPI:
     """Proxy class for osclib CommentAPI"""
 
@@ -24,6 +25,7 @@ class CommentAPI:
             project_name=project_name,
             package_name=package_name
         )
+
 
 class OBS(plat.base.PlatformBase):
     """Implementation of platform interface for OBS"""
@@ -108,7 +110,6 @@ class OBS(plat.base.PlatformBase):
         except HTTPError as e:
             print(f'ERROR in URL {url} [{e}]')
         return False
-
 
     def change_review_state(self, req, newstate, message, **kwargs):
         return osc.core.change_review_state(apiurl=self.apiurl,

@@ -28,6 +28,7 @@ class CommentAPI:
         if False:
             yield
 
+
 class RequestAction:
     """Stub action structure for running as an Gitea Action"""
     def __init__(
@@ -65,10 +66,12 @@ class Request:
         self.description = description
         self.reviews = []
 
+
 class StubProjectConfig:
     """Stub project config loader"""
     def get(self, _key, default=None):
         return default
+
 
 class Action(plat.base.PlatformBase):
     """Platform interface implementation for running as Gitea Actions"""

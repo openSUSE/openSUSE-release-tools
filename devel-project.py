@@ -15,7 +15,6 @@ from osclib.core import request_age
 from osclib.core import package_list_kind_filtered
 from osclib.core import entity_email
 from osclib.core import devel_project_fallback
-from osclib.stagingapi import StagingAPI
 from osclib.util import mail_send
 
 import ReviewBot
@@ -125,7 +124,7 @@ class DevelProject(ReviewBot.ReviewBot):
             # Repeat notification so remove old comment.
             try:
                 comment_api.delete(
-                    comment['id'], project=project, package=package, request=request_id)
+                    comment['id'], project=project, package=package, request=request.reqid)
             except HTTPError as e:
                 if e.code == 403:
                     # Gracefully skip when previous reminder was by another user.
@@ -142,7 +141,7 @@ class DevelProject(ReviewBot.ReviewBot):
         print('  ' + message)
         message = comment_api.add_marker(message, BOT_NAME)
         comment_api.add_comment(
-            request_id=request_id, project_name=project, package_name=package, comment=message)
+            request_id=request.reqid, project_name=project, package_name=package, comment=message)
 
     def do_list(self, opts, cmd_opts):
         devel_projects = self._devel_projects_get(opts.project)
@@ -332,6 +331,7 @@ class DevelProject(ReviewBot.ReviewBot):
             else:
                 self._remind_comment(cmd_opts.repeat_age, request, action.tgt_project, action.tgt_package)
 
+
 def common_options(f):
     f = cmdln.option('--min-age', type=int, default=0, metavar='DAYS', help='min age of requests')(f)
     f = cmdln.option('--repeat-age', type=int, default=7, metavar='DAYS', help='age after which a new reminder will be sent')(f)
@@ -411,6 +411,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
     def do_list_devel_projects(self, subcmd, opts, *args):
         return self.checker.do_list_devel_projects(self.options, opts)
+
 
 if __name__ == "__main__":
     app = CommandLineInterface()
