@@ -7,6 +7,7 @@ import re
 from datetime import datetime, timezone
 from urllib.parse import urljoin
 
+
 class API:
     """Gitea API wrapper class"""
 
@@ -38,6 +39,7 @@ class API:
 
     def delete(self, path, **kwargs):
         return self.request('DELETE', path, **kwargs)
+
 
 class CommentAPI:
     """CommentAPI implementation for Gitea"""
@@ -134,6 +136,7 @@ class CommentAPI:
     def delete(self, comment_id, project, package, request):
         self.api.delete(f'repos/{project}/{package}/issues/{request}/comments/{comment_id}')
 
+
 class StagingAPI:
     """StagingAPI implementation for Gitea"""
 
@@ -148,6 +151,7 @@ class StagingAPI:
         content = base64.b64decode(data["content"]).decode("utf-8")
         print(content)
 
+
 class RequestAction:
     """Stub action class"""
     def __init__(self, type, src_project, src_package, src_rev, tgt_project, tgt_package):
@@ -157,6 +161,7 @@ class RequestAction:
         self.src_rev = src_rev
         self.tgt_project = tgt_project
         self.tgt_package = tgt_package
+
 
 class Request:
     """Request structure implemented for Gitea"""
@@ -190,7 +195,7 @@ class Request:
         self.title = json["title"]
         self.description = json["body"]
         self.state = json["state"]
-        self.actions=[RequestAction(
+        self.actions = [RequestAction(
             type="submit",
             src_project=json["head"]["repo"]["owner"]["login"],
             src_package=json["head"]["repo"]["name"],
@@ -273,7 +278,7 @@ class Gitea(plat.base.PlatformBase):
         while True:
             params["page"] = page
             page += 1
-            search_res = self.api.get(f'repos/issues/search', params=params)
+            search_res = self.api.get('repos/issues/search', params=params)
             search_res.raise_for_status()
             search_json = search_res.json()
             if not search_json:
