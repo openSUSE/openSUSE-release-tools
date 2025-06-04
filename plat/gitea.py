@@ -55,8 +55,10 @@ class CommentAPI:
             'comment': html.unescape(comment["body"])
         }
 
-    def get_comments(self, request_id, project_name=None, package_name=None):
-        res = self.api.get(f'repos/{project_name}/{package_name}/issues/{request_id}/comments')
+    def get_comments(self, request, project_name=None, package_name=None):
+        project_name = project_name or request._owner
+        package_name = package_name or request._repo
+        res = self.api.get(f'repos/{project_name}/{package_name}/issues/{request.reqid}/comments')
         res.raise_for_status()
 
         json = res.json()
@@ -67,8 +69,13 @@ class CommentAPI:
         return comments
 
     def request_as_comment_dict(self, request):
-        # TODO
-        return {}
+        return {
+            'who': request.creator,
+            'when': datetime.fromisoformat(request.created_at),
+            'id': '-1',
+            'parent': None,
+            'comment': request.description,
+        }
 
     def comment_find(self, comments, bot, info_match=None):
         # XXX deduplicate this?
@@ -143,8 +150,11 @@ class StagingAPI:
 
 class RequestAction:
     """Stub action class"""
-    def __init__(self, type, tgt_project, tgt_package):
+    def __init__(self, type, src_project, src_package, src_rev, tgt_project, tgt_package):
         self.type = type
+        self.src_project = src_project
+        self.src_package = src_package
+        self.src_rev = src_rev
         self.tgt_project = tgt_project
         self.tgt_package = tgt_package
 
@@ -167,7 +177,11 @@ class Request:
         self.reviews = []
         self._issues = None
 
-    def read(self, json):
+        # Gitea specific attributes
+        self.owner = None
+        self.repo = None
+
+    def read(self, json, owner, repo):
         """Read in a request from JSON response"""
         self._init_attributes()
         self.reqid = str(json["number"])
@@ -178,10 +192,17 @@ class Request:
         self.state = json["state"]
         self.actions=[RequestAction(
             type="submit",
-            tgt_project=json["repository"]["owner"],
-            tgt_package=json["repository"]["name"])]
-        if json["pull_request"]["merged"]:
+            src_project=json["head"]["repo"]["owner"]["login"],
+            src_package=json["head"]["repo"]["name"],
+            src_rev=json["head"]["sha"],
+            tgt_project=json["base"]["repo"]["owner"]["login"],
+            tgt_package=json["base"]["repo"]["name"])]
+        if json.get("merged"):
             self.accept_at = json["merged_at"]
+
+        self._owner = owner
+        self._repo = repo
+
 
 class ProjectConfig:
     """Project Config implemented for Gitea"""
@@ -212,6 +233,17 @@ class Gitea(plat.base.PlatformBase):
     def get_request_age(self, request):
         return datetime.now(timezone.utc) - datetime.fromisoformat(request.created_at)
 
+    def _request_from_issue(self, issue_json):
+        owner = issue_json["repository"]["owner"]
+        repo = issue_json["repository"]["name"]
+        pr_id = issue_json["number"]
+        res = self.api.get(f'repos/{owner}/{repo}/pulls/{pr_id}')
+        res.raise_for_status()
+
+        ret = Request()
+        ret.read(res.json(), owner=owner, repo=repo)
+        return ret
+
     def get_request_list_with_history(
             self, project='', package='', req_who='', req_state=('new', 'review', 'declined'),
             req_type=None, exclude_target_projects=[]):
@@ -229,9 +261,7 @@ class Gitea(plat.base.PlatformBase):
             list_json = list_res.json()
 
             for i in list_json:
-                request = Request()
-                request.read(i)
-                yield request
+                yield self._request_from_issue(i)
 
     def get_staging_api(self, project):
         return StagingAPI(project, self.api)
@@ -240,7 +270,6 @@ class Gitea(plat.base.PlatformBase):
         params: dict[str, str | int] = {'state': 'open', "type": "pulls", "review_requested": "true"}
 
         page = 1
-        ret = []
         while True:
             params["page"] = page
             page += 1
@@ -251,8 +280,18 @@ class Gitea(plat.base.PlatformBase):
                 break
 
             for i in search_json:
-                request = Request()
-                request.read(i)
-                ret.append(request)
+                yield self._request_from_issue(i)
 
-        return ret
+    def can_accept_review(self, req, **kwargs):
+        # stub
+        return True
+
+    def change_review_state(self, req, newstate, message, **kwargs):
+        json = {'body': message}
+        if newstate == 'accepted':
+            json['event'] = 'APPROVED'
+        elif newstate == 'declined':
+            json['event'] = 'REQUEST_CHANGES'
+
+        res = self.api.post(f'repos/{req._owner}/{req._repo}/pulls/{req.reqid}/reviews', json=json)
+        res.raise_for_status()

@@ -47,7 +47,7 @@ class OSC(scm.base.SCMBase):
                 pathname=pathname,
                 **kwargs
             )
-            shutil.rmtree(os.path.join(target_package, '.osc'))
+            shutil.rmtree(os.path.join(pathname, target_package, '.osc'))
         finally:
             sys.stdout = _stdout
         return result
