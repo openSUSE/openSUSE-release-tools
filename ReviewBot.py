@@ -10,8 +10,6 @@ import cmdln
 from collections import namedtuple
 from collections import OrderedDict
 from osclib.cache import Cache
-from osclib.comments import CommentAPI
-from osclib.conf import Config
 from osclib.core import action_is_patchinfo
 from osclib.core import devel_project_fallback
 from osclib.core import group_members
@@ -22,6 +20,8 @@ from osclib.core import request_age
 from osclib.memoize import memoize
 from osclib.memoize import memoize_session_reset
 from osclib.stagingapi import StagingAPI
+import scm
+import plat
 import signal
 import datetime
 import time
@@ -39,8 +39,8 @@ class PackageLookup(object):
     """ helper class to manage 00Meta/lookup.yml
     """
 
-    def __init__(self, apiurl=None):
-        self.apiurl = apiurl
+    def __init__(self, scm):
+        self.scm = scm
         # dict[project][package]
         self.lookup = {}
 
@@ -58,14 +58,7 @@ class PackageLookup(object):
         self.lookup[project] = yaml.safe_load(fh) if fh else {}
 
     def _load_lookup_file(self, prj):
-        try:
-            return osc.core.http_GET(osc.core.makeurl(self.apiurl,
-                                                      ['source', prj, '00Meta', 'lookup.yml']))
-        except HTTPError as e:
-            # in case the project doesn't exist yet (like sle update)
-            if e.code != 404:
-                raise e
-            return None
+        return self.scm.get_path('source', prj, '00Meta', 'lookup.yml')
 
 
 @unique
@@ -104,8 +97,18 @@ class ReviewBot(object):
             ('openSUSE.org:', 'https://api.opensuse.org', 'obsrq'),
         ]}
 
-    def __init__(self, apiurl=None, dryrun=False, logger=None, user=None, group=None):
-        self.apiurl = apiurl
+    def __init__(
+            self,
+            apiurl=None,
+            dryrun=False,
+            logger=None,
+            user=None,
+            group=None,
+            scm_type="OSC",
+            platform_type="OBS"
+    ):
+        self._apiurl = apiurl
+
         self.ibs = apiurl.startswith('https://api.suse.de')
         self.dryrun = dryrun
         self.logger = logger
@@ -116,7 +119,6 @@ class ReviewBot(object):
         self._review_mode: ReviewChoices = ReviewChoices.NORMAL
         self.fallback_user = None
         self.fallback_group = None
-        self.comment_api = CommentAPI(self.apiurl)
         self.bot_name = self.__class__.__name__
         self.only_one_action = False
         self.request_default_return = None
@@ -125,9 +127,56 @@ class ReviewBot(object):
         self.override_group_key = f'{self.bot_name.lower()}-override-group'
         self.request_age_min_default = 0
         self.request_age_min_key = f'{self.bot_name.lower()}-request-age-min'
-        self.lookup = PackageLookup(self.apiurl)
+
+        self.scm_type = scm_type
+        self.platform_type = platform_type
+
+        self.lookup = PackageLookup(self.scm)
 
         self.load_config()
+
+    @property
+    def apiurl(self):
+        return self._apiurl
+
+    @apiurl.setter
+    def apiurl(self, url):
+        self._apiurl = url
+        if self.scm_type == "OSC":
+            self.scm = scm.OSC(self.apiurl)
+
+    @property
+    def scm_type(self):
+        return self._scm_type
+
+    @scm_type.setter
+    def scm_type(self, scm_type: str):
+        scm_type = scm_type.upper()
+        if scm_type == "OSC":
+            self.scm = scm.OSC(self.apiurl)
+        elif scm_type == "GIT":
+            self.scm = scm.Git()
+        elif scm_type == "ACTION":
+            self.scm = scm.Action(self.logger)
+        else:
+            raise RuntimeError(f'invalid SCM type: {scm_type}')
+
+        self._scm_type = scm_type
+
+    @property
+    def platform_type(self):
+        return self._platform_type
+
+    @platform_type.setter
+    def platform_type(self, platform_type: str):
+        platform_type = platform_type.upper()
+        if platform_type == 'OBS':
+            self.platform = plat.OBS(self._apiurl)
+        elif platform_type == "ACTION":
+            self.platform = plat.Action(self.logger)
+        else:
+            raise RuntimeError(f'invalid Platform type: {platform_type}')
+        self._platform_type = platform_type
 
     def _load_config(self, handle=None):
         d = self.__class__.config_defaults
@@ -143,14 +192,11 @@ class ReviewBot(object):
 
     def has_staging(self, project):
         try:
-            url = osc.core.makeurl(self.apiurl, ('staging', project, 'staging_projects'))
-            osc.core.http_GET(url)
-            return True
+            ret = self.scm.get_path('staging', project, 'staging_projects')
+            return ret is not None
         except HTTPError as e:
-            if e.code != 404:
-                self.logger.error(f'ERROR in URL {url} [{e}]')
-                raise
-        return False
+            self.logger.error(f'HTTP ERROR [{e}]')
+            raise
 
     def staging_api(self, project):
         # Allow for the Staging subproject to be passed directly from config
@@ -160,7 +206,7 @@ class ReviewBot(object):
             project = project[:-8]
 
         if project not in self.staging_apis:
-            Config.get(self.apiurl, project)
+            self.platform.get_project_config(project)
             self.staging_apis[project] = StagingAPI(self.apiurl, project)
 
         return self.staging_apis[project]
@@ -178,11 +224,7 @@ class ReviewBot(object):
 
     def set_request_ids(self, ids):
         for rqid in ids:
-            u = osc.core.makeurl(self.apiurl, ['request', rqid], {'withfullhistory': '1'})
-            r = osc.core.http_GET(u)
-            root = ET.parse(r).getroot()
-            req = osc.core.Request()
-            req.read(root)
+            req = self.platform.get_request(rqid, with_full_history=True)
             self.requests.append(req)
 
     # function called before requests are reviewed
@@ -234,10 +276,30 @@ class ReviewBot(object):
 
         return return_value
 
+    def check_as_action(self):
+        self.staging_apis = {}
+
+        # give implementations a chance to do something before single requests
+        self.prepare_review()
+
+        self.request = plat.Action.get_stub_request()
+        try:
+            ret = self.check_one_request(self.request)
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            return 255
+
+        state = "accepted" if ret else "declined"
+        msg = self.review_messages[state] if state in self.review_messages else state
+        print(msg)
+
+        return 0 if ret else 1
+
     @memoize(session=True)
     def request_override_check_users(self, project: str) -> List[str]:
         """Determine users allowed to override review in a comment command."""
-        config = Config.get(self.apiurl, project)
+        config = self.platform.get_project_config(project)
 
         users = []
         group = config.get('staging-group')
@@ -276,12 +338,12 @@ class ReviewBot(object):
         if not who_allowed:
             who_allowed = self.request_override_check_users(action.tgt_project)
 
-        comments = self.comment_api.get_comments(request_id=request.reqid)
+        comments = self.platform.comment_api.get_comments(request_id=request.reqid)
         if include_description:
-            request_comment = self.comment_api.request_as_comment_dict(request)
+            request_comment = self.platform.comment_api.request_as_comment_dict(request)
             comments[request_comment['id']] = request_comment
 
-        yield from self.comment_api.command_find(comments, self.review_user, command, who_allowed)
+        yield from self.platform.comment_api.command_find(comments, self.review_user, command, who_allowed)
 
     def _set_review(self, req, state):
         doit = self.can_accept_review(req.reqid)
@@ -755,15 +817,15 @@ class ReviewBot(object):
         if info_extra and info_extra_identical:
             info.update(info_extra)
 
-        comments = self.comment_api.get_comments(**kwargs)
-        comment, _ = self.comment_api.comment_find(comments, bot_name, info)
+        comments = self.platform.comment_api.get_comments(**kwargs)
+        comment, _ = self.platform.comment_api.comment_find(comments, bot_name, info)
 
         if info_extra and not info_extra_identical:
             # Add info_extra once comment has already been matched.
             info.update(info_extra)
 
-        message = self.comment_api.add_marker(message, bot_name, info)
-        message = self.comment_api.truncate(message.strip())
+        message = self.platform.comment_api.add_marker(message, bot_name, info)
+        message = self.platform.comment_api.truncate(message.strip())
 
         if self._is_comment_identical(comment, message, identical):
             # Assume same state/result and number of lines in message is duplicate.
@@ -772,18 +834,18 @@ class ReviewBot(object):
 
         if comment is None:
             self.logger.debug(f'broadening search to include any state on {debug_key}')
-            comment, _ = self.comment_api.comment_find(comments, bot_name)
+            comment, _ = self.platform.comment_api.comment_find(comments, bot_name)
         if comment is not None:
             self.logger.debug(f'removing previous comment on {debug_key}')
             if not self.dryrun:
-                self.comment_api.delete(comment['id'])
+                self.platform.comment_api.delete(comment['id'])
         elif only_replace:
             self.logger.debug(f'no previous comment to replace on {debug_key}')
             return
 
         self.logger.debug(f'adding comment to {debug_key}: {message}')
         if not self.dryrun:
-            self.comment_api.add_comment(comment=message, **kwargs)
+            self.platform.comment_api.add_comment(comment=message, **kwargs)
 
         self.comment_handler_remove()
 
@@ -792,7 +854,7 @@ class ReviewBot(object):
             return False
         if identical:
             # Remove marker from comments since handled during comment_find().
-            return self.comment_api.remove_marker(comment['comment']) == self.comment_api.remove_marker(message)
+            return self.platform.comment_api.remove_marker(comment['comment']) == self.platform.comment_api.remove_marker(message)
         else:
             return comment['comment'].count('\n') == message.count('\n')
 
@@ -852,7 +914,7 @@ class ReviewBot(object):
 
         if age_min is None or isinstance(age_min, str):
             key = self.request_age_min_key if age_min is None else age_min
-            age_min = int(Config.get(self.apiurl, target_project).get(key, self.request_age_min_default))
+            age_min = int(self.platform.get_project_config(target_project).get(key, self.request_age_min_default))
 
         age = request_age(request).total_seconds()
         if age < age_min:
@@ -891,6 +953,8 @@ class CommandLineInterface(cmdln.Cmdln):
         parser.add_option("--fallback-user", dest='fallback_user', metavar='USER', help="fallback review user")
         parser.add_option("--fallback-group", dest='fallback_group', metavar='GROUP', help="fallback review group")
         parser.add_option('-c', '--config', dest='config', metavar='FILE', help='read config file FILE')
+        parser.add_option('--scm-type', default='OSC', dest='scm_type', metavar='SCM', help='set scm type')
+        parser.add_option('--platform', default='OBS', dest='platform_type', metavar='Platform', help='set platform type')
 
         return parser
 
@@ -904,10 +968,12 @@ class CommandLineInterface(cmdln.Cmdln):
         logging.basicConfig(level=level, format='[%(levelname).1s] %(message)s')
         self.logger = logging.getLogger(self.optparser.prog)
 
-        conf.get_config(override_apiurl=self.options.apiurl)
+        if self.options.scm_type == 'OSC':
+            # XXX refactor this out?
+            conf.get_config(override_apiurl=self.options.apiurl)
 
-        if (self.options.osc_debug):
-            conf.config['debug'] = True
+            if (self.options.osc_debug):
+                conf.config['debug'] = True
 
         self.checker = self.setup_checker()
         if self.options.config:
@@ -924,20 +990,42 @@ class CommandLineInterface(cmdln.Cmdln):
 
     def setup_checker(self):
         """ reimplement this """
-        apiurl = conf.config['apiurl']
-        if apiurl is None:
-            raise osc.oscerr.ConfigError("missing apiurl")
         user = self.options.user
         group = self.options.group
-        # if no args are given, use the current oscrc "owner"
-        if user is None and group is None:
-            user = conf.get_apiurl_usr(apiurl)
+
+        if self.options.scm_type == 'OSC':
+            # XXX refactor this out?
+            apiurl = conf.config['apiurl']
+            if apiurl is None:
+                raise osc.oscerr.ConfigError("missing apiurl")
+
+            # if no args are given, use the current oscrc "owner"
+            if user is None and group is None:
+                user = conf.get_apiurl_usr(apiurl)
+        else:
+            apiurl = self.options.apiurl
 
         return self.clazz(apiurl=apiurl,
                           dryrun=self.options.dry,
                           user=user,
                           group=group,
-                          logger=self.logger)
+                          logger=self.logger,
+                          scm_type=self.options.scm_type,
+                          platform_type=self.options.platform_type)
+
+    def do_action(self, subcmd, opts, *args):
+        """${cmd_name}: run as an action
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+        if self.options.scm_type.upper() != "ACTION":
+            raise RuntimeError('action command only works with Action as SCM')
+
+        if self.options.platform_type.upper() != "ACTION":
+            raise RuntimeError('action command only works with Action as Platform')
+
+        return self.checker.check_as_action()
 
     def do_id(self, subcmd, opts, *args):
         """${cmd_name}: check the specified request ids
