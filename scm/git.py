@@ -1,9 +1,8 @@
 import scm.base
 
+import git
 import os
 import shutil
-
-import pygit2
 
 
 class Git(scm.base.SCMBase):
@@ -32,13 +31,12 @@ class Git(scm.base.SCMBase):
     ):
         dstpath = os.path.join(pathname, target_package)
         url = f"{self.base_url}/{target_project}/{target_package}.git"
-        repo = pygit2.clone_repository(url, dstpath)
+        repo = git.Repo.clone_from(url, dstpath)
 
         revision = kwargs.get('revision')
         if revision is not None:
-            oid = pygit2.Oid(hex=revision)
-            commit = repo.get(oid)
-            repo.checkout_tree(commit.tree, strategy=pygit2.GIT_CHECKOUT_FORCE)
+            repo.remotes.origin.fetch([revision])
+            repo.git.checkout(revision)
 
         for i in ['.github', '.gitea', '.git']:
             shutil.rmtree(os.path.join(dstpath, i), ignore_errors=True)

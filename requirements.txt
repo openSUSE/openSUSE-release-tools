@@ -1,8 +1,8 @@
 colorama
+GitPython
 lxml
 PyYAML
 pycurl
-pygit2
 python-dateutil
 pyxdg
 cmdln
