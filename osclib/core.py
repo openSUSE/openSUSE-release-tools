@@ -345,7 +345,7 @@ def devel_project_fallback(apiurl, target_project, target_package):
             project, package = devel_project_get(apiurl, 'openSUSE.org:openSUSE:Factory', target_package)
             if project:
                 # Strip openSUSE.org: prefix since string since not used for lookup.
-                project = project.split(':', 1)[1]
+                project = project.replace("openSUSE.org:", "", count=1)
 
     return project, package
 
