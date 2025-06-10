@@ -60,7 +60,7 @@ class CommentAPI:
     def get_comments(self, request, project_name=None, package_name=None):
         project_name = project_name or request._owner
         package_name = package_name or request._repo
-        res = self.api.get(f'repos/{project_name}/{package_name}/issues/{request.reqid}/comments')
+        res = self.api.get(f'repos/{project_name}/{package_name}/issues/{request._pr_id}/comments')
         res.raise_for_status()
 
         json = res.json()
@@ -168,6 +168,15 @@ class Request:
     def __init__(self):
         self._init_attributes()
 
+    @staticmethod
+    def parse_request_id(reqid):
+        owner, repo, pr_id = reqid.split(':')
+        return owner, repo, pr_id
+
+    @staticmethod
+    def construct_request_id(owner, repo, pr_id):
+        return f'{owner}:{repo}:{pr_id}'
+
     def _init_attributes(self):
         self.reqid = None
         self.creator = ''
@@ -183,13 +192,19 @@ class Request:
         self._issues = None
 
         # Gitea specific attributes
-        self.owner = None
-        self.repo = None
+        self._owner = None
+        self._repo = None
+        self._pr_id = None
 
     def read(self, json, owner, repo):
         """Read in a request from JSON response"""
         self._init_attributes()
-        self.reqid = str(json["number"])
+
+        self._owner = owner
+        self._repo = repo
+        self._pr_id = json["number"]
+
+        self.reqid = Request.construct_request_id(owner, repo, json["number"])
         self.creator = json["user"]["login"]
         self.created_at = json["created_at"]
         self.title = json["title"]
@@ -204,9 +219,6 @@ class Request:
             tgt_package=json["base"]["repo"]["name"])]
         if json.get("merged"):
             self.accept_at = json["merged_at"]
-
-        self._owner = owner
-        self._repo = repo
 
 
 class ProjectConfig:
@@ -229,8 +241,17 @@ class Gitea(plat.base.PlatformBase):
     def name(self) -> str:
         return "GITEA"
 
+    def _get_request(self, pr_id, owner, repo):
+        res = self.api.get(f'repos/{owner}/{repo}/pulls/{pr_id}')
+        res.raise_for_status()
+
+        ret = Request()
+        ret.read(res.json(), owner=owner, repo=repo)
+        return ret
+
     def get_request(self, request_id, with_full_history=False):
-        return Request()
+        owner, repo, pr_id = Request.parse_request_id(request_id)
+        return self._get_request(pr_id, owner, repo)
 
     def get_project_config(self, project):
         return ProjectConfig()
@@ -242,12 +263,7 @@ class Gitea(plat.base.PlatformBase):
         owner = issue_json["repository"]["owner"]
         repo = issue_json["repository"]["name"]
         pr_id = issue_json["number"]
-        res = self.api.get(f'repos/{owner}/{repo}/pulls/{pr_id}')
-        res.raise_for_status()
-
-        ret = Request()
-        ret.read(res.json(), owner=owner, repo=repo)
-        return ret
+        return self._get_request(pr_id, owner, repo)
 
     def get_request_list_with_history(
             self, project='', package='', req_who='', req_state=('new', 'review', 'declined'),
@@ -298,5 +314,5 @@ class Gitea(plat.base.PlatformBase):
         elif newstate == 'declined':
             json['event'] = 'REQUEST_CHANGES'
 
-        res = self.api.post(f'repos/{req._owner}/{req._repo}/pulls/{req.reqid}/reviews', json=json)
+        res = self.api.post(f'repos/{req._owner}/{req._repo}/pulls/{req._pr_id}/reviews', json=json)
         res.raise_for_status()
