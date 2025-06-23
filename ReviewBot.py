@@ -1003,7 +1003,8 @@ class CommandLineInterface(cmdln.Cmdln):
                           logger=self.logger,
                           scm_type=self.options.scm_type,
                           platform_type=self.options.platform_type,
-                          gitea_url=self.options.gitea_url)
+                          gitea_url=self.options.gitea_url,
+                          git_base_url=self.options.git_base_url)
 
     def do_action(self, subcmd, opts, *args):
         """${cmd_name}: run as an action
