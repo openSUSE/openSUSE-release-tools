@@ -4,7 +4,6 @@ import argparse
 import logging
 import sys
 
-
 import re
 from lxml import etree as ET
 
