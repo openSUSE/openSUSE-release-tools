@@ -95,7 +95,7 @@ points = []
 
 
 def point(measurement, fields, datetime, tags={}, delta=False):
-    global points
+    global points  # noqa: F824
     points.append(Point(measurement, tags, fields, timestamp(datetime), delta))
 
 
