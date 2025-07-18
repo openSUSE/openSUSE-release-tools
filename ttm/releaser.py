@@ -81,7 +81,9 @@ class ToTestReleaser(ToTestManager):
             # as well as agama-installer
             if 'productcompose' in self.project.main_products[0] and\
                     'productcompose' in self.project.ftp_products[0]:
-                return self.productcompose_build_version(self.project.name, self.project.ftp_products[0])
+                return self.productcompose_build_version(self.project.name, self.project.ftp_products[0],
+                                                         repo=self.project.product_repo_overrides.get(self.project.ftp_products[0],
+                                                                                                      self.project.product_repo))
             return self.iso_build_version(self.project.name, self.project.main_products[0])
 
         return self.iso_build_version(self.project.name, self.project.image_products[0].package,
@@ -146,6 +148,9 @@ class ToTestReleaser(ToTestManager):
             products[image_product.package] = image_product.archs
 
         all_found = self.verify_package_list_complete(self.project.product_repo, products)
+        if len(self.project.product_repo_overrides):
+            for key, value in self.project.product_repo_overrides.items():
+                all_found = self.verify_package_list_complete(value, products)
 
         # Then for containerfile_products
         if self.project.containerfile_products:
@@ -212,7 +217,9 @@ class ToTestReleaser(ToTestManager):
         prjresult = ET.parse(resultxml).getroot()
 
         for product in self.project.ftp_products + self.project.main_products:
-            if not self.package_ok(prjresult, self.project.name, product, self.project.product_repo, self.project.product_arch):
+            if not self.package_ok(prjresult, self.project.name, product,
+                                   self.project.product_repo_overrides.get(product, self.project.product_repo),
+                                   self.project.product_arch):
                 all_ok = False
 
         # agama-installer in Leap uses images repo as source repo as well as target repo
@@ -250,7 +257,9 @@ class ToTestReleaser(ToTestManager):
         product_version = self.get_product_version()
         if product_version is not None:
             for product in self.project.ftp_products:
-                for binary in self.binaries_of_product(self.project.name, product):
+                for binary in self.binaries_of_product(self.project.name, product,
+                                                       repo=self.project.product_repo_overrides.get(
+                                                           product, self.project.product_repo)):
                     # The NonOSS tree doesn't include the version...
                     if binary.endswith('.report') and 'NonOss' not in binary and product_version not in binary:
                         self.logger.debug(f'{binary} in {product} does not include {product_version}')
@@ -293,7 +302,9 @@ class ToTestReleaser(ToTestManager):
 
         if len(self.project.main_products):
             for product in self.project.ftp_products:
-                self.release_package(self.project.name, product, repository=self.project.product_repo)
+                self.release_package(self.project.name, product,
+                                     repository=self.project.product_repo_overrides.get(
+                                         product, self.project.product_repo))
 
             for cd in self.project.main_products:
                 self.release_package(self.project.name, cd, set_release=set_release,
