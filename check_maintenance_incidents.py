@@ -12,6 +12,7 @@ from osclib.memoize import memoize
 from osclib.core import action_is_patchinfo, devel_project_get
 from osclib.core import owner_fallback
 from osclib.core import maintainers_get
+from osclib.core import package_role_expand, project_role_expand
 
 import ReviewBot
 
@@ -24,8 +25,8 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
         self.review_messages = {}
 
-    def add_devel_project_review(self, req, package):
-        """ add devel project/package as reviewer """
+    def get_pkg_for_review(self, req, package):
+        """ Return devel prj/pkg to use as reviewer"""
         a = req.actions[0]
         if action_is_patchinfo(a):
             a = req.actions[1]
@@ -39,9 +40,7 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
                 prj, pkg = devel_project_get(self.apiurl, "openSUSE:Factory", package.rpartition('.')[0])
             logging.debug(f'using devel project {prj}/{pkg}')
             if prj is not None:
-                msg = f'Submission for {pkg} by someone who is not maintainer in the devel project ({prj}). Please review'
-                self.add_review(req, by_project=prj, by_package=pkg, msg=msg)
-                return
+                return prj, pkg
 
         # no devel project -- fallback to /search/owner?package -- OBS side "owner" prj/pkg search with pkg only fallback
         root = owner_fallback(self.apiurl, project, package)
@@ -53,6 +52,15 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
             if prj.startswith('openSUSE:Leap') or prj.startswith('openSUSE:1'):
                 self.logger.debug("%s looks wrong as maintainer, skipped", prj)
                 continue
+
+            return prj, pkg
+
+        return None, None
+
+    def add_devel_project_review(self, req, package):
+        """ add devel project/package as reviewer """
+        prj, pkg = self.get_pkg_for_review(req, package)
+        if prj is not None:
             msg = f'Submission for {pkg} by someone who is not maintainer in the devel project ({prj}). Please review'
             self.add_review(req, by_project=prj, by_package=pkg, msg=msg)
 
@@ -102,7 +110,14 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
                     self.logger.info(f"{pkgname} submitted from {a.src_project}, no maintainer review needed")
                     return
 
-        maintainers = set(maintainers_get(self.apiurl, project, pkgname))
+        devprj, devpkg = self.get_pkg_for_review(req, pkgname)
+        if devpkg is not None:
+            maintainers = set(package_role_expand(self.apiurl, devprj, devpkg))
+        elif devprj is not None:
+            maintainers = set(project_role_expand(self.apiurl, devprj))
+        else:
+            maintainers = set(maintainers_get(self.apiurl, project, pkgname))
+
         if maintainers:
             known_maintainer = False
             for m in maintainers:
