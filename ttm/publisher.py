@@ -305,6 +305,10 @@ class ToTestPublisher(ToTestManager):
         self.api.switch_flag_in_prj(
             self.project.test_project, flag='publish', state='enable',
             repository=self.project.product_repo)
+        if len(self.project.product_repo_overrides):
+            for key, value in self.project.product_repo_overrides.items():
+                self.api.switch_flag_in_prj(self.project.test_project, flag='publish',
+                                            state='enable', repository=value)
 
         if self.project.totest_images_repo != self.project.product_repo:
             self.logger.info('Publish test project content (image_products)')
