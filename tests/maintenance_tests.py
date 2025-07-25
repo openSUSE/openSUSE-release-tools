@@ -126,6 +126,152 @@ class TestMaintenance(OBSLocal.TestCase):
                 </collection>
             """)
 
+    def test_maintainer_submit(self):
+
+        httpretty.register_uri(httpretty.GET,
+                               APIURL + '/search/request',
+                               body="""
+                <collection matches="1">
+                  <request id="261355" creator="bruno_friedmann">
+                    <action type="maintenance_incident">
+                      <source project="home:brassh" package="mysql-workbench" rev="857c77d2ba1d347b6dc50a1e5bcb74e1"/>
+                      <target project="openSUSE:Maintenance" releaseproject="openSUSE:13.2:Update"/>
+                    </action>
+                    <state name="review" who="lnussel_factory" when="2014-11-13T10:46:52">
+                      <comment></comment>
+                    </state>
+                    <review state="new" by_user="maintbot">
+                      <comment></comment>
+                    </review>
+                    <history who="bruno_friedmann" when="2014-11-13T09:18:19">
+                      <description>Request created</description>
+                      <comment>...</comment>
+                    </history>
+                    <history who="lnussel_factory" when="2014-11-13T10:46:52">
+                      <description>Request got a new review request</description>
+                    </history>
+                    <description>...</description>
+                  </request>
+                </collection>
+            """)
+
+        httpretty.register_uri(httpretty.GET,
+                               APIURL + "/request/261355",
+                               match_querystring=True,
+                               body="""
+              <request id="261355" creator="bruno_friedmann">
+                <action type="maintenance_incident">
+                  <source project="home:brassh" package="mysql-workbench" rev="857c77d2ba1d347b6dc50a1e5bcb74e1"/>
+                  <target project="openSUSE:Maintenance" releaseproject="openSUSE:13.2:Update"/>
+                </action>
+                <state name="review" who="lnussel_factory" when="2014-11-13T10:46:52">
+                  <comment></comment>
+                </state>
+                <review state="new" by_user="maintbot">
+                  <comment></comment>
+                </review>
+                <history who="bruno_friedmann" when="2014-11-13T09:18:19">
+                  <description>Request created</description>
+                  <comment>...</comment>
+                </history>
+                <history who="lnussel_factory" when="2014-11-13T10:46:52">
+                  <description>Request got a new review request</description>
+                </history>
+                <description>...</description>
+              </request>
+            """)
+
+        result = {'devel_review_added': None}
+
+        def change_request(result, method, uri, headers):
+            query = parse_qs(urlparse(uri).query)
+            if query == {'by_package': ['mysql-workbench'], 'cmd': ['addreview'], 'by_project': ['server:database']}:
+                result['devel_review_added'] = True
+            return (200, headers, '<status code="ok"/>')
+
+        httpretty.register_uri(httpretty.POST,
+                               APIURL + "/request/261355",
+                               body=lambda method, uri, headers: change_request(result, method, uri, headers))
+
+        self.checker.requests = []
+        self.checker.set_request_ids_search_review()
+        self.checker.check_requests()
+
+        self.assertFalse(result['devel_review_added'])
+
+    def test_prj_maintainer_submit(self):
+
+        httpretty.register_uri(httpretty.GET,
+                               APIURL + '/search/request',
+                               body="""
+                <collection matches="1">
+                  <request id="261355" creator="factory-maintainer">
+                    <action type="maintenance_incident">
+                      <source project="home:brassh" package="mysql-workbench" rev="857c77d2ba1d347b6dc50a1e5bcb74e1"/>
+                      <target project="openSUSE:Maintenance" releaseproject="openSUSE:13.2:Update"/>
+                    </action>
+                    <state name="review" who="lnussel_factory" when="2014-11-13T10:46:52">
+                      <comment></comment>
+                    </state>
+                    <review state="new" by_user="maintbot">
+                      <comment></comment>
+                    </review>
+                    <history who="factory-maintainer" when="2014-11-13T09:18:19">
+                      <description>Request created</description>
+                      <comment>...</comment>
+                    </history>
+                    <history who="lnussel_factory" when="2014-11-13T10:46:52">
+                      <description>Request got a new review request</description>
+                    </history>
+                    <description>...</description>
+                  </request>
+                </collection>
+            """)
+
+        httpretty.register_uri(httpretty.GET,
+                               APIURL + "/request/261355",
+                               match_querystring=True,
+                               body="""
+              <request id="261355" creator="factory-maintainer">
+                <action type="maintenance_incident">
+                  <source project="home:brassh" package="mysql-workbench" rev="857c77d2ba1d347b6dc50a1e5bcb74e1"/>
+                  <target project="openSUSE:Maintenance" releaseproject="openSUSE:13.2:Update"/>
+                </action>
+                <state name="review" who="lnussel_factory" when="2014-11-13T10:46:52">
+                  <comment></comment>
+                </state>
+                <review state="new" by_user="maintbot">
+                  <comment></comment>
+                </review>
+                <history who="factory-maintainer" when="2014-11-13T09:18:19">
+                  <description>Request created</description>
+                  <comment>...</comment>
+                </history>
+                <history who="lnussel_factory" when="2014-11-13T10:46:52">
+                  <description>Request got a new review request</description>
+                </history>
+                <description>...</description>
+              </request>
+            """)
+
+        result = {'devel_review_added': None}
+
+        def change_request(result, method, uri, headers):
+            query = parse_qs(urlparse(uri).query)
+            if query == {'by_package': ['mysql-workbench'], 'cmd': ['addreview'], 'by_project': ['server:database']}:
+                result['devel_review_added'] = True
+            return (200, headers, '<status code="ok"/>')
+
+        httpretty.register_uri(httpretty.POST,
+                               APIURL + "/request/261355",
+                               body=lambda method, uri, headers: change_request(result, method, uri, headers))
+
+        self.checker.requests = []
+        self.checker.set_request_ids_search_review()
+        self.checker.check_requests()
+
+        self.assertFalse(result['devel_review_added'])
+
     def test_non_maintainer_submit(self):
         """same as above but already has devel project as reviewer
         """
