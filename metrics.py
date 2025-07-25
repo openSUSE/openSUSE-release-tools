@@ -94,8 +94,9 @@ def search_paginated_generator(apiurl, queries=None, **kwargs):
 points = []
 
 
-def point(measurement, fields, datetime, tags={}, delta=False):
-    global points
+def point(measurement, fields, datetime, tags=None, delta=False):
+    if tags is None:
+        tags = {}
     points.append(Point(measurement, tags, fields, timestamp(datetime), delta))
 
 
