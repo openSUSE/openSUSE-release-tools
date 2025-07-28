@@ -50,6 +50,8 @@ class ToTest(object):
         self.livecd_products = []
         self.image_products = []
         self.product_repo_overrides = {}
+        # publish the default product_repo, ignore product_repo_overrides
+        self.publish_multiple_product_repo = False
 
         self.test_subproject = 'ToTest'
         self.base = project.split(':')[0]
