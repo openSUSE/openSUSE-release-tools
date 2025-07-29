@@ -285,7 +285,7 @@ class InstallChecker(object):
                 self.report_state('success', self.gocd_url(), project, repository, buildids)
             else:
                 result_comment.insert(0, f'Generated from {self.gocd_url()}\n')
-                self.report_state('failure', self.upload_failure(project, result_comment, devel), project, repository, buildids)
+                self.report_state('failure', self.upload_failure(project, result_comment), project, repository, buildids)
                 self.logger.warning(f'Not accepting {project}')
                 return False
 
