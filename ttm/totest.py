@@ -9,6 +9,7 @@
 # Distribute under GPLv2 or GPLv3
 
 import yaml
+import re
 from osclib.core import attribute_value_load
 
 
@@ -48,6 +49,9 @@ class ToTest(object):
         self.containerfile_products = []
         self.livecd_products = []
         self.image_products = []
+        self.product_repo_overrides = {}
+        # publish the default product_repo, ignore product_repo_overrides
+        self.publish_multiple_product_repo = False
 
         self.test_subproject = 'ToTest'
         self.base = project.split(':')[0]
@@ -67,6 +71,15 @@ class ToTest(object):
         # Set default for totest_images_repo
         if self.totest_images_repo is None:
             self.totest_images_repo = self.product_repo
+
+        # do allow to override repository for ftp product
+        ftp_products_copy = self.ftp_products.copy()
+        for product in ftp_products_copy:
+            extract_product = re.search(r"(.+)/product_repo:(.+)", product)
+            if extract_product:
+                self.ftp_products.remove(product)
+                self.ftp_products.append(extract_product.group(1))
+                self.product_repo_overrides[extract_product.group(1)] = extract_product.group(2)
 
     def parse_images(self, products):
         parsed = []

@@ -19,7 +19,9 @@ pipelines:
             resources:
             - staging-bot
             tasks:
-            - script: ./check_source.py -A https://api.opensuse.org --verbose --skip-add-reviews --user factory-auto review
+            - script: |-
+                git config --global url.https://src.opensuse.org/.insteadof ssh://gitea@src.opensuse.org/
+                ./check_source.py -A https://api.opensuse.org --verbose --skip-add-reviews --user factory-auto review
   openSUSE.MaintInstCheck:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished

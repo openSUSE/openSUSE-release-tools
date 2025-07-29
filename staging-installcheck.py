@@ -173,10 +173,8 @@ class InstallChecker(object):
             args = args.replace(',', ' ').split(' ')
         return set(args)
 
-    def staging(self, project, force=False):
+    def staging(self, project, repository, force=False, devel=False):
         api = self.api
-
-        repository = self.api.cmain_repo
 
         # fetch the build ids at the beginning - mirroring takes a while
         buildids = {}
@@ -216,20 +214,21 @@ class InstallChecker(object):
 
         result = True
         to_ignore = self.packages_to_ignore(project)
-        status = api.project_status(project)
-        if status is None:
-            self.logger.error(f'no project status for {project}')
-            return False
+        if not devel:
+            status = api.project_status(project)
+            if status is None:
+                self.logger.error(f'no project status for {project}')
+                return False
 
-        # collect packages to be deleted
-        to_delete = set()
-        for req in status.findall('staged_requests/request'):
-            if req.get('type') == 'delete':
-                to_delete |= self.pkg_with_multibuild_flavors(req.get('package'))
+            # collect packages to be deleted
+            to_delete = set()
+            for req in status.findall('staged_requests/request'):
+                if req.get('type') == 'delete':
+                    to_delete |= self.pkg_with_multibuild_flavors(req.get('package'))
 
-        for req in status.findall('staged_requests/request'):
-            if req.get('type') == 'delete':
-                result = self.check_delete_request(req, to_ignore, to_delete, result_comment) and result
+            for req in status.findall('staged_requests/request'):
+                if req.get('type') == 'delete':
+                    result = self.check_delete_request(req, to_ignore, to_delete, result_comment) and result
 
         for arch in architectures:
             # hit the first repository in the target project (if existant)
@@ -279,13 +278,16 @@ class InstallChecker(object):
             result_comment.append(yaml.dump(duplicates, default_flow_style=False))
             result = False
 
-        if result:
-            self.report_state('success', self.gocd_url(), project, repository, buildids)
+        if devel:
+            print(project, '\n'.join(result_comment))
         else:
-            result_comment.insert(0, f'Generated from {self.gocd_url()}\n')
-            self.report_state('failure', self.upload_failure(project, result_comment), project, repository, buildids)
-            self.logger.warning(f'Not accepting {project}')
-            return False
+            if result:
+                self.report_state('success', self.gocd_url(), project, repository, buildids)
+            else:
+                result_comment.insert(0, f'Generated from {self.gocd_url()}\n')
+                self.report_state('failure', self.upload_failure(project, result_comment, devel), project, repository, buildids)
+                self.logger.warning(f'Not accepting {project}')
+                return False
 
         return result
 
@@ -403,6 +405,10 @@ if __name__ == '__main__':
         description='Do an installcheck on staging project')
     parser.add_argument('-s', '--staging', type=str, default=None,
                         help='staging project')
+    parser.add_argument('--devel', type=str, default=None,
+                        help='devel project (ex GNOME:Factory)')
+    parser.add_argument('-r', '--repository', type=str, default=None,
+                        help='repository to check, if not specified, use the staging configuration')
     parser.add_argument('-p', '--project', type=str, default='openSUSE:Factory',
                         help='project to check (ex. openSUSE:Factory, openSUSE:Leap:15.1)')
     parser.add_argument('-d', '--debug', action='store_true', default=False,
@@ -417,6 +423,8 @@ if __name__ == '__main__':
     apiurl = osc.conf.config['apiurl']
     config = Config.get(apiurl, args.project)
     api = StagingAPI(apiurl, args.project)
+    if not args.repository:
+        args.repository = api.cmain_repo
     staging_report = InstallChecker(api, config)
 
     if args.debug:
@@ -425,10 +433,13 @@ if __name__ == '__main__':
         logging.basicConfig(level=logging.INFO)
 
     if args.staging:
-        if not staging_report.staging(api.prj_from_short(args.staging), force=True):
+        if not staging_report.staging(api.prj_from_short(args.staging), repository=args.repository, force=True):
+            sys.exit(1)
+    elif args.devel:
+        if not staging_report.staging(args.devel, repository=args.repository, force=True, devel=True):
             sys.exit(1)
     else:
         for staging in api.get_staging_projects():
             if api.is_adi_project(staging):
-                staging_report.staging(staging)
+                staging_report.staging(staging, repository=args.repository)
     sys.exit(0)
