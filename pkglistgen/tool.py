@@ -669,6 +669,7 @@ class PkgListGen(ToolBase.ToolBase):
         stop_after_solve: bool,
         custom_cache_tag,
         engine: Engine,
+        exit_on_dirty=True,
     ):
         self.all_architectures = target_config.get('pkglistgen-archs').split(' ')
         self.use_newest_version = str2bool(target_config.get('pkglistgen-use-newest-version', 'False'))
@@ -698,7 +699,10 @@ class PkgListGen(ToolBase.ToolBase):
                                                        repository=[main_repo], multibuild=True))
             if len(root.xpath('result[@state="building"]')) or len(root.xpath('result[@state="dirty"]')):
                 logging.info(f'{project}/{product_package} build in progress')
-                return
+                if exit_on_dirty:
+                    return
+                else:
+                    logging.info('--proceed-on-dirty has been set, continuing...')
         if git_url:
             git_url_base, *fragment = git_url.split('#')
             if os.path.exists(f"{cache_dir}/.git"):
