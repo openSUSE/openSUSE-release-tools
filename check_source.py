@@ -270,7 +270,8 @@ class CheckSource(ReviewBot.ReviewBot):
         expected_name = target_package
         if filename == '_preinstallimage':
             expected_name = 'preinstallimage'
-        if not (filename.endswith('.kiwi') or filename == 'Dockerfile') and new_info['name'] != expected_name:
+        if not (filename.endswith('.kiwi') or filename == 'Dockerfile' or filename.endswith('mkosi.conf')) \
+           and new_info['name'] != expected_name:
             shutil.rmtree(copath)
             self.review_messages['declined'] = (
                 f"A package submitted as {target_package} has to build as 'Name: {expected_name}' - found Name '{new_info['name']}'")
