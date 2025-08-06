@@ -150,7 +150,7 @@ class ToTestReleaser(ToTestManager):
         all_found = self.verify_package_list_complete(self.project.product_repo, products)
         if len(self.project.product_repo_overrides):
             for key, value in self.project.product_repo_overrides.items():
-                all_found = self.verify_package_list_complete(value, products)
+                all_found = self.verify_package_list_complete(value, products) and all_found
 
         # Then for containerfile_products
         if self.project.containerfile_products:
