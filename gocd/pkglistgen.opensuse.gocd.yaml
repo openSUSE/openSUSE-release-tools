@@ -124,11 +124,11 @@ pipelines:
         approval:
           type: manual
         jobs:
-          openSUSE_Leap_16.0:
+          openSUSE_Leap_16.0_Products:
             resources:
             - repo-checker
             tasks:
-              - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:16.0
+              - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:16.0:Products
   Update.Weakremovers.Leap_16_0:
     group: Leap
     lock_behavior: unlockWhenFinished
@@ -145,11 +145,11 @@ pipelines:
         approval:
           type: manual
         jobs:
-          openSUSE_Leap_16.0:
+          openSUSE_Leap_16.0_Products:
             resources:
             - repo-checker
             tasks:
-              - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:16.0 -s target --only-update-weakremovers
+              - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:16.0:Products -s target --only-update-weakremovers
   SkippkgFinder.Leap_16_0:
     group: Leap
     lock_behavior: unlockWhenFinished
@@ -187,4 +187,4 @@ pipelines:
         resources:
         - repo-checker
         tasks:
-          - script: ./pkglistgen.py --verbose -A https://api.opensuse.org update_and_solve --project openSUSE:Leap:16.0 --scope target --engine product_composer --force
+          - script: ./pkglistgen.py --verbose -A https://api.opensuse.org update_and_solve --project openSUSE:Leap:16.0:Products --scope target --engine product_composer --force
