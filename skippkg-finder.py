@@ -27,6 +27,8 @@ class SkippkgFinder(object):
     def __init__(self, opensuse_project, print_only):
         self.opensuse_project = opensuse_project
         self.opensuse_nonfree_project = opensuse_project + ":NonFree"
+        if not opensuse_project[-1].isdigit():
+            self.opensuse_nonfree_project = opensuse_project.rsplit(':', 1)[0] + ":NonFree"
         self.print_only = print_only
         self.apiurl = osc.conf.config['apiurl']
         self.debug = osc.conf.config['debug']

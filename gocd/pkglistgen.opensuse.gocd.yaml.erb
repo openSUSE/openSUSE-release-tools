@@ -119,7 +119,7 @@ pipelines:
         approval:
           type: manual
         jobs:
-<% %w(openSUSE:Leap:16.0).each do |project| -%>
+<% %w(openSUSE:Leap:16.0:Products).each do |project| -%>
           <%= project.gsub(':', '_') %>:
             resources:
             - repo-checker

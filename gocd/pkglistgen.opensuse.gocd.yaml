@@ -166,11 +166,11 @@ pipelines:
         approval:
           type: manual
         jobs:
-          openSUSE_Leap_16.0:
+          openSUSE_Leap_16.0_Products:
             resources:
             - repo-checker
             tasks:
-              - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o openSUSE:Leap:16.0
+              - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o openSUSE:Leap:16.0:Products
   OfflineInstaller.PackageLists.Leap_16_0:
     group: Leap
     lock_behavior: unlockWhenFinished
