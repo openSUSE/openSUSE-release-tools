@@ -73,7 +73,7 @@ pipelines:
         approval:
           type: manual
         jobs:
-<% %w(openSUSE:Leap:16.0).each do |project| -%>
+<% %w(openSUSE:Leap:16.0:Products).each do |project| -%>
           <%= project.gsub(':', '_') %>:
             resources:
             - repo-checker
@@ -96,7 +96,7 @@ pipelines:
         approval:
           type: manual
         jobs:
-<% %w(openSUSE:Leap:16.0).each do |project| -%>
+<% %w(openSUSE:Leap:16.0:Products).each do |project| -%>
           <%= project.gsub(':', '_') %>:
             resources:
             - repo-checker
@@ -119,7 +119,7 @@ pipelines:
         approval:
           type: manual
         jobs:
-<% %w(openSUSE:Leap:16.0).each do |project| -%>
+<% %w(openSUSE:Leap:16.0:Products).each do |project| -%>
           <%= project.gsub(':', '_') %>:
             resources:
             - repo-checker
@@ -142,4 +142,4 @@ pipelines:
         resources:
         - repo-checker
         tasks:
-          - script: ./pkglistgen.py --verbose -A https://api.opensuse.org update_and_solve --project openSUSE:Leap:16.0 --scope target --engine product_composer --force
+          - script: ./pkglistgen.py --verbose -A https://api.opensuse.org update_and_solve --project openSUSE:Leap:16.0:Products --scope target --engine product_composer --force
