@@ -58,7 +58,8 @@ class ToTest(object):
 
         self.jobs_num = 42
         self.load_config(apiurl)
-        self.test_project = f'{project}:{self.test_subproject}'
+        if not hasattr(self, 'test_project'):
+            self.test_project = f'{project}:{self.test_subproject}'
 
     def load_config(self, apiurl):
         config = yaml.safe_load(attribute_value_load(apiurl, self.name, 'ToTestManagerConfig'))
