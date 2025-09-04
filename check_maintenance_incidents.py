@@ -62,7 +62,15 @@ class MaintenanceChecker(ReviewBot.ReviewBot):
         prj, pkg = self.get_pkg_for_review(req, package)
         if prj is not None:
             msg = f'Submission for {pkg} by someone who is not maintainer in the devel project ({prj}). Please review'
-            self.add_review(req, by_project=prj, by_package=pkg, msg=msg)
+            try:
+                self.add_review(req, by_project=prj, by_package=pkg, msg=msg)
+            except HTTPError as e:
+                if e.code != 400:
+                    raise
+
+                # Packages in symsync projects cannot be reviewers
+                self.logger.info(f'Failed to add review for {prj}/{pkg}, trying just {prj}')
+                self.add_review(req, by_project=prj, msg=msg)
 
     @staticmethod
     @memoize(session=True)
