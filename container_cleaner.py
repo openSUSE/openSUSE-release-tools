@@ -99,7 +99,9 @@ class ContainerCleaner(ToolBase.ToolBase):
                             archs_found[arch] += 1
                             contributes = True
 
-                if contributes:
+                if len(srccontainerarchs.get(srccontainer, [])) == 0:
+                    logging.warning("%s has no binaries (any flavor/any arch) - skipping", srccontainer)
+                elif contributes:
                     logging.debug("%s contributes to %s", srccontainer, package)
                 else:
                     logging.info("%s does not contribute", srccontainer)
@@ -108,7 +110,7 @@ class ContainerCleaner(ToolBase.ToolBase):
                         # A and B aren't deleted because they have newer sources. This is
                         # to avoid deleting something due to unforeseen circumstances, e.g.
                         # OBS didn't copy the binaries yet.
-                        logging.info("No newer provider found either, ignoring")
+                        logging.warning("No newer provider found either, ignoring")
                     else:
                         can_delete += [srccontainer]
 

@@ -94,7 +94,7 @@ class TestContainerCleaner(unittest.TestCase):
                               "e.56": ["i586"],
                               "e.57": ["i586"]}
 
-        to_be_deleted_exp = ["c", "c.01", "c.02", "c.03", "c.04",
+        to_be_deleted_exp = ["c", "c.01", "c.02", "c.04",
                              "e.51"]
 
         return self.doTest(container_arch_map, to_be_deleted_exp)
@@ -123,7 +123,7 @@ class TestContainerCleaner(unittest.TestCase):
                               "e.56": ["i586"],
                               "e.57": ["i586"]}
 
-        to_be_deleted_exp = ["c", "c.01", "c.02", "c.03", "c.04",
+        to_be_deleted_exp = ["c", "c.01", "c.02", "c.04",
                              "e.51"]
 
         return self.doTest(container_arch_map, to_be_deleted_exp)
