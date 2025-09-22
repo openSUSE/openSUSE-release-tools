@@ -62,6 +62,9 @@ class ContainerCleaner(ToolBase.ToolBase):
         archs = self.getDirEntries(["build", project, "containers"])
         regex_srccontainer = re.compile(R"^([^:]+)(:[^:]+)?$")
         for arch in archs:
+            if arch == "local":
+                continue
+
             buildcontainers = self.getDirEntries(["build", project, "containers", arch])
             for buildcontainer in buildcontainers:
                 bins = self.getDirBinaries(["build", project, "containers", arch, buildcontainer])
