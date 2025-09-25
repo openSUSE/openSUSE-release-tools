@@ -34,7 +34,9 @@ class ToTest(object):
         self.take_source_from_product = False
         self.same_target_images_repo_for_source_repo = False
         self.arch = 'x86_64'
+        self.openqa_group = None
         self.openqa_server = None
+        self.test_project = None
 
         self.product_repo = 'images'
         self.product_arch = 'local'
@@ -58,16 +60,22 @@ class ToTest(object):
 
         self.jobs_num = 42
         self.load_config(apiurl)
-        if not hasattr(self, 'test_project'):
+        if self.test_project is None:
             self.test_project = f'{project}:{self.test_subproject}'
 
     def load_config(self, apiurl):
-        config = yaml.safe_load(attribute_value_load(apiurl, self.name, 'ToTestManagerConfig'))
+        config_yaml = attribute_value_load(apiurl, self.name, 'ToTestManagerConfig')
+        if not config_yaml:
+            raise Exception('Failed to read ToTestManagerConfig')
+
+        config = yaml.safe_load(config_yaml)
         for key, value in config.items():
             if key == 'products':
                 self.set_products(value)
-            else:
+            elif hasattr(self, key):
                 setattr(self, key, value)
+            else:
+                raise Exception(f'Unknown config option {key}={value}')
 
         # Set default for totest_images_repo
         if self.totest_images_repo is None:
