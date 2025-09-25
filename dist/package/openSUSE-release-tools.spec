@@ -61,9 +61,11 @@ Requires:       python3-pycurl
 Requires:       python3-python-dateutil
 Requires:       python3-pyxdg
 Requires:       python3-requests
-# typing extensions are needed on SLE & Leap
 %if 0%{?suse_version} <= 1500
+# typing extensions are needed on SLE & Leap
 Requires:       python3-typing_extensions
+# Backport for py 3.6
+Requires:       python3-dataclasses
 %endif
 
 # Spec related requirements.

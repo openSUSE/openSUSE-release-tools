@@ -45,10 +45,10 @@ If images or products are meant to be released make sure to set the image type:
 -------------------------------------------------------------------------------
 $ osc meta prjconf MyProject:ToTest
 %if "%_repository" == "images"
-%Type: kiwi
-%Repotype: staticlinks
-%Patterntype: none
-%Prefer: openSUSE-release
+Type: kiwi
+Repotype: staticlinks
+Patterntype: none
+Prefer: openSUSE-release
 %endif
 -------------------------------------------------------------------------------
 

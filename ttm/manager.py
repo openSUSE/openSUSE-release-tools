@@ -64,8 +64,8 @@ class ToTestManager(ToolBase.ToolBase):
     def current_qa_version(self):
         return self.api.pseudometa_file_load(self.version_file('totest'))
 
-    def build_version(self, project, tree, repo=None, arch=None):
-        for binary in self.binaries_of_product(project, tree, repo=repo, arch=arch):
+    def build_version(self, project, tree, repo, arch):
+        for binary in self.binaries_of_product(project, tree, repo, arch):
             result = re.match(
                 r'.*-(?:Build|Snapshot)([0-9.]+)(?:-Media.*\.iso|\.docker\.tar\.xz|\.tar\.xz|\.raw\.xz|\.appx|\.report)', binary)
             if result:
@@ -73,18 +73,11 @@ class ToTestManager(ToolBase.ToolBase):
         raise NotFoundException(f"can't find version in {project}/{tree}/{repo}/{arch}")
 
     def version_from_totest_project(self):
-        if len(self.project.main_products):
-            return self.build_version(self.project.test_project, self.project.main_products[0])
+        first_product = self.project.products[0]
+        return self.build_version(first_product.release_prj, first_product.package,
+                                  first_product.release_repo, first_product.archs[0])
 
-        return self.build_version(self.project.test_project, self.project.image_products[0].package,
-                                      arch=self.project.image_products[0].archs[0])
-
-    def binaries_of_product(self, project, product, repo=None, arch=None):
-        if repo is None:
-            repo = self.project.product_repo
-        if arch is None:
-            arch = self.project.product_arch
-
+    def binaries_of_product(self, project, product, repo, arch):
         url = self.api.makeurl(['build', project, repo, arch, product])
         try:
             f = self.api.retried_GET(url)
