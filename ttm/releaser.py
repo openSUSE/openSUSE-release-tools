@@ -9,6 +9,7 @@
 # Distribute under GPLv2 or GPLv3
 
 import re
+from collections import defaultdict
 from lxml import etree as ET
 
 from ttm.manager import ToTestManager, NotFoundException, QAResult
@@ -75,64 +76,40 @@ class ToTestReleaser(ToTestManager):
         if not self.project.take_source_from_product:
             return self.release_version()
 
-        if len(self.project.main_products):
-            # 000productcompose has ftp built only and the build number
-            # offline installer carry over build number from ftp product
-            # as well as agama-installer
-            if 'productcompose' in self.project.main_products[0] and\
-                    'productcompose' in self.project.ftp_products[0]:
-                return self.build_version(self.project.name, self.project.ftp_products[0],
-                                          repo=self.project.product_repo_overrides.get(self.project.ftp_products[0],
-                                                                                       self.project.product_repo))
-            return self.build_version(self.project.name, self.project.main_products[0])
+        first_product = self.project.products[0]
+        return self.build_version(first_product.build_prj, first_product.package,
+                                  first_product.build_repo, first_product.archs[0])
 
-        return self.build_version(self.project.name, self.project.image_products[0].package,
-                                      arch=self.project.image_products[0].archs[0])
+    def package_ok(self, prjresult, product, arch):
+        """Checks one product/arch in a project and returns True if it's succeeded"""
 
-    def maxsize_for_package(self, package, arch):
-        if re.match(r'.*[-_]mini[-_].*', package):
-            return 737280000  # a CD needs to match
-
-        if re.match(r'.*[-_]dvd5[-_].*', package):
-            return 4700372992  # a DVD needs to match
-
-        if re.match(r'.*[-_](dvd9[-_]dvd|cd[-_]DVD)[-_].*', package):
-            return 8539996159
-
-        # Other types don't have a fixed size limit
-        return None
-
-    def package_ok(self, prjresult, project, package, repository, arch):
-        """Checks one package in a project and returns True if it's succeeded"""
-
-        status = prjresult.xpath(f'result[@repository="{repository}"][@arch="{arch}"]/'
-                                 f'status[@package="{package}"]')
+        status = prjresult.xpath(f'result[@repository="{product.build_repo}"][@arch="{arch}"]/'
+                                 f'status[@package="{product.package}"]')
 
         failed = [s for s in status if s.get('code') != 'succeeded']
         if len(failed):
             self.logger.info(
-                f"{project} {package} {repository} {arch} -> {failed[0].get('code')}")
+                f"{product.build_prj} {product.package} {product.build_repo} {arch} -> {failed[0].get('code')}")
             return False
 
         succeeded = [s for s in status if s.get('code') == 'succeeded']
         if not len(succeeded):
-            self.logger.info(f'No "succeeded" for {project} {package} {repository} {arch}')
+            self.logger.info(f'No "succeeded" for {product.build_prj} {product.package} {product.build_repo} {arch}')
             return False
 
-        maxsize = self.maxsize_for_package(package, arch)
-        if not maxsize:
+        if product.max_size is None:
             return True
 
-        url = self.api.makeurl(['build', project, repository, arch, package])
+        url = self.api.makeurl(['build', product.build_prj, product.build_repo, arch, product.package])
         f = self.api.retried_GET(url)
         root = ET.parse(f).getroot()
         for binary in root.findall('binary'):
             if not binary.get('filename', '').endswith('.iso'):
                 continue
             isosize = int(binary.get('size', 0))
-            if isosize > maxsize:
+            if isosize > product.max_size:
                 self.logger.error('%s %s %s %s: %s' % (
-                    project, package, repository, arch, 'too large by %s bytes' % (isosize - maxsize)))
+                    product.build_prj, product.package, product.build_repo, arch, 'too large by %s bytes' % (isosize - product.max_size)))
                 return False
 
         return True
@@ -140,29 +117,19 @@ class ToTestReleaser(ToTestManager):
     def all_built_products_in_config(self):
         """Verify that all succeeded products are mentioned in the ttm config"""
 
-        # First for all products in product_repo
-        products = {}
-        for simple_product in self.project.ftp_products + self.project.main_products:
-            products[simple_product] = [self.project.product_arch]
-        for image_product in self.project.image_products + self.project.container_products:
-            products[image_product.package] = image_product.archs
+        # Dict of products per prj/repo, e.g.
+        # {('openSUSE:Leap:15.6:Images', 'images'): {'livecd-leap-gnome': ['aarch64', 'x86_64'], ...}}
+        products_for_prj_repo = defaultdict(dict)
+        for p in self.project.products:
+            products_for_prj_repo[(p.build_prj, p.build_repo)][p.package] = p.archs
 
-        all_found = self.verify_package_list_complete(self.project.product_repo, products)
-        if len(self.project.product_repo_overrides):
-            for key, value in self.project.product_repo_overrides.items():
-                all_found = self.verify_package_list_complete(value, products) and all_found
-
-        # Then for containerfile_products
-        if self.project.containerfile_products:
-            products = {}
-            for image_product in self.project.containerfile_products:
-                products[image_product.package] = image_product.archs
-
-            all_found = self.verify_package_list_complete('containerfile', products) and all_found
+        all_found = True
+        for (prj, repo), products in products_for_prj_repo.items():
+            all_found = self.verify_package_list_complete(prj, repo, products) and all_found
 
         return all_found
 
-    def verify_package_list_complete(self, repository, product_archs):
+    def verify_package_list_complete(self, project, repository, product_archs):
         """Loop through all successfully built products and check whether they
            are part of product_archs (e.g. {'foo:ftp': ['local'], some-image': ['x86_64'], ...})"""
 
@@ -170,7 +137,7 @@ class ToTestReleaser(ToTestManager):
         all_found = True
 
         # Get all results for the product repo from OBS
-        url = self.api.makeurl(['build', self.project.name, "_result"],
+        url = self.api.makeurl(['build', project, "_result"],
                                {'repository': repository,
                                 'multibuild': 1})
         f = self.api.retried_GET(url)
@@ -204,49 +171,26 @@ class ToTestReleaser(ToTestManager):
         return all_found
 
     def is_snapshotable(self):
-        """Check various conditions required for factory to be snapshotable
-
-        """
-
-        if not self.all_repos_done(self.project.name):
-            return False
+        """Check various conditions required for factory to be snapshotable"""
 
         all_ok = True
 
-        resultxml = self.api.retried_GET(self.api.makeurl(['build', self.project.name, '_result']))
-        prjresult = ET.parse(resultxml).getroot()
-
-        for product in self.project.ftp_products + self.project.main_products:
-            if not self.package_ok(prjresult, self.project.name, product,
-                                   self.project.product_repo_overrides.get(product, self.project.product_repo),
-                                   self.project.product_arch):
+        # Collect a list of projects to check
+        projects = set([p.build_prj for p in self.project.products])
+        for prj in projects:
+            if not self.all_repos_done(prj):
                 all_ok = False
+                continue
 
-        # agama-installer in Leap uses images repo as source repo as well as target repo
-        source_repo = self.project.product_repo
-        if self.project.same_target_images_repo_for_source_repo:
-            source_repo = self.project.totest_images_repo
-        for product in self.project.image_products + self.project.container_products:
-            for arch in product.archs:
-                if not self.package_ok(prjresult, self.project.name, product.package, source_repo, arch):
-                    all_ok = False
+            resultxml = self.api.retried_GET(self.api.makeurl(['build', prj, '_result']))
+            prjresult = ET.parse(resultxml).getroot()
 
-        for product in self.project.containerfile_products:
-            for arch in product.archs:
-                if not self.package_ok(prjresult, self.project.name, product.package, 'containerfile', arch):
-                    all_ok = False
+            for product in self.project.products:
+                if product.build_prj != prj:
+                    continue
 
-        if len(self.project.livecd_products):
-            liveprjname = f'{self.project.name}:Live'
-            if not self.all_repos_done(liveprjname):
-                return False
-
-            liveresultxml = self.api.retried_GET(self.api.makeurl(['build', liveprjname, '_result']))
-            liveprjresult = ET.parse(liveresultxml).getroot()
-            for product in self.project.livecd_products:
                 for arch in product.archs:
-                    if not self.package_ok(liveprjresult, liveprjname, product.package,
-                                           self.project.product_repo, arch):
+                    if not self.package_ok(prjresult, product, arch):
                         all_ok = False
 
         if not all_ok:
@@ -256,54 +200,14 @@ class ToTestReleaser(ToTestManager):
         # the product version already.
         product_version = self.get_product_version()
         if product_version is not None:
-            for product in self.project.ftp_products:
-                for binary in self.binaries_of_product(self.project.name, product,
-                                                       repo=self.project.product_repo_overrides.get(
-                                                           product, self.project.product_repo)):
+            for product in [p for p in self.project.products if p.needs_to_contain_product_version]:
+                for binary in self.binaries_of_product(product.build_prj, product.package,
+                                                       repo=product.build_repo, arch=product.archs[0]):
                     if binary.endswith('.report') and product_version not in binary:
                         self.logger.debug(f'{binary} in {product} does not include {product_version}')
                         return False
 
         return True
-
-    def _release(self, set_release=None):
-        for container in self.project.container_products:
-            # Containers are built in the same repo as other image products,
-            # but released into a different repo in :ToTest
-            self.release_package(self.project.name, container.package, repository=self.project.product_repo,
-                                 target_project=self.project.test_project,
-                                 target_repository=self.project.totest_container_repo)
-
-        for container in self.project.containerfile_products:
-            # Dockerfile builds are done in a separate repo, but released into the same location
-            # as container_products
-            self.release_package(self.project.name, container.package, repository='containerfile',
-                                 target_project=self.project.test_project,
-                                 target_repository=self.project.totest_container_repo)
-
-        if len(self.project.main_products):
-            for product in self.project.ftp_products:
-                self.release_package(self.project.name, product,
-                                     repository=self.project.product_repo_overrides.get(
-                                         product, self.project.product_repo))
-
-            for cd in self.project.main_products:
-                self.release_package(self.project.name, cd, set_release=set_release,
-                                     repository=self.project.product_repo)
-
-        for cd in self.project.livecd_products:
-            self.release_package('%s:Live' %
-                                 self.project.name, cd.package, set_release=set_release,
-                                 repository=self.project.livecd_repo)
-
-        for image in self.project.image_products:
-            source_repo = self.project.product_repo
-            if self.project.same_target_images_repo_for_source_repo:
-                source_repo = self.project.totest_images_repo
-            self.release_package(self.project.name, image.package, set_release=set_release,
-                                 repository=source_repo,
-                                 target_project=self.project.test_project,
-                                 target_repository=self.project.totest_images_repo)
 
     def update_totest(self, snapshot=None):
         # omit snapshot, we don't want to rename on release
@@ -315,11 +219,14 @@ class ToTestReleaser(ToTestManager):
         else:
             release = None
         if not (self.dryrun or self.project.do_not_release):
-            self.api.switch_flag_in_prj(self.project.test_project, flag='publish', state='disable',
-                                        repository=self.project.product_repo)
+            prj_repo_to_publish_disable = \
+                set([(p.release_prj, p.release_repo) for p in self.project.products if not p.publish_using_release])
+            for prj, repo in prj_repo_to_publish_disable:
+                self.api.switch_flag_in_prj(prj, flag='publish', state='disable', repository=repo)
 
-            if self.project.totest_images_repo != self.project.product_repo:
-                self.api.switch_flag_in_prj(self.project.test_project, flag='publish', state='disable',
-                                            repository=self.project.totest_images_repo)
-
-        self._release(set_release=release)
+        for p in self.project.products:
+            self.release_package(p.build_prj, p.package,
+                                 set_release=release if p.release_set_version else None,
+                                 repository=p.build_repo,
+                                 target_project=p.release_prj,
+                                 target_repository=p.release_repo)

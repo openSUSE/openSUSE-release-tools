@@ -220,14 +220,15 @@ class ToTestPublisher(ToTestManager):
 
         if not force:
             wait_time = 20
-            while not self.all_repos_done(self.project.test_project):
-                if self.dryrun:
-                    self.logger.info('{} is still not published, do not wait as dryrun.'.format(
-                        self.project.test_project))
-                    return
-                self.logger.info('{} is still not published, waiting {} seconds'.format(
-                    self.project.test_project, wait_time))
-                time.sleep(wait_time)
+            for prj in set([p.release_prj for p in self.project.products if not p.publish_using_release]):
+                while not self.all_repos_done(prj):
+                    if self.dryrun:
+                        self.logger.info('{} is still not published, do not wait as dryrun.'.format(
+                            prj))
+                        return
+                    self.logger.info('{} is still not published, waiting {} seconds'.format(
+                        prj, wait_time))
+                    time.sleep(wait_time)
 
         current_snapshot = self.get_status('publishing')
         if self.dryrun:
@@ -296,21 +297,15 @@ class ToTestPublisher(ToTestManager):
         self.logger.info('Publish test project content')
         if self.dryrun or self.project.do_not_release:
             return
-        if self.project.container_products or self.project.containerfile_products:
-            self.logger.info('Releasing container products from ToTest')
-            for container in self.project.container_products + self.project.containerfile_products:
-                self.release_package(self.project.test_project, container.package,
-                                     repository=self.project.totest_container_repo)
 
-        self.api.switch_flag_in_prj(
-            self.project.test_project, flag='publish', state='enable',
-            repository=self.project.product_repo)
-        if self.project.publish_multiple_product_repo and len(self.project.product_repo_overrides):
-            for key, value in self.project.product_repo_overrides.items():
-                self.api.switch_flag_in_prj(self.project.test_project, flag='publish',
-                                            state='enable', repository=value)
+        prj_repo_to_publish_enable = set()
 
-        if self.project.totest_images_repo != self.project.product_repo:
-            self.logger.info('Publish test project content (image_products)')
-            self.api.switch_flag_in_prj(self.project.test_project, flag='publish', state='enable',
-                                        repository=self.project.totest_images_repo)
+        self.logger.info('Releasing container products from ToTest')
+        for p in self.project.products:
+            if p.publish_using_release:
+                self.release_package(p.release_prj, p.package, repository=p.release_repo)
+            else:
+                prj_repo_to_publish_enable |= set([(p.release_prj, p.release_repo)])
+
+        for prj, repo in prj_repo_to_publish_enable:
+            self.api.switch_flag_in_prj(prj, flag='publish', state='enable', repository=repo)
