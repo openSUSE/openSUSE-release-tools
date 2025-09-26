@@ -265,24 +265,6 @@ class ToTestReleaser(ToTestManager):
                         self.logger.debug(f'{binary} in {product} does not include {product_version}')
                         return False
 
-        if self.project.need_same_build_number:
-            # make sure all medias have the same build number
-            builds = set()
-            for p in self.project.ftp_products:
-                if 'Addon-NonOss' in p:
-                    # XXX: don't care about nonoss atm.
-                    continue
-                builds.add(self.ftp_build_version(self.project.name, p))
-            for p in self.project.main_products:
-                builds.add(self.iso_build_version(self.project.name, p))
-            for p in self.project.livecd_products + self.project.image_products:
-                for arch in p.archs:
-                    builds.add(self.iso_build_version(self.project.name, p.package,
-                                                      arch=arch))
-            if len(builds) != 1:
-                self.logger.debug('not all medias have the same build number')
-                return False
-
         return True
 
     def _release(self, set_release=None):

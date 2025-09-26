@@ -28,7 +28,6 @@ class ToTest(object):
 
         # set the defaults
         self.do_not_release = False
-        self.need_same_build_number = False
         self.set_snapshot_number = False
         self.snapshot_number_prefix = "Snapshot"
         self.take_source_from_product = False
