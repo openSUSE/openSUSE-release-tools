@@ -170,9 +170,12 @@ if __name__ == '__main__':
         fetcher.add('openSUSE:Leap:15.6:Images', nick='Leap:15.6:Images', openqa_group='openSUSE Leap 15.6 Images',
                     openqa_version='15.6', openqa_groupid=117)
 
+    is_leap = not fetcher.projects[0].name.startswith("openSUSE:Factory")
+
     env = Environment(loader=FileSystemLoader('templates'), autoescape=True)
     template = env.get_template('dashboard.html')
     rendered = template.render(projectname=args.project,
                                lastupdate=datetime.now(timezone.utc),
-                               projects=fetcher.projects)
+                               projects=fetcher.projects,
+                               is_leap=is_leap)
     print(rendered)
