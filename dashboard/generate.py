@@ -11,7 +11,7 @@ from openqa_client.client import OpenQA_Client
 from urllib.error import HTTPError
 from datetime import datetime, timezone
 
-from flask import Flask, render_template
+from jinja2 import Environment, FileSystemLoader
 
 
 class Fetcher(object):
@@ -147,8 +147,6 @@ if __name__ == '__main__':
     fetcher = Fetcher(apiurl, args)
     logging.basicConfig(level=logging.INFO)
 
-    app = Flask(__name__)
-
     if ("Factory" in args.project):
         fetcher.add('openSUSE:Factory', nick='Factory', download_url='https://download.opensuse.org/tumbleweed/iso/',
                     openqa_group='openSUSE Tumbleweed', openqa_version='Tumbleweed', openqa_groupid=1)
@@ -177,9 +175,9 @@ if __name__ == '__main__':
         fetcher.add('openSUSE:Leap:15.6:Images', nick='Leap:15.6:Images', openqa_group='openSUSE Leap 15.6 Images',
                     openqa_version='15.6', openqa_groupid=117)
 
-    with app.app_context():
-        rendered = render_template('dashboard.html',
-                                   projectname=args.project,
-                                   lastupdate=datetime.now(timezone.utc),
-                                   projects=fetcher.projects)
-        print(rendered)
+    env = Environment(loader=FileSystemLoader('templates'), autoescape=True)
+    template = env.get_template('dashboard.html')
+    rendered = template.render(projectname=args.project,
+                               lastupdate=datetime.now(timezone.utc),
+                               projects=fetcher.projects)
+    print(rendered)
