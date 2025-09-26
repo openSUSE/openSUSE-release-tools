@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import argparse
-import logging
 import osc
 import yaml
 from osc.core import http_GET, makeurl, show_project_meta
@@ -122,16 +121,13 @@ class Project(object):
     def build_summary(self, repo):
         return fetcher.build_summary(self.name, repo)
 
-    def all_archs(self):
-        self.all_archs
-
     def openqa_summary(self):
         return self.fetcher.openqa_results(self.openqa_id, self.ttm_status.get('testing'))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Bot to sync openQA status to OBS')
+        description='Generate static dashboard of openSUSE status')
     parser.add_argument("--apiurl", '-A', type=str, help='API URL of OBS')
     parser.add_argument('-p', '--project', type=str, default='Factory',
                         help='openSUSE version to make the check (Factory, 15.2)')
@@ -145,7 +141,6 @@ if __name__ == '__main__':
     apiurl = osc.conf.config['apiurl']
 
     fetcher = Fetcher(apiurl, args)
-    logging.basicConfig(level=logging.INFO)
 
     if ("Factory" in args.project):
         fetcher.add('openSUSE:Factory', nick='Factory', download_url='https://download.opensuse.org/tumbleweed/iso/',
