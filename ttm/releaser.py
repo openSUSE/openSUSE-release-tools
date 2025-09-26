@@ -81,12 +81,12 @@ class ToTestReleaser(ToTestManager):
             # as well as agama-installer
             if 'productcompose' in self.project.main_products[0] and\
                     'productcompose' in self.project.ftp_products[0]:
-                return self.productcompose_build_version(self.project.name, self.project.ftp_products[0],
-                                                         repo=self.project.product_repo_overrides.get(self.project.ftp_products[0],
-                                                                                                      self.project.product_repo))
-            return self.iso_build_version(self.project.name, self.project.main_products[0])
+                return self.build_version(self.project.name, self.project.ftp_products[0],
+                                          repo=self.project.product_repo_overrides.get(self.project.ftp_products[0],
+                                                                                       self.project.product_repo))
+            return self.build_version(self.project.name, self.project.main_products[0])
 
-        return self.iso_build_version(self.project.name, self.project.image_products[0].package,
+        return self.build_version(self.project.name, self.project.image_products[0].package,
                                       arch=self.project.image_products[0].archs[0])
 
     def maxsize_for_package(self, package, arch):
