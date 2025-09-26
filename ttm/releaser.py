@@ -260,8 +260,7 @@ class ToTestReleaser(ToTestManager):
                 for binary in self.binaries_of_product(self.project.name, product,
                                                        repo=self.project.product_repo_overrides.get(
                                                            product, self.project.product_repo)):
-                    # The NonOSS tree doesn't include the version...
-                    if binary.endswith('.report') and 'NonOss' not in binary and product_version not in binary:
+                    if binary.endswith('.report') and product_version not in binary:
                         self.logger.debug(f'{binary} in {product} does not include {product_version}')
                         return False
 
