@@ -40,7 +40,6 @@ The configuration is stored in the `ToTestManagerConfig` attribute in YAML forma
 base: openSUSE # Defaults to the toplevel project name
 test_subproject: ToTest
 do_not_release: False # If set, publishing is a noop (and the releaser doesn't publish disable!)
-need_same_build_number: False # See set_release above
 set_snapshot_number: False # See set_release above
 snapshot_number_prefix: Snapshot # See set_release above
 take_source_from_product: False # See set_release above

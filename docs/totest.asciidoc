@@ -81,7 +81,6 @@ products:
   - MyProduct-Live:
       - x86_64
 take_source_from_product: true
-need_same_build_number: true
 set_snapshot_number: true
 test_subproject: ToTest
 EOF
