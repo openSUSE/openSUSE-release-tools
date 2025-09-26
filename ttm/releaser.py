@@ -59,26 +59,20 @@ class ToTestReleaser(ToTestManager):
         self.write_version_to_dashboard('totest', new_snapshot)
         return QAResult.passed
 
-    def release_version(self):
-        url = self.api.makeurl(['build', self.project.name, 'standard', self.project.arch,
-                                f'000release-packages:{self.project.base}-release'])
-        f = self.api.retried_GET(url)
-        root = ET.parse(f).getroot()
-        for binary in root.findall('binary'):
-            binary = binary.get('filename', '')
+    def version_from_project(self):
+        if self.project.take_source_from_product:
+            first_product = self.project.products[0]
+            return self.build_version(first_product.build_prj, first_product.package,
+                                      first_product.build_repo, first_product.archs[0])
+
+        for binary in self.binaries_of_product(self.project.name,
+                                               f'000release-packages:{self.project.base}-release',
+                                               repo='standard', arch=self.project.arch):
             result = re.match(r'.*-([^-]*)-[^-]*.src.rpm', binary)
             if result:
                 return result.group(1)
 
         raise NotFoundException(f"can't find {self.project.name} version")
-
-    def version_from_project(self):
-        if not self.project.take_source_from_product:
-            return self.release_version()
-
-        first_product = self.project.products[0]
-        return self.build_version(first_product.build_prj, first_product.package,
-                                  first_product.build_repo, first_product.archs[0])
 
     def package_ok(self, prjresult, product, arch):
         """Checks one product/arch in a project and returns True if it's succeeded"""
