@@ -64,27 +64,19 @@ class ToTestManager(ToolBase.ToolBase):
     def current_qa_version(self):
         return self.api.pseudometa_file_load(self.version_file('totest'))
 
-    def iso_build_version(self, project, tree, repo=None, arch=None):
+    def build_version(self, project, tree, repo=None, arch=None):
         for binary in self.binaries_of_product(project, tree, repo=repo, arch=arch):
             result = re.match(
-                r'.*-(?:Build|Snapshot)([0-9.]+)(?:-Media.*\.iso|\.docker\.tar\.xz|\.tar\.xz|\.raw\.xz|\.appx)', binary)
+                r'.*-(?:Build|Snapshot)([0-9.]+)(?:-Media.*\.iso|\.docker\.tar\.xz|\.tar\.xz|\.raw\.xz|\.appx|\.report)', binary)
             if result:
                 return result.group(1)
-        raise NotFoundException(f"can't find {project} iso version")
-
-    def productcompose_build_version(self, project, tree, repo=None, arch=None):
-        for binary in self.binaries_of_product(project, tree, repo=repo, arch=arch):
-            result = re.match(
-                r'.*-(?:Build|Snapshot)([0-9.]+)(.report)', binary)
-            if result:
-                return result.group(1)
-        raise NotFoundException(f"can't find {project} productcompose version")
+        raise NotFoundException(f"can't find version in {project}/{tree}/{repo}/{arch}")
 
     def version_from_totest_project(self):
         if len(self.project.main_products):
-            return self.iso_build_version(self.project.test_project, self.project.main_products[0])
+            return self.build_version(self.project.test_project, self.project.main_products[0])
 
-        return self.iso_build_version(self.project.test_project, self.project.image_products[0].package,
+        return self.build_version(self.project.test_project, self.project.image_products[0].package,
                                       arch=self.project.image_products[0].archs[0])
 
     def binaries_of_product(self, project, product, repo=None, arch=None):
@@ -105,13 +97,6 @@ class ToTestManager(ToolBase.ToolBase):
             ret.append(binary.get('filename'))
 
         return ret
-
-    def ftp_build_version(self, project, tree):
-        for binary in self.binaries_of_product(project, tree):
-            result = re.match(r'.*-Build(.*)-Media1.report', binary)
-            if result:
-                return result.group(1)
-        raise NotFoundException(f"can't find {project} ftp version")
 
     # make sure to update the attribute as atomic as possible - as such
     # only update the snapshot and don't erase anything else. The snapshots
