@@ -1,8 +1,3 @@
-{% if "Factory" in projects[0].name %}
-{% set is_leap = False %}
-{% else %}
-{% set is_leap = True %}
-{% endif%}
 <!doctype html>
 <html lang="en">
 
@@ -108,8 +103,10 @@
         </td>
         <td>
         {% set openqa_summary = project.openqa_summary() %}
-        {% for state in openqa_summary.keys() %}
-          <span class="openqa{{ state }}">{{ state }}</span>: {{ openqa_summary[state]|length }}
+        {% for state, count in openqa_summary.items() %}
+          <span class="openqa{{ state }}">
+            {{ state }}: {{ count|length }}
+          </span>
         {% endfor %}
         </td>
       </tr>
