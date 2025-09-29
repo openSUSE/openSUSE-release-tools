@@ -3,6 +3,7 @@
 import argparse
 import osc
 import yaml
+import os
 from osc.core import http_GET, makeurl, show_project_meta
 from osclib.core import attribute_value_load
 from lxml import etree as ET
@@ -172,7 +173,10 @@ if __name__ == '__main__':
 
     is_leap = not fetcher.projects[0].name.startswith("openSUSE:Factory")
 
-    env = Environment(loader=FileSystemLoader('templates'), autoescape=True)
+    # Get the path from where the script is run and look for templates in the same directory
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    template_dir = os.path.join(script_dir, 'templates')
+    env = Environment(loader=FileSystemLoader(template_dir), autoescape=True)
     template = env.get_template('dashboard.html')
     rendered = template.render(projectname=args.project,
                                lastupdate=datetime.now(timezone.utc),
