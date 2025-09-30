@@ -1,6 +1,7 @@
 import unittest
 
 from container_cleaner import ContainerCleaner
+from lxml import etree as xml
 
 
 class MockedContainerCleaner(ContainerCleaner):
@@ -9,35 +10,34 @@ class MockedContainerCleaner(ContainerCleaner):
 
     def getDirEntries(self, path):
         """Mock certain OBS APIs returning directory entries"""
-        if path == ["source", "mock:prj"]:
-            srccontainers = [a.split(":")[0] for a in self.container_arch_map.keys()]
-            return list(set(srccontainers))  # Remove duplicates
-        elif path == ["build", "mock:prj", "containers"]:
-            all_archs = []
-            for archs in self.container_arch_map.values():
-                all_archs += archs
+        assert path == ["source", "mock:prj"]
+        srccontainers = [a.split(":")[0] for a in self.container_arch_map.keys()]
+        return list(set(srccontainers))  # Remove duplicates
 
-            return list(set(all_archs))
-        elif path[0:3] == ["build", "mock:prj", "containers"] and len(path) == 4:
-            ret = []
-            for srccontainer in self.container_arch_map:
-                ret += [srccontainer]
-
-            return ret
-        else:
-            raise RuntimeError(f"Path {path} not expected")
-
-    def getDirBinaries(self, path):
+    def getBinaryList(self, project):
         """Mock certain OBS APIs returning a list of binaries"""
-        if path[0:3] == ["build", "mock:prj", "containers"] and len(path) == 5:
-            arch = path[3]
-            srccontainer = path[4]
-            if arch in self.container_arch_map[srccontainer]:
-                return ["A binary"]
+        assert project == "mock:prj"
 
-            return []
-        else:
-            raise RuntimeError(f"Path {path} not expected")
+        resultlist = xml.fromstring('<resultlist state="6b99f3a517302521e047e4100dc32384"/>')
+        all_archs = set()
+        for archs in self.container_arch_map.values():
+            all_archs |= set(archs)
+
+        for arch in set(sum(self.container_arch_map.values(), [])):
+            result = xml.fromstring('<result repository="containers" code="published" state="published"/>')
+            result.set("project", project)
+            result.set("arch", arch)
+
+            for buildcontainer in self.container_arch_map:
+                binarylist = xml.Element("binarylist", attrib={"package": buildcontainer})
+                if arch in self.container_arch_map[buildcontainer]:
+                    binarylist.append(xml.fromstring('<binary filename="A binary"/>'))
+
+                result.append(binarylist)
+
+            resultlist.append(result)
+
+        return xml.ElementTree(element=resultlist)
 
 
 class TestContainerCleaner(unittest.TestCase):

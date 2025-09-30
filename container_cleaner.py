@@ -22,10 +22,9 @@ class ContainerCleaner(ToolBase.ToolBase):
         directory = xml.parse(self.retried_GET(url))
         return directory.xpath("entry/@name")
 
-    def getDirBinaries(self, path):
-        url = self.makeurl(path)
-        directory = xml.parse(self.retried_GET(url))
-        return directory.xpath("binary/@filename")
+    def getBinaryList(self, project):
+        url = self.makeurl(["build", project, "_result"], query={"view": "binarylist"})
+        return xml.parse(self.retried_GET(url))
 
     def findSourcepkgsToDelete(self, project):
         # Get a list of all images
@@ -45,7 +44,8 @@ class ContainerCleaner(ToolBase.ToolBase):
                 # Not renamed
                 package = srccontainer
 
-            buckets[package] += [srccontainer]
+            if srccontainer not in buckets[package]:
+                buckets[package] += [srccontainer]
 
         for package in buckets:
             # Sort each bucket: Newest provider first
@@ -57,16 +57,15 @@ class ContainerCleaner(ToolBase.ToolBase):
         # "kubic-pause-image.20190306124139": ["x86_64", "i586"], ... }
         srccontainerarchs = defaultdict(list)
 
-        archs = self.getDirEntries(["build", project, "containers"])
-        regex_srccontainer = re.compile(R"^([^:]+)(:[^:]+)?$")
-        for arch in archs:
-            if arch == "local":
-                continue
+        resultlist = self.getBinaryList(project)
 
-            buildcontainers = self.getDirEntries(["build", project, "containers", arch])
-            for buildcontainer in buildcontainers:
-                bins = self.getDirBinaries(["build", project, "containers", arch, buildcontainer])
-                if len(bins) > 0:
+        regex_srccontainer = re.compile(R"^([^:]+)(:[^:]+)?$")
+        for arch_result in resultlist.xpath("result"):
+            arch = arch_result.get("arch")
+
+            for binarylist in arch_result.xpath("binarylist"):
+                buildcontainer = binarylist.get("package")
+                if len(binarylist.xpath("binary")) > 0:
                     match = regex_srccontainer.match(buildcontainer)
                     if not match:
                         raise Exception(f"Could not map {buildcontainer} to source container")
