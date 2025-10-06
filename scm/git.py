@@ -9,7 +9,6 @@ class Git(scm.base.SCMBase):
     """SCM interface implementation for Git"""
 
     def __init__(self, logger, base_url):
-        # XXX stub
         self.logger = logger
         self.base_url = base_url
         pass

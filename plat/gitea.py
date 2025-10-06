@@ -57,10 +57,9 @@ class CommentAPI:
             'comment': html.unescape(comment["body"])
         }
 
-    def get_comments(self, request, project_name=None, package_name=None):
-        project_name = project_name or request._owner
-        package_name = package_name or request._repo
-        res = self.api.get(f'repos/{project_name}/{package_name}/issues/{request._pr_id}/comments')
+    def get_comments(self, request_id, project_name=None, package_name=None):
+        project_name, package_name, pr_id = Request.parse_request_id(request_id)
+        res = self.api.get(f'repos/{project_name}/{package_name}/issues/{pr_id}/comments')
         res.raise_for_status()
 
         json = res.json()

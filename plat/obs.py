@@ -2,29 +2,12 @@ import plat.base
 
 from lxml import etree as ET
 
-from osclib.comments import CommentAPI as OSCCommentAPI
+from osclib.comments import CommentAPI
 from osclib.conf import Config
 from osclib.core import get_request_list_with_history, request_age
 from osclib.stagingapi import StagingAPI
 import osc.core
 from urllib.error import HTTPError
-
-
-class CommentAPI:
-    """Proxy class for osclib CommentAPI"""
-
-    def __init__(self, apiurl):
-        self._original = OSCCommentAPI(apiurl)
-
-    def __getattr__(self, name):
-        return getattr(self._original, name)
-
-    def get_comments(self, request=None, project_name=None, package_name=None):
-        return self._original.get_comments(
-            request_id=request and request.reqid,
-            project_name=project_name,
-            package_name=package_name
-        )
 
 
 class OBS(plat.base.PlatformBase):
