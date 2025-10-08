@@ -104,23 +104,55 @@ def trigger_tests_for_pr(args):
             log.error(f"Error saving file: {e}")
 
     if branch == args.branch and project == args.project:
-        obs_project = get_obs_project(project, branch, pr)
+        obs_project, bs_repo_url = get_obs_values(project, branch, pr)
         packages_in_project = get_packages_from_obs_project(obs_project)
         if packages_in_project:
-            settings = prepare_openqa_settings()
+            settings = prepare_update_settings(
+                obs_project, bs_repo_url, pr, packages_in_project
+            )
+            job_params = create_openqa_job_params(obs_project, data)
             openqa_build_overview = openqa_schedule(settings)
     else:
         log.error(f"PR {project}#{pr} does not target {args.branch}")
 
 
-def get_obs_project(project, branch, pr_id):
+def prepare_update_settings(obs_project, bs_repo_url, pr, packages):
+    settings = {}
+    staged_update_name = get_incident_name(obs_project)
+    # this could also be: obs_project.split(':')[-1]
+    # start with a colon so it looks cool behind 'Build' :/
+    settings["BUILD"] = f":{pr}:{staged_update_name}"
+    patch_id = pr
+    settings["INCIDENT_REPO"] = bs_repo_url
+    settings["INCIDENT_PATCH"] = patch_id
+
+    # openSUSE:Maintenance key
+    settings["IMPORT_GPG_KEYS"] = "gpg-pubkey-b3fd7e48-5549fd0f"
+    settings["ZYPPER_ADD_REPO_PREFIX"] = "staged_update"
+
+    settings["INSTALL_PACKAGES"] = " ".join(packages.keys())
+    settings["VERIFY_PACKAGE_VERSIONS"] = " ".join(
+        [f"{p.name} {p.version}-{p.release}" for p in packages.values()]
+    )
+
+    return settings
+
+
+def get_incident_name(obs_project):
+    log.error("not implemented")
+    return "incident_name_here"
+
+
+def get_obs_values(project, branch, pr_id):
     log.debug("Prepare obs url")
     template = CONFIG_DATA[project]
     # Version string has to be extracted from branch name
     branch_version = branch.split("-")[-1]
     obs_project = template.format(version=branch_version, project=project, pr_id=pr_id)
-    log.debug(f"Target project {obs_project}")
-    return obs_project
+    target_repo = REPO_PREFIX + "/"
+    target_repo += obs_project.replace(":", ":/")
+    log.debug(f"Target project {obs_project}, {target_repo}")
+    return obs_project, target_repo
 
 
 def get_packages_from_obs_project(obs_project):
@@ -151,7 +183,7 @@ def get_packages_from_obs_project(obs_project):
             b = binary.attrib["filename"]
             if b.endswith(".rpm"):
                 # get_package_deails = osc api /build/{obs_project}/standard/aarch64/_repository/opi.rpm?view=fileinfo
-                p = package_details(obs_project, repo, arch, b)
+                p = get_package_details(obs_project, repo, arch, b)
                 packages[p.name] = p
 
     return packages
@@ -160,7 +192,7 @@ def get_packages_from_obs_project(obs_project):
 Package = namedtuple("Package", ("name", "version", "release"))
 
 
-def package_details(prj, repo, arch, binary):
+def get_package_details(prj, repo, arch, binary):
     url = osc.core.makeurl(
         BS_HOST,
         ("build", prj, repo, arch, "_repository", binary),
