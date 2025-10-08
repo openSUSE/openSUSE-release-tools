@@ -263,46 +263,37 @@ def handle_build_finished(data, args):
 
 def gitea_query_pr(project, pr_id):
     log.debug("============== gitea_query_pr")
-    # sha = job_params['sha']
-    # statuses_url = job_params['repo_api_url'] + '/statuses/' + job_params['sha'];
     pull_request_url = GITEA_HOST + f"/api/v1/repos/{project}/pulls/{pr_id}"
-    token = os.environ.get("GITEA_TOKEN")
-    headers = {
-        "User-Agent": USER_AGENT,
-        "Accept": "application/json",
-        "Authorization": "token " + token,
-    }
-    # payload = {
-    #     'context': 'qam-openqa',
-    #     'description': "openQA check",
-    #     'state': "pending",
-    #     'target_url': job_url,
-    # }
-    return request_get(pull_request_url, headers)
+    return request_get(pull_request_url)
+
+def gitea_query_files(project, pr_id):
+    pull_request_url = GITEA_HOST + f"/api/v1/repos/{project}/pulls/{pr_id}/files"
+    return request_get(pull_request_url)
 
 
 def gitea_post_status(job_params, job_url):
     log.debug("============== gitea_post_status")
     sha = job_params["sha"]
     statuses_url = job_params["repo_api_url"] + "/statuses/" + job_params["sha"]
-    token = os.environ.get("GITEA_TOKEN")
-    headers = {
-        "User-Agent": USER_AGENT,
-        "Accept": "application/json",
-        "Authorization": "token " + token,
-    }
+
     payload = {
         "context": "qam-openqa",
         "description": "openQA check",
         "state": "pending",
         "target_url": job_url,
     }
-    request_post(statuses_url, headers, payload)
+    request_post(statuses_url, payload)
 
 
-def request_post(url, headers, payload):
+def request_post(url, payload):
     log.debug("============== request_post")
     log.debug(payload)
+    token = os.environ.get("GITEA_TOKEN")
+    headers = {
+        "User-Agent": USER_AGENT,
+        "Accept": "application/json",
+        "Authorization": "token " + token,
+    }
     try:
         content = requests.post(url, headers=headers, data=payload)
         content.raise_for_status()
@@ -311,9 +302,14 @@ def request_post(url, headers, payload):
         raise (e)
 
 
-def request_get(url, headers):
+def request_get(url):
     log.debug("============== request_get")
-
+    token = os.environ.get("GITEA_TOKEN")
+    headers = {
+        "User-Agent": USER_AGENT,
+        "Accept": "application/json",
+        "Authorization": "token " + token,
+    }
     try:
         content = requests.get(url, headers=headers)
         content.raise_for_status()
