@@ -105,6 +105,7 @@ def trigger_tests_for_pr(args):
 
     if branch == args.branch and project == args.project:
         obs_project, bs_repo_url = get_obs_values(project, branch, pr)
+        # We need to query every package in the staged update
         packages_in_project = get_packages_from_obs_project(obs_project)
         if packages_in_project:
             settings = prepare_update_settings(
@@ -118,7 +119,7 @@ def trigger_tests_for_pr(args):
 
 def prepare_update_settings(obs_project, bs_repo_url, pr, packages):
     settings = {}
-    staged_update_name = get_incident_name(obs_project)
+    staged_update_name = get_staged_update_name(obs_project)
     # this could also be: obs_project.split(':')[-1]
     # start with a colon so it looks cool behind 'Build' :/
     settings["BUILD"] = f":{pr}:{staged_update_name}"
@@ -138,9 +139,19 @@ def prepare_update_settings(obs_project, bs_repo_url, pr, packages):
     return settings
 
 
-def get_incident_name(obs_project):
-    log.error("not implemented")
-    return "incident_name_here"
+def get_staged_update_name(obs_project):
+    query = {"deleted": 0}
+    url = osc.core.makeurl(BS_HOST, ("source", obs_project), query=query)
+    root = ET.parse(osc.core.http_GET(url)).getroot()
+    source_packages = [n.attrib["name"] for n in root.findall("entry")]
+
+    # In theory every staged update, has a single package
+    if len(source_packages) > 1:
+        raise MultipleSourcePackagesError("Multiple packages detected")
+    elif len(source_packages) == 0:
+        raise NoSourcePackagesError("No packages detected")
+    else:
+        return source_packages[0]
 
 
 def get_obs_values(project, branch, pr_id):
@@ -426,6 +437,11 @@ def fetch_url(url, request_type="text"):
         content = raw
     return content
 
+class MultipleSourcePackagesError(Exception):
+    pass
+
+class NoSourcePackagesError(Exception):
+    pass
 
 if __name__ == "__main__":
     args = parse_args()
