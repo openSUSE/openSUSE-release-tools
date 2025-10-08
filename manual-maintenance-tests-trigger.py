@@ -31,6 +31,7 @@ CONFIG_DATA = {
 }
 GITEA_HOST = None
 BS_HOST = None
+REPO_PREFIX = None
 
 
 def parse_args():
@@ -59,7 +60,12 @@ def parse_args():
         "--gitea", help="Gitea instance to use", default="https://src.opensuse.org"
     )
     parser.add_argument(
-        "--bs", help="Build service instance", default="https://api.opensuse.org"
+        "--bs", help="Build service api", default="https://api.opensuse.org"
+    )
+    parser.add_argument(
+        "--repo-prefix",
+        help="Build service repository",
+        default="http://download.opensuse.org/repositories",
     )
 
     args = parser.parse_args()
@@ -398,6 +404,7 @@ if __name__ == "__main__":
 
     GITEA_HOST = args.gitea
     BS_HOST = args.bs
+    REPO_PREFIX = args.repo_prefix
     osc.conf.get_config()
 
     trigger_tests_for_pr(args)
