@@ -42,3 +42,6 @@ indent_style = tab
 
 [data/repos.json]
 indent_size = 3
+
+[**.md]
+trim_trailing_whitespace = false

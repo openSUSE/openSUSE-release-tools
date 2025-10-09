@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# (c) 2019 fvogt@suse.de
+# (c) 2025 fvogt@suse.de
 # GPLv3-only
 
 import osc.conf
@@ -8,6 +8,7 @@ import logging
 import ToolBase
 import sys
 import re
+from collections import defaultdict
 from lxml import etree as xml
 
 
@@ -21,18 +22,17 @@ class ContainerCleaner(ToolBase.ToolBase):
         directory = xml.parse(self.retried_GET(url))
         return directory.xpath("entry/@name")
 
-    def getDirBinaries(self, path):
-        url = self.makeurl(path)
-        directory = xml.parse(self.retried_GET(url))
-        return directory.xpath("binary/@filename")
+    def getBinaryList(self, project):
+        url = self.makeurl(["build", project, "_result"], query={"view": "binarylist"})
+        return xml.parse(self.retried_GET(url))
 
     def findSourcepkgsToDelete(self, project):
         # Get a list of all images
         srccontainers = self.getDirEntries(["source", project])
 
-        # Sort them into buckets for each package:
+        # Sort the released packages into buckets for each origin package:
         # {"opensuse-tumbleweed-image": ["opensuse-tumbleweed-image.20190402134201", ...]}
-        buckets = {}
+        buckets = defaultdict(list)
         regex_maintenance_release = re.compile(R"^(.+)\.[0-9]+$")
         for srccontainer in srccontainers:
             # Get the right bucket
@@ -44,10 +44,8 @@ class ContainerCleaner(ToolBase.ToolBase):
                 # Not renamed
                 package = srccontainer
 
-            if package not in buckets:
-                buckets[package] = []
-
-            buckets[package] += [srccontainer]
+            if srccontainer not in buckets[package]:
+                buckets[package] += [srccontainer]
 
         for package in buckets:
             # Sort each bucket: Newest provider first
@@ -57,18 +55,17 @@ class ContainerCleaner(ToolBase.ToolBase):
         # Get a hash for sourcecontainer -> arch with binaries
         # {"opensuse-tumbleweed-image.20190309164844": ["aarch64", "armv7l", "armv6l"],
         # "kubic-pause-image.20190306124139": ["x86_64", "i586"], ... }
-        srccontainerarchs = {}
+        srccontainerarchs = defaultdict(list)
 
-        archs = self.getDirEntries(["build", project, "containers"])
+        resultlist = self.getBinaryList(project)
+
         regex_srccontainer = re.compile(R"^([^:]+)(:[^:]+)?$")
-        for arch in archs:
-            if arch == "local":
-                continue
+        for arch_result in resultlist.xpath("result"):
+            arch = arch_result.get("arch")
 
-            buildcontainers = self.getDirEntries(["build", project, "containers", arch])
-            for buildcontainer in buildcontainers:
-                bins = self.getDirBinaries(["build", project, "containers", arch, buildcontainer])
-                if len(bins) > 0:
+            for binarylist in arch_result.xpath("binarylist"):
+                buildcontainer = binarylist.get("package")
+                if len(binarylist.xpath("binary")) > 0:
                     match = regex_srccontainer.match(buildcontainer)
                     if not match:
                         raise Exception(f"Could not map {buildcontainer} to source container")
@@ -77,9 +74,6 @@ class ContainerCleaner(ToolBase.ToolBase):
                     if srccontainer not in srccontainers:
                         raise Exception(f"Mapped {buildcontainer} to wrong source container ({srccontainer})")
 
-                    if srccontainer not in srccontainerarchs:
-                        srccontainerarchs[srccontainer] = []
-
                     logging.debug("%s provides binaries for %s", srccontainer, arch)
                     srccontainerarchs[srccontainer] += [arch]
 
@@ -87,19 +81,16 @@ class ContainerCleaner(ToolBase.ToolBase):
         can_delete = []
         for package in buckets:
             # {"x86_64": 1, "aarch64": 2, ...}
-            archs_found = {}
-            for arch in archs:
-                archs_found[arch] = 0
+            archs_found = defaultdict(lambda: 0)
 
             for srccontainer in buckets[package]:
                 contributes = False
-                if srccontainer in srccontainerarchs:
-                    for arch in srccontainerarchs[srccontainer]:
-                        if archs_found[arch] < 5:
-                            archs_found[arch] += 1
-                            contributes = True
+                for arch in srccontainerarchs[srccontainer]:
+                    if archs_found[arch] < 5:
+                        archs_found[arch] += 1
+                        contributes = True
 
-                if len(srccontainerarchs.get(srccontainer, [])) == 0:
+                if len(srccontainerarchs[srccontainer]) == 0:
                     logging.warning("%s has no binaries (any flavor/any arch) - skipping", srccontainer)
                 elif contributes:
                     logging.debug("%s contributes to %s", srccontainer, package)

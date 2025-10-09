@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
 import argparse
-import logging
 import osc
 import yaml
+import os
 from osc.core import http_GET, makeurl, show_project_meta
 from osclib.core import attribute_value_load
 from lxml import etree as ET
@@ -11,7 +11,7 @@ from openqa_client.client import OpenQA_Client
 from urllib.error import HTTPError
 from datetime import datetime, timezone
 
-from flask import Flask, render_template
+from jinja2 import Environment, FileSystemLoader
 
 
 class Fetcher(object):
@@ -122,16 +122,13 @@ class Project(object):
     def build_summary(self, repo):
         return fetcher.build_summary(self.name, repo)
 
-    def all_archs(self):
-        self.all_archs
-
     def openqa_summary(self):
         return self.fetcher.openqa_results(self.openqa_id, self.ttm_status.get('testing'))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Bot to sync openQA status to OBS')
+        description='Generate static dashboard of openSUSE status')
     parser.add_argument("--apiurl", '-A', type=str, help='API URL of OBS')
     parser.add_argument('-p', '--project', type=str, default='Factory',
                         help='openSUSE version to make the check (Factory, 15.2)')
@@ -145,9 +142,6 @@ if __name__ == '__main__':
     apiurl = osc.conf.config['apiurl']
 
     fetcher = Fetcher(apiurl, args)
-    logging.basicConfig(level=logging.INFO)
-
-    app = Flask(__name__)
 
     if ("Factory" in args.project):
         fetcher.add('openSUSE:Factory', nick='Factory', download_url='https://download.opensuse.org/tumbleweed/iso/',
@@ -177,9 +171,15 @@ if __name__ == '__main__':
         fetcher.add('openSUSE:Leap:15.6:Images', nick='Leap:15.6:Images', openqa_group='openSUSE Leap 15.6 Images',
                     openqa_version='15.6', openqa_groupid=117)
 
-    with app.app_context():
-        rendered = render_template('dashboard.html',
-                                   projectname=args.project,
-                                   lastupdate=datetime.now(timezone.utc),
-                                   projects=fetcher.projects)
-        print(rendered)
+    is_leap = not fetcher.projects[0].name.startswith("openSUSE:Factory")
+
+    # Get the path from where the script is run and look for templates in the same directory
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    template_dir = os.path.join(script_dir, 'templates')
+    env = Environment(loader=FileSystemLoader(template_dir), autoescape=True)
+    template = env.get_template('dashboard.html')
+    rendered = template.render(projectname=args.project,
+                               lastupdate=datetime.now(timezone.utc),
+                               projects=fetcher.projects,
+                               is_leap=is_leap)
+    print(rendered)
