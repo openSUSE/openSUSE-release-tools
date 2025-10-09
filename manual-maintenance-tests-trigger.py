@@ -217,57 +217,9 @@ def get_package_details(prj, repo, arch, binary):
     )
 
 
-def handle_build_finished(data, args):
-    log.debug("============== handle_build_finished")
-    build_bot = args.build_bot
-    myself = args.myself
-    if build_bot == data["sender"]["username"]:
-        log.debug(f"Build marked as finished by ({build_bot})")
-    else:
-        if args.verbose >= 1:
-            log.debug(
-                f"Aborting: PR approval is by {data['sender']['username']}, not by our bot {build_bot}"
-            )
-        return
-
-    if (
-        data["pull_request"]["base"]["label"] == args.branch
-        and data["pull_request"]["base"]["repo"]["full_name"] == args.project
-    ):
-        pull_request = data["pull_request"]
-        job_params = {
-            "id": pull_request["id"],
-            "label": pull_request["head"]["label"],
-            "branch": pull_request["head"]["ref"],
-            "sha": pull_request["head"]["sha"],
-            "pr_html_url": pull_request["html_url"],
-            "clone_url": pull_request["head"]["repo"]["clone_url"],
-            "repo_name": pull_request["head"]["repo"][
-                "name"
-            ],  # this should be full_name but openQA cli complains
-            "repo_api_url": data["repository"]["url"],
-            "repo_html_url": data["repository"]["html_url"],
-        }
-        packages_in_testing = get_packages_from_obs_project(job_params)
-        job_params["packages"] = packages_in_testing
-        params = create_openqa_job_params(args, job_params)
-        job_url = openqa_schedule(args, params)
-        log.debug(job_url)
-        gitea_post_status(job_params, job_url)
-
-    else:
-        if args.verbose >= 1:
-            log.debug(f"Project and branch don't match {args.project}#{args.branch}")
-        return
-
-
 def gitea_query_pr(project, pr_id):
     log.debug("============== gitea_query_pr")
     pull_request_url = GITEA_HOST + f"/api/v1/repos/{project}/pulls/{pr_id}"
-    return request_get(pull_request_url)
-
-def gitea_query_files(project, pr_id):
-    pull_request_url = GITEA_HOST + f"/api/v1/repos/{project}/pulls/{pr_id}/files"
     return request_get(pull_request_url)
 
 
@@ -364,18 +316,6 @@ def openqa_cli(host, subcommand, cmds, dry_run=False):
     return res.stdout.decode("utf-8")
 
 
-def osc_cli(command, args, dry_run=False):
-    log.debug("============== osc_cli")
-    client_args = ["osc", command] + args
-    log.debug("osc_cli: %s %s" % (command, client_args))
-    res = subprocess.run(
-        (["echo", "Simulating: "] if dry_run else []) + client_args,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    if len(res.stderr):
-        log.warning(f"openqa_cli() {command} stderr: {res.stderr}")
-    res.check_returncode()
     return res.stdout.decode("utf-8")
 
 
@@ -411,27 +351,6 @@ def openqa_schedule(args, params):
     test_overview_url = urlunparse(base_url._replace(query=query_string))
     return test_overview_url
 
-
-def fetch_url(url, request_type="text"):
-    log.debug("============== fetch_url")
-    try:
-        content = requests.get(url, headers={"User-Agent": USER_AGENT})
-        content.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        log.error("Error while fetching %s: %s" % (url, str(e)))
-        raise (e)
-    raw = content.content
-    if request_type == "json":
-        try:
-            content = content.json()
-        except json.decoder.JSONDecodeError as e:
-            log.error(
-                "Error while decoding JSON from %s -> >>%s<<: %s" % (url, raw, str(e))
-            )
-            raise (e)
-    else:
-        content = raw
-    return content
 
 class MultipleSourcePackagesError(Exception):
     pass
