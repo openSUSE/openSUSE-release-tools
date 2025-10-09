@@ -111,8 +111,10 @@ def trigger_tests_for_pr(args):
             settings = prepare_update_settings(
                 obs_project, bs_repo_url, pr, packages_in_project
             )
-            job_params = create_openqa_job_params(obs_project, data)
-            openqa_build_overview = openqa_schedule(settings)
+            openqa_job_params = prepare_openqa_job_params(
+                args, obs_project, data, settings
+            )
+            openqa_build_overview = openqa_schedule(args, openqa_job_params)
     else:
         log.error(f"PR {project}#{pr} does not target {args.branch}")
 
@@ -272,28 +274,29 @@ def request_get(url):
     return json_data
 
 
-def create_openqa_job_params(args, job_params):
-    log.debug("============== create_openqa_job_params")
-    raw_url = job_params["repo_html_url"] + "/raw/branch/" + job_params["sha"]
-    statuses_url = job_params["repo_api_url"] + "/statuses/" + job_params["sha"]
+def prepare_openqa_job_params(args, obs_project, data, settings):
+    log.debug("create_openqa_job_params")
+    statuses_url = (
+        GITEA_HOST
+        + f"/api/v1/repos/{data['head']['repo']['full_name']}/statuses/{data['head']['sha']}"
+    )
     params = {
-        "BUILD": job_params["repo_name"] + "#" + job_params["sha"],
-        "CASEDIR": job_params["clone_url"] + "#" + job_params["sha"],
-        "_GROUP_ID": "0",
+        "_GROUP_ID": "39",
         "PRIO": "100",
-        "NEEDLES_DIR": "%%CASEDIR%%/needles",
-        # set the URL for the scenario definitions YAML file so the Minion job will download it from GitHub
-        "SCENARIO_DEFINITIONS_YAML_FILE": raw_url + "/" + "scenario-definitions.yaml",
         # add "target URL" for the "Details" button of the CI status
         "CI_TARGET_URL": args.openqa_host,
         # set Gitea parameters so the Minion job will be able to report the status back to Gitea
-        "GITEA_REPO": job_params["repo_name"],
-        "GITEA_SHA": job_params["sha"],
+        "GITEA_REPO": data["head"]["repo"]["full_name"],
+        "GITEA_SHA": data["head"]["sha"],
         "GITEA_STATUSES_URL": statuses_url,
-        "GITEA_PR_URL": job_params["pr_html_url"],
-        "webhook_id": "gitea:pr:" + str(job_params["id"]),
+        "GITEA_PR_URL": data["html_url"],
+        "webhook_id": "gitea:pr:" + str(data["number"]),
+        "VERSION": data["base"]["label"].split("-")[-1],
+        "DISTRI": "opensuse",  # there must be a better way than to hardcode
+        "FLAVOR": "staged-updates",
+        "ARCH": "x86_64",
     }
-    return params
+    return params | settings
 
 
 def openqa_cli(host, subcommand, cmds, dry_run=False):
@@ -321,29 +324,16 @@ def openqa_cli(host, subcommand, cmds, dry_run=False):
 
 def openqa_schedule(args, params):
     log.debug("============== openqa_schedule")
-    scenario_url = "https://raw.githubusercontent.com/os-autoinst/os-autoinst-distri-openQA/refs/heads/master/scenario-definitions.yaml"
-    scenario_yaml = fetch_url(scenario_url, request_type="text")
-    yaml_file = "/tmp/distri-openqa-scenario.yaml"
-    with open(yaml_file, "w") as f:
-        f.write(scenario_yaml.decode("utf-8"))
-    cmd_args = [
-        "--param-file",
-        "SCENARIO_DEFINITIONS_YAML=" + yaml_file,
-        "VERSION=Tumbleweed",
-        "DISTRI=openqa",
-        "FLAVOR=dev",
-        "ARCH=x86_64",
-        "HDD_1=opensuse-Tumbleweed-x86_64-20250920-minimalx@uefi.qcow2",
-    ]
+
+    cmd_args = []
     for key in params:
-        cmd_args.append(key + "=" + params[key])
+        cmd_args.append(f"{key}={params[key]}")
     output = openqa_cli(args.openqa_host, "schedule", cmd_args, dry_run)
-    pattern = re.compile(r".*?(?P<url>https?://\S+)", re.DOTALL)
 
     query_parameters = {
         "build": params["BUILD"],
-        "distri": "openqa",
-        "version": "Tumbleweed",
+        "distri": params["DISTRI"],
+        "version": params["VERSION"],
     }
 
     base_url = urlparse(args.openqa_host + "/tests/overview")
