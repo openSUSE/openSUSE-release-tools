@@ -87,6 +87,9 @@ jobs:
           if test -e metrics.py; then
               zypper -n in python3-influxdb-client python3-GitPython
           fi
+          if test -e /usr/bin/python3.6; then
+              zypper -n in python3-dataclasses
+          fi
 
       - name: run a simple smoke test whether --help actually works
         run: |
