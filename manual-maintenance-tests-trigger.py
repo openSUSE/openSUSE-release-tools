@@ -115,6 +115,7 @@ def trigger_tests_for_pr(args):
                 args, obs_project, data, settings
             )
             openqa_build_overview = openqa_schedule(args, openqa_job_params)
+            log.info(f"Build triggered, results at {openqa_build_overview}")
     else:
         log.error(f"PR {project}#{pr} does not target {args.branch}")
 
@@ -131,7 +132,7 @@ def prepare_update_settings(obs_project, bs_repo_url, pr, packages):
 
     # openSUSE:Maintenance key
     settings["IMPORT_GPG_KEYS"] = "gpg-pubkey-b3fd7e48-5549fd0f"
-    settings["ZYPPER_ADD_REPO_PREFIX"] = "staged_update"
+    settings["ZYPPER_ADD_REPO_PREFIX"] = "staged-updates"
 
     settings["INSTALL_PACKAGES"] = " ".join(packages.keys())
     settings["VERIFY_PACKAGE_VERSIONS"] = " ".join(
@@ -164,7 +165,7 @@ def get_obs_values(project, branch, pr_id):
     obs_project = template.format(version=branch_version, project=project, pr_id=pr_id)
     target_repo = REPO_PREFIX + "/"
     target_repo += obs_project.replace(":", ":/")
-    log.debug(f"Target project {obs_project}, {target_repo}")
+    log.info(f"Target project {obs_project}, {target_repo}")
     return obs_project, target_repo
 
 
@@ -240,7 +241,7 @@ def gitea_post_status(job_params, job_url):
 
 
 def request_post(url, payload):
-    log.debug("============== request_post")
+    log.debug(f"Posting request to gitea for {url}")
     log.debug(payload)
     token = os.environ.get("GITEA_TOKEN")
     headers = {
@@ -257,7 +258,7 @@ def request_post(url, payload):
 
 
 def request_get(url):
-    log.debug("============== request_get")
+    log.debug(f"Sending request to gitea for {url}")
     token = os.environ.get("GITEA_TOKEN")
     headers = {
         "User-Agent": USER_AGENT,
@@ -281,7 +282,6 @@ def prepare_openqa_job_params(args, obs_project, data, settings):
         + f"/api/v1/repos/{data['head']['repo']['full_name']}/statuses/{data['head']['sha']}"
     )
     params = {
-        "_GROUP_ID": "39",
         "PRIO": "100",
         # add "target URL" for the "Details" button of the CI status
         "CI_TARGET_URL": args.openqa_host,
@@ -319,9 +319,6 @@ def openqa_cli(host, subcommand, cmds, dry_run=False):
     return res.stdout.decode("utf-8")
 
 
-    return res.stdout.decode("utf-8")
-
-
 def openqa_schedule(args, params):
     log.debug("============== openqa_schedule")
 
@@ -345,8 +342,10 @@ def openqa_schedule(args, params):
 class MultipleSourcePackagesError(Exception):
     pass
 
+
 class NoSourcePackagesError(Exception):
     pass
+
 
 if __name__ == "__main__":
     args = parse_args()
