@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-import pika
 import sys
 import os
 import argparse
 import json
 import subprocess
 import requests
-import re
 import logging
 import datetime
 from urllib.parse import urlencode, urlunparse, urlparse
@@ -228,7 +226,6 @@ def gitea_query_pr(project, pr_id):
 
 def gitea_post_status(job_params, job_url):
     log.debug("============== gitea_post_status")
-    sha = job_params["sha"]
     statuses_url = job_params["repo_api_url"] + "/statuses/" + job_params["sha"]
 
     payload = {
@@ -325,7 +322,7 @@ def openqa_schedule(args, params):
     cmd_args = []
     for key in params:
         cmd_args.append(f"{key}={params[key]}")
-    output = openqa_cli(args.openqa_host, "schedule", cmd_args, dry_run)
+    openqa_cli(args.openqa_host, "schedule", cmd_args, dry_run)
 
     query_parameters = {
         "build": params["BUILD"],
