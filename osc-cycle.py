@@ -1,7 +1,4 @@
-from osc.core import get_dependson
-from lxml import etree as ET
 from osc import cmdln
-from urllib.error import HTTPError
 
 
 @cmdln.option('-p', '--project', metavar='PROJECT', dest='project', default='openSUSE:Factory')
@@ -15,6 +12,9 @@ def do_cycle(self, subcmd, opts, *args):
 
     ${cmd_option_list}
     """
+    from osc.core import get_dependson  # pylint: disable=import-outside-toplevel
+    from lxml import etree as ET  # pylint: disable=import-outside-toplevel
+    from urllib.error import HTTPError  # pylint: disable=import-outside-toplevel
 
     if len(args) == 0:
         print("No packages were specified, no chain to draw")
