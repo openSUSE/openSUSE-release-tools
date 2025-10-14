@@ -110,7 +110,7 @@ case "$1" in
         # set devel change in last 10 days
         osc rq list -t change_devel -D 10 -P openSUSE:Factory -s accepted |
             grep 'change_devel:\s\+openSUSE:Factory/' |
-            sed -e 's,^\s*change_devel:\s*openSUSE:Factory/\([a-zA-Z0-9_+-]\+\)\s*developed in \([a-zA-Z0-9_+:-]\+\)/\1\s*$,\2 \1,' |
+            sed -e 's,^\s*change_devel:\s*openSUSE:Factory/\([a-zA-Z0-9_+-.]\+\)\s*developed in \([a-zA-Z0-9_+:-]\+\)/\1\s*$,\2 \1,' |
             while read line; do
                 setdevel ${line/ */} ${line/* /};
             done
