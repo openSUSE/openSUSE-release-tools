@@ -33,6 +33,14 @@ CONFIG_DATA = {
 GITEA_HOST = None
 BS_HOST = None
 REPO_PREFIX = None
+REVIEW_GROUP = None
+openqa = None
+
+# Variables to know status of QA
+QA_UNKNOWN = 0
+QA_INPROGRESS = 1
+QA_FAILED = 2
+QA_PASSED = 3
 
 
 def parse_args():
@@ -148,6 +156,24 @@ def process_pull_request(pr_id, args):
             # gitea_post_status(openqa_job_params["GITEA_STATUSES_URL"], openqa_build_overview)
             gitea_post_build_overview(project, pr, openqa_build_overview)
             log.info(f"Build triggered, results at {openqa_build_overview}")
+
+
+def take_action(project, pr, qa_state, openqa_build_overview):
+    if qa_state == QA_UNKNOWN:
+        log.debug(f"QA state is QA_UNKNOWN for {project}#{pr}")
+
+    elif qa_state == QA_FAILED or qa_state == QA_PASSED:
+        if qa_state == QA_PASSED:
+            msg = f"openQA tests passed: {openqa_build_overview}\n"
+            msg += f"{REVIEW_GROUP}: approve"
+
+        else:
+            msg = f"openQA tests failed: {openqa_build_overview}\n"
+            msg += f"{REVIEW_GROUP}: decline"
+
+    gitea_post_openqa_review(project, pr, msg)
+
+
 def compute_openqa_tests_status(openqa_job_params):
     values = {
         "distri": openqa_job_params["DISTRI"],
