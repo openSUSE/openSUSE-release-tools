@@ -188,7 +188,6 @@ def get_packages_from_obs_project(obs_project):
         url = osc.core.makeurl(
             BS_HOST, ("build", obs_project, repo, arch, "_repository"), query=query
         )
-        # breakpoint()
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
         for binary in root.findall("binary"):
@@ -334,10 +333,6 @@ def openqa_schedule(args, params):
     query_string = urlencode(query_parameters)
     test_overview_url = urlunparse(base_url._replace(query=query_string))
     return test_overview_url
-
-
-class MultipleSourcePackagesError(Exception):
-    pass
 
 
 class NoSourcePackagesError(Exception):
