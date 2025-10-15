@@ -70,15 +70,37 @@ def parse_args():
     return args
 
 
-def trigger_tests_for_pr(args):
-    if not args.pr_data:
-        data = gitea_query_pr(args.project, args.pr_id)
-    else:
-        log.info("Loading pr data from file")
-        json_file = args.pr_data
-        with open(json_file, "r") as f:
-            content = f.read()
-        data = json.loads(content)
+def process_project(args):
+    pull_requests = get_open_prs_for_project_branch(args.project, args.branch)
+    for req in pull_requests:
+        process_pull_request(req, args)
+
+    log.info("Finished, processed %d pull requests", len(pull_requests))
+
+
+def get_open_prs_for_project_branch(project, branch):
+    pull_requests_url = (
+        GITEA_HOST + f"/api/v1/repos/{project}/pulls?state=open&base_branch={branch}"
+    )
+
+    try:
+        pull_requests = request_get(pull_requests_url)
+    except requests.exceptions.HTTPError as e:
+        log.error(f"Project '{project}' doesn't exist: {e}")
+        return []
+
+    if not pull_requests:
+        log.warning(f"No pull requests found for '{project}' on'{branch}'")
+        return []
+
+    pr_numbers = [req["number"] for req in pull_requests]
+    num_prs = len(pr_numbers)
+    log.debug(f"Found {num_prs} pull requests for '{project}' on'{branch}'")
+    return pr_numbers
+
+
+def process_pull_request(pr_id, args):
+    data = gitea_query_pr(args.project, pr_id)
 
     pr = data["number"]
     project = data["base"]["repo"]["full_name"]
@@ -397,3 +419,7 @@ if __name__ == "__main__":
     #     simulate_build_finished_event(args)
     # else:
     #     listen(args)
+    if args.pr_id:
+        process_pull_request(args.pr_id, args)
+    else:
+        process_project(args)
