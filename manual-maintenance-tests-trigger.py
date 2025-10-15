@@ -36,13 +36,15 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--myself", help="Username of bot", default="qam-openqa")
     parser.add_argument(
+        "--review-group",
+        help="Group to be used for approval",
+        default="@qam-openqa-review",
+    )
+    parser.add_argument(
         "--openqa-host", help="OpenQA instance url", default="http://localhost:9526"
     )
     parser.add_argument(
         "--verbose", help="Verbosity", default="1", type=int, choices=[0, 1, 2, 3]
-    )
-    parser.add_argument(
-        "--build-bot", help="Username of bot that approves when build is finished"
     )
     parser.add_argument("--branch", help="Target branch, eg. leap-16.0")
     parser.add_argument("--project", help="Target project")
@@ -59,6 +61,9 @@ def parse_args():
     )
     parser.add_argument(
         "--bs", help="Build service api", default="https://api.opensuse.org"
+    )
+    parser.add_argument(
+        "--bs-bot", help="Build service bot", default="autogits_obs_staging_bot"
     )
     parser.add_argument(
         "--repo-prefix",
