@@ -108,24 +108,45 @@ def process_pull_request(pr_id, args):
     branch = data["base"]["label"]
     log.info(f"working on {project}#{pr}")
 
+    if branch != args.branch and project != args.project:
+        log.error(f"PR {project}#{pr} does not target {args.branch}, skipping")
+        return
+
+    pr_events = get_events_by_timeline(project, pr)
+    if not is_build_finished(project, pr, pr_events, args.bs_bot):
+        log.info(f"Build for {project}#{pr} is not ready or is broken, skipping.")
+        return
+
+    obs_project, bs_repo_url = get_obs_values(project, branch, pr)
+    # We need to query every package in the staged update
+    packages_in_project = get_packages_from_obs_project(obs_project)
+    openqa_build_overview = None
+
+    if packages_in_project:
+        settings = prepare_update_settings(
+            obs_project, bs_repo_url, pr, packages_in_project
+        )
+        openqa_job_params = prepare_openqa_job_params(args, obs_project, data, settings)
+        openqa_build_overview, previous_review = check_openqa_comment(
+            pr_events, args.myself
+        )
+        # if there's a comment by us, tests have been triggered, so lets check the status
+        if openqa_build_overview:
+            log.info(f"Build for {project}#{pr} has openQA tests")
+            log.debug(f"openQA tests are at {openqa_build_overview}")
+            if not previous_review:
+                qa_state = compute_openqa_tests_status(openqa_job_params)
+                take_action(project, pr, qa_state, openqa_build_overview)
+            else:
+                log.info(
+                    f"Build for {project}#{pr} has a review already by us: {previous_review}"
                 )
-                exit()
-
-        except IOError as e:
-            log.error(f"Error saving file: {e}")
-
-    if branch == args.branch and project == args.project:
-        obs_project, bs_repo_url = get_obs_values(project, branch, pr)
-        # We need to query every package in the staged update
-        packages_in_project = get_packages_from_obs_project(obs_project)
-        if packages_in_project:
-            settings = prepare_update_settings(
-                obs_project, bs_repo_url, pr, packages_in_project
-            )
-            openqa_job_params = prepare_openqa_job_params(
-                args, obs_project, data, settings
-            )
+        else:
             openqa_build_overview = openqa_schedule(args, openqa_job_params)
+            # instead of using the statuses api, we will have to use the comments api
+            # to report that tests have been triggered, and approve
+            # gitea_post_status(openqa_job_params["GITEA_STATUSES_URL"], openqa_build_overview)
+            gitea_post_build_overview(project, pr, openqa_build_overview)
             log.info(f"Build triggered, results at {openqa_build_overview}")
 def compute_openqa_tests_status(openqa_job_params):
     values = {
