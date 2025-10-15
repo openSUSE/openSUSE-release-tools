@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 import sys
 import os
+import re
 import argparse
-import json
 import subprocess
 import requests
 import logging
-import datetime
 from openqa_client.client import OpenQA_Client
 from urllib.parse import urlencode, urlunparse, urlparse
 from lxml import etree as ET
@@ -14,7 +13,8 @@ from collections import namedtuple
 import osc.core
 
 USER_AGENT = "manual-trigger.py (https://github.com/os-autoinst/scripts)"
-dry_run = False
+dry_run = True
+openqa_dry_run = False
 
 log = logging.getLogger(sys.argv[0] if __name__ == "__main__" else __name__)
 log.setLevel(logging.DEBUG)
@@ -344,10 +344,8 @@ def gitea_query_pr(project, pr_id):
     return request_get(pull_request_url)
 
 
-def gitea_post_status(job_params, job_url):
+def gitea_post_status(statuses_url, job_url):
     log.debug("============== gitea_post_status")
-    statuses_url = job_params["repo_api_url"] + "/statuses/" + job_params["sha"]
-
     payload = {
         "context": "qam-openqa",
         "description": "openQA check",
@@ -363,6 +361,7 @@ def gitea_get_review(project, pr_id, review_id):
         GITEA_HOST + f"/api/v1/repos/{project}/pulls/{pr_id}/reviews/{review_id}"
     )
     return request_get(review_url)
+
 
 def get_events_by_timeline(project, pr_id):
     log.debug("============== get_events_by_timeline")
@@ -404,6 +403,7 @@ def get_events_by_timeline(project, pr_id):
 
     return events
 
+
 def request_post(url, payload):
     log.debug(f"Posting request to gitea for {url}")
     log.debug(payload)
@@ -429,6 +429,7 @@ def request_get(url):
         "Accept": "application/json",
         "Authorization": "token " + token,
     }
+
     try:
         content = requests.get(url, headers=headers)
         content.raise_for_status()
@@ -489,7 +490,7 @@ def openqa_schedule(args, params):
     cmd_args = []
     for key in params:
         cmd_args.append(f"{key}={params[key]}")
-    openqa_cli(args.openqa_host, "schedule", cmd_args, dry_run)
+    openqa_cli(args.openqa_host, "schedule", cmd_args, openqa_dry_run)
 
     query_parameters = {
         "build": params["BUILD"],
@@ -517,15 +518,8 @@ if __name__ == "__main__":
     GITEA_HOST = args.gitea
     BS_HOST = args.bs
     REPO_PREFIX = args.repo_prefix
+    REVIEW_GROUP = args.review_group
     osc.conf.get_config()
-
-    trigger_tests_for_pr(args)
-    # if args.simulate_review_requested_event:
-    #     simulate(args)
-    # elif(args.simulate_build_finished_event and args.build_bot):
-    #     simulate_build_finished_event(args)
-    # else:
-    #     listen(args)
     openqa = OpenQA_Client(server=args.openqa_host)
     if args.pr_id:
         process_pull_request(args.pr_id, args)
