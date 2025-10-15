@@ -389,6 +389,24 @@ def gitea_post_status(statuses_url, job_url):
     request_post(statuses_url, payload)
 
 
+def gitea_post_build_overview(project, pr_id, job_url):
+    log.debug("============== gitea_post_build_overview")
+    comment_url = GITEA_HOST + f"/api/v1/repos/{project}/issues/{pr_id}/comments"
+    payload = {
+        "body": f"openQA tests triggered: {job_url}",
+    }
+    request_post(comment_url, payload)
+
+
+def gitea_post_openqa_review(project, pr_id, msg):
+    log.debug("============== gitea_post_openqa_review")
+    comment_url = GITEA_HOST + f"/api/v1/repos/{project}/issues/{pr_id}/comments"
+    payload = {
+        "body": msg,
+    }
+    request_post(comment_url, payload)
+
+
 def gitea_get_review(project, pr_id, review_id):
     log.debug("============== gitea_get_review")
     review_url = (
