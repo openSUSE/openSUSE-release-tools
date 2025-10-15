@@ -25,7 +25,9 @@ handler.setFormatter(formatter)
 log.addHandler(handler)
 
 CONFIG_DATA = {
-    "products/PackageHub": "openSUSE:Backports:SLE-{version}:PullRequest:{pr_id}"
+    "products/PackageHub": "openSUSE:Backports:SLE-{version}:PullRequest:{pr_id}",
+    "openSUSE/Leap": "openSUSE:Leap:{version}:PullRequest:{pr_id}",
+    "openSUSE/LeapNonFree": "openSUSE:Leap:{version}:NonFree:PullRequest:{pr_id}",
 }
 GITEA_HOST = None
 BS_HOST = None
