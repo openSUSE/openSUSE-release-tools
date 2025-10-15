@@ -266,14 +266,23 @@ def get_staged_update_name(obs_project):
     url = osc.core.makeurl(BS_HOST, ("source", obs_project), query=query)
     root = ET.parse(osc.core.http_GET(url)).getroot()
     source_packages = [n.attrib["name"] for n in root.findall("entry")]
+    packages = []
+    for package in source_packages:
+        if package.startswith("patchinfo"):
+            continue
+        else:
+            packages.append(package)
 
     # In theory every staged update, has a single package
-    if len(source_packages) > 1:
-        raise MultipleSourcePackagesError("Multiple packages detected")
-    elif len(source_packages) == 0:
+    if len(packages) > 1:
+        shortest = min((s for s in packages if ":" not in s), key=len)
+        return shortest
+    elif len(packages) == 0:
         raise NoSourcePackagesError("No packages detected")
     else:
-        return source_packages[0]
+        # this is in case we need to look for the package with the
+        # shortest name in a given update
+        return packages[0]
 
 
 def get_obs_values(project, branch, pr_id):
