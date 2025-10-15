@@ -116,6 +116,8 @@ def trigger_tests_for_pr(args):
             log.info(f"Build triggered, results at {openqa_build_overview}")
     else:
         log.error(f"PR {project}#{pr} does not target {args.branch}")
+def get_build_review_status(project, pr, review_id):
+    return gitea_get_review(project, pr, review_id)
 
 
 def prepare_update_settings(obs_project, bs_repo_url, pr, packages):
@@ -235,6 +237,53 @@ def gitea_post_status(job_params, job_url):
     }
     request_post(statuses_url, payload)
 
+
+def gitea_get_review(project, pr_id, review_id):
+    log.debug("============== gitea_get_review")
+    review_url = (
+        GITEA_HOST + f"/api/v1/repos/{project}/pulls/{pr_id}/reviews/{review_id}"
+    )
+    return request_get(review_url)
+
+def get_events_by_timeline(project, pr_id):
+    log.debug("============== get_events_by_timeline")
+    url = GITEA_HOST + f"/api/v1/repos/{project}/issues/{pr_id}/timeline"
+    request = request_get(url)
+
+    # if request.status_code == 404:
+    #     self.logger.error(f"'{self}' does not have a timeline")
+    #     # this should throw an exception
+    #     return
+
+    timeline = request
+    timeline.reverse()
+
+    events = {}
+    # reset the timeline every time a pull_push event happens
+    for event in timeline:
+        if event["type"] == "pull_push":
+            log.debug(
+                f"*** All events since last push ({event['body']}) have been processed for {project}#{pr_id}"
+            )
+            break
+
+        user_login = event["user"]["login"]
+        event_type = event["type"]
+
+        if user_login not in events:
+            events[user_login] = {}
+
+        if event_type not in events[user_login]:
+            log.debug(
+                f"Storing most recent '{event_type}' for '{user_login}' (ID: {event['id']})"
+            )
+            events[user_login][event_type] = event
+        else:
+            log.debug(
+                f"Skipping older '{event_type}' for '{user_login}' (ID: {event['id']})"
+            )
+
+    return events
 
 def request_post(url, payload):
     log.debug(f"Posting request to gitea for {url}")
