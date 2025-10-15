@@ -48,13 +48,6 @@ def parse_args():
     )
     parser.add_argument("--branch", help="Target branch, eg. leap-16.0")
     parser.add_argument("--project", help="Target project")
-    parser.add_argument(
-        "--store-pr",
-        help="Stores pull request data and exits",
-        action="store_true",
-        default=False,
-    )
-    parser.add_argument("--pr-data", help="File to use for simulation", default=False)
     parser.add_argument("--pr-id", help="PR to trigger tests for")
     parser.add_argument(
         "--gitea", help="Gitea instance to use", default="https://src.opensuse.org"
@@ -86,20 +79,10 @@ def trigger_tests_for_pr(args):
         data = json.loads(content)
 
     pr = data["number"]
-    by = data["user"]["login"]
     project = data["base"]["repo"]["full_name"]
     branch = data["base"]["label"]
     log.info(f"working on {project}#{pr}")
 
-    if args.store_pr and not args.pr_data:
-        timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        filename = f"tests/data/opensuse-maintenance/by-{by}-{pr}-{timestamp}.json"
-        try:
-            with open(filename, "w") as file_object:
-                json.dump(data, file_object, indent=4)
-                log.info(f"Storing review-requested file to {filename}")
-                log.debug(
-                    f"Captured pr {args.project}#{args.branch} PR: {args.pr_id}, saved to {filename}. Exiting"
                 )
                 exit()
 
