@@ -422,12 +422,15 @@ def request_post(url, payload):
         "Accept": "application/json",
         "Authorization": "token " + token,
     }
-    try:
-        content = requests.post(url, headers=headers, data=payload)
-        content.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        log.error("Error while fetching %s: %s" % (url, str(e)))
-        raise (e)
+    if dry_run:
+        log.debug(f"would send requst to {url} with {payload}")
+    else:
+        try:
+            content = requests.post(url, headers=headers, data=payload)
+            content.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            log.error("Error while fetching %s: %s" % (url, str(e)))
+            raise (e)
 
 
 def request_get(url):
