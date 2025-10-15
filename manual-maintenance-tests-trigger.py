@@ -239,6 +239,31 @@ def get_build_review_status(project, pr, review_id):
     return gitea_get_review(project, pr, review_id)
 
 
+def check_openqa_comment(pr_events, myself):
+    openqa_comment = pr_events.get(myself)
+    openqa_build_overview = None
+    previous_review = None
+    if not openqa_comment or "comment" not in openqa_comment:
+        return openqa_build_overview, previous_review
+
+    openqa_url_pattern = re.compile(r"https?://[^\s]+/tests/overview\?[^\s]+")
+    match = openqa_url_pattern.search(openqa_comment["comment"]["body"])
+
+    if match:
+        log.info(f"openQA build url found {match.group(0)}")
+        log.debug(f"openQA build url found '{openqa_comment['comment']['body']}'")
+        openqa_build_overview = match.group(0)
+
+        # If we find a match for the openQA url, try looking into the comment's
+        # body to search for a review:
+        qam_review_pattern = re.compile(f"{REVIEW_GROUP}:\\s*(.*)")
+        previous_review = qam_review_pattern.search(openqa_comment["comment"]["body"])
+        if previous_review:
+            previous_review = openqa_comment["comment"]["body"]
+
+    return openqa_build_overview, previous_review
+
+
 def prepare_update_settings(obs_project, bs_repo_url, pr, packages):
     settings = {}
     staged_update_name = get_staged_update_name(obs_project)
