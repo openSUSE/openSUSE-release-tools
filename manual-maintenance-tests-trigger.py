@@ -215,8 +215,26 @@ def compute_openqa_tests_status(openqa_job_params):
         return QA_FAILED
 
     return QA_PASSED
+
+
+def is_build_finished(project, pr, pr_events, bs_bot):
+    try:
+        review_id = pr_events[bs_bot]["review"]["review_id"]
+    except KeyError as e:
+        log.warning(
+            f"Could not find key {e} in pr_events for {project}#{pr}. Assuming build is not finished."
+        )
+        return False
+
+    review = get_build_review_status(project, pr, review_id)
+    if review["state"] == "APPROVED":
+        log.info(f"Build is finished for {project}#{pr}")
+        return True
     else:
-        log.error(f"PR {project}#{pr} does not target {args.branch}")
+        log.warning(f"Build is in state {review['state']} for {project}#{pr}")
+        return False
+
+
 def get_build_review_status(project, pr, review_id):
     return gitea_get_review(project, pr, review_id)
 
