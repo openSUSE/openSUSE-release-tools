@@ -7,6 +7,7 @@ import subprocess
 import requests
 import logging
 import datetime
+from openqa_client.client import OpenQA_Client
 from urllib.parse import urlencode, urlunparse, urlparse
 from lxml import etree as ET
 from collections import namedtuple
@@ -126,6 +127,47 @@ def process_pull_request(pr_id, args):
             )
             openqa_build_overview = openqa_schedule(args, openqa_job_params)
             log.info(f"Build triggered, results at {openqa_build_overview}")
+def compute_openqa_tests_status(openqa_job_params):
+    values = {
+        "distri": openqa_job_params["DISTRI"],
+        "version": openqa_job_params["VERSION"],
+        "arch": openqa_job_params["ARCH"],
+        "flavor": openqa_job_params["FLAVOR"],
+        "scope": "relevant",
+        "latest": "1",
+    }
+    jobs = openqa.openqa_request("GET", "jobs", values)["jobs"]
+    # this comes from openqabot.py#calculate_qa_status
+    if not jobs:
+        return QA_UNKNOWN
+
+    j = {}
+    has_failed = False
+    in_progress = False
+
+    for job in jobs:
+        if job["clone_id"]:
+            continue
+        name = job["name"]
+
+        if name in j and int(job["id"]) < int(j[name]["id"]):
+            continue
+        j[name] = job
+
+        if job["state"] not in ("cancelled", "done"):
+            in_progress = True
+        else:
+            if job["result"] != "passed" and job["result"] != "softfailed":
+                has_failed = True
+
+    if not j:
+        return QA_UNKNOWN
+    if in_progress:
+        return QA_INPROGRESS
+    if has_failed:
+        return QA_FAILED
+
+    return QA_PASSED
     else:
         log.error(f"PR {project}#{pr} does not target {args.branch}")
 def get_build_review_status(project, pr, review_id):
@@ -419,6 +461,7 @@ if __name__ == "__main__":
     #     simulate_build_finished_event(args)
     # else:
     #     listen(args)
+    openqa = OpenQA_Client(server=args.openqa_host)
     if args.pr_id:
         process_pull_request(args.pr_id, args)
     else:
