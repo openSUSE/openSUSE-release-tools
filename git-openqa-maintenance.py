@@ -12,7 +12,7 @@ from lxml import etree as ET
 from collections import namedtuple
 import osc.core
 
-USER_AGENT = "manual-trigger.py (https://github.com/os-autoinst/scripts)"
+USER_AGENT = "git-openqa-maintenance (https://github.com/openSUSE/openSUSE-release-tools"
 dry_run = False
 openqa_dry_run = False
 
