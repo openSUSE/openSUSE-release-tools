@@ -13,7 +13,7 @@ from collections import namedtuple
 import osc.core
 
 USER_AGENT = "manual-trigger.py (https://github.com/os-autoinst/scripts)"
-dry_run = True
+dry_run = False
 openqa_dry_run = False
 
 log = logging.getLogger(sys.argv[0] if __name__ == "__main__" else __name__)
