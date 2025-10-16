@@ -160,6 +160,25 @@ pipelines:
         tasks:
           - script: |-
               ./openqa-maintenance.py --group qam-openqa --review-mode=accept-onpass --debug --openqa https://openqa.opensuse.org  --apiurl https://api.opensuse.org review
+  openSUSE.QA.Leap16.Maint:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-openqa-maintenance
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    timer:
+      spec: 0 */10 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              ./git-openqa-maintenance.py --project products/PackageHub --branch leap-16.0
   openSUSE.Devel.Reminder:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
