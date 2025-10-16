@@ -44,7 +44,7 @@ QA_PASSED = 3
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--myself", help="Username of bot", default="qam-openqa")
+    parser.add_argument("--myself", help="Username of bot", default="openqa-maintenance")
     parser.add_argument(
         "--review-group",
         help="Group to be used for approval",
