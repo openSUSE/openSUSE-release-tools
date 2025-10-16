@@ -30,6 +30,7 @@ CONFIG_DATA = {
     "openSUSE/Leap": "openSUSE:Leap:{version}:PullRequest:{pr_id}",
     "openSUSE/LeapNonFree": "openSUSE:Leap:{version}:NonFree:PullRequest:{pr_id}",
 }
+
 GITEA_HOST = None
 BS_HOST = None
 REPO_PREFIX = None
@@ -183,6 +184,7 @@ def compute_openqa_tests_status(openqa_job_params):
         "version": openqa_job_params["VERSION"],
         "arch": openqa_job_params["ARCH"],
         "flavor": openqa_job_params["FLAVOR"],
+        "build": openqa_job_params["BUILD"],
         "scope": "relevant",
         "latest": "1",
     }
@@ -273,9 +275,10 @@ def prepare_update_settings(project, obs_project, bs_repo_url, pr, packages):
     build_project = project.replace("/", "_")
     # this could also be: obs_project.split(':')[-1]
     # start with a colon so it looks cool behind 'Build' :/
-    patch_id = pr
     settings["BUILD"] = f":{build_project}:{pr}:{staged_update_name}"
     settings["INCIDENT_REPO"] = bs_repo_url
+    # so tests can do zypper in -t patch $INCIDENT_PATCH
+    patch_id = obs_project.replace(":", "_")
     settings["INCIDENT_PATCH"] = patch_id
 
     # openSUSE:Maintenance key
@@ -470,7 +473,7 @@ def request_post(url, payload):
         "Authorization": "token " + token,
     }
     if dry_run:
-        log.debug(f"would send requst to {url} with {payload}")
+        log.debug(f"would send request to {url} with {payload}")
     else:
         try:
             content = requests.post(url, headers=headers, data=payload)
