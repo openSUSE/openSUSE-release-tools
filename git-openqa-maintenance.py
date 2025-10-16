@@ -258,7 +258,7 @@ def prepare_update_settings(project, obs_project, bs_repo_url, pr, packages):
     # so tests can do zypper in -t patch $INCIDENT_PATCH
     patch_id = obs_project.replace(":", "_")
     settings["INCIDENT_PATCH"] = patch_id
-
+    settings["OS_TEST_ISSUES"] = pr
     # openSUSE:Maintenance key
     settings["IMPORT_GPG_KEYS"] = "gpg-pubkey-b3fd7e48-5549fd0f"
     settings["ZYPPER_ADD_REPO_PREFIX"] = "staged-updates"
