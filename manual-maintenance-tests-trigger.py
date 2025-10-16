@@ -130,32 +130,35 @@ def process_pull_request(pr_id, args):
     packages_in_project = get_packages_from_obs_project(obs_project)
     openqa_build_overview = None
 
-    if packages_in_project:
-        settings = prepare_update_settings(
-            obs_project, bs_repo_url, pr, packages_in_project
-        )
-        openqa_job_params = prepare_openqa_job_params(args, obs_project, data, settings)
-        openqa_build_overview, previous_review = check_openqa_comment(
-            pr_events, args.myself
-        )
-        # if there's a comment by us, tests have been triggered, so lets check the status
-        if openqa_build_overview:
-            log.info(f"Build for {project}#{pr} has openQA tests")
-            log.debug(f"openQA tests are at {openqa_build_overview}")
-            if not previous_review:
-                qa_state = compute_openqa_tests_status(openqa_job_params)
-                take_action(project, pr, qa_state, openqa_build_overview)
-            else:
-                log.info(
-                    f"Build for {project}#{pr} has a review already by us: {previous_review}"
-                )
+    if not packages_in_project:
+        log.warning(f"No packages found in {obs_project}, skipping.")
+        return
+
+    settings = prepare_update_settings(
+        project, obs_project, bs_repo_url, pr, packages_in_project
+    )
+    openqa_job_params = prepare_openqa_job_params(args, obs_project, data, settings)
+    openqa_build_overview, previous_review = check_openqa_comment(
+        pr_events, args.myself
+    )
+    # if there's a comment by us, tests have been triggered, so lets check the status
+    if openqa_build_overview:
+        log.info(f"Build for {project}#{pr} has openQA tests")
+        log.debug(f"openQA tests are at {openqa_build_overview}")
+        if not previous_review:
+            qa_state = compute_openqa_tests_status(openqa_job_params)
+            take_action(project, pr, qa_state, openqa_build_overview)
         else:
-            openqa_build_overview = openqa_schedule(args, openqa_job_params)
-            # instead of using the statuses api, we will have to use the comments api
-            # to report that tests have been triggered, and approve
-            # gitea_post_status(openqa_job_params["GITEA_STATUSES_URL"], openqa_build_overview)
-            gitea_post_build_overview(project, pr, openqa_build_overview)
-            log.info(f"Build triggered, results at {openqa_build_overview}")
+            log.info(
+                f"Build for {project}#{pr} has a review already by us: {previous_review}"
+            )
+    else:
+        openqa_build_overview = openqa_schedule(args, openqa_job_params)
+        # instead of using the statuses api, we will have to use the comments api
+        # to report that tests have been triggered, and approve
+        # gitea_post_status(openqa_job_params["GITEA_STATUSES_URL"], openqa_build_overview)
+        gitea_post_build_overview(project, pr, openqa_build_overview)
+        log.info(f"Build triggered, results at {openqa_build_overview}")
 
 
 def take_action(project, pr, qa_state, openqa_build_overview):
