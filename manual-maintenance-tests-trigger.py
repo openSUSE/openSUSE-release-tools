@@ -267,13 +267,14 @@ def check_openqa_comment(pr_events, myself):
     return openqa_build_overview, previous_review
 
 
-def prepare_update_settings(obs_project, bs_repo_url, pr, packages):
+def prepare_update_settings(project, obs_project, bs_repo_url, pr, packages):
     settings = {}
     staged_update_name = get_staged_update_name(obs_project)
+    build_project = project.replace("/", "_")
     # this could also be: obs_project.split(':')[-1]
     # start with a colon so it looks cool behind 'Build' :/
-    settings["BUILD"] = f":{pr}:{staged_update_name}"
     patch_id = pr
+    settings["BUILD"] = f":{build_project}:{pr}:{staged_update_name}"
     settings["INCIDENT_REPO"] = bs_repo_url
     settings["INCIDENT_PATCH"] = patch_id
 
