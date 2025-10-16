@@ -19,9 +19,7 @@ openqa_dry_run = False
 log = logging.getLogger(sys.argv[0] if __name__ == "__main__" else __name__)
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler()
-formatter = logging.Formatter(
-    "%(name)-2s %(levelname)-2s %(funcName)s:%(lineno)d: %(message)s"
-)
+formatter = logging.Formatter("%(name)-2s %(levelname)-2s %(funcName)s:%(lineno)d: %(message)s")
 handler.setFormatter(formatter)
 log.addHandler(handler)
 
@@ -52,24 +50,14 @@ def parse_args():
         help="Group to be used for approval",
         default="@qam-openqa-review",
     )
-    parser.add_argument(
-        "--openqa-host", help="OpenQA instance url", default="http://localhost:9526"
-    )
-    parser.add_argument(
-        "--verbose", help="Verbosity", default="1", type=int, choices=[0, 1, 2, 3]
-    )
+    parser.add_argument("--openqa-host", help="OpenQA instance url", default="http://localhost:9526")
+    parser.add_argument("--verbose", help="Verbosity", default="1", type=int, choices=[0, 1, 2, 3])
     parser.add_argument("--branch", help="Target branch, eg. leap-16.0")
     parser.add_argument("--project", help="Target project")
     parser.add_argument("--pr-id", help="PR to trigger tests for")
-    parser.add_argument(
-        "--gitea", help="Gitea instance to use", default="https://src.opensuse.org"
-    )
-    parser.add_argument(
-        "--bs", help="Build service api", default="https://api.opensuse.org"
-    )
-    parser.add_argument(
-        "--bs-bot", help="Build service bot", default="autogits_obs_staging_bot"
-    )
+    parser.add_argument("--gitea", help="Gitea instance to use", default="https://src.opensuse.org")
+    parser.add_argument("--bs", help="Build service api", default="https://api.opensuse.org")
+    parser.add_argument("--bs-bot", help="Build service bot", default="autogits_obs_staging_bot")
     parser.add_argument(
         "--repo-prefix",
         help="Build service repository",
@@ -89,9 +77,7 @@ def process_project(args):
 
 
 def get_open_prs_for_project_branch(project, branch):
-    pull_requests_url = (
-        GITEA_HOST + f"/api/v1/repos/{project}/pulls?state=open&base_branch={branch}"
-    )
+    pull_requests_url = GITEA_HOST + f"/api/v1/repos/{project}/pulls?state=open&base_branch={branch}"
 
     try:
         pull_requests = request_get(pull_requests_url)
@@ -135,13 +121,9 @@ def process_pull_request(pr_id, args):
         log.warning(f"No packages found in {obs_project}, skipping.")
         return
 
-    settings = prepare_update_settings(
-        project, obs_project, bs_repo_url, pr, packages_in_project
-    )
+    settings = prepare_update_settings(project, obs_project, bs_repo_url, pr, packages_in_project)
     openqa_job_params = prepare_openqa_job_params(args, obs_project, data, settings)
-    openqa_build_overview, previous_review = check_openqa_comment(
-        pr_events, args.myself
-    )
+    openqa_build_overview, previous_review = check_openqa_comment(pr_events, args.myself)
     # if there's a comment by us, tests have been triggered, so lets check the status
     if openqa_build_overview:
         log.info(f"Build for {project}#{pr} has openQA tests")
@@ -150,9 +132,7 @@ def process_pull_request(pr_id, args):
             qa_state = compute_openqa_tests_status(openqa_job_params)
             take_action(project, pr, qa_state, openqa_build_overview)
         else:
-            log.info(
-                f"Build for {project}#{pr} has a review already by us: {previous_review}"
-            )
+            log.info(f"Build for {project}#{pr} has a review already by us: {previous_review}")
     else:
         openqa_build_overview = openqa_schedule(args, openqa_job_params)
         # instead of using the statuses api, we will have to use the comments api
@@ -226,9 +206,7 @@ def is_build_finished(project, pr, pr_events, bs_bot):
     try:
         review_id = pr_events[bs_bot]["review"]["review_id"]
     except KeyError as e:
-        log.warning(
-            f"Could not find key {e} in pr_events for {project}#{pr}. Assuming build is not finished."
-        )
+        log.warning(f"Could not find key {e} in pr_events for {project}#{pr}. Assuming build is not finished.")
         return False
 
     review = get_build_review_status(project, pr, review_id)
@@ -286,9 +264,7 @@ def prepare_update_settings(project, obs_project, bs_repo_url, pr, packages):
     settings["ZYPPER_ADD_REPO_PREFIX"] = "staged-updates"
 
     settings["INSTALL_PACKAGES"] = " ".join(packages.keys())
-    settings["VERIFY_PACKAGE_VERSIONS"] = " ".join(
-        [f"{p.name} {p.version}-{p.release}" for p in packages.values()]
-    )
+    settings["VERIFY_PACKAGE_VERSIONS"] = " ".join([f"{p.name} {p.version}-{p.release}" for p in packages.values()])
 
     return settings
 
@@ -347,9 +323,7 @@ def get_packages_from_obs_project(obs_project):
     for arch in [n.attrib["name"] for n in root.findall("entry")]:
         query = {"nosource": 1}
         # packages/binary = osc api /build/{obs_project}/{repo}/{arch}/_repository?nosource=1
-        url = osc.core.makeurl(
-            BS_HOST, ("build", obs_project, repo, arch, "_repository"), query=query
-        )
+        url = osc.core.makeurl(BS_HOST, ("build", obs_project, repo, arch, "_repository"), query=query)
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
         for binary in root.findall("binary"):
@@ -416,9 +390,7 @@ def gitea_post_openqa_review(project, pr_id, msg):
 
 def gitea_get_review(project, pr_id, review_id):
     log.debug("============== gitea_get_review")
-    review_url = (
-        GITEA_HOST + f"/api/v1/repos/{project}/pulls/{pr_id}/reviews/{review_id}"
-    )
+    review_url = GITEA_HOST + f"/api/v1/repos/{project}/pulls/{pr_id}/reviews/{review_id}"
     return request_get(review_url)
 
 
@@ -439,9 +411,7 @@ def get_events_by_timeline(project, pr_id):
     # reset the timeline every time a pull_push event happens
     for event in timeline:
         if event["type"] == "pull_push":
-            log.debug(
-                f"*** All events since last push ({event['body']}) have been processed for {project}#{pr_id}"
-            )
+            log.debug(f"*** All events since last push ({event['body']}) have been processed for {project}#{pr_id}")
             break
 
         user_login = event["user"]["login"]
@@ -451,14 +421,10 @@ def get_events_by_timeline(project, pr_id):
             events[user_login] = {}
 
         if event_type not in events[user_login]:
-            log.debug(
-                f"Storing most recent '{event_type}' for '{user_login}' (ID: {event['id']})"
-            )
+            log.debug(f"Storing most recent '{event_type}' for '{user_login}' (ID: {event['id']})")
             events[user_login][event_type] = event
         else:
-            log.debug(
-                f"Skipping older '{event_type}' for '{user_login}' (ID: {event['id']})"
-            )
+            log.debug(f"Skipping older '{event_type}' for '{user_login}' (ID: {event['id']})")
 
     return events
 
@@ -504,10 +470,7 @@ def request_get(url):
 
 def prepare_openqa_job_params(args, obs_project, data, settings):
     log.debug("create_openqa_job_params")
-    statuses_url = (
-        GITEA_HOST
-        + f"/api/v1/repos/{data['head']['repo']['full_name']}/statuses/{data['head']['sha']}"
-    )
+    statuses_url = GITEA_HOST + f"/api/v1/repos/{data['head']['repo']['full_name']}/statuses/{data['head']['sha']}"
     params = {
         "PRIO": "100",
         # add "target URL" for the "Details" button of the CI status
