@@ -483,7 +483,7 @@ def prepare_openqa_job_params(args, obs_project, data, settings):
         "webhook_id": "gitea:pr:" + str(data["number"]),
         "VERSION": data["base"]["label"].split("-")[-1],
         "DISTRI": "opensuse",  # there must be a better way than to hardcode
-        "FLAVOR": "staged-updates",
+        "FLAVOR": "staged-Updates",
         "ARCH": "x86_64",
     }
     return params | settings
