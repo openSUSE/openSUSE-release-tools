@@ -144,7 +144,10 @@ def process_pull_request(pr_id, args):
 
 def take_action(project, pr, qa_state, openqa_build_overview):
     if qa_state == QA_UNKNOWN:
-        log.debug(f"QA state is QA_UNKNOWN for {project}#{pr}")
+        log.error(f"QA state is QA_UNKNOWN for {project}#{pr}")
+
+    elif qa_state == QA_INPROGRESS:
+        log.info(f"Tests are still running for {project}#{pr}, not taking any action")
 
     elif qa_state == QA_FAILED or qa_state == QA_PASSED:
         if qa_state == QA_PASSED:
@@ -155,7 +158,7 @@ def take_action(project, pr, qa_state, openqa_build_overview):
             msg = f"openQA tests failed: {openqa_build_overview}\n"
             msg += f"{REVIEW_GROUP}: decline"
 
-    gitea_post_openqa_review(project, pr, msg)
+        gitea_post_openqa_review(project, pr, msg)
 
 
 def compute_openqa_tests_status(openqa_job_params):
