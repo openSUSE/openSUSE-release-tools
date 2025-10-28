@@ -297,12 +297,30 @@ def get_obs_values(project, branch, pr_id):
     log.debug("Prepare obs url")
     template = CONFIG_DATA[project]
     # Version string has to be extracted from branch name
-    branch_version = branch.split("-")[-1]
+
+    # Version string has to be extracted from branch name
+    branch_version = _extract_version_from_branch(branch)
+    if not branch_version:
+        log.error(f"Could not get version from {branch}")
+        return None, None
+
     obs_project = template.format(version=branch_version, project=project, pr_id=pr_id)
     target_repo = REPO_PREFIX + "/"
     target_repo += obs_project.replace(":", ":/")
     log.info(f"Target project {obs_project}, {target_repo}")
     return obs_project, target_repo
+
+
+VERSION_PATTERN = re.compile(r'(\d+\.\d+)')
+
+
+def _extract_version_from_branch(branch):
+    matches = VERSION_PATTERN.search(branch)
+    if matches:
+        return matches.group(0)
+
+    # Return None to signal that no version was found
+    return None
 
 
 def get_packages_from_obs_project(obs_project):
@@ -481,7 +499,7 @@ def prepare_openqa_job_params(args, obs_project, data, settings):
         "GITEA_STATUSES_URL": statuses_url,
         "GITEA_PR_URL": data["html_url"],
         "webhook_id": "gitea:pr:" + str(data["number"]),
-        "VERSION": data["base"]["label"].split("-")[-1],
+        "VERSION": _extract_version_from_branch(data["base"]["label"]),
         "DISTRI": "opensuse",  # there must be a better way than to hardcode
         "FLAVOR": "staged-Updates",
         "ARCH": "x86_64",
