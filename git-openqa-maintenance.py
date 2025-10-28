@@ -121,7 +121,12 @@ def process_pull_request(pr_id, args):
         log.info(f"Build for {project}#{pr} is not ready or is broken, skipping.")
         return
 
-    obs_project, bs_repo_url = get_obs_values(project, branch, pr)
+    obs_project, bs_repo_url, os_test_template = get_obs_values(project, branch, pr)
+
+    if not obs_project:
+        log.error(f"Could not compute branch version for {project}#{pr}.")
+        return
+
     # We need to query every package in the staged update
     packages_in_project = get_packages_from_obs_project(obs_project)
     openqa_build_overview = None
