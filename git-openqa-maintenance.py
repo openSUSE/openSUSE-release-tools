@@ -24,9 +24,18 @@ handler.setFormatter(formatter)
 log.addHandler(handler)
 
 CONFIG_DATA = {
-    "products/PackageHub": "openSUSE:Backports:SLE-{version}:PullRequest:{pr_id}",
-    "openSUSE/Leap": "openSUSE:Leap:{version}:PullRequest:{pr_id}",
-    "openSUSE/LeapNonFree": "openSUSE:Leap:{version}:NonFree:PullRequest:{pr_id}",
+    "products/PackageHub": {
+        "repo_template": "openSUSE:Backports:SLE-{version}:PullRequest:{pr_id}",
+        "OS_TEST_TEMPLATE": "openSUSE:/Backports:/SLE-{version}:/PullRequest:/@INCIDENTNR@/standard"
+    },
+    "openSUSE/Leap": {
+        "repo_template": "openSUSE:Leap:{version}:PullRequest:{pr_id}",
+        "OS_TEST_TEMPLATE": "openSUSE:/Leap:/{version}/@INCIDENTNR@/standard"
+    },
+    "openSUSE/LeapNonFree": {
+        "repo_template": "openSUSE:Leap:{version}:NonFree:PullRequest:{pr_id}",
+        "OS_TEST_TEMPLATE": "openSUSE:/Leap:/{version}:/NonFree:/PullRequest:/@INCIDENTNR@/standard"
+    },
 }
 
 GITEA_HOST = None
@@ -121,7 +130,7 @@ def process_pull_request(pr_id, args):
         log.warning(f"No packages found in {obs_project}, skipping.")
         return
 
-    settings = prepare_update_settings(project, obs_project, bs_repo_url, pr, packages_in_project)
+    settings = prepare_update_settings(project, obs_project, os_test_template, bs_repo_url, pr, packages_in_project)
     openqa_job_params = prepare_openqa_job_params(args, obs_project, data, settings)
     openqa_build_overview, previous_review = check_openqa_comment(pr_events, args.myself)
     # if there's a comment by us, tests have been triggered, so lets check the status
@@ -250,7 +259,7 @@ def check_openqa_comment(pr_events, myself):
     return openqa_build_overview, previous_review
 
 
-def prepare_update_settings(project, obs_project, bs_repo_url, pr, packages):
+def prepare_update_settings(project, obs_project, os_test_template, bs_repo_url, pr, packages):
     settings = {}
     staged_update_name = get_staged_update_name(obs_project)
     build_project = project.replace("/", "_")
@@ -262,6 +271,7 @@ def prepare_update_settings(project, obs_project, bs_repo_url, pr, packages):
     patch_id = obs_project.replace(":", "_")
     settings["INCIDENT_PATCH"] = patch_id
     settings["OS_TEST_ISSUES"] = pr
+    settings["OS_TEST_TEMPLATE"] = os_test_template
     # openSUSE:Maintenance key
     settings["IMPORT_GPG_KEYS"] = "gpg-pubkey-b3fd7e48-5549fd0f"
     settings["ZYPPER_ADD_REPO_PREFIX"] = "staged-updates"
@@ -298,20 +308,24 @@ def get_staged_update_name(obs_project):
 
 def get_obs_values(project, branch, pr_id):
     log.debug("Prepare obs url")
-    template = CONFIG_DATA[project]
-    # Version string has to be extracted from branch name
+    project_template = CONFIG_DATA[project]["repo_template"]
+    os_test_template = CONFIG_DATA[project]["OS_TEST_TEMPLATE"]
 
     # Version string has to be extracted from branch name
     branch_version = _extract_version_from_branch(branch)
     if not branch_version:
         log.error(f"Could not get version from {branch}")
-        return None, None
+        return None, None, None
 
-    obs_project = template.format(version=branch_version, project=project, pr_id=pr_id)
+    obs_project = project_template.format(version=branch_version, project=project, pr_id=pr_id)
     target_repo = REPO_PREFIX + "/"
     target_repo += obs_project.replace(":", ":/")
-    log.info(f"Target project {obs_project}, {target_repo}")
-    return obs_project, target_repo
+
+    os_test_template_setting = REPO_PREFIX + "/"
+    os_test_template_setting += os_test_template.format(version=branch_version)
+
+    log.info(f"Target project {obs_project}, {target_repo}, {os_test_template_setting}")
+    return obs_project, target_repo, os_test_template_setting
 
 
 VERSION_PATTERN = re.compile(r'(\d+\.\d+)')
