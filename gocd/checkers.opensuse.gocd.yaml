@@ -178,8 +178,9 @@ pipelines:
         resources:
           - staging-bot
         tasks:
-          - script: |-
-              ./git-openqa-maintenance.py --project products/PackageHub --branch leap-16.0
+          - script: ./git-openqa-maintenance.py --project openSUSE/Leap --branch leap-16.0
+          - script: ./git-openqa-maintenance.py --project products/PackageHub --branch leap-16.0
+          - script: ./git-openqa-maintenance.py --project openSUSE/LeapNonFree --branch leap-16.0-nonfree
   openSUSE.Devel.Reminder:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
