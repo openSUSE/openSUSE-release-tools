@@ -141,6 +141,12 @@ class ReviewBot(object):
         else:
             self.config = self._load_config()
 
+    def is_scmsync(self, source_project: str) -> bool:
+        """Checks if the project is in git"""
+        self.logger.info(f'Checking if scmsync exists in source project {source_project}')
+        meta = ET.fromstringlist(osc.core.show_project_meta(self.apiurl, source_project))
+        return len(meta.xpath("/project/scmsync")) > 0
+
     def has_staging(self, project):
         try:
             url = osc.core.makeurl(self.apiurl, ('staging', project, 'staging_projects'))
@@ -390,7 +396,10 @@ class ReviewBot(object):
             self.logger.warning(f'no devel project found for {project}/{package}')
             return False
 
-        self.add_review(request, by_project=devel_project, by_package=devel_package, msg=message)
+        if self.is_scmsync(devel_project):
+            self.add_review(request, by_project=devel_project, msg=message)
+        else:
+            self.add_review(request, by_project=devel_project, by_package=devel_package, msg=message)
 
         return True
 

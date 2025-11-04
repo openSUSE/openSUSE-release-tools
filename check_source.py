@@ -330,7 +330,11 @@ class CheckSource(ReviewBot.ReviewBot):
                     self.logger.debug(f"adding review to {devel_project}/{devel_package}")
                     msg = ('Submission for {} by someone who is not maintainer in '
                            'the devel project ({}). Please review').format(target_package, devel_project)
-                    self.add_review(self.request, by_project=devel_project, by_package=devel_package, msg=msg)
+
+                    if self.is_scmsync(devel_project):
+                        self.add_review(self.request, by_project=devel_project, msg=msg)
+                    else:
+                        self.add_review(self.request, by_project=devel_project, by_package=devel_package, msg=msg)
             else:
                 self.logger.warning(f"{target_package} doesn't have devel project")
 
