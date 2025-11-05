@@ -39,6 +39,7 @@ CONFIG_DATA = {
 }
 
 GITEA_HOST = None
+GITEA_TOKEN = None
 BS_HOST = None
 REPO_PREFIX = None
 REVIEW_GROUP = None
@@ -472,11 +473,10 @@ def get_events_by_timeline(project, pr_id):
 def request_post(url, payload):
     log.debug(f"Posting request to gitea for {url}")
     log.debug(payload)
-    token = os.environ.get("GITEA_TOKEN")
     headers = {
         "User-Agent": USER_AGENT,
         "Accept": "application/json",
-        "Authorization": "token " + token,
+        "Authorization": "token " + GITEA_TOKEN,
     }
     if dry_run:
         log.debug(f"would send request to {url} with {payload}")
@@ -491,11 +491,10 @@ def request_post(url, payload):
 
 def request_get(url):
     log.debug(f"Sending request to gitea for {url}")
-    token = os.environ.get("GITEA_TOKEN")
     headers = {
         "User-Agent": USER_AGENT,
         "Accept": "application/json",
-        "Authorization": "token " + token,
+        "Authorization": "token " + GITEA_TOKEN,
     }
 
     try:
@@ -576,10 +575,22 @@ class NoSourcePackagesError(Exception):
 if __name__ == "__main__":
     args = parse_args()
 
-    ret = os.environ.get("GITEA_TOKEN")
-    if ret is None:
-        raise RuntimeError("Environment variable GITEA_TOKEN is not set")
+    token_file_path = os.environ.get("GITEA_TOKEN_FILE")
+    gitea_token = None
 
+    if token_file_path:
+        try:
+            with open(token_file_path, 'r') as f:
+                gitea_token = f.read().strip()
+        except (IOError, FileNotFoundError) as e:
+            raise RuntimeError(f"Error reading GITEA_TOKEN_FILE '{token_file_path}': {e}")
+    else:
+        gitea_token = os.environ.get("GITEA_TOKEN")
+
+    if not gitea_token:
+        raise RuntimeError("Environment variable GITEA_TOKEN or GITEA_TOKEN_FILE must be set")
+
+    GITEA_TOKEN = gitea_token
     GITEA_HOST = args.gitea
     BS_HOST = args.bs
     REPO_PREFIX = args.repo_prefix

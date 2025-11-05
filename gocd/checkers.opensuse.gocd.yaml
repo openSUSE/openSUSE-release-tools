@@ -165,7 +165,7 @@ pipelines:
     lock_behavior: unlockWhenFinished
     environment_variables:
       OSC_CONFIG: /home/go/config/oscrc-openqa-maintenance
-      GITEA_TOKEN: '{{SECRET:[opensuse.secrets][GITEA_TOKEN]}}'
+      GITEA_TOKEN_FILE: /home/go/config/openqa-maintenance-botmaster-token
     materials:
       script:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
