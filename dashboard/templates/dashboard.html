@@ -32,6 +32,7 @@
           <th scope="col">ports</th>
           <th scope="col">step</th>
           {% endif %}
+          <th scope="col">product</th>
           <th scope="col">images</th>
           {% if not is_leap %}
           <th scope="col">containerfile</th>
@@ -62,6 +63,11 @@
           {% endwith %}
         </td>
         {% endif %}
+        <td>
+          {% with repository = 'product' %}
+            {% include "repository.html" %}
+          {% endwith %}
+        </td>
         <td>
           {% with repository = 'images' %}
             {% include "repository.html" %}
