@@ -1,6 +1,6 @@
 format_version: 3
 pipelines:
-  SLE15.SP7.Images.To.Test:
+  SLE15.SP7.QU.Images.To.Test:
     group: SLE15.Target
     lock_behavior: unlockWhenFinished
     materials:
@@ -8,7 +8,7 @@ pipelines:
         git: git://botmaster.suse.de/suse-repos.git
         auto_update: true
         whitelist:
-          - SUSE:SLE-15-SP7:GA_-_images.yaml
+          - SUSE:SLE-15-SP7:Update:QR_-_images.yaml
         destination: repos
       scripts:
         auto_update: true
@@ -26,8 +26,7 @@ pipelines:
         - script: |
             export PYTHONPATH=scripts
             set -e
-            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP7:GA -r containerfile
-            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP7:GA -r images
+            ./scripts/gocd/verify-repo-built-successful.py -A https://api.suse.de -p SUSE:SLE-15-SP7:Update:QR -r images
 
     - Release.Images:
         approval: manual
@@ -40,38 +39,24 @@ pipelines:
         tasks:
         - script: |-
             set -e
-            CONTAINERS=$(osc -A https://api.suse.de ls SUSE:SLE-15-SP7:GA | grep "^\(cdi\|virt\)-.*-container")
-            for container in $CONTAINERS; do
-              osc -A https://api.suse.de release --target-project=SUSE:SLE-15-SP7:GA:TEST --target-repository=containers -r containerfile SUSE:SLE-15-SP7:GA $container
-            done
-            osc -A https://api.suse.de release --target-project=SUSE:SLE-15-SP7:GA:TEST --target-repository=containers -r images SUSE:SLE-15-SP7:GA sles15-image
-            PRODUCTS=$(osc -A https://api.suse.de ls SUSE:SLE-15-SP7:GA | grep "^SLES15-SP7" | grep -v release | grep -v : ||:)
-            if [ -z "${PRODUCTS}" ]; then
-              echo "[WARNNING] There is no cloud image to be released"
-            fi
-            for product in kiwi-templates-Minimal kiwi-templates-Minimal-s390x 000product $PRODUCTS; do
-              osc -A https://api.suse.de release SUSE:SLE-15-SP7:GA $product
+            for product in kiwi-templates-Minimal kiwi-templates-Minimal-s390x 000product; do
+              osc -A https://api.suse.de release SUSE:SLE-15-SP7:Update:QR $product
             done
             sleep 600
-            while (osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP7:GA:TEST/_result?view=summary&repository=containers" | grep "result project" | grep -v 'code="published" state="published">'); do
+            while (osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP7:Update:QR:TEST/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
                 echo PENDING
                 sleep 600
             done
-            osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP7:GA:TEST/_result?view=summary&repository=containers" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
-            while (osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP7:GA:TEST/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
-                echo PENDING
-                sleep 600
-            done
-            osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP7:GA:TEST/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
+            osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP7:Update:QR:TEST/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
 
-  SLE15.SP7.Images.To.Publish:
+  SLE15.SP7.QU.Images.To.Publish:
     group: SLE15.Target
     materials:
       repos:
         git: git://botmaster.suse.de/suse-repos.git
         auto_update: true
         whitelist:
-          - SUSE:SLE-15-SP7:GA_-_images.yaml
+          - SUSE:SLE-15-SP7:Update:QR_-_images.yaml
         destination: repos
       scripts:
         auto_update: true
@@ -93,16 +78,11 @@ pipelines:
         tasks:
         - script: |-
             set -e
-            osc -A https://api.suse.de release SUSE:SLE-15-SP7:GA:TEST
+            osc -A https://api.suse.de release SUSE:SLE-15-SP7:Update:QR:TEST
             sleep 600
-            while (osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP7:GA:PUBLISH/_result?view=summary&repository=containers" | grep "result project" | grep -v 'code="published" state="published">'); do
+            while (osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP7:Update:QR:PUBLISH/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
                 echo PENDING
                 sleep 600
             done
-            osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP7:GA:PUBLISH/_result?view=summary&repository=containers" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
-            while (osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP7:GA:PUBLISH/_result?view=summary&repository=images" | grep "result project" | grep -v 'code="published" state="published">'); do
-                echo PENDING
-                sleep 600
-            done
-            osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP7:GA:PUBLISH/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
+            osc -A https://api.suse.de/ api "/build/SUSE:SLE-15-SP7:Update:QR:PUBLISH/_result?view=summary&repository=images" | grep "result project" | grep 'code="published" state="published">' && echo PUBLISHED
 
