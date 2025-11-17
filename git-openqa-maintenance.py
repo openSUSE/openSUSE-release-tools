@@ -113,8 +113,8 @@ def process_pull_request(pr_id, args):
     branch = data["base"]["label"]
     log.info(f"working on {project}#{pr}")
 
-    if branch != args.branch and project != args.project:
-        log.error(f"PR {project}#{pr} does not target {args.branch}, skipping")
+    if branch != args.branch or project != args.project:
+        log.error(f"PR {project}#{pr} does not match target {args.branch}, skipping")
         return
 
     pr_events = get_events_by_timeline(project, pr)
