@@ -23,17 +23,18 @@ class OSC(scm.base.SCMBase):
             pathname,
             **kwargs
     ):
-        _stdout = sys.stdout
-        sys.stdout = open(os.devnull, 'w')
-        try:
-            result = osc.core.checkout_package(
-                self.apiurl,
-                target_project,
-                target_package,
-                pathname=pathname,
-                **kwargs
-            )
-            shutil.rmtree(os.path.join(pathname, target_package, '.osc'))
-        finally:
-            sys.stdout = _stdout
-        return result
+        with open(os.devnull, 'w') as devnull:
+            _stdout = sys.stdout
+            sys.stdout = devnull
+            try:
+                result = osc.core.checkout_package(
+                    self.apiurl,
+                    target_project,
+                    target_package,
+                    pathname=pathname,
+                    **kwargs
+                )
+                shutil.rmtree(os.path.join(pathname, target_package, '.osc'))
+            finally:
+                sys.stdout = _stdout
+            return result
