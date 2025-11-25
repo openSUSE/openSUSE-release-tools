@@ -17,10 +17,6 @@ class Git(scm.base.SCMBase):
     def name(self) -> str:
         return "GIT"
 
-    def get_path(self, *args):
-        # XXX stub
-        raise NotImplementedError
-
     def checkout_package(
             self,
             target_project: str,

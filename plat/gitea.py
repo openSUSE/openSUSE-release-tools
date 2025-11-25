@@ -240,6 +240,10 @@ class Gitea(plat.base.PlatformBase):
     def name(self) -> str:
         return "GITEA"
 
+    def get_path(self, *args):
+        path = os.path.join(*args)
+        return self.api.get(path)
+
     def _get_request(self, pr_id, owner, repo):
         res = self.api.get(f'repos/{owner}/{repo}/pulls/{pr_id}')
         res.raise_for_status()
