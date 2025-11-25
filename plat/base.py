@@ -11,6 +11,15 @@ class PlatformBase(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def get_path(self, *args):
+        """Issue a HTTP GET request to the specific path
+
+        This interface does not make any adaption over the difference
+        between platforms. The user is responsible to make sure proper
+        requests are being issued."""
+        pass
+
+    @abc.abstractmethod
     def get_request(self, request_id, with_full_history=False):
         """Get request by id"""
         pass

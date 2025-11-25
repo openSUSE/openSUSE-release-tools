@@ -17,14 +17,22 @@ class OBS(plat.base.PlatformBase):
         self.apiurl = apiurl
         self.comment_api = CommentAPI(self.apiurl)
 
+    @property
+    def name(self) -> str:
+        return "OBS"
+
     def _get(self, path_list, query=None):
         """Construct a complete URL, and issue an HTTP GET to it."""
         url = osc.core.makeurl(self.apiurl, path_list, query)
         return osc.core.http_GET(url)
 
-    @property
-    def name(self) -> str:
-        return "OBS"
+    def get_path(self, *args):
+        try:
+            return self._get(args)
+        except HTTPError as e:
+            if e.code != 404:
+                raise e
+            return None
 
     def get_request(self, request_id, with_full_history=False):
         query = {'withfullhistory': '1'} if with_full_history else None

@@ -38,8 +38,8 @@ class PackageLookup(object):
     """ helper class to manage 00Meta/lookup.yml
     """
 
-    def __init__(self, scm):
-        self.scm = scm
+    def __init__(self, platform):
+        self.platform = platform
         # dict[project][package]
         self.lookup = {}
 
@@ -57,7 +57,7 @@ class PackageLookup(object):
         self.lookup[project] = yaml.safe_load(fh) if fh else {}
 
     def _load_lookup_file(self, prj):
-        return self.scm.get_path('source', prj, '00Meta', 'lookup.yml')
+        return self.platform.get_path('source', prj, '00Meta', 'lookup.yml')
 
 
 @unique
@@ -134,7 +134,7 @@ class ReviewBot(object):
         self.scm_type = scm_type
         self.platform_type = platform_type
 
-        self.lookup = PackageLookup(self.scm)
+        self.lookup = PackageLookup(self.platform)
 
         self.staging_apis = {}
 
@@ -201,7 +201,7 @@ class ReviewBot(object):
 
     def has_staging(self, project):
         try:
-            ret = self.scm.get_path('staging', project, 'staging_projects')
+            ret = self.platform.get_path('staging', project, 'staging_projects')
             return ret is not None
         except HTTPError as e:
             self.logger.error(f'HTTP ERROR [{e}]')
