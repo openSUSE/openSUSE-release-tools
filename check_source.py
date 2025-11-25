@@ -94,7 +94,8 @@ class CheckSource(ReviewBot.ReviewBot):
         if self.platform_type == "OBS":
             return self._package_source_parse_obs(project, package, revision, target_package)
         else:
-            # XXX mocked
+            # TODO source_info API is not available on Gitea.
+            # This is a temporary mock, need to implement a better one
             self.logger.warning("package_source_parse() is currently mocked on this platform.")
             return {
                 "name": target_package,
