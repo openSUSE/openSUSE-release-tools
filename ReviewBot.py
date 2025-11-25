@@ -108,7 +108,13 @@ class ReviewBot(object):
             gitea_url="https://src.opensuse.org",
             git_base_url="https://src.opensuse.org"
     ):
+        # apiurl setter refers to self.scm, which is not initialized yet.
+        # manually assigning to _apiurl here to workaround the chicken-and-egg
+        # problem
         self._apiurl = apiurl
+
+        self.gitea_url = gitea_url
+        self.git_base_url = git_base_url
 
         self.ibs = apiurl and apiurl.startswith('https://api.suse.de')
         self.dryrun = dryrun
@@ -129,16 +135,30 @@ class ReviewBot(object):
         self.request_age_min_default = 0
         self.request_age_min_key = f'{self.bot_name.lower()}-request-age-min'
 
-        self.gitea_url = gitea_url
-        self.git_base_url = git_base_url
-        self.scm_type = scm_type
-        self.platform_type = platform_type
+        self._init_scm(scm_type.upper())
+        self._init_platform(platform_type.upper())
 
         self.lookup = PackageLookup(self.platform)
 
         self.staging_apis = {}
 
         self.load_config()
+
+    def _init_scm(self, scm_type):
+        if scm_type == "OSC":
+            self.scm = scm.OSC(self.apiurl)
+        elif scm_type == "GIT":
+            self.scm = scm.Git(self.logger, self.git_base_url)
+        else:
+            raise RuntimeError(f'invalid SCM type: {scm_type}')
+
+    def _init_platform(self, platform_type):
+        if platform_type == 'OBS':
+            self.platform = plat.OBS(self.apiurl)
+        elif platform_type == "GITEA":
+            self.platform = plat.Gitea(self.logger, self.gitea_url)
+        else:
+            raise RuntimeError(f'invalid Platform type: {platform_type}')
 
     @property
     def apiurl(self):
@@ -147,39 +167,21 @@ class ReviewBot(object):
     @apiurl.setter
     def apiurl(self, url):
         self._apiurl = url
-        if self.scm_type == "OSC":
-            self.scm = scm.OSC(self.apiurl)
+        # apiurl might be assigned to anywhere in user code.
+        # scm.OSC and plat.OBS refers to apiurl as well,
+        # so we need to update it here.
+        if self.scm.name == 'OSC':
+            self.scm.apiurl = url
+        if self.platform.name == 'OBS':
+            self.platform.apiurl = url
 
     @property
     def scm_type(self):
-        return self._scm_type
-
-    @scm_type.setter
-    def scm_type(self, scm_type: str):
-        scm_type = scm_type.upper()
-        if scm_type == "OSC":
-            self.scm = scm.OSC(self.apiurl)
-        elif scm_type == "GIT":
-            self.scm = scm.Git(self.logger, self.git_base_url)
-        else:
-            raise RuntimeError(f'invalid SCM type: {scm_type}')
-
-        self._scm_type = scm_type
+        return self.scm.name
 
     @property
     def platform_type(self):
-        return self._platform_type
-
-    @platform_type.setter
-    def platform_type(self, platform_type: str):
-        platform_type = platform_type.upper()
-        if platform_type == 'OBS':
-            self.platform = plat.OBS(self._apiurl)
-        elif platform_type == "GITEA":
-            self.platform = plat.Gitea(self.logger, self.gitea_url)
-        else:
-            raise RuntimeError(f'invalid Platform type: {platform_type}')
-        self._platform_type = platform_type
+        return self.platform.name
 
     def _load_config(self, handle=None):
         d = self.__class__.config_defaults
@@ -914,14 +916,14 @@ class CommandLineInterface(cmdln.Cmdln):
         parser.add_option("--fallback-user", dest='fallback_user', metavar='USER', help="fallback review user")
         parser.add_option("--fallback-group", dest='fallback_group', metavar='GROUP', help="fallback review group")
         parser.add_option('-c', '--config', dest='config', metavar='FILE', help='read config file FILE')
-        parser.add_option('--scm-type', default='OSC', dest='scm_type', metavar='SCM', help='set scm type')
+        parser.add_option('--scm', default='OSC', dest='scm_type', metavar='SCM', help='set scm type')
         parser.add_option('--platform', default='OBS', dest='platform_type', metavar='Platform', help='set platform type')
         parser.add_option('--gitea-url', '-G', metavar="URL",
                           default="https://src.opensuse.org",
-                          help="Gitea API url (only relevent when platform type = gitea)")
+                          help="Gitea API url (only relevent when platform is gitea)")
         parser.add_option('--git-base-url', metavar="URL",
                           default="https://src.opensuse.org",
-                          help="Base URL for git checkouts (only relevent when platform type = git")
+                          help="Base URL for git checkouts (only relevent when scm is git)")
 
         return parser
 
