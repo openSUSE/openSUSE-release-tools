@@ -234,7 +234,7 @@ class Gitea(plat.base.PlatformBase):
         return "GITEA"
 
     def get_path(self, *args):
-        path = os.path.join(*args)
+        path = '/'.join(args)
         return self.api.get(path)
 
     def _get_request(self, pr_id, owner, repo):
