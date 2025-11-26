@@ -27,7 +27,7 @@ class OSC(scm.base.SCMBase):
             _stdout = sys.stdout
             sys.stdout = devnull
             try:
-                result = osc.core.checkout_package(
+                osc.core.checkout_package(
                     self.apiurl,
                     target_project,
                     target_package,
@@ -37,4 +37,3 @@ class OSC(scm.base.SCMBase):
                 shutil.rmtree(os.path.join(pathname, target_package, '.osc'))
             finally:
                 sys.stdout = _stdout
-            return result
