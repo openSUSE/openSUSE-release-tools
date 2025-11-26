@@ -92,7 +92,7 @@ class CommentAPI:
                 stripped = m.group('info').strip()
                 if stripped:
                     for pair in stripped.split(' '):
-                        key, value = pair.split('=')
+                        key, value = pair.split('=', 1)
                         info[key] = value
 
                 # Skip if info does not match.
