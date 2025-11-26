@@ -1,7 +1,6 @@
 import plat.base
 import os
 import requests
-import base64
 import html
 import re
 from datetime import datetime, timezone
@@ -138,17 +137,11 @@ class CommentAPI:
 
 class StagingAPI:
     """StagingAPI implementation for Gitea"""
+    # XXX bare minimal stub. To be implemented on-demand
 
     def __init__(self, project, api):
         self.project = project
         self.api = api
-
-    def pseudometa_file_load(self, filename):
-        res = self.api.get(f'repos/{self.project}/_meta/{filename}')
-        res.raise_for_status()
-        data = res.json()
-        content = base64.b64decode(data["content"]).decode("utf-8")
-        print(content)
 
 
 class RequestAction:
