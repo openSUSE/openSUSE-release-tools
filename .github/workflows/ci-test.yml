@@ -83,9 +83,9 @@ jobs:
 
       - name: FIXME, install missing dependencies
         run: |
-          zypper -n in python3-typing_extensions python3-solv python3-pika python3-openqa_client build python3-bugzilla
+          zypper -n in python3-typing_extensions python3-solv python3-pika python3-openqa_client build python3-bugzilla python3-GitPython
           if test -e metrics.py; then
-              zypper -n in python3-influxdb-client python3-GitPython
+              zypper -n in python3-influxdb-client
           fi
           if test -e /usr/bin/python3.6; then
               zypper -n in python3-dataclasses
