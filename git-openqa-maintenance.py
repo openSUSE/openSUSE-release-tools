@@ -30,7 +30,7 @@ CONFIG_DATA = {
     },
     "openSUSE/Leap": {
         "repo_template": "openSUSE:Leap:{version}:PullRequest:{pr_id}",
-        "OS_TEST_TEMPLATE": "openSUSE:/Leap:/{version}/@INCIDENTNR@/standard"
+        "OS_TEST_TEMPLATE": "openSUSE:/Leap:/{version}:/PullRequest:/@INCIDENTNR@/standard"
     },
     "openSUSE/LeapNonFree": {
         "repo_template": "openSUSE:Leap:{version}:NonFree:PullRequest:{pr_id}",
