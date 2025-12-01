@@ -164,4 +164,4 @@ pipelines:
         resources:
         - repo-checker
         tasks:
-          - script: osc -A https://api.opensuse.org release --target-project=openSUSE:Leap:Micro:6.1:ToTest --target-repository=product -r product openSUSE:Leap:Micro:6.2 000productcompose
+          - script: osc -A https://api.opensuse.org release --target-project=openSUSE:Leap:Micro:6.2:ToTest --target-repository=product -r product openSUSE:Leap:Micro:6.2 000productcompose
