@@ -414,6 +414,7 @@ exit 0
 %{_bindir}/osrt-issue-diff
 %{_bindir}/osrt-legal-auto
 %{_bindir}/osrt-openqa-maintenance
+%{_bindir}/osrt-git-openqa-maintenance
 %{_bindir}/osrt-repo2fileprovides
 %{_bindir}/osrt-requestfinder
 %{_bindir}/osrt-totest-manager
