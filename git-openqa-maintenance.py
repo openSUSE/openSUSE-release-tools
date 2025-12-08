@@ -3,7 +3,6 @@ import sys
 import os
 import re
 import argparse
-import subprocess
 import requests
 import logging
 from openqa_client.client import OpenQA_Client
@@ -528,33 +527,10 @@ def prepare_openqa_job_params(args, obs_project, data, settings):
     return params | settings
 
 
-def openqa_cli(host, subcommand, cmds, dry_run=False):
-    log.debug("============== openqa_cli")
-    client_args = [
-        "openqa-cli",
-        subcommand,
-        "--host",
-        host,
-    ] + cmds
-    log.debug("openqa_cli: %s %s" % (subcommand, client_args))
-    res = subprocess.run(
-        (["echo", "Simulating: "] if dry_run else []) + client_args,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    if len(res.stderr):
-        log.warning(f"openqa_cli() {subcommand} stderr: {res.stderr}")
-    res.check_returncode()
-    return res.stdout.decode("utf-8")
-
-
 def openqa_schedule(args, params):
     log.debug("============== openqa_schedule")
 
-    cmd_args = []
-    for key in params:
-        cmd_args.append(f"{key}={params[key]}")
-    openqa_cli(args.openqa_host, "schedule", cmd_args, openqa_dry_run)
+    openqa.openqa_request('POST', 'isos', data=params, retries=1)
 
     query_parameters = {
         "build": params["BUILD"],
