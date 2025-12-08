@@ -158,8 +158,9 @@ The Platform layer provides an abstraction for interacting with different collab
 
 ```shell
 $ python3 -mvenv .venv
-$ . .venv/bin/activate
-$ pip install -r requirements.txt
+$ source .venv/bin/activate
+$ pip3 install -r requirements.txt
+$ pip3 install pip-system-certs
 ```
 
 Then you can run the bot as a python script:
@@ -170,20 +171,20 @@ $ python my_bot.py -A <obs api url> --user <obs user> ... review
 
 When running against OBS, the framework by default pulls user credentials from osc config. You can also start a local containerized OBS interface and run tests against that instance. The [openSUSE-release-tools](https://github.com/openSUSE/openSUSE-release-tools) README page does a pretty good job explaining the setup, and same setup also works in our case.
 
-
 When running against Gitea, you need to use command line flags to make ReviewBot initialize the Git & Gitea implementation. Gitea uses API token for authorization, which needs to be passed to the framework with GITEA_ACCESS_TOKEN  environment variable:
 
 ```shell
+$ export GITEA_BOT_USER=<username>
 $ export GITEA_ACCESS_TOKEN=<token>
-$ python my_bot.py --scm git --platform gitea --git-base-url <checkout base url> --gitea-url <gitea url> review
+$ python my_bot.py --user "$GITEA_BOT_USER" --scm git --platform gitea --git-base-url "https//$GITEA_BOT_USER:$GITEA_ACCESS_TOKEN@<checkout base url>" --gitea-url "<gitea url>" --verbose review
 ```
 
 e.g. When running against src.suse.de:
 
 ```shell
+$ export GITEA_BOT_USER=<username>
 $ export GITEA_ACCESS_TOKEN=<token>
-$ python my_bot.py --scm git --platform gitea --git-base-url "https://<username>:$GITEA_ACCESS_TOKEN@src.suse.de/" --gitea-url "https://src.suse.de" review
-
+$ python my_bot.py --user "$GITEA_BOT_USER" --scm git --platform gitea --git-base-url "https://$GITEA_BOT_USER:$GITEA_ACCESS_TOKEN@src.suse.de/" --gitea-url "https://src.suse.de" --verbose review
 ```
 See [here](https://docs.gitea.com/development/api-usage) on how to create a Gitea access token. For testing, any user account with proper permission can be used.
 
@@ -191,9 +192,63 @@ If your bot are running under 'review' mode (which is the default for most bots)
 
 WARNING: If you run review  command with your account, it will go through all the PRs with you as a reviewer and accept / reject all of them. 
 
-To create an account, follow the standard process of creating an openSUSE ID. You can use <your-username>+<bot-name>@suse.com for the email. If you plan to test against src.suse.de, the account need an employee flag to have permission to be able to access the internal instance. Refer to [this document](https://confluence.suse.com/spaces/devops/pages/1533346174/How+to+request+IBS+access) about how to obtain the proper flag.
-
+Please follow these [creating bot account](creating-bot-account.md) instructions to create a dedicated account for your bot. Every bot must have such account (and you can have one for your testing too).
 ## Example Usage Pattern for Bots
+
+### Simplest Bot
+```python
+#!/usr/bin/python3
+import sys
+import ReviewBot
+
+class MyBot(ReviewBot.ReviewBot):
+    """Your custom bot implementation."""
+
+    def __init__(self, *args, **kwargs):
+        ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
+        # Configure bot options here
+        self.request_default_return = None
+    
+    def check_source_submission(self, src_project, src_package, src_rev,
+                                target_project, target_package):
+        """
+        Main review logic - override this method in your bot!
+        This is called for each source submit/pull request.
+        """
+
+        # Information messages are visible at stdout when using "--verbose" option
+        self.logger.info(f"Checking {src_package}: {src_project} -> {target_project}")
+        
+        # Your validation logic here
+        if self._validate(src_project, src_package, src_rev):
+            self.review_messages['accepted'] = 'Validation passed'
+            return True
+        else:
+            self.review_messages['declined'] = 'Validation failed'
+            return False
+    
+    def _validate(self, src_project, src_package, src_rev):
+        """Your custom validation logic."""
+
+        # Add your checks here
+        return True
+        
+class CommandLineInterface(ReviewBot.CommandLineInterface):
+    def __init__(self, *args, **kwargs):
+        ReviewBot.CommandLineInterface.__init__(self, args, kwargs)
+        self.clazz = MyBot
+
+if __name__ == "__main__":
+    app = CommandLineInterface()
+    sys.exit(app.main())
+```
+Note that:
+- In the "review" mode `ReviewBot` will only call `check_source_submission` on PR / SRs that have an open review request for the bot user.  It will automatically accept / reject review based on the return value of the function.
+- The return values of `check_source_submission` function are:
+    - True = Accept the review
+    - False = Decline the review
+    - None = Ignore
+
 ### Typical Bot Setup
 
 Bots inherit from `ReviewBot`, which provides both SCM and Platform layers based on configuration:
@@ -207,37 +262,8 @@ class MyBot(ReviewBot.ReviewBot):
 ```
 
 ### Common Bot Workflows
-1. Loading Project Configuration
 
-```python
-config = self.platform.get_project_config(project)
-setting = config.get('my-setting', default_value)
-```
-
-2. Retrieving and Processing Requests
-
-```python
-# Get single request
-req = self.platform.get_request(request_id, with_full_history=True)
-
-# Search for reviews assigned to this bot
-for req in self.platform.search_review(review_user='my-bot', review_group='my-group'):
-    age = self.platform.get_request_age(req)
-    # Process request...
-```
-
-3. Checking Out Source Code
-
-```python
-self.scm.checkout_package(
-    target_project=project,
-    target_package=package,
-    pathname=local_dir,
-    revision=rev  # optional
-)
-```
-
-4. Perform checks on a submission
+1. Perform checks on a submission
 
 ```python
 # Override the corresponding action function from ReviewBot
@@ -251,6 +277,40 @@ def check_source_submission(self, src_project, src_package, src_rev, target_proj
         self.review_message['declined'] = 'Declined for reason XXX'
         return False
 ```
+
+2. Loading Project Configuration
+
+```python
+config = self.platform.get_project_config(project)
+setting = config.get('my-setting', default_value)
+```
+
+3. Checking Out Source Code
+
+```python
+self.scm.checkout_package(
+    target_project=project,
+    target_package=package,
+    pathname=local_dir,
+    revision=rev  # optional
+)
+```
+
+## Troubleshooting
+
+### CA issue when running against src.suse.de
+
+If you encountered some error like this:
+```shell
+raise SSLError(e, request=request)
+requests.exceptions.SSLError: HTTPSConnectionPool(host='src.suse.de', port=443): Max retries exceeded with url: <url> (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1016)')))
+```
+
+This caused by using it's own CA bundle by default, which does not include SUSE CA. To fix this issue, install pip-system-certs  in the virtual env you are running the bot with:
+```shell
+$ pip install pip-system-certs
+```
+
 
 
 
