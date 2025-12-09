@@ -472,7 +472,22 @@ class CheckSource(ReviewBot.ReviewBot):
                 if subprocess.run(["cmp", "-s", os.path.join(old, changes), os.path.join(directory, changes)]).returncode:
                     changes_updated = True
 
-        if not changes_updated:
+        new_package = False
+        if self.platform_type == "GITEA":
+            # XXX temporary measure for detecting a new package PR on Gitea
+            # This might change once the workflow PR bot takes over
+            # If not, we shall abstruct this inside Gitea platform implementation
+            json = self.platform.get_path("repos",
+                                          self.request._owner,
+                                          self.request._repo,
+                                          "pulls",
+                                          str(self.request._pr_id)).json()
+            labels = set((x["name"] for x in json["labels"]))
+            if "new_package" in labels:
+                new_package = True
+                self.logger.info("Empty PR; skippng changes_updated check")
+
+        if not changes_updated and not new_package:
             self.review_messages['declined'] = "No changelog. Please use 'osc vc' to update the changes file(s)."
             return False
 
