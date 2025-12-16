@@ -69,6 +69,10 @@ jobs:
         if: ${{ contains(matrix.image, '15.6') }}
         run: zypper -n ar https://download.opensuse.org/repositories/openSUSE:/Tools/15.6/openSUSE:Tools.repo
 
+      - name: FIXME, add python-GitPython repository for Leap
+        if: ${{ contains(matrix.image, '15.6') }}
+        run: zypper -n ar https://download.opensuse.org/repositories/home:/yudaike:/osrt-python-deps/15.6/home:yudaike:osrt-python-deps.repo
+
       - name: skip scripts that require python 3.11
         if: ${{ contains(matrix.image, '15.6') }}
         run: |
