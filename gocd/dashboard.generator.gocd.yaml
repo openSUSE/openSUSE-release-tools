@@ -22,4 +22,5 @@ pipelines:
             set -e
             PYTHONPATH=$PWD python3 ./dashboard/generate.py -p openSUSE:Factory > dashboard/output/index.html
             PYTHONPATH=$PWD python3 ./dashboard/generate.py -p openSUSE:Leap > dashboard/output/leap.html
+            date +'factory_dashboard_last_build_timestamp_seconds %s' > dashboard/output/metrics
             rsync -av dashboard/output/ rsync://coolo@proxy-prg2.opensuse.org:11873/factory-dashboard.opensuse.org/
