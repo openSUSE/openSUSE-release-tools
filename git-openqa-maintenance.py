@@ -537,7 +537,8 @@ def prepare_openqa_job_params(args, obs_project, data, settings):
 def openqa_schedule(args, params):
     log.debug("============== openqa_schedule")
 
-    openqa.openqa_request('POST', 'isos', data=params, retries=1)
+    if not openqa_dry_run:
+        openqa.openqa_request('POST', 'isos', data=params, retries=1)
 
     query_parameters = {
         "build": params["BUILD"],
