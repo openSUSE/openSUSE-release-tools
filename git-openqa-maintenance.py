@@ -118,7 +118,7 @@ def process_pull_request(pr_id, args):
 
     pr_events = get_events_by_timeline(project, pr)
     if not is_build_finished(project, pr, pr_events, args.bs_bot):
-        log.info(f"Build for {project}#{pr} is not ready or is broken, skipping.")
+        log.info(f"Build for {project}#{pr} is not ready, not needed or is broken. Skipping.")
         return
 
     obs_project, bs_repo_url, os_test_template = get_obs_values(project, branch, pr)
@@ -228,8 +228,15 @@ def is_build_finished(project, pr, pr_events, bs_bot):
 
     review = get_build_review_status(project, pr, review_id)
     if review["state"] == "APPROVED":
-        log.info(f"Build is finished for {project}#{pr}")
-        return True
+        if review["body"] == "Build successful":
+            log.info(f"Build is finished for {project}#{pr}")
+            return True
+        elif review["body"] == "No package changes, not rebuilding project by default, accepting change":
+            log.info(f"No build has been triggered for {project}#{pr}")
+            return False
+        else:
+            log.error(f"Unknown build state for {project}#{pr}: {review['body']}")
+            return False
     else:
         log.warning(f"Build is in state {review['state']} for {project}#{pr}")
         return False
@@ -530,7 +537,8 @@ def prepare_openqa_job_params(args, obs_project, data, settings):
 def openqa_schedule(args, params):
     log.debug("============== openqa_schedule")
 
-    openqa.openqa_request('POST', 'isos', data=params, retries=1)
+    if not openqa_dry_run:
+        openqa.openqa_request('POST', 'isos', data=params, retries=1)
 
     query_parameters = {
         "build": params["BUILD"],
