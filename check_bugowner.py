@@ -19,6 +19,7 @@ import ReviewBot
 
 http_GET = osc.core.http_GET
 MAINTAINERSHIP_FILE = "_maintainership.json"
+WHITELIST_FILE = "whitelist_maintainership.json"
 
 
 class CheckerBugowner(ReviewBot.ReviewBot):
@@ -141,6 +142,22 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
         return new_submodules
 
+    def _load_whitelist_data(self, file: Path) -> Set[str]:
+        try:
+            with open(file) as f:
+                # Assuming it's a JSON array (list) of strings
+                data = json.load(f)
+
+                if not isinstance(data, list):
+                    raise ValueError(f"Whitelist file '{WHITELIST_FILE}' must contain a JSON array/list, but {type(data)} was found.")
+
+                # Convert list of package names to a set for fast lookups
+                return set(data)
+
+        except FileNotFoundError:
+            self.logger.warning(f"Whitelist file '{WHITELIST_FILE}' not found. Skipping the whitelist check.")
+            return set()
+
     def _load_maintainership_data(self, file: Path) -> Set[str]:
         with open(file) as f:
             # Assuming it's a JSON dictionary
@@ -169,10 +186,11 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         )
 
         maintained = self._load_maintainership_data(Path(head_dir, MAINTAINERSHIP_FILE))
+        whitelisted = self._load_whitelist_data(Path(head_dir, WHITELIST_FILE))
 
         orphan_packages = set()
         for package in new_submodules:
-            if package not in maintained:
+            if package not in maintained and package not in whitelisted:
                 orphan_packages.add(package)
 
         return orphan_packages
