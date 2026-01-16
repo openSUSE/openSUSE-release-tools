@@ -927,11 +927,18 @@ class PkgListGen(ToolBase.ToolBase):
                 ['git', 'add', self.output_dir],
                 cwd=cache_dir, encoding='utf-8'))
 
-            logging.debug(subprocess.check_output(
-                ['git', 'commit', '-m', 'Update by pkglistgen of openSUSE-release-tool'], cwd=cache_dir, encoding='utf-8'))
-            if not self.dry_run:
+            # Check if any changes are staged (i.e. they have been caught
+            # up by the git call above)
+            # Returncode 1 means that there is something staged, so that
+            # we can actually commit
+            if subprocess.run(['git', 'diff', '--cached', '--stat', '--quiet'], cwd=cache_dir).returncode == 1:
                 logging.debug(subprocess.check_output(
-                    ['git', 'push'], cwd=cache_dir))
+                    ['git', 'commit', '-m', 'Update by pkglistgen of openSUSE-release-tool'], cwd=cache_dir, encoding='utf-8'))
+                if not self.dry_run:
+                    logging.debug(subprocess.check_output(
+                        ['git', 'push'], cwd=cache_dir))
+            else:
+                logging.debug("No changes to commit.")
         elif not self.dry_run:
             self.commit_package(self.output_dir)
 
