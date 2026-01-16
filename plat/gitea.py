@@ -167,6 +167,25 @@ class RequestAction:
         self._set_attr_from_json('tgt_rev', json, 'base.sha')
 
 
+class Review:
+    attributes = ["by", "state", "type", "when"]
+
+    states_mapping = {
+        "APPROVED": "accepted",
+        "REQUEST_CHANGES": "declined",
+        "REQUEST_REVIEW": "new",
+    }
+
+    def __init__(self, **kwargs):
+        self._review_data = kwargs
+
+    def __getattr__(self, attribute):
+        if attribute == "state":
+            return self.states_mapping[self._review_data.get("state", "REQUEST_REVIEW")]
+
+        return self._review_data.get(attribute, None)
+
+
 class Request:
     """Request structure implemented for Gitea"""
     def __init__(self):
@@ -180,6 +199,25 @@ class Request:
     @staticmethod
     def construct_request_id(owner, repo, pr_id):
         return f'{owner}:{repo}:{pr_id}'
+
+    @staticmethod
+    def format_review(review):
+        if review.get("user") is not None:
+            return Review(
+                by=review["user"]["login"],
+                state=review["state"],
+                type="User",
+                when=review["updated_at"]
+            )
+        elif review.get("team") is not None:
+            return Review(
+                by=review["team"]["name"],
+                state=review["state"],
+                type="Group",
+                when=review["updated_at"]
+            )
+        else:
+            raise Exception("Unknown review type")
 
     def _init_attributes(self):
         self.reqid = None
@@ -200,27 +238,30 @@ class Request:
         self._repo = None
         self._pr_id = None
 
-    def read(self, json, owner, repo):
+    def read(self, request_json, reviews_json, owner, repo):
         """Read in a request from JSON response"""
         self._init_attributes()
 
         self._owner = owner
         self._repo = repo
-        self._pr_id = json["number"]
+        self._pr_id = request_json["number"]
 
-        self.reqid = Request.construct_request_id(owner, repo, json["number"])
-        self.creator = json["user"]["login"]
-        self.created_at = json["created_at"]
-        self.updated_at = json["updated_at"]
-        self.title = json["title"]
-        self.description = json["body"]
-        self.state = json["state"]
+        self.reqid = Request.construct_request_id(owner, repo, request_json["number"])
+        self.creator = request_json["user"]["login"]
+        self.created_at = request_json["created_at"]
+        self.updated_at = request_json["updated_at"]
+        self.title = request_json["title"]
+        self.description = request_json["body"]
+        self.state = request_json["state"]
 
-        self.actions = [RequestAction(type="submit", json=json)]
+        self.actions = [RequestAction(type="submit", json=request_json)]
 
-        if json.get("merged"):
-            self.accept_at = json["merged_at"]
+        if request_json.get("merged"):
+            self.accept_at = request_json["merged_at"]
 
+        for review in reviews_json:
+            if not review.get("dismissed", False):
+                self.reviews.append(Request.format_review(review))
 
 class ProjectConfig:
     """Project Config implemented for Gitea"""
@@ -249,8 +290,10 @@ class Gitea(plat.base.PlatformBase):
     def _get_request(self, pr_id, owner, repo):
         res = self.api.get(f'repos/{owner}/{repo}/pulls/{pr_id}').json()
 
+        reviews = self.api.get(f'repos/{owner}/{repo}/pulls/{pr_id}/reviews').json()
+
         ret = Request()
-        ret.read(res, owner=owner, repo=repo)
+        ret.read(res, reviews, owner=owner, repo=repo)
         return ret
 
     def get_request(self, request_id, with_full_history=False):
