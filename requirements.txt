@@ -1,4 +1,5 @@
 colorama
+GitPython
 lxml
 PyYAML
 pycurl
@@ -7,6 +8,7 @@ pyxdg
 cmdln
 git+https://github.com/openSUSE/osc
 influxdb-client
+requests
 
 # Dependencies for testing
 httpretty
