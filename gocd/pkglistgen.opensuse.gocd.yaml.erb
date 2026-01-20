@@ -57,7 +57,7 @@ pipelines:
             tasks:
               - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos <%= project %>
 <% end -%>
-  Update.Repos.Leap_16_0:
+  Update.Repos.Leap_16_1:
     group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -73,14 +73,14 @@ pipelines:
         approval:
           type: manual
         jobs:
-<% %w(openSUSE:Leap:16.0:Products).each do |project| -%>
+<% %w(openSUSE:Leap:16.1:Products).each do |project| -%>
           <%= project.gsub(':', '_') %>:
             resources:
             - repo-checker
             tasks:
               - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos <%= project %>
 <% end -%>
-  Update.Weakremovers.Leap_16_0:
+  Update.Weakremovers.Leap_16_1:
     group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -96,14 +96,14 @@ pipelines:
         approval:
           type: manual
         jobs:
-<% %w(openSUSE:Leap:16.0:Products).each do |project| -%>
+<% %w(openSUSE:Leap:16.1:Products).each do |project| -%>
           <%= project.gsub(':', '_') %>:
             resources:
             - repo-checker
             tasks:
               - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p <%= project %> -s target --only-update-weakremovers
 <% end -%>
-  SkippkgFinder.Leap_16_0:
+  SkippkgFinder.Leap_16_1:
     group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -119,14 +119,14 @@ pipelines:
         approval:
           type: manual
         jobs:
-<% %w(openSUSE:Leap:16.0:Products).each do |project| -%>
+<% %w(openSUSE:Leap:16.1:Products).each do |project| -%>
           <%= project.gsub(':', '_') %>:
             resources:
             - repo-checker
             tasks:
               - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o <%= project %>
 <% end -%>
-  OfflineInstaller.PackageLists.Leap_16_0:
+  OfflineInstaller.PackageLists.Leap_16_1:
     group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -142,4 +142,4 @@ pipelines:
         resources:
         - repo-checker
         tasks:
-          - script: ./pkglistgen.py --verbose -A https://api.opensuse.org update_and_solve --project openSUSE:Leap:16.0:Products --scope target --engine product_composer --force
+          - script: ./pkglistgen.py --verbose -A https://api.opensuse.org update_and_solve --project openSUSE:Leap:16.1:Products --scope target --engine product_composer --force
