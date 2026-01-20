@@ -108,7 +108,7 @@ pipelines:
             - repo-checker
             tasks:
               - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Factory:RISCV
-  Update.Repos.Leap_16_0:
+  Update.Repos.Leap_16_1:
     group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -124,12 +124,12 @@ pipelines:
         approval:
           type: manual
         jobs:
-          openSUSE_Leap_16.0_Products:
+          openSUSE_Leap_16.1_Products:
             resources:
             - repo-checker
             tasks:
-              - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:16.0:Products
-  Update.Weakremovers.Leap_16_0:
+              - script: python3 -u ./pkglistgen.py --apiurl https://api.opensuse.org handle_update_repos openSUSE:Leap:16.1:Products
+  Update.Weakremovers.Leap_16_1:
     group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -145,12 +145,12 @@ pipelines:
         approval:
           type: manual
         jobs:
-          openSUSE_Leap_16.0_Products:
+          openSUSE_Leap_16.1_Products:
             resources:
             - repo-checker
             tasks:
-              - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:16.0:Products -s target --only-update-weakremovers
-  SkippkgFinder.Leap_16_0:
+              - script: python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Leap:16.1:Products -s target --only-update-weakremovers
+  SkippkgFinder.Leap_16_1:
     group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -166,12 +166,12 @@ pipelines:
         approval:
           type: manual
         jobs:
-          openSUSE_Leap_16.0_Products:
+          openSUSE_Leap_16.1_Products:
             resources:
             - repo-checker
             tasks:
-              - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o openSUSE:Leap:16.0:Products
-  OfflineInstaller.PackageLists.Leap_16_0:
+              - script: python3 ./skippkg-finder.py -A https://api.opensuse.org -o openSUSE:Leap:16.1:Products
+  OfflineInstaller.PackageLists.Leap_16_1:
     group: Leap
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -187,4 +187,4 @@ pipelines:
         resources:
         - repo-checker
         tasks:
-          - script: ./pkglistgen.py --verbose -A https://api.opensuse.org update_and_solve --project openSUSE:Leap:16.0:Products --scope target --engine product_composer --force
+          - script: ./pkglistgen.py --verbose -A https://api.opensuse.org update_and_solve --project openSUSE:Leap:16.1:Products --scope target --engine product_composer --force
