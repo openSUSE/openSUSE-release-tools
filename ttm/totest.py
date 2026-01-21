@@ -143,6 +143,7 @@ class ToTest(object):
         self.test_subproject = 'ToTest'
         self.base = project.split(':')[0]
         self.products = []
+        self.first_product = ''
 
         # Defaults for products
         self.product_repo = 'images'
@@ -193,10 +194,16 @@ class ToTest(object):
             self.products += [Product.main_product(self, mp)]
 
         for key, value in raw_products.get('custom', {}).items():
-            self.products += [Product.custom_product(self, key, **value)]
+            if self.first_product == 'custom':
+                self.products = [Product.custom_product(self, key, **value)] + self.products
+            else:
+                self.products += [Product.custom_product(self, key, **value)]
 
         for mp in raw_products.get('ftp', []):
-            self.products += [Product.ftp_product(self, mp)]
+            if self.first_product == 'ftp':
+                self.products = [Product.ftp_product(self, mp)] + self.products
+            else:
+                self.products += [Product.ftp_product(self, mp)]
 
         self.products += self.parse_products(raw_products.get('livecds', []), Product.livecd_product)
         self.products += self.parse_products(raw_products.get('images', []), Product.image_product)
