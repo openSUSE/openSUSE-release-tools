@@ -19,13 +19,15 @@ PUBLISH_DELAY=2
 force=
 
 # used for cleanup
-date='now'
+date=${PUBLISH_DISTRO_DATE-now}
 
 # set to echo for dry run
 dryrun=
 
 # cleanup instead of sync
 do_cleanup=
+
+changes=
 
 # url with snapshot changes app
 diff_url_base="https://openqa.opensuse.org/snapshot-changes/opensuse"
@@ -55,32 +57,26 @@ get_changes_filename() {
 
 # --dry and --cleanup should not be passed to rsync through $@
 # config file and possibly other opts including --force need to be
-for arg; do
-  shift
-  if [ "$arg" == '--force' ]; then
+while (("$#")); do
+  if [ "$1" == '--force' ]; then
     force=1
-    newargs+=("$arg")
-    shift
-    continue
-  elif [ "$arg" == '--dry' ]; then
+  elif [ "$1" == '--dry' ]; then
     dryrun=echo
-    shift
-    continue
-  elif [ "$arg" == '--cleanup' ]; then
+  elif [ "$1" == '--cleanup' ]; then
     do_cleanup=1
     date="90 days ago"
-    continue
-  elif [ "$arg" == '--now' ]; then
+  elif [ "$1" == '--now' ]; then
     PUBLISH_DELAY=0
-    shift
-    continue
   else
-    newargs+=("$arg")
+    newargs+=("$1")
   fi
+  shift
 done
 
 # set newargs as $@
 set -- "${newargs[@]}"
+
+set -ue
 
 . "$1" || {
   echo "need to specify config file" >&2
@@ -88,8 +84,10 @@ set -- "${newargs[@]}"
 }
 shift
 
-stage="/srv/ftp-stage/pub/opensuse/$path"
-dest="/srv/ftp/pub/opensuse/$path"
+base="${PUBLISH_DISTRO_BASE:-/srv/}"
+
+stage="${base}ftp-stage/pub/opensuse/$path"
+dest="${base}ftp/pub/opensuse/$path"
 
 if [ ! -e "$stage" -o ! -e "$dest" ]; then
   echo "stage ($stage) and/or dest ($dest) doesn't exist" >&2
@@ -101,7 +99,7 @@ if [ -n "$do_cleanup" ]; then
   deletelog=$(ls -1tr ${deletelog%/*}/*-deletes.log | tail -1)
   test -n "$deletelog" || exit 1
   (
-    df -h /srv
+    df -h $base
     for i in $(awk '/\*deleting   .*/ { print $2}' $deletelog); do
       if [ -e "$stage/$i" ]; then
         echo "WARNING: $i still exist in stage, not deleting"
@@ -109,21 +107,27 @@ if [ -n "$do_cleanup" ]; then
         $dryrun rm -rvf "$dest/$i"
       fi
     done
-    df -h /srv
+    df -h $base
   ) >$deletelog-deleted
   exit 0
 fi
 
-mkdir -p "${synclog%/*}" "${deletelog%/*}"
-if test -f $synclog; then
-  old $synclog
-fi
-if test -f $deletelog; then
-  old $deletelog
+if test "$dryrun" == echo; then
+  deletelog=/dev/stderr
+  synclog=/dev/stderr
+else
+  mkdir -p "${synclog%/*}" "${deletelog%/*}"
+  if test -f $synclog; then
+    old $synclog
+  fi
+  if test -f $deletelog; then
+    old $deletelog
+  fi
 fi
 
 version=
 do_sync_isos=1
+changes_done=0 # we need changes done only once in this loop
 for flavor in "${flavors[@]}"; do
   get_version
 
@@ -138,7 +142,8 @@ for flavor in "${flavors[@]}"; do
     do_sync_isos=0
     break
   fi
-  if [ -n "$changes" ]; then
+  if [ -n "$changes" ] && [ 0 == "$changes_done" ] ; then
+    changes_done=1
     if [ -d "$stage/$changes" ]; then
       # new way, use the obs generated changelogs
       $dryrun rsync -avvhiH $stage/$changes \
@@ -151,8 +156,7 @@ for flavor in "${flavors[@]}"; do
       # old way (already broken?)
       if [ ! -s "$changes" ]; then
         echo "generating $changes" | tee -a $synclog
-        [ -z "$dryrun" ] || changes=/dev/stdout
-        $dryrun curl -sf "$url" >$changes
+        $dryrun curl -sf "$url" -o "$changes"
       fi
       if [ ! -e $stage/$isodir/$changes ]; then
         $dryrun cp -v $changes $stage/$isodir | tee -a $synclog
@@ -171,7 +175,7 @@ for flavor in "${flavors[@]}"; do
       $dryrun ln -sf "$iso.sha256" "$link.sha256"
     fi
     if [ -z "$force" ]; then
-      if test $(date -d "$PUBLISH_DELAY hours ago" +%s) -lt $(stat -c "%Z" "$stage/$isodir/$iso"); then
+      if test $(date -d "$PUBLISH_DELAY hours ago" +%s) -lt "$(stat -c "%Z" "$stage/$isodir/$iso")"; then
         echo "$iso was created less than $PUBLISH_DELAY hours ago, delay publishing" | tee -a $synclog
         do_sync_isos=0
       fi
@@ -270,10 +274,10 @@ done
 
 # also sync source and debug, not bind mounted for Leap
 for r in "${extra_repos[@]}"; do
-  stage="/srv/ftp-stage/pub/opensuse/$r/$path"
-  dest="/srv/ftp/pub/opensuse/$r/$path"
+  stage="${base}ftp-stage/pub/opensuse/$r/$path"
+  dest="${base}ftp/pub/opensuse/$r/$path"
   $dryrun rsync -avhiH $stage/ --link-dest=$stage \
-    $dest --delete-after "$@" | tee -a log
+    $dest --delete-after "$@" | tee -a $log
 done
 
 # mark published
@@ -282,12 +286,3 @@ if [ -n "$url" ]; then
   $dryrun curl -X POST -F "version=$version" "$url"
 fi
 
-#echo creating hashes
-#metalink-hasher update -t /srv/metalink-hashes/srv/ftp/pub/opensuse/tumbleweed \
-#                       -b /srv/ftp/pub/opensuse/tumbleweed \
-#                          /srv/ftp/pub/opensuse/tumbleweed
-
-# mb makehaskes is not needed by mirrorcache (replaced mirrorbrain)
-#$dryrun /usr/bin/mb makehashes -b /srv/ftp/pub/opensuse \
-#                       -t /srv/metalink-hashes/srv/ftp/pub/opensuse \
-#                       $dest
