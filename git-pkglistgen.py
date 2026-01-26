@@ -203,6 +203,12 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
                 f"{request._owner}/{request._repo} is not in the allowed repositories list"
             )
 
+        if STAGING_PROGRESS_MARKER not in request._labels:
+            self.logger.info(
+                f"PR {request._owner}/{request._repo}#{request._pr_id} is not in progress"
+            )
+            return None
+
         base_commit = request.actions[0].tgt_rev
         staging_configuration = self.get_git_staging_configuration(
             target_owner, target_package, base_commit
