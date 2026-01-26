@@ -234,6 +234,7 @@ class Request:
         self._issues = None
 
         # Gitea specific attributes
+        self._labels = set()
         self._owner = None
         self._repo = None
         self._pr_id = None
@@ -262,6 +263,8 @@ class Request:
         for review in reviews_json:
             if not review.get("dismissed", False):
                 self.reviews.append(Request.format_review(review))
+
+        self._labels = {x["name"] for x in request_json["labels"]}
 
 class ProjectConfig:
     """Project Config implemented for Gitea"""
