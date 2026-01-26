@@ -108,6 +108,7 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
         self.tool = PkgListGen()
         self.apiurl = conf.config["apiurl"]
 
+        self.allowed_repositories = []
         self.cloned_repositories = GitRepositories()
 
         # This is heavily dependent on the GITEA platform
@@ -196,6 +197,11 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
         if not request:
             self.logger.warning(f"Request for src_rev {src_rev} not found")
             return None
+
+        if f"{request._owner}/{request._repo}" not in self.allowed_repositories:
+            self.logger.info(
+                f"{request._owner}/{request._repo} is not in the allowed repositories list"
+            )
 
         base_commit = request.actions[0].tgt_rev
         staging_configuration = self.get_git_staging_configuration(
@@ -297,8 +303,29 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
     def __init__(self, *args, **kwargs):
-        ReviewBot.CommandLineInterface.__init__(self, args, kwargs)
+        super().__init__(*args, *kwargs)
         self.clazz = GitPkgListGenBot
+
+    def get_optparser(self):
+        parser = super().get_optparser()
+
+        # Add bot-specific options
+        # If ReviewBot/Cmdln moves to ArgumentParser, we can turn this into a
+        # string directly and use nargs=*.
+        parser.add_option(
+            "--git-allow-repos",
+            default="",
+            help="allowed git repositories (e.g. products/SLFO,products/SLES)",
+        )
+
+        return parser
+
+    def setup_checker(self):
+        instance = super().setup_checker()
+
+        instance.allowed_repositories = self.options.git_allow_repos.split(",")
+
+        return instance
 
 
 if __name__ == "__main__":
