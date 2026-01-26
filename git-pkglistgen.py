@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import os
 import sys
 import ReviewBot
 
@@ -6,8 +7,18 @@ import logging
 
 import traceback
 
+import re
+
+import subprocess
+
+import tempfile
+
+from urllib.parse import urljoin, urldefrag
+
+from lxml import etree
+
 from osc import conf
-from osc.core import makeurl, http_POST
+from osc.core import makeurl, make_meta_url, http_POST, http_PUT
 from osclib.conf import Config
 from osclib.stagingapi import StagingAPI
 from pkglistgen.engine import Engine
@@ -16,6 +27,74 @@ from pkglistgen.tool import PkgListGen, MismatchedRepoException
 DEFAULT_AUTOGITS_REVIEWER = "autogits_obs_staging_bot"
 DEFAULT_ENGINE = "product_composer"
 DEFAULT_ENABLE_REPOSITORIES = "product images"
+
+STAGING_PROGRESS_MARKER = "staging/In Progress"
+
+slugify_regex = re.compile("[^a-z0-9_]+")
+
+
+def slugify(x):
+    return slugify_regex.sub("-", x.lower())
+
+
+class GitRepository(object):
+
+    def __init__(self, origin_remote):
+
+        self.origin_remote = origin_remote
+
+        # This gets cleaned up on exit
+        self.temporary_directory = tempfile.TemporaryDirectory(suffix="pkglistgen")
+
+        self.git_checkout = os.path.join(self.temporary_directory.name, "git")
+
+    def fetch(self):
+        if not os.path.exists(self.git_checkout):
+            subprocess.check_call(
+                ["git", "clone", "--mirror", self.origin_remote, self.git_checkout]
+            )
+
+        # Fetch
+        subprocess.check_call(
+            ["git", "fetch", self.origin_remote], cwd=self.git_checkout
+        )
+
+    def push_to_branch(self, source_pointer, target_remote, target_branch):
+
+        if (
+            subprocess.run(
+                ["git", "rev-parse", "--verify", f"refs/heads/{source_pointer}"],
+                cwd=self.git_checkout,
+            ).returncode
+            > 0
+        ):
+            # commit/tag
+            source_ref = source_pointer
+        else:
+            # branch
+            source_ref = f"refs/heads/{source_pointer}"
+
+        subprocess.check_call(
+            [
+                "git",
+                "push",
+                target_remote,
+                f"{source_ref}:refs/heads/{target_branch}",
+            ],
+            cwd=self.git_checkout,
+        )
+
+
+class GitRepositories(object):
+
+    def __init__(self):
+        self.mapping = {}
+
+    def __getitem__(self, origin_remote):
+        if origin_remote not in self.mapping:
+            self.mapping[origin_remote] = GitRepository(origin_remote)
+
+        return self.mapping[origin_remote]
 
 
 class GitPkgListGenBot(ReviewBot.ReviewBot):
@@ -28,6 +107,8 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
 
         self.tool = PkgListGen()
         self.apiurl = conf.config["apiurl"]
+
+        self.cloned_repositories = GitRepositories()
 
         # This is heavily dependent on the GITEA platform
         if self.platform.name != "GITEA":
@@ -74,6 +155,12 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
                     "status": status,
                 },
             )
+        )
+
+    def replace_meta(self, project, meta_element: etree.ElementTree):
+        return http_PUT(
+            make_meta_url("prj", project, self.apiurl),
+            data=etree.tostring(meta_element, encoding="utf-8", xml_declaration=True),
         )
 
     def check_source_submission(
@@ -127,6 +214,12 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
         target_config = conf.config[main_project]
 
         main_repo = target_config["main-repo"]
+        staging_org_url = target_config["pkglistgen-git-staging-org-url"]
+        if not staging_org_url.endswith("/"):
+            staging_org_url += "/"
+        staging_branch = slugify(
+            f"qa_{request._owner}_{request._repo}_pr{request._pr_id}"
+        )
         engine = Engine[target_config.get("pkglistgen-engine", DEFAULT_ENGINE)]
         enable_repositories = target_config.get(
             "pkglistgen-enable-repositories", DEFAULT_ENABLE_REPOSITORIES
@@ -137,10 +230,35 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
             return None
 
         for project_name in self.get_qa_projects(request._pr_id, staging_configuration):
+            target_repository_name = project_name.split(":")[-1]
             api = StagingAPI(self.apiurl, project_name)
 
             meta = api.get_prj_meta(project_name)
-            git_url = meta.xpath("/project/scmsync")[0].text
+            staging_repo_url = urljoin(staging_org_url, target_repository_name)
+            target_git_url = urljoin(staging_repo_url, f"#{staging_branch}")
+            git_url_element = meta.xpath("/project/scmsync")[0]
+
+            if not git_url_element.text.startswith(
+                "http"
+            ) or not target_git_url.startswith("http"):
+                # We do not expect nor support non-http[s] uris
+                raise Exception("Only http[s] git remote uris are supported")
+
+            if git_url_element.text != target_git_url and not self.dryrun:
+                # Should do the initial push
+                url, fragment = urldefrag(git_url_element.text)
+                self.logger.info(f"Creating branch {staging_branch}")
+                self.cloned_repositories[url].fetch()
+                self.cloned_repositories[url].push_to_branch(
+                    fragment, staging_repo_url, staging_branch
+                )
+
+                git_url_element.text = target_git_url
+
+                self.replace_meta(project_name, meta)
+
+                # We will get back to it later
+                return None
 
             self.tool.reset()
             self.tool.dry_run = self.dryrun
@@ -150,7 +268,7 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
                     main_project,
                     target_config,
                     main_repo,
-                    git_url=git_url,
+                    git_url=git_url_element.text,
                     project=project_name,
                     scope="target",
                     engine=engine,
