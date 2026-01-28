@@ -141,7 +141,7 @@ class ToTest(object):
         self.openqa_server = None
         self.jobs_num = 42
         self.test_subproject = 'ToTest'
-        self.base = project.split(':')[0]
+        self.base = "openSUSE"
         self.products = []
 
         # Defaults for products
