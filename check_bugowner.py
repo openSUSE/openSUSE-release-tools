@@ -10,7 +10,6 @@ import re
 from pathlib import Path
 from typing import Set
 
-from git.config import GitConfigParser
 from urllib.error import HTTPError
 
 import osc.conf
@@ -87,10 +86,10 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
         return None
 
-    def _gitea_checkout(self, project: str, package: str, revision: str):
+    def _gitea_clone(self, project: str, package: str, revision: str):
         local_dir = Path(
             os.path.expanduser(
-                f"~/.cache/bugowner_checker_git/{project}_{package}_{revision}"
+                f"~/.cache/bugowner_checker_git/{project}_{package}"
             )
         )
         if local_dir.is_dir():
@@ -99,48 +98,44 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
         local_dir.mkdir(parents=True)
 
-        self.scm.checkout_package(
-            target_project=project,
-            target_package=package,
-            pathname=local_dir,
+        return self.scm.clone_repository(
+            url=self.scm.package_url(project, package),
+            dstpath=local_dir,
             revision=revision,
         )
 
-        return Path(local_dir, package)
-
-    def _diff_submodules(self, head_gitmodules: Path, base_gitmodules: Path):
-        head_config = GitConfigParser(file_or_files=head_gitmodules, read_only=True)
-        base_config = GitConfigParser(file_or_files=base_gitmodules, read_only=True)
-
-        head_sections = head_config.sections()
-        base_sections = base_config.sections()
-
-        self.logger.debug(f"HEAD submodule sections: {head_sections}")
-        self.logger.debug(f"base submodule sections: {base_sections}")
-
-        head_submodules = {
-            section for section in head_sections if section.startswith("submodule ")
-        }
-        base_submodules = {
-            section for section in base_sections if section.startswith("submodule ")
-        }
-
-        new_submodule_sections = head_submodules - base_submodules
+    def _diff_submodules(self, repo, base_revision, head_project, head_package, head_revision):
+        diff = self.scm.submodule_diff(repo, base_revision, head_project, self.scm.package_url(head_project, head_package), head_revision)
 
         new_submodules = set()
-        if new_submodule_sections:
-            for section in new_submodule_sections:
-                try:
-                    # Extract name from 'submodule "name"'
-                    name = section.split('"')[1]
+        updated_submodules = set()
+        for line in diff.splitlines():
+            if line.startswith("Submodule"):
+                # Extract name from 'Submodule tiff 0000000...7c7b21a (new submodule)'
+                splitted_line = line.strip().split()
+                name = splitted_line[1]
+                changes = " ".join(splitted_line[3:])
+
+                if changes == "(new submodule)":
                     new_submodules.add(name)
                     self.logger.info(f"Found new submodule: {name}")
-                except IndexError:
-                    self.logger.error(f"Could not parse submodule section: {section}")
-        else:
-            self.logger.info("No new submodules found.")
+                elif changes == "(commits not present)":
+                    updated_submodules.add(name)
+                    self.logger.info(f"Found updated submodule: {name}")
+                else:
+                    self.logger.error(f"Unknown submodule change type: {line}")
 
-        return new_submodules
+        if len(new_submodules) == 0:
+            self.logger.info("No new submodules were found.")
+        if len(updated_submodules) == 0:
+            self.logger.info("No updated submodules were found.")
+
+        shared_submodules = new_submodules.intersection(updated_submodules)
+        if len(shared_submodules) > 0:
+            self.logger.warning(f"It looks like these submodules '{' ,'.join(shared_submodules)}' are both new and updated. This may " +
+                                "indicate a parsing error in the bugowner_checker bot.")
+
+        return new_submodules, updated_submodules
 
     def _load_whitelist_data(self, file: Path) -> Set[str]:
         try:
@@ -178,22 +173,27 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         base_package: str,
         base_revision: str,
     ) -> bool:
-        head_dir = self._gitea_checkout(head_project, head_package, head_revision)
-        base_dir = self._gitea_checkout(base_project, base_package, base_revision)
+        repo = self._gitea_clone(base_project, base_package, revision=base_revision)
 
-        new_submodules = self._diff_submodules(
-            Path(head_dir, ".gitmodules"), Path(base_dir, ".gitmodules")
+        new_submodules, updated_submodules = self._diff_submodules(
+            repo, base_revision, head_project, head_package, head_revision
         )
 
-        maintained = self._load_maintainership_data(Path(head_dir, MAINTAINERSHIP_FILE))
-        whitelisted = self._load_whitelist_data(Path(head_dir, WHITELIST_FILE))
+        repo.git.checkout(head_revision)
 
+        maintained = self._load_maintainership_data(Path(repo.working_tree_dir, MAINTAINERSHIP_FILE))
+        whitelisted = self._load_whitelist_data(Path(repo.working_tree_dir, WHITELIST_FILE))
+
+        validated_packages = set()
         orphan_packages = set()
-        for package in new_submodules:
+        changed_submodules = new_submodules.union(updated_submodules)
+        for package in changed_submodules:
             if package not in maintained and package not in whitelisted:
                 orphan_packages.add(package)
+            else:
+                validated_packages.add(package)
 
-        return orphan_packages
+        return validated_packages, orphan_packages
 
     def _gitea_check_source_submission(
         self,
@@ -208,13 +208,14 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         if not request:
             self.logger.warning(f"Request with HEAD {head_revision} not found!")
             return None
+
         base_revision = request.actions[0].tgt_rev
 
         self.logger.debug(
             f"{head_project}/{head_package}@{head_revision} -> {base_project}/{base_package}@{base_revision}"
         )
 
-        orphans = self._gitea_validate(
+        validated_packages, orphans = self._gitea_validate(
             head_project,
             head_package,
             head_revision,
@@ -226,7 +227,10 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         is_valid = len(orphans) == 0
 
         if is_valid:
-            self.review_messages["accepted"] = "The change does not introduce orphan packages."
+            self.review_messages["accepted"] = "The change does not introduce orphan packages. " + \
+                                               f"The following packages were checked and are covered either in `{MAINTAINERSHIP_FILE}`" + \
+                                               f" or `{WHITELIST_FILE}`:\n\n" + "\n".join(" - `" + p + "`" for p in validated_packages) + \
+                                               "\n"
         else:
             self.review_messages["declined"] = f"Missing maintainership information for {', '.join(orphans)}." + \
                                                f" Please edit {MAINTAINERSHIP_FILE} and resubmit."
