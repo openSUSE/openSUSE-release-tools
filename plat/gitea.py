@@ -4,6 +4,7 @@ import requests
 import html
 import re
 from datetime import datetime, timezone
+from dateutil.parser import isoparse
 from urllib.parse import urljoin
 
 
@@ -50,7 +51,7 @@ class CommentAPI:
     def _comment_as_dict(self, comment):
         return {
             'who': comment["user"]["login"],
-            'when': datetime.fromisoformat(comment["created_at"]),
+            'when': isoparse(comment["created_at"]),
             'id': comment["id"],
             'parent': None,
             'comment': html.unescape(comment["body"])
@@ -71,7 +72,7 @@ class CommentAPI:
     def request_as_comment_dict(self, request):
         return {
             'who': request.creator,
-            'when': datetime.fromisoformat(request.created_at),
+            'when': isoparse(request.created_at),
             'id': '-1',
             'parent': None,
             'comment': request.description,
@@ -253,7 +254,7 @@ class Gitea(plat.base.PlatformBase):
         return ProjectConfig()
 
     def get_request_age(self, request):
-        return datetime.now(timezone.utc) - datetime.fromisoformat(request.created_at)
+        return datetime.now(timezone.utc) - isoparse(request.created_at)
 
     def _request_from_issue(self, issue_json):
         owner = issue_json["repository"]["owner"]

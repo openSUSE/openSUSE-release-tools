@@ -33,7 +33,6 @@ BuildArch:      noarch
 BuildRequires:  osc >= 0.165.1
 BuildRequires:  python3-PyYAML
 BuildRequires:  python3-cmdln
-BuildRequires:  python3-colorama
 BuildRequires:  python3-lxml
 BuildRequires:  python3-pycurl
 BuildRequires:  python3-python-dateutil
@@ -54,7 +53,6 @@ BuildRequires:  sysuser-tools
 
 Requires:       python3-PyYAML
 Requires:       python3-cmdln
-Requires:       python3-colorama
 Requires:       python3-lxml
 # issue-diff.py, legal-auto.py, and openqa-maintenance.py
 Requires:       python3-pycurl
@@ -105,6 +103,24 @@ BuildArch:      noarch
 %description announcer
 OBS product release announcer for generating email diffs summaries.
 
+%package plat
+Summary:        Platform implementations used in %{name}
+Group:          Development/Languages/Python
+Requires:       python3-DateTime
+Requires:       python3-requests
+
+%description plat
+Platform implementations used by scripts in %{name}.
+
+%package scm
+Summary:        SCM implementations used in %{name}
+Group:          Development/Languages/Python
+Requires:       osc
+Requires:       python3-GitPython
+
+%description scm
+VCS implementations used by scripts in %{name}.
+
 %package check-source
 Summary:        Check source review bot
 Group:          Development/Tools/Other
@@ -113,6 +129,8 @@ Requires:       obs-service-download_files
 Requires:       obs-service-source_validator
 Requires:       osclib = %{version}
 Requires:       perl-Text-Diff
+Requires:       %{name}-plat
+Requires:       %{name}-scm
 Requires(pre):  shadow
 BuildArch:      noarch
 
@@ -309,6 +327,7 @@ Group:          Development/Tools/Other
 # devel-project.py needs 0.160.0 for get_request_list(withfullhistory) param.
 Requires:       osc >= 0.160.0
 Requires:       osclib = %{version}
+Requires:       python3-colorama
 BuildArch:      noarch
 
 %description -n osc-plugin-staging
@@ -335,6 +354,11 @@ rm slfo-packagelist-uploader.py metrics.py
   VERSION="%{version}"
 
 install -Dpm0644 slsa/osrt-slsa-user.conf %{buildroot}%{_sysusersdir}/%{name}.conf
+
+for dir in plat scm; do
+  mkdir -p %{buildroot}%{python_sitelib}/$dir
+  cp -r $dir/* %{buildroot}%{python_sitelib}/$dir/
+done
 
 %pre -f %{name}.pre
 %service_add_pre %{name}.service
@@ -463,6 +487,12 @@ exit 0
 %{_datadir}/%{source_dir}/%{announcer_filename}
 %config(noreplace) %{_sysconfdir}/openSUSE-release-tools/announcer
 %config(noreplace) %{_sysconfdir}/rsyslog.d/%{announcer_filename}.conf
+
+%files plat
+%{python_sitelib}/plat/
+
+%files scm
+%{python_sitelib}/scm/
 
 %files check-source
 %{_bindir}/osrt-check_source
