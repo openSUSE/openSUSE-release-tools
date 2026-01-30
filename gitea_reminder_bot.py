@@ -2,6 +2,7 @@
 import sys
 import os
 import re
+import datetime
 import ReviewBot
 
 
@@ -10,68 +11,67 @@ class ReviewBotImpl(ReviewBot.ReviewBot):
     Reminder bot for src.suse.de (Gitea).
 
     Policy:
-      - FPR (products/*): review reminders -> GROUP mentions, build reminders -> SKIP on FPR
-        If FPR is RED, forward build reminder to referenced pool PR(s) only.
+      - FPR (products/*): review reminders -> by default ping humans (missing individual reviewers)
+        Optionally can ping groups via BROKIN_REVIEW_PING_USERS.
 
-      - PR (pool/*): review reminders -> INDIVIDUAL missing reviewers, build reminders -> YES
-        (either direct ObsStaging RED on that PR, or forwarded from FPR)
+      - PR (pool/*): review reminders -> INDIVIDUAL missing reviewers
+        Build reminders -> YES (either direct ObsStaging RED, or forwarded from FPR)
 
     Anti-spam:
       - Each reminder type has its own marker; bot posts once per PR per marker.
 
-    Env knobs (optional):
+    Env knobs:
       BROKIN_CROSS_POST_REFS=0         Disable cross-post to referenced PRs (default enabled)
       BROKIN_FORWARDING_BOTS=...       Comma-separated forwarding bot usernames (default: autogits_workflow_pr_bot)
 
-      # Review reminder behavior:
       BROKIN_REVIEW_REMINDER=1         Enable review reminders (default enabled)
 
-      # Who to ping on FPRs (groups). Recommended:
+      # OPTIONAL: if set, FPR reminders will ping these accounts instead of humans
       BROKIN_REVIEW_PING_USERS="sle-release-manager-review,sle-staging-manager-review,autobuild-review"
+
+      # Label gating:
+      BROKIN_REMINDER_LABEL="staging/In Progress"   Only remind if this label is present
+      BROKIN_REMINDER_DAYS=4                        Only remind if label was applied >= N days ago
+
+      # Skip accounts matching regex (bots or group accounts)
+      BROKIN_SKIP_REVIEWERS_RE="(^autogits_|_bot$|-review$)"
     """
 
     DEFAULT_FORWARDING_BOTS = {"autogits_workflow_pr_bot"}
 
-    # Matches "PR: pool/openldap2_6!7"
     PR_REF_SHORT_RE = re.compile(r"PR:\s*([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)\s*!\s*([0-9]+)")
-    # Matches "PR: https://src.suse.de/pool/openldap2_6/pulls/7"
     PR_REF_URL_RE = re.compile(r"PR:\s*https?://[^/]+/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/pulls/([0-9]+)")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Reminder bot only: never accept/decline reviews
         self.request_default_return = None
 
-        # Markers (to prevent duplicate comments)
         self.build_marker = "[OBS-STAGING-REMINDER]"
         self.review_marker = "[REVIEW-REMINDER]"
         self.legacy_markers = {"[BROKIN-BUILD-REMINDER]"}
 
-        # Forwarding-bot usernames
         env_bots = os.environ.get("BROKIN_FORWARDING_BOTS", "").strip()
         if env_bots:
             self.forwarding_bots = {b.strip() for b in env_bots.split(",") if b.strip()}
         else:
             self.forwarding_bots = set(self.DEFAULT_FORWARDING_BOTS)
 
-        # Cross-post setting
         self.cross_post_refs = os.environ.get("BROKIN_CROSS_POST_REFS", "1").strip() != "0"
 
-        # Review reminder settings
         self.review_reminder_enabled = os.environ.get("BROKIN_REVIEW_REMINDER", "1").strip() != "0"
 
         ping_users = os.environ.get("BROKIN_REVIEW_PING_USERS", "").strip()
         self.review_ping_users = [u.strip() for u in ping_users.split(",") if u.strip()] if ping_users else []
 
-    def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
-        """
-        Called for each PR/SR action in the framework.
+        # Label gating
+        self.required_label = os.environ.get("BROKIN_REMINDER_LABEL", "").strip() or None
+        self.reminder_days = int(os.environ.get("BROKIN_REMINDER_DAYS", "0").strip() or "0")
 
-        We do:
-          A) Review reminder (independent of build status)
-          B) Build reminder if ObsStaging status is RED
-        """
+        skip_re = os.environ.get("BROKIN_SKIP_REVIEWERS_RE", r"(^autogits_|_bot$|-review$)").strip()
+        self.skip_reviewers_re = re.compile(skip_re) if skip_re else None
+
+    def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         req = getattr(self, "request", None)
         owner = target_project
         repo = target_package
@@ -109,6 +109,85 @@ class ReviewBotImpl(ReviewBot.ReviewBot):
         return None
 
     # ---------------------------
+    # Label gating helpers
+    # ---------------------------
+
+    def _fetch_issue_labels(self, owner: str, repo: str, pr_id: int) -> set[str]:
+        """Fetch current labels on the PR (issues API)."""
+        api = self.platform.api
+        r = api.get(f"repos/{owner}/{repo}/issues/{pr_id}/labels")
+        if r.status_code == 404:
+            return set()
+        r.raise_for_status()
+        data = r.json() or []
+        out = set()
+        for x in data:
+            name = (x or {}).get("name")
+            if name:
+                out.add(name)
+        return out
+
+    def _fetch_label_applied_at(self, owner: str, repo: str, pr_id: int, label_name: str):
+        """
+        Try to determine when a label was applied.
+
+        Prefer timeline because "labels list" usually doesn't contain "applied_at".
+        If timeline isn't available or doesn't show it, return None.
+        """
+        api = self.platform.api
+        r = api.get(f"repos/{owner}/{repo}/issues/{pr_id}/timeline")
+        if r.status_code == 404:
+            return None
+        r.raise_for_status()
+        items = r.json() or []
+
+        # We want the most recent time it was applied (or first time, depends; we use earliest apply)
+        applied_times = []
+
+        for it in items:
+            # Gitea timeline items vary. We'll handle common shapes.
+            t = (it or {}).get("type") or ""
+            created_at = (it or {}).get("created_at") or (it or {}).get("createdAt")
+
+            # Sometimes there is "label" field, sometimes "labels".
+            lbl = (it or {}).get("label")
+            lbls = (it or {}).get("labels")
+
+            match = False
+            if isinstance(lbl, dict) and (lbl.get("name") == label_name):
+                match = True
+            elif isinstance(lbls, list):
+                for one in lbls:
+                    if isinstance(one, dict) and one.get("name") == label_name:
+                        match = True
+                        break
+
+            # Accept timeline events that represent labeling.
+            if match and created_at:
+                try:
+                    dt = datetime.datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+                    applied_times.append(dt)
+                except Exception:
+                    pass
+
+        if not applied_times:
+            return None
+
+        # Use earliest time we saw it applied (safer for ">= days" gating).
+        return min(applied_times)
+
+    def _label_old_enough(self, applied_at) -> bool:
+        """If we can't determine applied time, allow reminder (conservative)."""
+        if not self.reminder_days or self.reminder_days <= 0:
+            return True
+        if applied_at is None:
+            # Can't determine applied date -> don't block reminders forever.
+            return True
+        now = datetime.datetime.now(datetime.timezone.utc)
+        age = now - applied_at
+        return age.days >= self.reminder_days
+
+    # ---------------------------
     # Build reminder implementation
     # ---------------------------
 
@@ -122,7 +201,7 @@ class ReviewBotImpl(ReviewBot.ReviewBot):
             return None, None
 
         resp.raise_for_status()
-        data = resp.json()
+        data = resp.json() or {}
 
         if not isinstance(data, dict):
             self.logger.warning(f"Unexpected commit status payload type: {type(data)}")
@@ -130,6 +209,8 @@ class ReviewBotImpl(ReviewBot.ReviewBot):
 
         combined_state = data.get("state")
         statuses = data.get("statuses") or []
+        if statuses is None:
+            statuses = []
 
         obs_status = None
         for s in statuses:
@@ -154,9 +235,6 @@ class ReviewBotImpl(ReviewBot.ReviewBot):
         return None, None
 
     def _is_fpr_request(self, req) -> bool:
-        """
-        Heuristic: treat as FPR if creator is a forwarding bot OR description includes forwarded references.
-        """
         creator = getattr(req, "creator", "") or ""
         desc = getattr(req, "description", "") or ""
 
@@ -186,11 +264,8 @@ class ReviewBotImpl(ReviewBot.ReviewBot):
 
         is_fpr = self._is_fpr_request(req)
 
-        # POLICY: Do NOT comment build reminder on FPR itself.
         if is_fpr:
             self.logger.info(f"Skipping build reminder on FPR itself: {reqid}")
-
-            # Forward to referenced pool PRs (if enabled)
             if self.cross_post_refs:
                 refs = self._parse_referenced_prs(description)
                 for ref_owner, ref_repo, ref_pr in refs:
@@ -209,7 +284,6 @@ class ReviewBotImpl(ReviewBot.ReviewBot):
                     )
             return
 
-        # Normal PR: comment build reminder on the PR itself
         self._maybe_comment_build_failure(
             owner=owner,
             repo=repo,
@@ -236,7 +310,6 @@ class ReviewBotImpl(ReviewBot.ReviewBot):
         is_cross_post: bool,
         original_reqid: str | None,
     ):
-        api = self.platform.api
         comments_path = f"repos/{owner}/{repo}/issues/{pr_id}/comments"
 
         markers = {self.build_marker, *self.legacy_markers}
@@ -246,12 +319,9 @@ class ReviewBotImpl(ReviewBot.ReviewBot):
             return
 
         mentions = []
-
-        # For normal PR: mention creator
         if creator:
             mentions = self._determine_mentions(creator=creator, description=description)
 
-        # For cross-post: mention actual pool PR author
         if is_cross_post:
             author = self._fetch_pr_author(owner, repo, pr_id)
             if author and author not in mentions:
@@ -278,14 +348,6 @@ class ReviewBotImpl(ReviewBot.ReviewBot):
     # ---------------------------
 
     def _maybe_post_review_reminder(self, req):
-        """
-        If PR has requested reviewers/teams and approvals are missing,
-        post a reminder comment.
-
-        Rule:
-          - FPR -> ping GROUP accounts (BROKIN_REVIEW_PING_USERS)
-          - PR  -> ping missing INDIVIDUAL reviewers
-        """
         owner = getattr(req, "_owner", None)
         repo = getattr(req, "_repo", None)
         pr_id = getattr(req, "_pr_id", None)
@@ -294,9 +356,24 @@ class ReviewBotImpl(ReviewBot.ReviewBot):
         if not owner or not repo or not pr_id:
             return
 
+        # ---- LABEL GATING HERE ----
+        if self.required_label:
+            labels = self._fetch_issue_labels(owner, repo, pr_id)
+            if self.required_label not in labels:
+                self.logger.info(
+                    f"Skipping review reminder for {reqid}: missing label '{self.required_label}' (labels={labels})"
+                )
+                return
+
+            applied_at = self._fetch_label_applied_at(owner, repo, pr_id, self.required_label)
+            if not self._label_old_enough(applied_at):
+                self.logger.info(
+                    f"Skipping review reminder for {reqid}: label '{self.required_label}' not old enough yet"
+                )
+                return
+
         comments_path = f"repos/{owner}/{repo}/issues/{pr_id}/comments"
 
-        # Don't spam
         if self._has_any_marker(comments_path, {self.review_marker}, reqid):
             self.logger.info(f"Review reminder already posted for {reqid}; skipping.")
             return
@@ -315,28 +392,32 @@ class ReviewBotImpl(ReviewBot.ReviewBot):
 
         mentions = []
 
-        if is_fpr:
-            # FPR -> group mentions only
-            for u in self.review_ping_users:
-                if u and u not in mentions:
-                    mentions.append(u)
+        if self.review_ping_users:
+            # If user explicitly configured ping-users, use them (even on FPRs)
+            mentions = list(self.review_ping_users)
         else:
-            # PR -> missing individuals
+            # Otherwise always ping missing individuals (also for FPRs),
+            # but filter bots and group accounts.
             for r in missing:
-                if r and r not in mentions:
-                    mentions.append(r)
+                if not r:
+                    continue
+                if self.skip_reviewers_re and self.skip_reviewers_re.search(r):
+                    continue
+                mentions.append(r)
 
-        # If we ended up with no one to ping, avoid noise
+        # De-dupe
+        seen = set()
+        mentions = [m for m in mentions if not (m in seen or seen.add(m))]
+
         if not mentions:
             return
 
         mention_line = " ".join(f"@{m}" for m in mentions).strip()
-
         pr_url = f"https://src.suse.de/{owner}/{repo}/pulls/{pr_id}"
 
         details = ""
-        if not is_fpr and reviewers:
-            missing_txt = ", ".join(f"`{m}`" for m in missing) if missing else "(unknown)"
+        if reviewers:
+            missing_txt = ", ".join(f"`{m}`" for m in missing) if missing else "(none)"
             details = f"Missing approval from: {missing_txt}\n\n"
 
         team_line = ""
@@ -505,7 +586,6 @@ class ReviewBotImpl(ReviewBot.ReviewBot):
 
             return user_logins, team_names
 
-        # preferred endpoint
         try:
             r = api.get(f"repos/{owner}/{repo}/pulls/{pr_id}/requested_reviewers")
             if r.status_code != 404:
@@ -517,7 +597,6 @@ class ReviewBotImpl(ReviewBot.ReviewBot):
         except Exception as e:
             self.logger.warning(f"Requested reviewers endpoint failed for {owner}/{repo}!{pr_id}: {e!r}")
 
-        # fallback: PR JSON
         try:
             r = api.get(f"repos/{owner}/{repo}/pulls/{pr_id}")
             if r.status_code == 404:
