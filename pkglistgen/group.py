@@ -28,7 +28,7 @@ class Group(object):
             self.packages[a] = []
             self.unresolvable[a] = dict()
 
-        self.comment = ' ### AUTOMATICALLY GENERATED, DO NOT EDIT ### '
+        self.comment = ' ### AUTOMATICALLY GENERATED, DO NOT EDIT ###'
         self.srcpkgs = None
         self.develpkgs = dict()
         self.silents = set()
