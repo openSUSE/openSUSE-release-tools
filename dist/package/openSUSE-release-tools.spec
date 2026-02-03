@@ -563,6 +563,7 @@ exit 0
 
 %files pkglistgen
 %{_bindir}/osrt-pkglistgen
+%{_bindir}/osrt-git-pkglistgen
 %{_bindir}/osrt-skippkg-finder
 %{_datadir}/%{source_dir}/pkglistgen
 %{_datadir}/%{source_dir}/pkglistgen.py
