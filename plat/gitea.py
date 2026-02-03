@@ -22,14 +22,17 @@ class API:
         self.base_url = urljoin(url, "/api/v1/")
         self.token = self.get_token()
 
-    def request(self, method, path, **kwargs):
+    def request(self, method, path, raise_for_status=True, **kwargs):
         arg_headers = kwargs.get('headers') or {}
         headers = {'Authorization': f'token {self.token}'}
         headers.update(arg_headers)
         kwargs['headers'] = headers
 
         url = urljoin(self.base_url, path)
-        return requests.request(method, url, **kwargs)
+        ret = requests.request(method, url, **kwargs)
+        if raise_for_status:
+            ret.raise_for_status()
+        return ret
 
     def get(self, path, **kwargs):
         return self.request('GET', path, **kwargs)
@@ -59,12 +62,9 @@ class CommentAPI:
 
     def get_comments(self, request_id, project_name=None, package_name=None):
         project_name, package_name, pr_id = Request.parse_request_id(request_id)
-        res = self.api.get(f'repos/{project_name}/{package_name}/issues/{pr_id}/comments')
-        res.raise_for_status()
-
-        json = res.json()
+        res = self.api.get(f'repos/{project_name}/{package_name}/issues/{pr_id}/comments').json()
         comments = {}
-        for c in json:
+        for c in res:
             c = self._comment_as_dict(c)
             comments[c['id']] = c
         return comments
@@ -128,12 +128,12 @@ class CommentAPI:
 
     def add_comment(self, request_id=None, project_name=None,
                     package_name=None, comment=None, _parent_id=None):
-        res = self.api.post(f'repos/{project_name}/{package_name}/issues/{request_id}/comments',
-                            json={"body": comment})
-        res.raise_for_status()
+        self.api.post(f'repos/{project_name}/{package_name}/issues/{request_id}/comments',
+                      json={"body": comment})
 
     def delete(self, comment_id, project, package, request):
-        self.api.delete(f'repos/{project}/{package}/issues/{request}/comments/{comment_id}')
+        self.api.delete(f'repos/{project}/{package}/issues/{request}/comments/{comment_id}',
+                        raise_for_status=False)
 
 
 class StagingAPI:
@@ -147,13 +147,25 @@ class StagingAPI:
 
 class RequestAction:
     """Stub action class"""
-    def __init__(self, type, src_project, src_package, src_rev, tgt_project, tgt_package):
+    def _set_attr_from_json(self, attr, json, path):
+        node = json
+        for i in path.split('.'):
+            node = node.get(i)
+            if node is None:
+                return
+
+        setattr(self, attr, node)
+
+    def __init__(self, type, json):
         self.type = type
-        self.src_project = src_project
-        self.src_package = src_package
-        self.src_rev = src_rev
-        self.tgt_project = tgt_project
-        self.tgt_package = tgt_package
+        self._set_attr_from_json('src_project', json, 'head.repo.owner.login')
+        self._set_attr_from_json('src_package', json, 'head.repo.name')
+        self._set_attr_from_json('src_branch', json, 'head.ref')
+        self._set_attr_from_json('src_rev', json, 'head.sha')
+        self._set_attr_from_json('tgt_project', json, 'base.repo.owner.login')
+        self._set_attr_from_json('tgt_package', json, 'base.repo.name')
+        self._set_attr_from_json('tgt_branch', json, 'base.ref')
+        self._set_attr_from_json('tgt_rev', json, 'base.sha')
 
 
 class Request:
@@ -200,16 +212,13 @@ class Request:
         self.reqid = Request.construct_request_id(owner, repo, json["number"])
         self.creator = json["user"]["login"]
         self.created_at = json["created_at"]
+        self.updated_at = json["updated_at"]
         self.title = json["title"]
         self.description = json["body"]
         self.state = json["state"]
-        self.actions = [RequestAction(
-            type="submit",
-            src_project=json["head"]["repo"]["owner"]["login"],
-            src_package=json["head"]["repo"]["name"],
-            src_rev=json["head"]["sha"],
-            tgt_project=json["base"]["repo"]["owner"]["login"],
-            tgt_package=json["base"]["repo"]["name"])]
+
+        self.actions = [RequestAction(type="submit", json=json)]
+
         if json.get("merged"):
             self.accept_at = json["merged_at"]
 
@@ -239,11 +248,10 @@ class Gitea(plat.base.PlatformBase):
         return self.api.get(path)
 
     def _get_request(self, pr_id, owner, repo):
-        res = self.api.get(f'repos/{owner}/{repo}/pulls/{pr_id}')
-        res.raise_for_status()
+        res = self.api.get(f'repos/{owner}/{repo}/pulls/{pr_id}').json()
 
         ret = Request()
-        ret.read(res.json(), owner=owner, repo=repo)
+        ret.read(res, owner=owner, repo=repo)
         return ret
 
     def get_request(self, request_id, with_full_history=False):
@@ -268,10 +276,8 @@ class Gitea(plat.base.PlatformBase):
         if package != '':
             repos = [package]
         else:
-            repo_list_res = self.api.get(f'orgs/{project}/repos')
-            repo_list_res.raise_for_status()
-            repo_list_json = repo_list_res.json()
-            repos = [i["name"] for i in repo_list_json]
+            repo_list = self.api.get(f'orgs/{project}/repos').json()
+            repos = [i["name"] for i in repo_list]
 
         for r in repos:
             list_res = self.api.get(f'repos/{project}/{r}/issues?type=pulls')
@@ -291,13 +297,11 @@ class Gitea(plat.base.PlatformBase):
         while True:
             params["page"] = page
             page += 1
-            search_res = self.api.get('repos/issues/search', params=params)
-            search_res.raise_for_status()
-            search_json = search_res.json()
-            if not search_json:
+            search_res = self.api.get('repos/issues/search', params=params).json()
+            if not search_res:
                 break
 
-            for i in search_json:
+            for i in search_res:
                 yield self._request_from_issue(i)
 
     def can_accept_review(self, req, **kwargs):
@@ -311,5 +315,4 @@ class Gitea(plat.base.PlatformBase):
         elif newstate == 'declined':
             json['event'] = 'REQUEST_CHANGES'
 
-        res = self.api.post(f'repos/{req._owner}/{req._repo}/pulls/{req._pr_id}/reviews', json=json)
-        res.raise_for_status()
+        self.api.post(f'repos/{req._owner}/{req._repo}/pulls/{req._pr_id}/reviews', json=json)
