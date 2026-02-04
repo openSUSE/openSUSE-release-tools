@@ -38,7 +38,7 @@ pipelines:
         tasks:
         - script: |-
             set -e
-            for image in agama-installer-SLES kiwi-templates-Minimal SLES_transactional; do
+            for image in agama-installer-SLES kiwi-templates-Minimal SLES_immutable; do
               osc -A https://api.suse.de release --target-project=SUSE:SLFO:Products:SLES:16.1:TEST --target-repository=images -r images SUSE:SLFO:Products:SLES:16.1 $image
             done
             osc -A https://api.suse.de release  --target-project=SUSE:SLFO:Products:SLES:16.1:TEST --target-repository=product -r product SUSE:SLFO:Products:SLES:16.1 000productcompose
@@ -83,7 +83,7 @@ pipelines:
         tasks:
         - script: |-
             set -e
-            for image in agama-installer-SLES kiwi-templates-Minimal SLES_transactional; do
+            for image in agama-installer-SLES kiwi-templates-Minimal SLES_immutable; do
               osc -A https://api.suse.de release --target-project=SUSE:SLFO:Products:SLES:16.1:PUBLISH --target-repository=images -r images SUSE:SLFO:Products:SLES:16.1:TEST $image
             done
             osc -A https://api.suse.de release  --target-project=SUSE:SLFO:Products:SLES:16.1:PUBLISH --target-repository=product -r product SUSE:SLFO:Products:SLES:16.1:TEST 000productcompose
