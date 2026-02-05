@@ -1,0 +1,15 @@
+product: Leap
+product_repo:
+  - SLES
+settings:
+  DISTRI: leap
+  VERSION: '16.0'
+incidents:
+  FLAVOR:
+    staged-Updates:
+      aggregate_job: false
+      archs:
+        - x86_64
+        - aarch64
+      issues:
+        OS_TEST_ISSUES: openSUSE/Leap
