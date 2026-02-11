@@ -78,20 +78,6 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         url = osc.core.makeurl(self.apiurl, ['source', project, package])
         return self.existing_url(url)
 
-    def get_request_from_src_rev(self, requests, src_rev):
-        requests = list(requests)
-        self.logger.debug(f"request: {self.request.reqid}")
-        self.logger.debug(f"requests: {requests}")
-        self.logger.debug(f"src_rev: {src_rev}")
-        for request in requests:
-            self.logger.debug(f"request: {request}")
-            self.logger.debug(f"request actions: {request.actions}")
-            self.logger.debug(f"request first action: {request.actions[0]}")
-            if request.actions[0].src_rev == src_rev:
-                return request
-
-        return None
-
     def _gitea_clone(self, project: str, package: str, revision: str):
         local_dir = Path(
             os.path.expanduser(
@@ -210,12 +196,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         base_package: str,
     ) -> bool:
 
-        request = self.get_request_from_src_rev(self.requests, head_revision)
-        if not request:
-            self.logger.warning(f"Request with HEAD {head_revision} not found!")
-            return None
-
-        base_revision = request.actions[0].tgt_rev
+        base_revision = self.request.actions[0].tgt_rev
 
         self.logger.debug(
             f"{head_project}/{head_package}@{head_revision} -> {base_project}/{base_package}@{base_revision}"
