@@ -81,6 +81,9 @@ class CheckerBugowner(ReviewBot.ReviewBot):
     @staticmethod
     def get_request_from_src_rev(requests, src_rev):
         for request in requests:
+            print(f"request: {request}")
+            print(f"request actions: {request.actions}")
+            print(f"request first action: {request.actions[0]}")
             if request.actions[0].src_rev == src_rev:
                 return request
 
