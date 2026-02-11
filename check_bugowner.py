@@ -196,7 +196,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         base_package: str,
     ) -> bool:
 
-        self.logger.debug(f"body: {self.request.body}")
+        self.logger.debug(f"body: {self.request.description}")
         base_revision = self.request.actions[0].tgt_rev
 
         self.logger.debug(
