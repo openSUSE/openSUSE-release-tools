@@ -8,7 +8,7 @@ import shutil
 import sys
 import re
 from pathlib import Path
-from typing import Set
+from typing import List, Set
 
 from urllib.error import HTTPError
 
@@ -77,14 +77,6 @@ class CheckerBugowner(ReviewBot.ReviewBot):
     def exists_in(self, project, package):
         url = osc.core.makeurl(self.apiurl, ['source', project, package])
         return self.existing_url(url)
-
-    @staticmethod
-    def get_request_from_src_rev(requests, src_rev):
-        for request in requests:
-            if request.actions[0].src_rev == src_rev:
-                return request
-
-        return None
 
     def _gitea_clone(self, project: str, package: str, revision: str):
         local_dir = Path(
@@ -166,6 +158,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
     def _gitea_validate(
         self,
+        referenced_packages: List[str],
         head_project: str,
         head_package: str,
         head_revision: str,
@@ -173,6 +166,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         base_package: str,
         base_revision: str,
     ) -> bool:
+        referenced_packages = set(referenced_packages)
         repo = self._gitea_clone(base_project, base_package, revision=base_revision)
 
         new_submodules, updated_submodules = self._diff_submodules(
@@ -187,7 +181,12 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         validated_packages = set()
         orphan_packages = set()
         changed_submodules = new_submodules.union(updated_submodules)
-        for package in changed_submodules:
+
+        for package in referenced_packages:
+            if package not in changed_submodules:
+                raise ValueError(f"A PR for {package} is mentioned in the description but no changed submodules were detected. Aborting...")
+
+        for package in referenced_packages:
             if package not in maintained and package not in whitelisted:
                 orphan_packages.add(package)
             else:
@@ -204,18 +203,17 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         base_package: str,
     ) -> bool:
 
-        request = self.get_request_from_src_rev(self.requests, head_revision)
-        if not request:
-            self.logger.warning(f"Request with HEAD {head_revision} not found!")
-            return None
+        base_revision = self.request.actions[0].tgt_rev
 
-        base_revision = request.actions[0].tgt_rev
+        referenced_prs = [line for line in self.request.description.splitlines() if line.startswith("PR: ")]
+        referenced_packages = [pr.split("/")[1].split("!")[0] for pr in referenced_prs]
 
         self.logger.debug(
             f"{head_project}/{head_package}@{head_revision} -> {base_project}/{base_package}@{base_revision}"
         )
 
         validated_packages, orphans = self._gitea_validate(
+            referenced_packages,
             head_project,
             head_package,
             head_revision,
