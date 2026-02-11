@@ -199,8 +199,8 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         base_revision = self.request.actions[0].tgt_rev
 
         referenced_prs = [line for line in self.request.description.splitlines() if line.startswith("PR: ")]
-        self.logger.debug(f"PRs: {referenced_prs}")
         referenced_packages = [pr.split("/")[1].split("!")[0] for pr in referenced_prs]
+        self.logger.debug(f"packages: {referenced_packages}")
 
         self.logger.debug(
             f"{head_project}/{head_package}@{head_revision} -> {base_project}/{base_package}@{base_revision}"
