@@ -8,7 +8,7 @@ import shutil
 import sys
 import re
 from pathlib import Path
-from typing import Set
+from typing import List, Set
 
 from urllib.error import HTTPError
 
@@ -158,6 +158,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
     def _gitea_validate(
         self,
+        referenced_packages: List[str],
         head_project: str,
         head_package: str,
         head_revision: str,
@@ -165,6 +166,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         base_package: str,
         base_revision: str,
     ) -> bool:
+        referenced_packages = set(referenced_packages)
         repo = self._gitea_clone(base_project, base_package, revision=base_revision)
 
         new_submodules, updated_submodules = self._diff_submodules(
@@ -179,7 +181,12 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         validated_packages = set()
         orphan_packages = set()
         changed_submodules = new_submodules.union(updated_submodules)
-        for package in changed_submodules:
+
+        for package in referenced_packages:
+            if package not in changed_submodules:
+                raise ValueError(f"A PR for {package} is mentioned in the description but no changed submodules were detected. Aborting...")
+
+        for package in referenced_packages:
             if package not in maintained and package not in whitelisted:
                 orphan_packages.add(package)
             else:
@@ -207,6 +214,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         )
 
         validated_packages, orphans = self._gitea_validate(
+            referenced_packages,
             head_project,
             head_package,
             head_revision,
