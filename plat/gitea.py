@@ -251,7 +251,8 @@ class Gitea(plat.base.PlatformBase):
         res = self.api.get(f'repos/{owner}/{repo}/pulls/{pr_id}').json()
 
         ret = Request()
-        self.logger.debug(f"request: {res}")
+        import json
+        self.logger.debug(f"request: {json.dumps(res, indent=4)}")
         ret.read(res, owner=owner, repo=repo)
         return ret
 
