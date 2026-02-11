@@ -78,12 +78,11 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         url = osc.core.makeurl(self.apiurl, ['source', project, package])
         return self.existing_url(url)
 
-    @staticmethod
-    def get_request_from_src_rev(requests, src_rev):
+    def get_request_from_src_rev(self, requests, src_rev):
         for request in requests:
-            print(f"request: {request}")
-            print(f"request actions: {request.actions}")
-            print(f"request first action: {request.actions[0]}")
+            self.logger.debug(f"request: {request}")
+            self.logger.debug(f"request actions: {request.actions}")
+            self.logger.debug(f"request first action: {request.actions[0]}")
             if request.actions[0].src_rev == src_rev:
                 return request
 
