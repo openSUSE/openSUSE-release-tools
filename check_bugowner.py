@@ -79,6 +79,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         return self.existing_url(url)
 
     def get_request_from_src_rev(self, requests, src_rev):
+        requests = list(requests)
         self.logger.debug(f"requests: {requests}")
         self.logger.debug(f"src_rev: {src_rev}")
         for request in requests:
