@@ -27,6 +27,8 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
         self.request_default_return = True
         self.override_allow = False
+        self.maintained = {}
+        self.whitelisted = {}
 
     def _obs_check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         self.logger.info("%s/%s@%s -> %s/%s" % (src_project,
@@ -158,7 +160,11 @@ class CheckerBugowner(ReviewBot.ReviewBot):
                 raise ValueError(f"Maintainership file '{MAINTAINERSHIP_FILE}' must contain a JSON dict, but {type(data)} was found.")
 
             # Convert list of package names to a set for fast lookups
-            return set(data.keys())
+            return data
+
+    def _init_maintainership(self, repo):
+        self.maintained = self._load_maintainership_data(Path(repo.working_tree_dir, MAINTAINERSHIP_FILE))
+        self.whitelisted = self._load_whitelist_data(Path(repo.working_tree_dir, WHITELIST_FILE))
 
     def _gitea_validate(
         self,
@@ -172,15 +178,13 @@ class CheckerBugowner(ReviewBot.ReviewBot):
     ) -> bool:
         referenced_packages = set(referenced_packages)
         repo = self._gitea_clone(base_project, base_package, revision=base_revision)
+        self._init_maintainership(repo)
 
         new_submodules, updated_submodules, deleted_submodules = self._diff_submodules(
             repo, base_revision, head_project, head_package, head_revision
         )
 
         repo.git.checkout(head_revision)
-
-        maintained = self._load_maintainership_data(Path(repo.working_tree_dir, MAINTAINERSHIP_FILE))
-        whitelisted = self._load_whitelist_data(Path(repo.working_tree_dir, WHITELIST_FILE))
 
         validated_packages = set()
         orphan_packages = set()
@@ -190,8 +194,11 @@ class CheckerBugowner(ReviewBot.ReviewBot):
             if package not in changed_submodules:
                 raise ValueError(f"A PR for {package} is mentioned in the description but no changed submodules were detected. Aborting...")
 
+        # Convert list of package names to a set for fast lookups
+        maintained = set(self.maintained.keys())
+
         for package in referenced_packages:
-            if package not in maintained and package not in whitelisted:
+            if package not in maintained and package not in self.whitelisted:
                 orphan_packages.add(package)
             else:
                 validated_packages.add(package)
@@ -231,8 +238,10 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         if is_valid:
             self.review_messages["accepted"] = "The change does not introduce orphan packages. " + \
                                                f"The following packages were checked and are covered either in `{MAINTAINERSHIP_FILE}`" + \
-                                               f" or `{WHITELIST_FILE}`:\n\n" + "\n".join(" - `" + p + "`" for p in validated_packages) + \
-                                               "\n"
+                                               f" or `{WHITELIST_FILE}`:\n\n" + "\n".join(
+                                               f" - `{p}`: " +
+                                               f"`{self.maintained[p] if p in self.maintained.keys() else 'whitelisted'}`"
+                                               for p in validated_packages) + "\n"
         else:
             self.review_messages["declined"] = f"Missing maintainership information for {', '.join(orphans)}." + \
                                                f" Please edit {MAINTAINERSHIP_FILE} and resubmit."
