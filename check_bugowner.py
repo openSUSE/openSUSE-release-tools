@@ -109,6 +109,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
         new_submodules = set()
         updated_submodules = set()
+        deleted_submodules = set()
         for line in diff.splitlines():
             if line.startswith("Submodule"):
                 # Extract name from 'Submodule tiff 0000000...7c7b21a (new submodule)'
@@ -122,6 +123,9 @@ class CheckerBugowner(ReviewBot.ReviewBot):
                 elif changes == "(commits not present)":
                     updated_submodules.add(name)
                     self.logger.info(f"Found updated submodule: {name}")
+                elif changes == "(submodule deleted)":
+                    deleted_submodules.add(name)
+                    self.logger.info(f"Found deleted submodule: {name}")
                 else:
                     self.logger.error(f"Unknown submodule change type: {line}")
 
@@ -137,7 +141,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
                 + "indicate a parsing error in the bugowner_checker bot."
             )
 
-        return new_submodules, updated_submodules
+        return new_submodules, updated_submodules, deleted_submodules
 
     def _load_whitelist_data(self, file: Path) -> Set[str]:
         try:
@@ -185,7 +189,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         referenced_packages = set(referenced_packages)
         repo = self._gitea_clone(base_project, base_package, revision=base_revision)
 
-        new_submodules, updated_submodules = self._diff_submodules(
+        new_submodules, updated_submodules, deleted_submodules = self._diff_submodules(
             repo, base_revision, head_project, head_package, head_revision
         )
 
