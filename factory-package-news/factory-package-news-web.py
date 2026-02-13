@@ -23,6 +23,9 @@ def get_dir(path):
 @app.route('/<path:dirpath>/')
 def list(dirpath):
     _dir = get_dir(dirpath)
+    if not os.path.isdir(_dir):
+        return "", 404
+
     fn = os.path.join(_dir, 'current')
     current = None
     if os.path.exists(fn):
