@@ -310,11 +310,14 @@ class CheckSource(ReviewBot.ReviewBot):
             return False
 
         if not self.check_urls('_old', target_package, specs):
-            osc.core.change_review_state(apiurl=self.apiurl,
-                                         reqid=self.request.reqid, newstate='new',
-                                         by_group=self.review_group,
-                                         by_user=self.review_user, message=self.review_messages['new'])
-            return None
+            if self.platform_type == "OBS":
+                # Keep review open
+                self.platform.change_review_state(req=self.request, newstate='new',
+                                                  by_group=self.review_group,
+                                                  by_user=self.review_user, message=self.review_messages['new'])
+                return None
+            else:
+                return False
 
         shutil.rmtree(copath)
         self.review_messages['accepted'] = 'Check script succeeded'
@@ -357,10 +360,8 @@ class CheckSource(ReviewBot.ReviewBot):
         if self.only_changes():
             self.logger.debug('only .changes modifications')
             if self.staging_group and self.review_user in group_members(self.apiurl, self.staging_group):
-                if not self.dryrun:
-                    osc.core.change_review_state(self.apiurl, str(self.request.reqid), 'accepted',
-                                                 by_group=self.staging_group,
-                                                 message='skipping the staging process since only .changes modifications')
+                self.review_messages["accepted"] = 'skipping the staging process since only .changes modifications'
+                return True
             else:
                 self.logger.debug('unable to skip staging review since not a member of staging group')
 
@@ -709,8 +710,12 @@ class CheckSource(ReviewBot.ReviewBot):
             res = subprocess.run(["/usr/lib/obs/service/download_files", "--enforceupstream",
                                   "yes", "--enforcelocal", "yes", "--outdir", tmpdir], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             if res.returncode:
-                self.review_messages['new'] = "Source URLs are not valid. Try `osc service runall download_files`.\n" + \
+                review_message = "Source URLs are not valid. Try `osc service runall download_files`.\n" + \
                     res.stdout.decode('utf-8')
+                if self.platform_type == "OBS":
+                    self.review_messages["new"] = review_message
+                else:
+                    self.review_messages["declined"] = review_message
                 os.chdir(oldcwd)
                 return False
         os.chdir(oldcwd)
