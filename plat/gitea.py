@@ -230,6 +230,12 @@ class ProjectConfig:
         return default
 
 
+class User:
+    def __init__(self, json):
+        self.id = json["id"]
+        self.email = json["email"]
+
+
 class Gitea(plat.base.PlatformBase):
     """Platform interface implementation for Gitea"""
     def __init__(self, logger, url):
@@ -289,6 +295,11 @@ class Gitea(plat.base.PlatformBase):
 
     def get_staging_api(self, project):
         return StagingAPI(project, self.api)
+
+    def get_user(self, name):
+        user_res = self.api.get(f"users/{name}")
+        user_res.raise_for_status()
+        return User(user_res.json())
 
     def search_review(self, **kwargs):
         params: dict[str, str | int] = {'state': 'open', "type": "pulls", "review_requested": "true"}

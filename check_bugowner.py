@@ -2,14 +2,16 @@
 
 # SPDX-License-Identifier: MIT
 
+import datetime
 import json
 import os
-import shutil
 import sys
 import re
 from pathlib import Path
 from typing import List, Set
 
+import ldap
+import requests
 from urllib.error import HTTPError
 
 import osc.conf
@@ -19,6 +21,7 @@ import ReviewBot
 http_GET = osc.core.http_GET
 MAINTAINERSHIP_FILE = "_maintainership.json"
 WHITELIST_FILE = "whitelist_maintainership.json"
+LDAP_SERVER = "pan.suse.de"
 
 
 class CheckerBugowner(ReviewBot.ReviewBot):
@@ -27,8 +30,30 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
         self.request_default_return = True
         self.override_allow = False
+        self.ldap = False
         self.maintained = {}
         self.whitelisted = {}
+        self.ldap_cache = {"update_time": datetime.datetime.now(), "values": {}}
+        self.email_cache = {"update_time": datetime.datetime.now(), "values": {}}
+
+    @staticmethod
+    def _cache_set(cache, key, value):
+        cache["values"][key] = value
+        cache["update_time"] = datetime.datetime.now()
+
+    @staticmethod
+    def _cache(cache):
+        return cache["values"]
+
+    @staticmethod
+    def _cache_get(cache, key):
+        return CheckerBugowner._cache(cache)[key]
+
+    def _cache_clear(self, cache):
+        difference = datetime.datetime.now() - cache["update_time"]
+        if difference.days >= 1:
+            self.logger.info(f"Cache is {difference.days} days old, clearing it...")
+            cache = {"update_time": datetime.datetime.now(), "values": {}}
 
     def _obs_check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         self.logger.info("%s/%s@%s -> %s/%s" % (src_project,
@@ -221,6 +246,99 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
         return validated_packages, orphan_packages
 
+    def _ldap_active_user(self, email):
+        instance = ldap.initialize(f"ldap://{LDAP_SERVER}")
+
+        active_statuses = []
+        for e in email:
+            if e:
+                if e not in self._cache(self.ldap_cache).keys():
+                    result = instance.search_s(
+                        "OU=User accounts,DC=corp,DC=suse,DC=com",
+                        ldap.SCOPE_SUBTREE,
+                        filterstr=f"(mail={e})",
+                        # We only need to know whether or not the submitter
+                        # has an active account.
+                        attrlist=["EMPLOYEESTATUS"]
+                    )
+
+                    # In case the search fails:
+                    try:
+                        active_list = result[0]
+                    except IndexError:
+                        self.logger.debug(f"LDAP search failed with {result}")
+                        self._cache_set(self.ldap_cache, e, None)
+                        active_statuses.append(None)
+                        continue
+
+                    if active_list:
+                        name, attrs = active_list
+                        self.logger.debug(f"Found LDAP user {name}")
+                        self._cache_set(self.ldap_cache, e, attrs)
+                    else:
+                        self._cache_set(self.ldap_cache, e, None)
+                    
+                active_statuses.append(self._cache_get(self.ldap_cache, e))
+
+        instance.unbind()
+
+        return active_statuses
+
+    def _gitea_email(self, owner):
+        for o in owner:
+            if o and (o not in self._cache(self.email_cache).keys()):
+                try:
+                    self._cache_set(self.email_cache, o, self.platform.get_user(o).email)
+                except (HTTPError, requests.exceptions.HTTPError):
+                    self._cache_set(self.email_cache, o, None)
+        return [self._cache_get(self.email_cache, o) for o in owner]
+
+    def _gitea_package_maintainer(self, package: str):
+        in_maintainership_json = package in self.maintained.keys()
+        if in_maintainership_json:
+            owner = self.maintained[package]
+            if self.ldap:
+                try:
+                    # Get owner email
+                    email = self._gitea_email(owner)
+
+                    self.logger.debug(f"{owner} -> {email}")
+
+                    # Get owner active status
+                    owner_attrs = self._ldap_active_user(email)
+
+                    # Get users that were not found on LDAP.
+                    not_found_users = [
+                        e for e, s in zip(email, owner_attrs)
+                        if s is None
+                    ]
+
+                    if not_found_users:
+                        users = ', '.join(not_found_users)
+                        self.logger.warning(f"The following emails were not found on LDAP: {users}.")
+
+                    # Get inactive users
+                    inactive_users = [
+                        o for o, s in zip(owner, owner_attrs) if (s and "EMPLOYEESTATUS" in s.keys() and s["EMPLOYEESTATUS"][0] != b'Active')
+                    ]
+
+                    self.logger.debug(f"Inactive users: {inactive_users}")
+
+                    if inactive_users:
+                        ldap_status = f" The following users are **not active** on LDAP: {', '.join('`' + u + '`' for u in inactive_users if u)}"
+                    else:
+                        ldap_status = ""
+
+                    return f"`{owner}`.{ldap_status}"
+
+                except ldap.SERVER_DOWN:
+                    self.logger.warning(f"LDAP server {LDAP_SERVER} is down...")
+
+            return f"`{owner}`"
+        else:
+            maintainer = "`whitelisted`"
+        return maintainer
+
     def _gitea_check_source_submission(
         self,
         head_project: str,
@@ -229,6 +347,9 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         base_project: str,
         base_package: str,
     ) -> bool:
+        # If the caches are more than a day old, clear them
+        self._cache_clear(self.ldap_cache)
+        self._cache_clear(self.email_cache)
 
         base_revision = self.request.actions[0].tgt_rev
 
@@ -257,11 +378,11 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
         if is_valid:
             self.review_messages["accepted"] = "The change does not introduce orphan packages. " + \
-                                               f"The following packages were checked and are covered either in `{MAINTAINERSHIP_FILE}`" + \
-                                               f" or `{WHITELIST_FILE}`:\n\n" + "\n".join(
-                                               f" - `{p}`: " +
-                                               f"`{self.maintained[p] if p in self.maintained.keys() else 'whitelisted'}`"
-                                               for p in validated_packages) + "\n"
+                f"The following packages were checked and are covered either in `{MAINTAINERSHIP_FILE}`" + \
+                f" or `{WHITELIST_FILE}`:\n\n" + "\n".join(
+                f" - `{p}`: " +
+                self._gitea_package_maintainer(p) for p in validated_packages)
+            self.review_messages["accepted"] = self.review_messages["accepted"] + "\n"
         else:
             self.review_messages["declined"] = f"Missing maintainership information for {', '.join(orphans)}." + \
                                                f" Please edit {MAINTAINERSHIP_FILE} and resubmit."
@@ -281,6 +402,24 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         ReviewBot.CommandLineInterface.__init__(self, args, kwargs)
         self.clazz = CheckerBugowner
 
+    def get_optparser(self) -> CmdlnOptionParser:
+        parser = ReviewBot.CommandLineInterface.get_optparser(self)
+
+        parser.add_option(
+            "--ldap",
+            action="store_true",
+            default=False,
+            help=f"Query {LDAP_SERVER} to check whether a maintainer is still a SUSE employee",
+        )
+
+        return parser
+
+    def setup_checker(self):
+        bot = ReviewBot.CommandLineInterface.setup_checker(self)
+
+        bot.ldap = self.options.ldap
+
+        return bot
 
 if __name__ == "__main__":
     app = CommandLineInterface()

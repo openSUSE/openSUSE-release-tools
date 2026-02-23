@@ -4,6 +4,7 @@ lxml
 PyYAML
 pycurl
 python-dateutil
+python-ldap
 pyxdg
 cmdln
 git+https://github.com/openSUSE/osc

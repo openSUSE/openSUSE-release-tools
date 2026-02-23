@@ -65,6 +65,7 @@ Requires:       python3-typing_extensions
 # Backport for py 3.6
 Requires:       python3-dataclasses
 %endif
+Requires:       python-ldap
 
 # Spec related requirements.
 Requires:       osclib = %{version}
