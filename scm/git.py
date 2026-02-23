@@ -25,19 +25,34 @@ class Git(scm.base.SCMBase):
         head_remote_url: str,
         head_commit: str,
     ):
-        repo.remotes.origin.fetch([base_commit])
+        if repo.remote("origin").url == head_remote_url:
+            head_remote_name = "origin"
 
-        head_remote = repo.create_remote(head_remote_name, head_remote_url)
-        head_remote.fetch([head_commit])
+        repo = Git.checkout_revision(repo, base_commit)
+
+        repo = Git.checkout_revision(repo, head_commit, remote=head_remote_name)
 
         # TODO: It'd be awesome to use GitPython's structured DiffIndex objects, but the library still does not support sha256 object
         # format. See https://github.com/gitpython-developers/GitPython/issues/1475
         diff = repo.git.diff("--submodule", f"{base_commit}..{head_commit}")
 
         # Cleanup remote
-        repo.delete_remote(head_remote)
+        if head_remote_name != "origin":
+            repo.delete_remote(head_remote_name)
 
         return diff
+
+    @staticmethod
+    def checkout_revision(repo, revision: str, remote="origin", remote_url=None, fetch=True):
+        if not isinstance(repo, git.Repo):
+            repo = git.Repo(repo)
+        if fetch:
+            if remote_url and remote not in set(r.name for r in repo.remotes):
+                repo.create_remote(remote, remote_url)
+
+            repo.remote(remote).fetch([revision])
+        repo.git.checkout(revision)
+        return repo
 
     def package_url(self, target_project: str, target_package: str) -> str:
         return f"{self.base_url}/{target_project}/{target_package}.git"
@@ -47,8 +62,7 @@ class Git(scm.base.SCMBase):
 
         revision = kwargs.get("revision")
         if revision is not None:
-            repo.remotes.origin.fetch([revision])
-            repo.git.checkout(revision)
+            Git.checkout_revision(repo, revision)
 
         return repo
 

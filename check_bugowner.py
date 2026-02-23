@@ -80,23 +80,23 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         url = osc.core.makeurl(self.apiurl, ['source', project, package])
         return self.existing_url(url)
 
-    def _gitea_clone(self, project: str, package: str, revision: str):
+    def _gitea_checkout(self, owner: str, repo: str, revision: str):
         local_dir = Path(
             os.path.expanduser(
-                f"~/.cache/bugowner_checker_git/{project}_{package}"
+                f"~/.cache/bugowner_checker_git/{owner}/{repo}"
             )
         )
-        if local_dir.is_dir():
-            self.logger.warning(f"directory {local_dir} already exists, removing it.")
-            shutil.rmtree(local_dir, ignore_errors=True)
 
-        local_dir.mkdir(parents=True)
-
-        return self.scm.clone_repository(
-            url=self.scm.package_url(project, package),
-            dstpath=local_dir,
-            revision=revision,
-        )
+        if not local_dir.is_dir():
+            self.logger.info(f"directory {local_dir} does not exists, creating it.")
+            local_dir.mkdir(parents=True)
+            return self.scm.clone_repository(
+                url=self.scm.package_url(owner, repo),
+                dstpath=local_dir,
+                revision=revision,
+            )
+        else:
+            return self.scm.checkout_revision(local_dir, revision)
 
     def _diff_submodules(
         self, repo, base_revision, head_project, head_package, head_revision
@@ -193,7 +193,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         base_revision: str,
     ) -> bool:
         referenced_packages = set(referenced_packages)
-        repo = self._gitea_clone(base_project, base_package, revision=base_revision)
+        repo = self._gitea_checkout(base_project, base_package, revision=base_revision)
         self._init_maintainership(repo)
 
         new_submodules, updated_submodules, deleted_submodules = self._diff_submodules(
