@@ -170,7 +170,7 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
         self.logger.info(f"Checking {src_project}: {src_owner} -> {target_owner}")
 
         try:
-            result = self.run_pkglistgen(
+            result, message = self.run_pkglistgen(
                 src_owner, src_project, src_rev, target_owner, target_package
             )
         except Exception:
@@ -180,7 +180,7 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
             return False
 
         if result:
-            self.review_messages["accepted"] = "pkglistgen ran successfully"
+            self.review_messages["accepted"] = message or "OK"
 
         return result  # True or None
 
@@ -190,25 +190,26 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
         """
         Runs pkglistgen.
 
-        :return: either True (pkglistgen ran), or None (should skip/retry later)
+        :return: result: True (pkglistgen ran), or None (should skip/retry later).
+                 message: a message that should be shown into the comment, or None.
         """
 
         request = self.get_request_from_src_rev(self.requests, src_rev)
         if not request:
             self.logger.warning(f"Request for src_rev {src_rev} not found")
-            return None
+            return None, None
 
         if f"{request._owner}/{request._repo}" not in self.allowed_repositories:
             self.logger.info(
                 f"{request._owner}/{request._repo} is not in the allowed repositories list"
             )
-            return None
+            return None, None
 
         if STAGING_PROGRESS_MARKER not in request._labels:
             self.logger.info(
                 f"PR {request._owner}/{request._repo}#{request._pr_id} is not in progress"
             )
-            return None
+            return None, None
 
         base_commit = request.actions[0].tgt_rev
         staging_configuration = self.get_git_staging_configuration(
@@ -219,7 +220,7 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
             self.logger.warning(
                 f"PR {request._owner}/{request._repo}#{request._pr_id} has no QA staging configured"
             )
-            return None
+            return None, None
 
         main_project = staging_configuration["ObsProject"]
 
@@ -271,7 +272,7 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
                 self.replace_meta(project_name, meta)
 
                 # We will get back to it later
-                return None
+                return None, None
 
             self.tool.reset()
             self.tool.dry_run = self.dryrun
@@ -296,7 +297,7 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
                 # Repo still building, just exit now as presumably eventual
                 # other projects are also affected
                 self.logger.warning("Repository is still building, trying next time...")
-                return None
+                return None, None
             else:
                 # Enable builds
                 if not self.dryrun:
@@ -305,7 +306,7 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
                             project_name, "build", repository, "enable"
                         )
 
-        return True
+        return True, "pkglistgen ran successfully"
 
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
