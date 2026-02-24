@@ -24,8 +24,6 @@ MAINTAINERSHIP_FILE = "_maintainership.json"
 WHITELIST_FILE = "whitelist_maintainership.json"
 LDAP_SERVER = "pan.suse.de"
 
-class MissingPRError(ValueError):
-    pass
 
 class CheckerBugowner(ReviewBot.ReviewBot):
 
@@ -108,7 +106,9 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         url = osc.core.makeurl(self.apiurl, ['source', project, package])
         return self.existing_url(url)
 
-    def _gitea_checkout(self, owner: str, repo: str, revision: str):
+    def _gitea_checkout(
+        self, owner: str, repo: str, revision: str, remote="origin", remote_url=None
+    ):
         local_dir = Path(
             os.path.expanduser(
                 f"~/.cache/bugowner_checker_git/{owner}/{repo}"
@@ -124,12 +124,14 @@ class CheckerBugowner(ReviewBot.ReviewBot):
                 revision=revision,
             )
         else:
-            return self.scm.checkout_revision(local_dir, revision)
+            return self.scm.checkout_revision(
+                local_dir, revision, remote=remote, remote_url=remote_url
+            )
 
     def _diff_submodules(
         self, repo, base_revision, head_project, head_package, head_revision
     ):
-        diff = self.scm.submodule_diff(
+        diff, rebased = self.scm.submodule_diff(
             repo,
             base_revision,
             head_project,
@@ -171,7 +173,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
                 + "indicate a parsing error in the bugowner_checker bot."
             )
 
-        return new_submodules, updated_submodules, deleted_submodules
+        return new_submodules, updated_submodules, deleted_submodules, rebased
 
     def _load_whitelist_data(self, file: Path) -> Set[str]:
         try:
@@ -221,33 +223,53 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         base_revision: str,
     ) -> bool:
         referenced_packages = set(referenced_packages)
-        repo = self._gitea_checkout(base_project, base_package, revision=base_revision)
-
-        new_submodules, updated_submodules, deleted_submodules = self._diff_submodules(
-            repo, base_revision, head_project, head_package, head_revision
-        )
-
-        repo = self._gitea_checkout(base_project, base_package, revision=head_revision)
-        self._init_maintainership(repo)
-
         validated_packages = set()
         orphan_packages = set()
+
+        repo = self._gitea_checkout(base_project, base_package, revision=base_revision)
+
+        new_submodules, updated_submodules, deleted_submodules, rebased = self._diff_submodules(
+            repo, base_revision, head_project, head_package, head_revision
+        )
+        # Set of packages that changed between base and HEAD
         changed_submodules = new_submodules.union(updated_submodules)
 
+        # Fetch and checkout HEAD
+        repo = self._gitea_checkout(
+            base_project,
+            base_package,
+            revision=head_revision,
+            remote=head_project,
+            remote_url=self.scm.package_url(head_project, head_package),
+        )
+        # Read _maintainership.json and whitelist.json after checking out HEAD
+        self._init_maintainership(repo)
+
+        # Set of packages to be validated
+        if rebased:
+            to_validate = changed_submodules
+        else:
+            to_validate = changed_submodules.intersection(referenced_packages)
+
+        warnings = []
+        # Validate referencing PRs
         for package in referenced_packages:
             if package not in changed_submodules:
-                raise MissingPRError(f"A PR for {package} is mentioned in the description but no changed submodules were detected.")
+                msg = f"A PR for {package} is mentioned in the description but no changed submodules were detected."
+                self.logger.warning(msg)
+                warnings.append(msg)
 
         # Convert list of package names to a set for fast lookups
         maintained = set(self.maintained.keys())
 
-        for package in referenced_packages:
+        # Validate changes
+        for package in to_validate:
             if package not in maintained and package not in self.whitelisted:
                 orphan_packages.add(package)
             else:
                 validated_packages.add(package)
 
-        return validated_packages, orphan_packages
+        return repo, validated_packages, orphan_packages, warnings
 
     def _ldap_active_user(self, email):
         instance = ldap.initialize(f"ldap://{LDAP_SERVER}")
@@ -322,13 +344,15 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
                     # Get inactive users
                     inactive_users = [
-                        o for o, s in zip(owner, owner_attrs) if (s and "EMPLOYEESTATUS" in s.keys() and s["EMPLOYEESTATUS"][0] != b'Active')
+                        o for o, s in zip(owner, owner_attrs)
+                        if (s and "EMPLOYEESTATUS" in s.keys() and s["EMPLOYEESTATUS"][0] != b'Active')
                     ]
 
                     self.logger.debug(f"Inactive users: {inactive_users}")
 
                     if inactive_users:
-                        ldap_status = f" The following users are **not active** on LDAP: {', '.join('`' + u + '`' for u in inactive_users if u)}"
+                        users = ', '.join('`' + u + '`' for u in inactive_users if u)
+                        ldap_status = f" The following users are **not active** on LDAP: {users}"
                     else:
                         ldap_status = ""
 
@@ -354,7 +378,13 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         self._cache_clear(self.ldap_cache)
         self._cache_clear(self.email_cache)
 
-        base_revision = self.request.actions[0].tgt_rev
+        if self.request.actions[0].tgt_branch:
+            base_revision = self.request.actions[0].tgt_branch
+        else:
+            base_revision = self.request.actions[0].tgt_rev
+
+        if self.request.actions[0].src_branch:
+            head_revision = self.request.actions[0].src_branch
 
         referenced_prs = [
             line
@@ -367,33 +397,36 @@ class CheckerBugowner(ReviewBot.ReviewBot):
             f"{head_project}/{head_package}@{head_revision} -> {base_project}/{base_package}@{base_revision}"
         )
 
-        try:
-            validated_packages, orphans = self._gitea_validate(
-                referenced_packages,
-                head_project,
-                head_package,
-                head_revision,
-                base_project,
-                base_package,
-                base_revision,
-            )
-        except MissingPRError as e:
-            self.review_messages["declined"] = e.args[0] + f" Please either edit the description to drop the mentioned PR or sumbit a " + \
-                                               "submodule change for it. Then request a new review."
-            return False
+        repo, validated_packages, orphans, warnings = self._gitea_validate(
+            referenced_packages,
+            head_project,
+            head_package,
+            head_revision,
+            base_project,
+            base_package,
+            base_revision,
+        )
 
         is_valid = len(orphans) == 0
 
+        review_warnings = "\n".join("**Warning**: " + w for w in warnings) + "\n\n"
+
         if is_valid:
-            self.review_messages["accepted"] = "The change does not introduce orphan packages. " + \
+            self.review_messages["accepted"] = review_warnings + \
+                "The change does not introduce orphan packages. " + \
                 f"The following packages were checked and are covered either in `{MAINTAINERSHIP_FILE}`" + \
                 f" or `{WHITELIST_FILE}`:\n\n" + "\n".join(
                 f" - `{p}`: " +
                 self._gitea_package_maintainer(p) for p in validated_packages)
             self.review_messages["accepted"] = self.review_messages["accepted"] + "\n"
         else:
-            self.review_messages["declined"] = f"Missing maintainership information for {', '.join(orphans)}." + \
-                                               f" Please edit {MAINTAINERSHIP_FILE} and resubmit."
+            self.review_messages["declined"] = review_warnings + \
+                f"Missing maintainership information for {', '.join(orphans)}." + \
+                f" Please edit {MAINTAINERSHIP_FILE} and resubmit."
+
+        # Cleanup branches
+        self.scm.checkout_revision(repo, base_revision)
+        repo.git.branch("-D", head_revision)
 
         return is_valid
 
@@ -428,6 +461,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         bot.ldap = self.options.ldap
 
         return bot
+
 
 if __name__ == "__main__":
     app = CommandLineInterface()

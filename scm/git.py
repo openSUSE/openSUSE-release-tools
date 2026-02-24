@@ -17,8 +17,8 @@ class Git(scm.base.SCMBase):
     def name(self) -> str:
         return "GIT"
 
-    @staticmethod
     def submodule_diff(
+        self,
         repo: git.Repo,
         base_commit: str,
         head_remote_name: str,
@@ -30,7 +30,17 @@ class Git(scm.base.SCMBase):
 
         repo = Git.checkout_revision(repo, base_commit)
 
-        repo = Git.checkout_revision(repo, head_commit, remote=head_remote_name)
+        repo = Git.checkout_revision(repo, head_commit, remote=head_remote_name, remote_url=head_remote_url)
+
+        try:
+            # If the change can be fast-forwarded on top of base, we can try checking exactly the
+            # changes that are brought in.
+            repo.git.rebase(base_commit)
+            rebased = True
+            self.logger.debug(f"Successfully rebased {head_commit} upon {base_commit}.")
+        except git.exc.GitCommandError:
+            repo.git.rebase("--abort")
+            rebased = False
 
         # TODO: It'd be awesome to use GitPython's structured DiffIndex objects, but the library still does not support sha256 object
         # format. See https://github.com/gitpython-developers/GitPython/issues/1475
@@ -40,7 +50,7 @@ class Git(scm.base.SCMBase):
         if head_remote_name != "origin":
             repo.delete_remote(head_remote_name)
 
-        return diff
+        return diff, rebased
 
     @staticmethod
     def checkout_revision(repo, revision: str, remote="origin", remote_url=None, fetch=True):
