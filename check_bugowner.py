@@ -219,13 +219,13 @@ class CheckerBugowner(ReviewBot.ReviewBot):
     ) -> bool:
         referenced_packages = set(referenced_packages)
         repo = self._gitea_checkout(base_project, base_package, revision=base_revision)
-        self._init_maintainership(repo)
 
         new_submodules, updated_submodules, deleted_submodules = self._diff_submodules(
             repo, base_revision, head_project, head_package, head_revision
         )
 
-        repo.git.checkout(head_revision)
+        repo = self._gitea_checkout(base_project, base_package, revision=head_revision)
+        self._init_maintainership(repo)
 
         validated_packages = set()
         orphan_packages = set()
