@@ -71,14 +71,10 @@ class OBS(plat.base.PlatformBase):
                                'match': f"state/@name='review' and review[{review}]", 'withfullhistory': 1})
         root = ET.parse(osc.core.http_GET(url)).getroot()
 
-        ret = []
-
         for request in root.findall('request'):
             req = osc.core.Request()
             req.read(request)
-            ret.append(req)
-
-        return ret
+            yield req
 
     def _has_open_review_by(self, root, by_what, reviewer):
         states = set([review.get('state') for review in root.findall('review') if review.get(by_what) == reviewer])
