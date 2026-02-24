@@ -14,6 +14,7 @@ import subprocess
 import tempfile
 
 from urllib.parse import urljoin, urldefrag
+import urllib.error
 
 from lxml import etree
 
@@ -24,13 +25,18 @@ from osclib.stagingapi import StagingAPI
 from pkglistgen.engine import Engine
 from pkglistgen.tool import PkgListGen, MismatchedRepoException
 
+from collections import namedtuple
+
 DEFAULT_AUTOGITS_REVIEWER = "autogits_obs_staging_bot"
 DEFAULT_ENGINE = "product_composer"
 DEFAULT_ENABLE_REPOSITORIES = "product images"
 
 STAGING_PROGRESS_MARKER = "staging/In Progress"
+STAGING_TYPE_MARKERS = "QA-SLES-Basic QA-SLES-Reduced QA-SLES-Full"
 
 slugify_regex = re.compile("[^a-z0-9_]+")
+
+StagingProject = namedtuple("StagingProject", ["target", "name", "origin", "label"])
 
 
 def slugify(x):
@@ -109,6 +115,9 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
         self.apiurl = conf.config["apiurl"]
 
         self.allowed_repositories = []
+
+        self.staging_origin_cache = {}
+
         self.cloned_repositories = GitRepositories()
 
         # This is heavily dependent on the GITEA platform
@@ -124,7 +133,12 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
     def get_qa_projects(self, request_id, staging_configuration):
         base_project = staging_configuration["StagingProject"]
         for project in staging_configuration.get("QA", []):
-            yield f"{base_project}:{request_id}:{project['Name']}"
+            yield StagingProject(
+                target=f"{base_project}:{request_id}:{project['Name']}",
+                origin=project["Origin"],
+                name=project["Name"],
+                label=project.get("Label"),
+            )
 
     @staticmethod
     def is_request_approved_by(request, approver):
@@ -238,17 +252,52 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
         enable_repositories = target_config.get(
             "pkglistgen-enable-repositories", DEFAULT_ENABLE_REPOSITORIES
         ).split(" ")
+        staging_type_markers = target_config.get(
+            "staging-type-markers", STAGING_TYPE_MARKERS
+        ).split(" ")
 
         approver = target_config.get("pkglistgen-approver", DEFAULT_AUTOGITS_REVIEWER)
         if not self.is_request_approved_by(request, approver):
-            return None
+            return None, None
 
-        for project_name in self.get_qa_projects(request._pr_id, staging_configuration):
-            target_repository_name = project_name.split(":")[-1]
-            api = StagingAPI(self.apiurl, project_name)
+        if True not in [x in staging_type_markers for x in request._labels]:
+            self.logger.info(
+                f"PR {request._owner}/{request._repo}#{request._pr_id} has no valid staging markers set"
+            )
+            return True, "Not asked to create stagings. Accepting."
 
-            meta = api.get_prj_meta(project_name)
-            staging_repo_url = urljoin(staging_org_url, target_repository_name)
+        staging_project_available = False
+        for qa_project in self.get_qa_projects(request._pr_id, staging_configuration):
+            api = StagingAPI(self.apiurl, qa_project.target)
+
+            try:
+                meta = api.get_prj_meta(qa_project.target)
+            except urllib.error.HTTPError as e:
+                if e.code == 404:
+                    # Let's go ahead, as the QA project might have been masked by the used Label,
+                    # and we will check that further on
+                    continue
+                else:
+                    raise
+            else:
+                staging_project_available = True
+
+            # Obtain the target repository name by looking at the repository name
+            # in the Origin's scmsync. We cannot use qa_project["Name"] in this case
+            # as after labels have been introduced, the same origin might have multiple
+            # QA projects
+            if qa_project.origin not in self.staging_origin_cache:
+                origin_meta = api.get_prj_meta(qa_project.origin)
+                origin_git_url_element = origin_meta.xpath("/project/scmsync")[0]
+
+                url, fragment = urldefrag(origin_git_url_element.text)
+                self.staging_origin_cache[qa_project.origin] = url.split("/")[
+                    -1
+                ].replace(".git", "")
+
+            staging_repo_url = urljoin(
+                staging_org_url, self.staging_origin_cache[qa_project.origin]
+            )
             target_git_url = urljoin(staging_repo_url, f"#{staging_branch}")
             git_url_element = meta.xpath("/project/scmsync")[0]
 
@@ -269,7 +318,7 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
 
                 git_url_element.text = target_git_url
 
-                self.replace_meta(project_name, meta)
+                self.replace_meta(qa_project.target, meta)
 
                 # We will get back to it later
                 return None, None
@@ -283,7 +332,7 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
                     target_config,
                     main_repo,
                     git_url=git_url_element.text,
-                    project=project_name,
+                    project=qa_project.target,
                     scope="target",
                     engine=engine,
                     force=True,
@@ -303,10 +352,19 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
                 if not self.dryrun:
                     for repository in enable_repositories:
                         self.set_project_flag(
-                            project_name, "build", repository, "enable"
+                            qa_project.target, "build", repository, "enable"
                         )
 
-        return True, "pkglistgen ran successfully"
+        if staging_project_available:
+            return True, "pkglistgen ran successfully"
+        else:
+            self.logger.info(
+                "Staging bot didn't create the QA project, but accepted the review. Nothing to do."
+            )
+            return (
+                True,
+                "Staging bot didn't create the QA project, but accepted the review. Nothing to do.",
+            )
 
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
