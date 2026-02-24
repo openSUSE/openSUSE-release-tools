@@ -9,6 +9,7 @@ import sys
 import re
 from pathlib import Path
 from typing import List, Set
+from cmdln import CmdlnOptionParser
 
 import ldap
 import requests
@@ -23,6 +24,8 @@ MAINTAINERSHIP_FILE = "_maintainership.json"
 WHITELIST_FILE = "whitelist_maintainership.json"
 LDAP_SERVER = "pan.suse.de"
 
+class MissingPRError(ValueError):
+    pass
 
 class CheckerBugowner(ReviewBot.ReviewBot):
 
@@ -233,7 +236,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
         for package in referenced_packages:
             if package not in changed_submodules:
-                raise ValueError(f"A PR for {package} is mentioned in the description but no changed submodules were detected. Aborting...")
+                raise MissingPRError(f"A PR for {package} is mentioned in the description but no changed submodules were detected.")
 
         # Convert list of package names to a set for fast lookups
         maintained = set(self.maintained.keys())
@@ -364,15 +367,20 @@ class CheckerBugowner(ReviewBot.ReviewBot):
             f"{head_project}/{head_package}@{head_revision} -> {base_project}/{base_package}@{base_revision}"
         )
 
-        validated_packages, orphans = self._gitea_validate(
-            referenced_packages,
-            head_project,
-            head_package,
-            head_revision,
-            base_project,
-            base_package,
-            base_revision,
-        )
+        try:
+            validated_packages, orphans = self._gitea_validate(
+                referenced_packages,
+                head_project,
+                head_package,
+                head_revision,
+                base_project,
+                base_package,
+                base_revision,
+            )
+        except MissingPRError as e:
+            self.review_messages["declined"] = e.args[0] + f" Please either edit the description to drop the mentioned PR or sumbit a " + \
+                                               "submodule change for it. Then request a new review."
+            return False
 
         is_valid = len(orphans) == 0
 
