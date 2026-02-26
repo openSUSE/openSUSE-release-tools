@@ -128,14 +128,20 @@ class CheckerBugowner(ReviewBot.ReviewBot):
                 local_dir, revision, remote=remote, remote_url=remote_url
             )
 
+    def _git_remote_name(self, repo, project: str, url: str) -> str:
+        if repo.remote("origin").url == url:
+            return "origin"
+        return project
+
     def _diff_submodules(
         self, repo, base_revision, head_project, head_package, head_revision
     ):
+        head_url = self.scm.package_url(head_project, head_package)
         diff, rebased = self.scm.submodule_diff(
             repo,
             base_revision,
             head_project,
-            self.scm.package_url(head_project, head_package),
+            head_url,
             head_revision,
         )
 
@@ -214,6 +220,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
     def _gitea_validate(
         self,
+        repo,
         referenced_packages: List[str],
         head_project: str,
         head_package: str,
@@ -225,8 +232,6 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         referenced_packages = set(referenced_packages)
         validated_packages = set()
         orphan_packages = set()
-
-        repo = self._gitea_checkout(base_project, base_package, revision=base_revision)
 
         new_submodules, updated_submodules, deleted_submodules, rebased = self._diff_submodules(
             repo, base_revision, head_project, head_package, head_revision
@@ -378,10 +383,16 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         self._cache_clear(self.ldap_cache)
         self._cache_clear(self.email_cache)
 
+        # Get the target branch or commit
         if self.request.actions[0].tgt_branch:
             base_revision = self.request.actions[0].tgt_branch
         else:
             base_revision = self.request.actions[0].tgt_rev
+
+        # Create the repo in case it doesn't exist
+        # or checkout the base revision in case it does
+        repo = self._gitea_checkout(base_project, base_package, revision=base_revision)
+        head_remote_name = self._git_remote_name(repo, head_project, self.scm.package_url(head_project, head_package))
 
         if self.request.actions[0].src_branch:
             head_revision = self.request.actions[0].src_branch
@@ -394,12 +405,14 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         referenced_packages = [pr.split("/")[1].split("!")[0] for pr in referenced_prs]
 
         self.logger.debug(
-            f"{head_project}/{head_package}@{head_revision} -> {base_project}/{base_package}@{base_revision}"
+            f"{head_remote_name}/{head_package}@{head_revision} -> {base_project}/{base_package}@{base_revision}"
         )
 
+        # Validate the diff
         repo, validated_packages, orphans, warnings = self._gitea_validate(
+            repo,
             referenced_packages,
-            head_project,
+            head_remote_name,
             head_package,
             head_revision,
             base_project,
@@ -427,6 +440,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         # Cleanup branches
         self.scm.checkout_revision(repo, base_revision)
         repo.git.branch("-D", head_revision)
+        repo.git.branch("-D", "-r", f"{head_remote_name}/{head_revision}")
 
         return is_valid
 

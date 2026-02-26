@@ -25,8 +25,6 @@ class Git(scm.base.SCMBase):
         head_remote_url: str,
         head_commit: str,
     ):
-        if repo.remote("origin").url == head_remote_url:
-            head_remote_name = "origin"
 
         repo = Git.checkout_revision(repo, base_commit)
 
