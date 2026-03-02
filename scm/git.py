@@ -24,25 +24,29 @@ class Git(scm.base.SCMBase):
         head_remote_name: str,
         head_remote_url: str,
         head_commit: str,
+        head_revision_name=None,
     ):
 
         repo = Git.checkout_revision(repo, base_commit)
 
-        repo = Git.checkout_revision(repo, head_commit, remote=head_remote_name, remote_url=head_remote_url)
+        repo = Git.checkout_revision(
+            repo, head_commit, revision_name=head_revision_name, remote=head_remote_name, remote_url=head_remote_url
+        )
+        head_revision = head_revision_name if head_revision_name else head_commit
 
         try:
             # If the change can be fast-forwarded on top of base, we can try checking exactly the
             # changes that are brought in.
             repo.git.rebase(base_commit)
             rebased = True
-            self.logger.debug(f"Successfully rebased {head_commit} upon {base_commit}.")
+            self.logger.info(f"Successfully rebased {head_revision} upon {base_commit}.")
         except git.exc.GitCommandError:
             repo.git.rebase("--abort")
             rebased = False
 
         # TODO: It'd be awesome to use GitPython's structured DiffIndex objects, but the library still does not support sha256 object
         # format. See https://github.com/gitpython-developers/GitPython/issues/1475
-        diff = repo.git.diff("--submodule", f"{base_commit}..{head_commit}")
+        diff = repo.git.diff("--submodule", f"{base_commit}..{head_revision}")
 
         # Cleanup remote
         if head_remote_name != "origin":
@@ -51,7 +55,7 @@ class Git(scm.base.SCMBase):
         return diff, rebased
 
     @staticmethod
-    def checkout_revision(repo, revision: str, remote="origin", remote_url=None, fetch=True):
+    def checkout_revision(repo, revision: str, revision_name=None, remote="origin", remote_url=None, fetch=True):
         if not isinstance(repo, git.Repo):
             repo = git.Repo(repo)
         if fetch:
@@ -59,7 +63,15 @@ class Git(scm.base.SCMBase):
                 repo.create_remote(remote, remote_url)
 
             repo.remote(remote).fetch([revision])
-        repo.git.checkout(revision)
+
+        if revision_name is not None:
+            if revision_name not in [b.name for b in repo.branches]:
+                repo.git.checkout("-b", revision_name, f"{remote}/{revision}")
+            else:
+                repo.git.switch(revision_name)
+        else:
+            repo.git.checkout(revision, "--")
+
         return repo
 
     def package_url(self, target_project: str, target_package: str) -> str:
@@ -69,8 +81,9 @@ class Git(scm.base.SCMBase):
         repo = git.Repo.clone_from(url, dstpath)
 
         revision = kwargs.get("revision")
+        revision_name = kwargs.get("revision_name")
         if revision is not None:
-            Git.checkout_revision(repo, revision)
+            Git.checkout_revision(repo, revision, revision_name=revision_name)
 
         return repo
 

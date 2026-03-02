@@ -107,7 +107,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         return self.existing_url(url)
 
     def _gitea_checkout(
-        self, owner: str, repo: str, revision: str, remote="origin", remote_url=None
+        self, owner: str, repo: str, revision: str, revision_name=None, remote="origin", remote_url=None
     ):
         local_dir = Path(
             os.path.expanduser(
@@ -125,7 +125,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
             )
         else:
             return self.scm.checkout_revision(
-                local_dir, revision, remote=remote, remote_url=remote_url
+                local_dir, revision, revision_name=revision_name, remote=remote, remote_url=remote_url
             )
 
     def _git_remote_name(self, repo, project: str, url: str) -> str:
@@ -134,7 +134,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         return project
 
     def _diff_submodules(
-        self, repo, base_revision, head_project, head_package, head_revision
+        self, repo, base_revision, head_project, head_package, head_revision, head_revision_name=None
     ):
         head_url = self.scm.package_url(head_project, head_package)
         diff, rebased = self.scm.submodule_diff(
@@ -143,6 +143,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
             head_project,
             head_url,
             head_revision,
+            head_revision_name=head_revision_name
         )
 
         new_submodules = set()
@@ -228,13 +229,14 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         base_project: str,
         base_package: str,
         base_revision: str,
+        head_revision_name=None,
     ) -> bool:
         referenced_packages = set(referenced_packages)
         validated_packages = set()
         orphan_packages = set()
 
         new_submodules, updated_submodules, deleted_submodules, rebased = self._diff_submodules(
-            repo, base_revision, head_project, head_package, head_revision
+            repo, base_revision, head_project, head_package, head_revision, head_revision_name=head_revision_name
         )
         # Set of packages that changed between base and HEAD
         changed_submodules = new_submodules.union(updated_submodules)
@@ -244,6 +246,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
             base_project,
             base_package,
             revision=head_revision,
+            revision_name=head_revision_name,
             remote=head_project,
             remote_url=self.scm.package_url(head_project, head_package),
         )
@@ -397,6 +400,11 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         if self.request.actions[0].src_branch:
             head_revision = self.request.actions[0].src_branch
 
+        if head_revision == base_revision:
+            head_revision_name = f"{head_project}_{head_package}_{head_revision}"
+        else:
+            head_revision_name = None
+
         referenced_prs = [
             line
             for line in self.request.description.splitlines()
@@ -418,6 +426,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
             base_project,
             base_package,
             base_revision,
+            head_revision_name=head_revision_name
         )
 
         is_valid = len(orphans) == 0
@@ -439,7 +448,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
         # Cleanup branches
         self.scm.checkout_revision(repo, base_revision)
-        repo.git.branch("-D", head_revision)
+        repo.git.branch("-D", head_revision_name if head_revision_name else head_revision)
         repo.git.branch("-D", "-r", f"{head_remote_name}/{head_revision}")
 
         return is_valid
