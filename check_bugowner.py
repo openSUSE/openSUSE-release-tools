@@ -434,13 +434,16 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         review_warnings = "\n".join("**Warning**: " + w for w in warnings) + "\n\n"
 
         if is_valid:
+            if validated_packages:
+                packages_message = f"The following packages were checked and are covered either in `{MAINTAINERSHIP_FILE}`" + \
+                    f" or `{WHITELIST_FILE}`:\n\n" + "\n".join(
+                    f" - `{p}`: " +
+                    self._gitea_package_maintainer(p) for p in validated_packages)
+            else:
+                packages_message = ""
+
             self.review_messages["accepted"] = review_warnings + \
-                "The change does not introduce orphan packages. " + \
-                f"The following packages were checked and are covered either in `{MAINTAINERSHIP_FILE}`" + \
-                f" or `{WHITELIST_FILE}`:\n\n" + "\n".join(
-                f" - `{p}`: " +
-                self._gitea_package_maintainer(p) for p in validated_packages)
-            self.review_messages["accepted"] = self.review_messages["accepted"] + "\n"
+                "The change does not introduce orphan packages. " + packages_message
         else:
             self.review_messages["declined"] = review_warnings + \
                 f"Missing maintainership information for {', '.join(orphans)}." + \
