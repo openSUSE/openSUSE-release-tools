@@ -341,14 +341,17 @@ class CheckerBugowner(ReviewBot.ReviewBot):
                     owner_attrs = self._ldap_active_user(email)
 
                     # Get users that were not found on LDAP.
-                    not_found_users = [
-                        e for e, s in zip(email, owner_attrs)
-                        if s is None
-                    ]
+                    not_found_users = []
+                    for o, e, s in zip(owner, email, owner_attrs):
+                        if s is None:
+                            if e is None:
+                                not_found_users.append(o)
+                            else:
+                                not_found_users.append(e)
 
                     if not_found_users:
                         users = ', '.join(not_found_users)
-                        self.logger.warning(f"The following emails were not found on LDAP: {users}.")
+                        self.logger.warning(f"The following users were not found on LDAP: {users}.")
 
                     # Get inactive users
                     inactive_users = [
@@ -368,11 +371,10 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
                 except ldap.SERVER_DOWN:
                     self.logger.warning(f"LDAP server {LDAP_SERVER} is down...")
-
-            return f"`{owner}`"
+                    return f"`{owner}`"
         else:
-            maintainer = "`whitelisted`"
-        return maintainer
+            return "`whitelisted`"
+        raise ValueError(f"Control should never reach here")
 
     def _gitea_check_source_submission(
         self,
@@ -435,10 +437,13 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
         if is_valid:
             if validated_packages:
+                package_maintainers = [self._gitea_package_maintainer(p) for p in validated_packages]
+
+                validate_packages_message = "\n".join(
+                    f" - `{p}`: {m}" for p, m in zip(validated_packages, package_maintainers) if m
+                )
                 packages_message = f"The following packages were checked and are covered either in `{MAINTAINERSHIP_FILE}`" + \
-                    f" or `{WHITELIST_FILE}`:\n\n" + "\n".join(
-                    f" - `{p}`: " +
-                    self._gitea_package_maintainer(p) for p in validated_packages)
+                    f" or `{WHITELIST_FILE}`:\n\n" + validate_packages_message
             else:
                 packages_message = ""
 
