@@ -369,8 +369,8 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
                     return f"`{owner}`.{ldap_status}"
 
-                except ldap.SERVER_DOWN:
-                    self.logger.warning(f"LDAP server {LDAP_SERVER} is down...")
+                except (ldap.SERVER_DOWN, ldap.UNAVAILABLE) as e:
+                    self.logger.warning(f"LDAP server {LDAP_SERVER} is unreachable because of {e}")
                     return f"`{owner}`"
         else:
             return "`whitelisted`"
