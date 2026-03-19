@@ -114,7 +114,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         elif "HOME" in os.environ.keys():
             return Path(os.environ["HOME"], ".cache", "bugowner_checker_git")
         else:
-            raise ValueError(f"Set the OSRT_CHECK_BUGOWNER_CACHE_HOME variable to a directory where check_bugowner can write its cache")
+            raise ValueError("Set the OSRT_CHECK_BUGOWNER_CACHE_HOME variable to a directory where check_bugowner can write its cache")
 
     def _gitea_checkout(
         self, owner: str, repo: str, revision: str, revision_name=None, remote="origin", remote_url=None
@@ -319,7 +319,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
                         self._cache_set(self.ldap_cache, e, attrs)
                     else:
                         self._cache_set(self.ldap_cache, e, None)
-                    
+
                 active_statuses.append(self._cache_get(self.ldap_cache, e))
 
         instance.unbind()
@@ -382,7 +382,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
         else:
             return "`whitelisted`"
-        raise ValueError(f"Control should never reach here")
+        raise ValueError("Control should never reach here")
 
     def _gitea_check_source_submission(
         self,
