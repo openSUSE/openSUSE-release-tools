@@ -106,14 +106,21 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         url = osc.core.makeurl(self.apiurl, ['source', project, package])
         return self.existing_url(url)
 
+    def _gitea_cache_dir(self):
+        if "OSRT_CHECK_BUGOWNER_CACHE_HOME" in os.environ.keys():
+            return Path(os.environ["OSRT_CHECK_BUGOWNER_CACHE_HOME"])
+        elif "XDG_CACHE_HOME" in os.environ.keys():
+            return Path(os.environ["XDG_CACHE_HOME"])
+        elif "HOME" in os.environ.keys():
+            return Path(os.environ["HOME"], ".cache", "bugowner_checker_git")
+        else:
+            raise ValueError(f"Set the OSRT_CHECK_BUGOWNER_CACHE_HOME variable to a directory where check_bugowner can write its cache")
+
     def _gitea_checkout(
         self, owner: str, repo: str, revision: str, revision_name=None, remote="origin", remote_url=None
     ):
-        local_dir = Path(
-            os.path.expanduser(
-                f"~/.cache/bugowner_checker_git/{owner}/{repo}"
-            )
-        )
+        local_dir = Path(self._gitea_cache_dir(), owner, repo)
+        self.logger.debug(f"Cache directory: {local_dir}")
 
         if not local_dir.is_dir():
             self.logger.info(f"directory {local_dir} does not exists, creating it.")
@@ -257,6 +264,8 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         if rebased:
             to_validate = changed_submodules
         else:
+            # If rebase failed, changed_submodules will contain a superset of the actual changes from the PR,
+            # so we rely only on the PR references in the description.
             to_validate = changed_submodules.intersection(referenced_packages)
 
         warnings = []
