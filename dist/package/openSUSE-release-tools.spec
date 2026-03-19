@@ -65,7 +65,6 @@ Requires:       python3-typing_extensions
 # Backport for py 3.6
 Requires:       python3-dataclasses
 %endif
-Requires:       python-ldap
 
 # Spec related requirements.
 Requires:       osclib = %{version}
@@ -121,6 +120,19 @@ Requires:       python3-GitPython
 
 %description scm
 VCS implementations used by scripts in %{name}.
+
+%package check-bugowner
+Summary:        Check bugowner review bot
+Group:          Development/Tools/Other
+Requires:       osclib = %{version}
+Requires:       python3-ldap
+Requires:       %{name}-plat
+Requires:       %{name}-scm
+BuildArch:      noarch
+
+%description check-bugowner
+Check bugowner review bot that checks whether a package has a bugowner and
+whether the bugowner account is still active.
 
 %package check-source
 Summary:        Check source review bot
@@ -447,6 +459,7 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/abichecker
 %exclude %{_datadir}/%{source_dir}/%{announcer_filename}
 %exclude %{_datadir}/%{source_dir}/check_maintenance_incidents.py
+%exclude %{_datadir}/%{source_dir}/check_bugowner.py
 %exclude %{_datadir}/%{source_dir}/check_source.py
 %exclude %{_datadir}/%{source_dir}/devel-project.py
 %exclude %{_datadir}/%{source_dir}/docker_publisher.py
@@ -494,6 +507,10 @@ exit 0
 
 %files scm
 %{python_sitelib}/scm/
+
+%files check-bugowner
+%{_bindir}/osrt-check_bugowner
+%{_datadir}/%{source_dir}/check_bugowner.py
 
 %files check-source
 %{_bindir}/osrt-check_source
