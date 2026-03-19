@@ -340,47 +340,46 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         if in_maintainership_json:
             owner = self.maintained[package]
             if self.ldap:
+                # Get owner email
+                email = self._gitea_email(owner)
+                self.logger.debug(f"{owner} -> {email}")
+
                 try:
-                    # Get owner email
-                    email = self._gitea_email(owner)
-
-                    self.logger.debug(f"{owner} -> {email}")
-
                     # Get owner active status
                     owner_attrs = self._ldap_active_user(email)
-
-                    # Get users that were not found on LDAP.
-                    not_found_users = []
-                    for o, e, s in zip(owner, email, owner_attrs):
-                        if s is None:
-                            if e is None:
-                                not_found_users.append(o)
-                            else:
-                                not_found_users.append(e)
-
-                    if not_found_users:
-                        users = ', '.join(not_found_users)
-                        self.logger.warning(f"The following users were not found on LDAP: {users}.")
-
-                    # Get inactive users
-                    inactive_users = [
-                        o for o, s in zip(owner, owner_attrs)
-                        if (s and "EMPLOYEESTATUS" in s.keys() and s["EMPLOYEESTATUS"][0] != b'Active')
-                    ]
-
-                    self.logger.debug(f"Inactive users: {inactive_users}")
-
-                    if inactive_users:
-                        users = ', '.join('`' + u + '`' for u in inactive_users if u)
-                        ldap_status = f" The following users are **not active** on LDAP: {users}"
-                    else:
-                        ldap_status = ""
-
-                    return f"`{owner}`.{ldap_status}"
-
                 except (ldap.SERVER_DOWN, ldap.UNAVAILABLE) as e:
                     self.logger.warning(f"LDAP server {LDAP_SERVER} is unreachable because of {e}")
                     return f"`{owner}`"
+
+                # Get users that were not found on LDAP.
+                not_found_users = []
+                for o, e, s in zip(owner, email, owner_attrs):
+                    if s is None:
+                        if e is None:
+                            not_found_users.append(o)
+                        else:
+                            not_found_users.append(e)
+
+                if not_found_users:
+                    users = ', '.join(not_found_users)
+                    self.logger.warning(f"The following users were not found on LDAP: {users}.")
+
+                # Get inactive users
+                inactive_users = [
+                    o for o, s in zip(owner, owner_attrs)
+                    if (s and "EMPLOYEESTATUS" in s.keys() and s["EMPLOYEESTATUS"][0] != b'Active')
+                ]
+
+                self.logger.debug(f"Inactive users: {inactive_users}")
+
+                if inactive_users:
+                    users = ', '.join('`' + u + '`' for u in inactive_users if u)
+                    ldap_status = f" The following users are **not active** on LDAP: {users}"
+                else:
+                    ldap_status = ""
+
+                return f"`{owner}`.{ldap_status}"
+
         else:
             return "`whitelisted`"
         raise ValueError(f"Control should never reach here")
