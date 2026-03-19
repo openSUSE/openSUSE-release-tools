@@ -19,7 +19,7 @@
 %global __provides_exclude ^perl.*
 %define source_dir openSUSE-release-tools
 %define announcer_filename factory-package-news
-%define services osrt-slsa.target osrt-relpkggen@.timer osrt-relpkggen@.service osrt-pkglistgen@.timer osrt-pkglistgen@.service
+%define services osrt-slsa.target osrt-check-bugowner-gitea@.service osrt-relpkggen@.timer osrt-relpkggen@.service osrt-pkglistgen@.timer osrt-pkglistgen@.service
 Name:           openSUSE-release-tools
 Version:        0
 Release:        0
@@ -283,6 +283,7 @@ Summary:        Build service
 Group:          Development/Tools/Other
 # TODO Update requirements, but for now base deps.
 Requires:       %{name} = %{version}
+Requires:       openSUSE-release-tools-check-bugowner
 Requires:       openSUSE-release-tools-pkglistgen
 %sysusers_requires
 Recommends:     logrotate
@@ -359,6 +360,7 @@ rm slfo-packagelist-uploader.py metrics.py
 %build
 %make_build
 %sysusers_generate_pre slsa/osrt-slsa-user.conf %{name} %{name}.conf
+%sysusers_generate_pre slsa/osrt-staging-user.conf %{name} %{name}-staging.conf
 
 %install
 %make_install \
@@ -367,6 +369,7 @@ rm slfo-packagelist-uploader.py metrics.py
   VERSION="%{version}"
 
 install -Dpm0644 slsa/osrt-slsa-user.conf %{buildroot}%{_sysusersdir}/%{name}.conf
+install -Dpm0644 slsa/osrt-staging-user.conf %{buildroot}%{_sysusersdir}/%{name}-staging.conf
 
 for dir in plat scm; do
   mkdir -p %{buildroot}%{python_sitelib}/$dir
@@ -535,6 +538,9 @@ exit 0
 %{_datadir}/%{source_dir}/verify-repo-built-successful.py
 %{_sysconfdir}/openSUSE-release-tools/ibsapi
 %{_sysusersdir}/%{name}.conf
+%{_sysusersdir}/%{name}-staging.conf
+%{_unitdir}/osrt-check-bugowner-gitea@.service
+%{_unitdir}/osrt-check-bugowner-gitea@.timer
 %{_unitdir}/osrt-pkglistgen@.service
 %{_unitdir}/osrt-pkglistgen@.timer
 %{_unitdir}/osrt-relpkggen@.service
@@ -546,6 +552,8 @@ exit 0
 %dir %attr(750,osrt-slsa,osrt-slsa) %{_sharedstatedir}/osrt-slsa
 %dir %attr(750,osrt-slsa,osrt-slsa) %{_sharedstatedir}/osrt-slsa/pkglistgen
 %dir %attr(750,osrt-slsa,osrt-slsa) %{_sharedstatedir}/osrt-slsa/relpkggen
+%dir %attr(750,osrt-staging,osrt-staging) %{_sharedstatedir}/osrt-staging
+%dir %attr(750,osrt-staging,osrt-staging) %{_sharedstatedir}/osrt-staging/check-bugowner
 
 %files maintenance
 %{_bindir}/osrt-check_maintenance_incidents
