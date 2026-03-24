@@ -5,13 +5,13 @@ include Makefile.common
 pkgdata_BINS = $(shell find * -maxdepth 0 -executable -type f)
 pkgdata_SCRIPTS=$(wildcard *.py *.pl *.sh)
 pkgdata_SCRIPTS+=findfileconflicts publish_distro generate-release-packages verify-build-and-generatelists gocd/verify-repo-built-successful.py
-pkgdata_DATA+=bs_copy metrics osclib pkglistgen $(wildcard *.pm *.testcase)
+pkgdata_DATA+=bs_copy metrics osclib pkglistgen staginginstallchecker $(wildcard *.pm *.testcase)
 VERSION = "build-$(shell date +%F)"
 
 all:
 
 install:
-	install -d -m 755 $(DESTDIR)$(bindir) $(DESTDIR)$(pkgdatadir) $(DESTDIR)$(unitdir) $(DESTDIR)$(oscplugindir) $(DESTDIR)$(sysconfdir)/$(package_name) $(DESTDIR)$(grafana_provisioning_dir)/dashboards $(DESTDIR)$(grafana_provisioning_dir)/datasources $(DESTDIR)$(logdir)/$(package_name) $(DESTDIR)$(varlibdir)/osrt-staging/check-bugowner $(DESTDIR)$(varlibdir)/osrt-slsa/pkglistgen $(DESTDIR)$(varlibdir)/osrt-slsa/relpkggen
+	install -d -m 755 $(DESTDIR)$(bindir) $(DESTDIR)$(pkgdatadir) $(DESTDIR)$(unitdir) $(DESTDIR)$(oscplugindir) $(DESTDIR)$(sysconfdir)/$(package_name) $(DESTDIR)$(grafana_provisioning_dir)/dashboards $(DESTDIR)$(grafana_provisioning_dir)/datasources $(DESTDIR)$(logdir)/$(package_name) $(DESTDIR)$(varlibdir)/osrt-staging/check-bugowner $(DESTDIR)$(varlibdir)/osrt-staging/git-installcheck $(DESTDIR)$(varlibdir)/osrt-slsa/pkglistgen $(DESTDIR)$(varlibdir)/osrt-slsa/relpkggen
 	for i in $(pkgdata_SCRIPTS); do install -m 755 $$i $(DESTDIR)$(pkgdatadir); done
 	chmod 644 $(DESTDIR)$(pkgdatadir)/osc-*.py
 	for i in $(pkgdata_DATA); do cp -a $$i $(DESTDIR)$(pkgdatadir); done
