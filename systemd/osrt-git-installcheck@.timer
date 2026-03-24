@@ -1,0 +1,9 @@
+[Unit]
+Description=timer for osrt-git-installcheck on gitea running as %i
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=10min
+
+[Install]
+WantedBy=timers.target
