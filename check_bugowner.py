@@ -18,6 +18,7 @@ from urllib.error import HTTPError
 import osc.conf
 import osc.core
 import ReviewBot
+from plat.gitea import User
 
 http_GET = osc.core.http_GET
 MAINTAINERSHIP_FILE = "_maintainership.json"
@@ -105,6 +106,11 @@ class CheckerBugowner(ReviewBot.ReviewBot):
     def exists_in(self, project, package):
         url = osc.core.makeurl(self.apiurl, ['source', project, package])
         return self.existing_url(url)
+
+    def _get_gitea_user(self, name):
+        user_res = self.platform.api.get(f"users/{name}")
+        user_res.raise_for_status()
+        return User(user_res.json())
 
     def _gitea_cache_dir(self):
         if "OSRT_CHECK_BUGOWNER_CACHE_HOME" in os.environ.keys():
@@ -330,7 +336,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         for o in owner:
             if o and (o not in self._cache(self.email_cache).keys()):
                 try:
-                    self._cache_set(self.email_cache, o, self.platform.get_user(o).email)
+                    self._cache_set(self.email_cache, o, self._get_gitea_user(o).email)
                 except (HTTPError, requests.exceptions.HTTPError):
                     self._cache_set(self.email_cache, o, None)
         return [self._cache_get(self.email_cache, o) for o in owner]

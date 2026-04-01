@@ -42,11 +42,6 @@ class OBS(plat.base.PlatformBase):
         req.read(root)
         return req
 
-    def get_user(self, username):
-        res = self._get(('user', username))
-        root = ET.parse(res).getroot()
-        return req
-
     def get_project_config(self, project):
         return Config.get(self.apiurl, project)
 
