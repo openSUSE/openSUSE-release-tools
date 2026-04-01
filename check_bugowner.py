@@ -424,10 +424,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         if self.request.actions[0].src_branch:
             head_revision = self.request.actions[0].src_branch
 
-        if head_revision == base_revision:
-            head_revision_name = f"{head_project}_{head_package}_{head_revision}"
-        else:
-            head_revision_name = None
+        head_revision_name = f"{head_project}_{head_package}_{head_revision}"
 
         referenced_prs = [
             line
@@ -478,7 +475,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
         # Cleanup branches
         self.scm.checkout_revision(repo, base_revision)
-        repo.git.branch("-D", head_revision_name if head_revision_name else head_revision)
+        repo.git.branch("-D", head_revision_name)
         repo.git.branch("-D", "-r", f"{head_remote_name}/{head_revision}")
 
         return is_valid
