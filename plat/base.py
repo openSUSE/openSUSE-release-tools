@@ -60,3 +60,15 @@ class PlatformBase(metaclass=abc.ABCMeta):
     def change_review_state(self, req, newstate, message, **kwargs):
         """Change review state for a request"""
         pass
+
+    @abc.abstractmethod
+    def get_user(self, name):
+        """Get user information by username
+
+        Args:
+            name: Username to look up
+
+        Returns:
+            User object with at least an 'email' attribute
+        """
+        pass
