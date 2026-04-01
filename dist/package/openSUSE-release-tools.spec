@@ -537,6 +537,7 @@ exit 0
 %{_datadir}/%{source_dir}/verify-build-and-generatelists
 %{_datadir}/%{source_dir}/verify-repo-built-successful.py
 %{_sysconfdir}/openSUSE-release-tools/ibsapi
+%{_sysconfdir}/openSUSE-release-tools/osrt-check-bugowner-gitea.env.in
 %{_sysusersdir}/%{name}.conf
 %{_sysusersdir}/%{name}-staging.conf
 %{_unitdir}/osrt-check-bugowner-gitea@.service

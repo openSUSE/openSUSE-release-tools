@@ -23,7 +23,7 @@ from plat.gitea import User
 http_GET = osc.core.http_GET
 MAINTAINERSHIP_FILE = "_maintainership.json"
 WHITELIST_FILE = "whitelist_maintainership.json"
-LDAP_SERVER = "pan.suse.de"
+LDAP_SERVER = os.environ.get("OSRT_BUGOWNER_LDAP_SERVER", None)
 
 
 class CheckerBugowner(ReviewBot.ReviewBot):
@@ -113,14 +113,14 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         return User(user_res.json())
 
     def _gitea_cache_dir(self):
-        if "OSRT_CHECK_BUGOWNER_CACHE_HOME" in os.environ.keys():
-            return Path(os.environ["OSRT_CHECK_BUGOWNER_CACHE_HOME"])
+        if "OSRT_BUGOWNER_CACHE_HOME" in os.environ.keys():
+            return Path(os.environ["OSRT_BUGOWNER_CACHE_HOME"])
         elif "XDG_CACHE_HOME" in os.environ.keys():
-            return Path(os.environ["XDG_CACHE_HOME"])
+            return Path(os.environ["XDG_CACHE_HOME"], "bugowner_checker_git")
         elif "HOME" in os.environ.keys():
             return Path(os.environ["HOME"], ".cache", "bugowner_checker_git")
         else:
-            raise ValueError("Set the OSRT_CHECK_BUGOWNER_CACHE_HOME variable to a directory where check_bugowner can write its cache")
+            raise ValueError("Set the OSRT_BUGOWNER_CACHE_HOME variable to a directory where check_bugowner can write its cache")
 
     def _gitea_checkout(
         self, owner: str, repo: str, revision: str, revision_name=None, remote="origin", remote_url=None
@@ -295,19 +295,23 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         return repo, validated_packages, orphan_packages, warnings
 
     def _ldap_active_user(self, email):
+        if not LDAP_SERVER:
+            return []
+
         instance = ldap.initialize(f"ldap://{LDAP_SERVER}")
 
         active_statuses = []
         for e in email:
             if e:
                 if e not in self._cache(self.ldap_cache).keys():
-                    result = instance.search_s(
+                    result = instance.search_st(
                         "OU=User accounts,DC=corp,DC=suse,DC=com",
                         ldap.SCOPE_SUBTREE,
                         filterstr=f"(mail={e})",
                         # We only need to know whether or not the submitter
                         # has an active account.
-                        attrlist=["EMPLOYEESTATUS"]
+                        attrlist=["EMPLOYEESTATUS"],
+                        timeout=int(os.environ.get("OSRT_BUGOWNER_LDAP_TIMEOUT", "30"))
                     )
 
                     # In case the search fails:
@@ -353,7 +357,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
                 try:
                     # Get owner active status
                     owner_attrs = self._ldap_active_user(email)
-                except (ldap.SERVER_DOWN, ldap.UNAVAILABLE) as e:
+                except (ldap.SERVER_DOWN, ldap.UNAVAILABLE, ldap.TIMEOUT) as e:
                     self.logger.warning(f"LDAP server {LDAP_SERVER} is unreachable because of {e}")
                     return f"`{owner}`"
 
