@@ -275,9 +275,13 @@ class CheckerBugowner(ReviewBot.ReviewBot):
             to_validate = changed_submodules.intersection(referenced_packages)
 
         warnings = []
+        changed_submodules_downcased = {s.lower() for s in changed_submodules}
         # Validate referencing PRs
         for package in referenced_packages:
-            if package not in changed_submodules:
+            # Some PR references contain downcased package names,
+            # this is because they are supposed to be case insensitive for Gitea.
+            # This test checks lowercase PR references and submodule names.
+            if package.lower() not in changed_submodules_downcased:
                 msg = f"A PR for {package} is mentioned in the description but no changed submodules were detected."
                 self.logger.warning(msg)
                 warnings.append(msg)
