@@ -923,7 +923,8 @@ class CommandLineInterface(cmdln.Cmdln):
                           help="Gitea API url (only relevent when platform is gitea)")
         parser.add_option('--git-base-url', metavar="URL",
                           default="https://src.opensuse.org",
-                          help="Base URL for git checkouts (only relevent when scm is git)")
+                          help="Base URL for git checkouts (only relevent when scm is git). The GIT_BASE_URL environment variable"
+                          " overrides this option")
 
         return parser
 
@@ -982,7 +983,7 @@ class CommandLineInterface(cmdln.Cmdln):
                           scm_type=self.options.scm_type,
                           platform_type=self.options.platform_type,
                           gitea_url=self.options.gitea_url,
-                          git_base_url=self.options.git_base_url)
+                          git_base_url=os.environ.get("GIT_BASE_URL", self.options.git_base_url))
 
     def do_id(self, subcmd, opts, *args):
         """${cmd_name}: check the specified request ids
