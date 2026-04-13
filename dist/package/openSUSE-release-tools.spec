@@ -524,6 +524,8 @@ exit 0
 %{_datadir}/%{source_dir}/slfo-packagelist-uploader.py
 %endif
 %{_datadir}/%{source_dir}/check_source.py
+%{_unitdir}/osrt-check-source-gitea@.service
+%{_unitdir}/osrt-check-source-gitea@.timer
 
 %files docker-publisher
 %{_bindir}/osrt-docker_publisher
