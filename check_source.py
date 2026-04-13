@@ -81,6 +81,10 @@ class CheckSource(ReviewBot.ReviewBot):
             # It might make sense to supersede maintbot, but for now.
             self.skip_add_reviews = True
 
+        # allow forks to be named differently
+        if self.platform_type == "GITEA":
+            self.in_air_rename_allow = True
+
     def is_good_name(self, package: Optional[str], target_package: Optional[str]) -> bool:
         self.logger.debug(f"is_good_name {package} <-> {target_package}")
         if target_package is None:
