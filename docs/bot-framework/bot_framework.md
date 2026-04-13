@@ -109,7 +109,7 @@ The Platform layer provides an abstraction for interacting with different collab
         Common kwargs:
             review_user: Filter by reviewer username
             review_group: Filter by reviewer group
-        Returns: List/generator of Request objects
+        Returns: Generator of Request objects
 
     can_accept_review(req, **kwargs) - Check whether it's possible to accept review for a request
         Parameters:

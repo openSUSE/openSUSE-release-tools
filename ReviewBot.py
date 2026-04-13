@@ -691,7 +691,7 @@ class ReviewBot(object):
         return self.platform.can_accept_review(req, review_user=self.review_user, review_group=self.review_group)
 
     def set_request_ids_search_review(self):
-        self.requests = self.platform.search_review(review_user=self.review_user, review_group=self.review_group)
+        self.requests = list(self.platform.search_review(review_user=self.review_user, review_group=self.review_group))
 
     # also used by openqabot
     def ids_project(self, project, typename):
