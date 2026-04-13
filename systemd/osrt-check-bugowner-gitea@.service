@@ -1,0 +1,17 @@
+[Unit]
+PartOf=osrt-slsa.target
+Description=service for osrt-check_bugowner on gitea running as %i
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=osrt-staging
+SyslogIdentifier=osrt-slsa
+EnvironmentFile=/etc/default/osrt-check-bugowner-gitea-%i.env
+Environment="OSRT_BUGOWNER_CACHE_HOME=/var/lib/osrt-staging/check-bugowner"
+WorkingDirectory=/var/lib/osrt-staging/check-bugowner
+ExecStartPre=/bin/bash -xc '/usr/bin/systemctl is-active --quiet osrt-check-bugowner-gitea@%i.service && exit 1 || exit 0'
+ExecStart=/usr/bin/osrt-check_bugowner --scm=git --platform=gitea --gitea-url="${GITEA_URL}" --user="%i" --verbose --ldap review
+
+[Install]
+WantedBy=osrt-slsa.target

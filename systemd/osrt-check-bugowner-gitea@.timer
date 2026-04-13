@@ -1,0 +1,10 @@
+[Unit]
+Description=timer for osrt-check_bugowner on gitea running as %i
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

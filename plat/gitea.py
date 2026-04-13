@@ -230,6 +230,12 @@ class ProjectConfig:
         return default
 
 
+class User:
+    def __init__(self, json):
+        self.id = json["id"]
+        self.email = json["email"]
+
+
 class Gitea(plat.base.PlatformBase):
     """Platform interface implementation for Gitea"""
     def __init__(self, logger, url):
