@@ -483,8 +483,10 @@ class CheckerBugowner(ReviewBot.ReviewBot):
     def check_source_submission(self, src_project, src_package, src_rev, target_project, target_package):
         if self.platform.name == "GITEA":
             return self._gitea_check_source_submission(src_project, src_package, src_rev, target_project, target_package)
-        else:
+        elif self.platform.name == "OBS":
             return self._obs_check_source_submission(src_project, src_package, src_rev, target_project, target_package)
+        else:
+            raise RuntimeError(f'invalid platform: {self.platform.name}')
 
 
 class CommandLineInterface(ReviewBot.CommandLineInterface):
