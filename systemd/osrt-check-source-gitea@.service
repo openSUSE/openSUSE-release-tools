@@ -7,7 +7,7 @@ Type=oneshot
 Group=users
 User=osrt-check-source
 EnvironmentFile=/etc/default/osrt-check-source-gitea-%i.env
-ExecStart=/usr/bin/osrt-check_source --scm=git --platform=gitea --gitea-url="https://${GITEA_DOMAIN}"  --git-base-url="https://${GITEA_BOT_USER}:${GITEA_ACCESS_TOKEN}@${GITEA_DOMAIN}" --user=%i review
+ExecStart=/usr/bin/osrt-check_source --scm=git --platform=gitea --gitea-url="https://${GITEA_DOMAIN}" --git-base-url="https://${GITEA_BOT_USER}:${GITEA_ACCESS_TOKEN}@${GITEA_DOMAIN}" --user=%i review
 
 [Install]
 WantedBy=multi-user.target
