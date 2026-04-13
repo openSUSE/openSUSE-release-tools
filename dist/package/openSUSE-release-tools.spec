@@ -126,8 +126,9 @@ Summary:        Check bugowner review bot
 Group:          Development/Tools/Other
 Requires:       osclib = %{version}
 Requires:       python3-ldap
-Requires:       %{name}-plat
-Requires:       %{name}-scm
+Requires:       %{name} = %{version}
+Requires:       %{name}-plat = %{version}
+Requires:       %{name}-scm = %{version}
 BuildArch:      noarch
 
 %description check-bugowner
@@ -142,8 +143,9 @@ Requires:       obs-service-download_files
 Requires:       obs-service-source_validator
 Requires:       osclib = %{version}
 Requires:       perl-Text-Diff
-Requires:       %{name}-plat
-Requires:       %{name}-scm
+Requires:       %{name} = %{version}
+Requires:       %{name}-plat = %{version}
+Requires:       %{name}-scm = %{version}
 Requires(pre):  shadow
 BuildArch:      noarch
 
