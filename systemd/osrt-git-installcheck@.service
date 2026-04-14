@@ -1,0 +1,16 @@
+[Unit]
+PartOf=osrt-slsa.target
+Description=service for osrt-git-installcheck on gitea running as %i
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=osrt-staging
+SyslogIdentifier=osrt-slsa
+EnvironmentFile=/etc/default/osrt-git-installcheck.env.%i
+WorkingDirectory=/var/lib/osrt-staging/git-installcheck
+ExecStartPre=/bin/bash -xc '/usr/bin/systemctl is-active --quiet osrt-git-installcheck@%i.service && exit 1 || exit 0'
+ExecStart=/usr/bin/osrt-git-installcheck --scm=git --platform=gitea --git-allow-repos="${GIT_ALLOW_REPOS}" --gitea-url="${GITEA_URL}" --user="%i" review
+
+[Install]
+WantedBy=osrt-slsa.target

@@ -19,7 +19,7 @@
 %global __provides_exclude ^perl.*
 %define source_dir openSUSE-release-tools
 %define announcer_filename factory-package-news
-%define services osrt-slsa.target osrt-check-bugowner-gitea@.service osrt-relpkggen@.timer osrt-relpkggen@.service osrt-pkglistgen@.timer osrt-pkglistgen@.service
+%define services osrt-slsa.target osrt-check-bugowner-gitea@.service osrt-git-installcheck@.service osrt-relpkggen@.timer osrt-relpkggen@.service osrt-pkglistgen@.timer osrt-pkglistgen@.service
 Name:           openSUSE-release-tools
 Version:        0
 Release:        0
@@ -240,6 +240,8 @@ Requires:       build
 # TODO Update requirements.
 Requires:       osclib = %{version}
 Requires:       perl-XML-Simple
+Requires:       openSUSE-release-tools-scm = %{version}
+Requires:       openSUSE-release-tools-plat = %{version}
 Requires(pre):  shadow
 BuildArch:      noarch
 
@@ -287,6 +289,7 @@ Group:          Development/Tools/Other
 Requires:       %{name} = %{version}
 Requires:       openSUSE-release-tools-check-bugowner
 Requires:       openSUSE-release-tools-pkglistgen
+Requires:       openSUSE-release-tools-repo-checker
 %sysusers_requires
 Recommends:     logrotate
 BuildArch:      noarch
@@ -474,6 +477,7 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/metrics_release.py
 %exclude %{_datadir}/%{source_dir}/origin-manager.py
 %exclude %{_bindir}/osrt-staging-report
+%exclude %{_datadir}/%{source_dir}/staginginstallchecker
 %exclude %{_datadir}/%{source_dir}/pkglistgen
 %exclude %{_datadir}/%{source_dir}/pkglistgen.py
 %exclude %{_datadir}/%{source_dir}/maintenance-installcheck.py
@@ -542,10 +546,13 @@ exit 0
 %{_datadir}/%{source_dir}/verify-repo-built-successful.py
 %{_sysconfdir}/openSUSE-release-tools/ibsapi
 %{_sysconfdir}/openSUSE-release-tools/osrt-check-bugowner-gitea.env.in
+%{_sysconfdir}/openSUSE-release-tools/osrt-git-installcheck.env.in
 %{_sysusersdir}/%{name}.conf
 %{_sysusersdir}/%{name}-staging.conf
 %{_unitdir}/osrt-check-bugowner-gitea@.service
 %{_unitdir}/osrt-check-bugowner-gitea@.timer
+%{_unitdir}/osrt-git-installcheck@.service
+%{_unitdir}/osrt-git-installcheck@.timer
 %{_unitdir}/osrt-pkglistgen@.service
 %{_unitdir}/osrt-pkglistgen@.timer
 %{_unitdir}/osrt-relpkggen@.service
@@ -559,6 +566,7 @@ exit 0
 %dir %attr(750,osrt-slsa,osrt-slsa) %{_sharedstatedir}/osrt-slsa/relpkggen
 %dir %attr(750,osrt-staging,osrt-staging) %{_sharedstatedir}/osrt-staging
 %dir %attr(750,osrt-staging,osrt-staging) %{_sharedstatedir}/osrt-staging/check-bugowner
+%dir %attr(750,osrt-staging,osrt-staging) %{_sharedstatedir}/osrt-staging/git-installcheck
 
 %files maintenance
 %{_bindir}/osrt-check_maintenance_incidents
@@ -608,9 +616,11 @@ exit 0
 %files repo-checker
 %{_bindir}/osrt-project-installcheck
 %{_bindir}/osrt-staging-installcheck
+%{_bindir}/osrt-git-installcheck
 %{_bindir}/osrt-findfileconflicts
 %{_bindir}/osrt-maintenance-installcheck
 %{_bindir}/osrt-write_repo_susetags_file
+%{_datadir}/%{source_dir}/staginginstallchecker
 %{_datadir}/%{source_dir}/project-installcheck.py
 %{_datadir}/%{source_dir}/findfileconflicts
 %{_datadir}/%{source_dir}/write_repo_susetags_file.pl
