@@ -135,16 +135,17 @@ class CheckSource(ReviewBot.ReviewBot):
 
         return ret
 
-    def check_source_submission(
+    def check_source_submission_v2(
             self,
             source_project: str,
             source_package: str,
             source_revision: str,
             target_project: str,
-            target_package: str
+            target_package: str,
+            target_rev: Optional[str]
     ) -> bool:
-        super(CheckSource, self).check_source_submission(source_project,
-                                                         source_package, source_revision, target_project, target_package)
+        super(CheckSource, self).check_source_submission_v2(source_project,
+                                                            source_package, source_revision, target_project, target_package, target_rev)
         self.target_project_config(target_project)
 
         if self.single_action_require and len(self.request.actions) != 1:
@@ -273,8 +274,8 @@ class CheckSource(ReviewBot.ReviewBot):
         os.chdir(copath)
 
         try:
-            CheckSource.checkout_package(self.scm, target_project, target_package, pathname=copath,
-                                         server_service_files=True, expand_link=True)
+            CheckSource.checkout_package(self.scm, target_project, target_package, revision=target_rev,
+                                         pathname=copath, server_service_files=True, expand_link=True)
             os.rename(target_package, '_old')
         except HTTPError as e:
             if e.code == 404:

@@ -628,9 +628,23 @@ class ReviewBot(object):
         return self.request_default_return
 
     def check_source_submission(self, src_project: str, src_package: str, src_rev: str, target_project: str, target_package: str) -> None:
+        target_rev = None
+        if hasattr(self, 'action') and hasattr(self.action, 'tgt_rev'):
+            target_rev = self.action.tgt_rev
+        return self.check_source_submission_v2(src_project, src_package, src_rev, target_project, target_package, target_rev)
+
+    def check_source_submission_v2(
+            self,
+            src_project: str,
+            src_package: str,
+            src_rev: str,
+            target_project: str,
+            target_package: str,
+            target_rev: Optional[str]
+    ) -> None:
         """ default implemention does nothing """
-        self.logger.info(f"{src_project}/{src_package}@{src_rev} -> {target_project}/{target_package}")
-        return None
+        target_rev_str = f"@{target_rev}" if target_rev else ""
+        self.logger.info(f"{src_project}/{src_package}@{src_rev} -> {target_project}/{target_package}{target_rev_str}")
 
     @staticmethod
     @memoize(session=True)
