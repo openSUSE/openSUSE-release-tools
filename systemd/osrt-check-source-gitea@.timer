@@ -1,0 +1,9 @@
+[Unit]
+Description=timer for osrt-check_source on gitea running as %i
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+
+[Install]
+WantedBy=timers.target
