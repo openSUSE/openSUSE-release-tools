@@ -394,6 +394,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
                 return f"`{owner}`.{ldap_status}"
 
+            return f"`{owner}`"
         else:
             return "`whitelisted`"
         raise ValueError("Control should never reach here")
