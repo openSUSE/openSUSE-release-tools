@@ -56,7 +56,7 @@ class FreezeCommand(object):
     def create_bootstrap_aggregate_file(self):
         url = self.api.makeurl(['source', self.prj, 'bootstrap-copy', '_aggregate'])
 
-        root = ET.Element('aggregatelist')
+        root = ET.Element('aggregatelist', {'resign': 'false'})
         a = ET.SubElement(root, 'aggregate',
                           {'project': f'{self.api.crings}:0-Bootstrap'})
 
