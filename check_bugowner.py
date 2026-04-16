@@ -430,9 +430,9 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         head_remote_name = self._git_remote_name(repo, head_project, self.scm.package_url(head_project, head_package))
 
         if self.request.actions[0].src_branch:
-            head_revision = self.request.actions[0].src_branch.replace("/", "_")
+            head_revision = self.request.actions[0].src_branch
 
-        head_revision_name = f"{head_project}_{head_package}_{head_revision}"
+        head_revision_name = f"{head_project}_{head_package}_{head_revision.replace("/", "_")}"
 
         referenced_prs = [
             line
