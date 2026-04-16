@@ -11,7 +11,12 @@ from pathlib import Path
 from typing import List, Set
 from cmdln import CmdlnOptionParser
 
-import ldap
+try:
+    import ldap
+    LDAP_SERVER = os.environ.get("OSRT_BUGOWNER_LDAP_SERVER", None)
+except (ImportError, ModuleNotFoundError):
+    print("WARNING: Couldn't import ldap module, LDAP functionality will be disabled.", file=sys.stderr)
+    LDAP_SERVER = None
 import requests
 from urllib.error import HTTPError
 
@@ -23,7 +28,6 @@ from plat.gitea import User
 http_GET = osc.core.http_GET
 MAINTAINERSHIP_FILE = "_maintainership.json"
 WHITELIST_FILE = "whitelist_maintainership.json"
-LDAP_SERVER = os.environ.get("OSRT_BUGOWNER_LDAP_SERVER", None)
 
 
 class CheckerBugowner(ReviewBot.ReviewBot):
@@ -300,8 +304,10 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
     def _ldap_active_user(self, email):
         if not LDAP_SERVER:
+            self.logger.debug("LDAP feature disabled.")
             return []
 
+        self.logger.debug(f"Querying {LDAP_SERVER}...")
         instance = ldap.initialize(f"ldap://{LDAP_SERVER}")
 
         active_statuses = []
@@ -318,10 +324,11 @@ class CheckerBugowner(ReviewBot.ReviewBot):
                         timeout=int(os.environ.get("OSRT_BUGOWNER_LDAP_TIMEOUT", "30"))
                     )
 
-                    # In case the search fails:
                     try:
                         active_list = result[0]
+                        self.logger.debug(f"Got {len(result)} results.")
                     except IndexError:
+                        # In case the search fails:
                         self.logger.debug(f"LDAP search failed with {result}")
                         self._cache_set(self.ldap_cache, e, None)
                         active_statuses.append(None)
@@ -394,6 +401,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
                 return f"`{owner}`.{ldap_status}"
 
+            return f"`{owner}`"
         else:
             return "`whitelisted`"
         raise ValueError("Control should never reach here")
@@ -502,7 +510,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
             "--ldap",
             action="store_true",
             default=False,
-            help=f"Query {LDAP_SERVER} to check whether a maintainer is still a SUSE employee",
+            help="Query SUSE's LDAP server to check whether a maintainer is still an active employee",
         )
 
         return parser
