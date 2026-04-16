@@ -58,7 +58,10 @@ class Git(scm.base.SCMBase):
     def checkout_revision(repo, revision: str, revision_name=None, remote="origin", remote_url=None, fetch=True):
         if not isinstance(repo, git.Repo):
             repo = git.Repo(repo)
-        if fetch:
+
+        branch_names = {b.name for b in repo.branches}
+
+        if fetch and revision in branch_names:
             if remote_url and remote not in set(r.name for r in repo.remotes):
                 repo.create_remote(remote, remote_url)
 
@@ -69,7 +72,7 @@ class Git(scm.base.SCMBase):
                 repo.remote(remote).fetch([f"{revision}:{revision}"])
 
         if revision_name is not None:
-            if revision_name not in {b.name for b in repo.branches}:
+            if revision_name not in branch_names:
                 repo.git.checkout("-b", revision_name, f"{remote}/{revision}")
             else:
                 repo.git.switch(revision_name)
