@@ -127,7 +127,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
             raise ValueError("Set the OSRT_BUGOWNER_CACHE_HOME variable to a directory where check_bugowner can write its cache")
 
     def _gitea_checkout(
-        self, owner: str, repo: str, revision: str, revision_name=None, remote="origin", remote_url=None
+        self, owner: str, repo: str, revision: str, revision_name=None, remote="origin", remote_url=None, fetch=True
     ):
         local_dir = Path(self._gitea_cache_dir(), owner, repo)
         self.logger.debug(f"Cache directory: {local_dir}")
@@ -142,7 +142,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
             )
         else:
             return self.scm.checkout_revision(
-                local_dir, revision, revision_name=revision_name, remote=remote, remote_url=remote_url
+                local_dir, revision, revision_name=revision_name, remote=remote, remote_url=remote_url, fetch=fetch
             )
 
     def _git_remote_name(self, repo, project: str, url: str) -> str:
@@ -266,6 +266,8 @@ class CheckerBugowner(ReviewBot.ReviewBot):
             revision_name=head_revision_name,
             remote=head_project,
             remote_url=self.scm.package_url(head_project, head_package),
+            # No need to re-fetch, as we just did to produce the diff.
+            fetch=False
         )
         # Read _maintainership.json and whitelist.json after checking out HEAD
         self._init_maintainership(repo)
@@ -314,6 +316,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         for e in email:
             if e:
                 if e not in self._cache(self.ldap_cache).keys():
+                    self.logger.debug(f"LDAP cache miss for {e}")
                     result = instance.search_st(
                         "OU=User accounts,DC=corp,DC=suse,DC=com",
                         ldap.SCOPE_SUBTREE,
@@ -340,6 +343,8 @@ class CheckerBugowner(ReviewBot.ReviewBot):
                         self._cache_set(self.ldap_cache, e, attrs)
                     else:
                         self._cache_set(self.ldap_cache, e, None)
+                else:
+                    self.logger.debug(f"LDAP cache hit for {e}")
 
                 active_statuses.append(self._cache_get(self.ldap_cache, e))
 
@@ -432,7 +437,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         if self.request.actions[0].src_branch:
             head_revision = self.request.actions[0].src_branch
 
-        head_revision_name = f"{head_project}_{head_package}_{head_revision.replace("/", "_")}"
+        head_revision_name = f"{head_project}_{head_package}_{head_revision.replace('/', '_')}"
 
         referenced_prs = [
             line
@@ -484,7 +489,8 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         # Cleanup branches
         self.scm.checkout_revision(repo, base_revision)
         repo.git.branch("-D", head_revision_name)
-        repo.git.branch("-D", "-r", f"{head_remote_name}/{head_revision}")
+        if f"{head_remote_name}/{head_revision}" in {ref for ref in repo.git.branch('-r').split('\n')}:
+            repo.git.branch("-D", "-r", f"{head_remote_name}/{head_revision}")
 
         return is_valid
 

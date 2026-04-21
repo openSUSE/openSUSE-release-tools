@@ -59,23 +59,22 @@ class Git(scm.base.SCMBase):
         if not isinstance(repo, git.Repo):
             repo = git.Repo(repo)
 
-        branch_names = {b.name for b in repo.branches}
-
-        if fetch and revision in branch_names:
+        if fetch:
             if remote_url and remote not in set(r.name for r in repo.remotes):
                 repo.create_remote(remote, remote_url)
 
             current_revision = repo.git.rev_parse("--abbrev-ref", "HEAD")
-            if current_revision == revision:
+            if current_revision == revision and revision_name is None:
                 repo.remote(remote).pull(revision)
             else:
-                repo.remote(remote).fetch([f"{revision}:{revision}"])
+                if revision_name is not None:
+                    to_fetch = f"{revision}:{revision_name}"
+                else:
+                    to_fetch = f"{revision}:{revision}"
+                repo.remote(remote).fetch([to_fetch])
 
         if revision_name is not None:
-            if revision_name not in branch_names:
-                repo.git.checkout("-b", revision_name, f"{remote}/{revision}")
-            else:
-                repo.git.switch(revision_name)
+            repo.git.switch(revision_name)
         else:
             repo.git.checkout(revision, "--")
 
