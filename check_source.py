@@ -93,6 +93,10 @@ class CheckSource(ReviewBot.ReviewBot):
 
         return target_package == package
 
+    # Helper to treat + and _ as equivalent for comparison
+    def git_normalize(self, name):
+        return name.replace('+', '_')
+
     def package_source_parse(self, project, package, revision=None, target_package=None):
         # XXX should we refactor this out?
         if self.platform_type == "OBS":
@@ -196,7 +200,7 @@ class CheckSource(ReviewBot.ReviewBot):
                 self.review_messages['declined'] = f"Per our development policy, please submit to {self.devel_baseproject} first."
                 return False
 
-        inair_renamed = target_package != source_package
+        inair_renamed = self.git_normalize(target_package) != self.git_normalize(source_package)
 
         if not self.ignore_devel:
             self.logger.info('checking if target package exists and has devel project')
@@ -290,10 +294,11 @@ class CheckSource(ReviewBot.ReviewBot):
         new_info = self.package_source_parse(source_project, source_package, source_revision, target_package)
         filename = new_info.get('filename', '')
         expected_name = target_package
+
         if filename == '_preinstallimage':
             expected_name = 'preinstallimage'
         if not (filename.endswith('.kiwi') or filename == 'Dockerfile' or filename.endswith('mkosi.conf')) \
-           and new_info['name'] != expected_name:
+           and self.git_normalize(new_info['name']) != self.git_normalize(expected_name):
             shutil.rmtree(copath)
             self.review_messages['declined'] = (
                 f"A package submitted as {target_package} has to build as 'Name: {expected_name}' - found Name '{new_info['name']}'")
