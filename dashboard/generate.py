@@ -177,8 +177,11 @@ class Fetcher:
     def fetch_ttm_status(self, project):
         text = attribute_value_load(self.apiurl, project, 'ToTestManagerStatus')
         if text:
-            return yaml.safe_load(text)
-        return dict()
+            try:
+                return yaml.safe_load(text)
+            except yaml.YAMLError:
+                return {}
+        return {}
 
     def fetch_product_version(self, project):
         return attribute_value_load(self.apiurl, project, 'ProductVersion')
