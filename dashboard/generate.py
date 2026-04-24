@@ -15,6 +15,7 @@ from jinja2 import Environment, FileSystemLoader
 
 OPENQA_STATUS_ORDER = ['passed', 'softfailed', 'failed', 'running', 'cancelled', 'scheduled',
                        'timeout_exceeded', 'parallel_failed', 'incomplete']
+PROGRESS_SCALE = 10000
 
 
 FACTORY_PROJECTS = [
@@ -137,7 +138,7 @@ class Fetcher:
         for result in root.findall('.//statuscount'):
             code = result.get('code')
             count = int(result.get('count'))
-            if code == 'excluded' or code == 'disabled' or code == 'locked':
+            if code in {'excluded', 'disabled', 'locked'}:
                 continue  # ignore
             if code == 'succeeded':
                 succeeded += count
@@ -145,10 +146,10 @@ class Fetcher:
             if code == 'broken':
                 broken += count
                 continue
-            if code == "failed":
+            if code == 'failed':
                 failed += count
                 continue
-            if code == "unresolvable":
+            if code == 'unresolvable':
                 unresolvable += count
                 continue
             building += count
@@ -158,7 +159,7 @@ class Fetcher:
             unresolvable = 0
         if building + failed + succeeded == 0:
             return {'building': -1}
-        return {'building': 10000 - int(building * 10000 / (building + failed + succeeded + broken)),
+        return {'building': PROGRESS_SCALE - int(building * PROGRESS_SCALE / (building + failed + succeeded + broken)),
                 'failed': failed,
                 'broken': broken,
                 'unresolvable': unresolvable}
