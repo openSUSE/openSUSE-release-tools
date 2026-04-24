@@ -1,3 +1,25 @@
+{% macro repository_progress(project, repository) %}
+{% set progress = project.build_summary(repository) %}
+{% if progress['building'] >= 0 %}
+  {% if progress['building'] < 10000 %}
+    {{ progress['building'] / 100}}% done
+  {% else %}
+    done
+  {% endif %}
+  {% if progress['failed'] > 0 %}
+, <a href="https://build.opensuse.org/project/monitor/{{ project.name }}?failed=1&defaults=0&repo_{{repository}}=1&{{project.all_archs}}">{{ progress['failed'] }} failed</a>
+  {% endif %}
+  {% if progress['broken'] > 0 %}
+, <a href="https://build.opensuse.org/project/monitor/{{ project.name }}?broken=1&defaults=0&repo_{{repository}}=1&{{project.all_archs}}">{{ progress['broken'] }} broken</a>
+  {% endif %}
+  {% if progress['unresolvable'] > 0 %}
+, <a href="https://build.opensuse.org/project/monitor/{{ project.name }}?unresolvable=1&defaults=0&repo_{{repository}}=1&{{project.all_archs}}">{{ progress['unresolvable'] }} unresolvable</a>
+  {% endif %}
+{% else %}
+  n.a.
+{% endif %}
+{% endmacro %}
+
 <!doctype html>
 <html lang="en">
 
@@ -46,39 +68,15 @@
       {% for project in projects %}
       <tr>
         <th scope="row"><a href="https://build.opensuse.org/project/show/{{ project.name }}">{{project.nick}}</a></th>
-        <td>
-          {% with repository = 'standard' %}
-            {% include "repository.html" %}
-          {% endwith %}
-        </td>
+        <td>{{ repository_progress(project, 'standard') }}</td>
         {% if is_leap %}
-        <td>
-          {% with repository = 'ports' %}
-            {% include "repository.html" %}
-          {% endwith %}
-        </td>
-        <td>
-          {% with repository = 'step' %}
-            {% include "repository.html" %}
-          {% endwith %}
-        </td>
+        <td>{{ repository_progress(project, 'ports') }}</td>
+        <td>{{ repository_progress(project, 'step') }}</td>
         {% endif %}
-        <td>
-          {% with repository = 'product' %}
-            {% include "repository.html" %}
-          {% endwith %}
-        </td>
-        <td>
-          {% with repository = 'images' %}
-            {% include "repository.html" %}
-          {% endwith %}
-        </td>
+        <td>{{ repository_progress(project, 'product') }}</td>
+        <td>{{ repository_progress(project, 'images') }}</td>
         {% if not is_leap %}
-        <td>
-          {% with repository = 'containerfile' %}
-            {% include "repository.html" %}
-          {% endwith %}
-        </td>
+        <td>{{ repository_progress(project, 'containerfile') }}</td>
         {% endif %}
         <td>
         {% if project.ttm_version %}
