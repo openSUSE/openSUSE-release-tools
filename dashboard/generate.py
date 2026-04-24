@@ -13,6 +13,9 @@ from datetime import datetime, timezone
 
 from jinja2 import Environment, FileSystemLoader
 
+OPENQA_STATUS_ORDER = ['passed', 'softfailed', 'failed', 'running', 'cancelled', 'scheduled',
+                       'timeout_exceeded', 'parallel_failed', 'incomplete']
+
 
 FACTORY_PROJECTS = [
     {
@@ -107,7 +110,14 @@ class Fetcher(object):
                 if key == 'uploading' or key == 'assigned':
                     key = 'running'
             jobs.setdefault(key, []).append(job['name'])
-        return jobs
+        ordered = {}
+        for status in OPENQA_STATUS_ORDER:
+            if status in jobs:
+                ordered[status] = jobs[status]
+        for status in sorted(jobs.keys()):
+            if status not in ordered:
+                ordered[status] = jobs[status]
+        return ordered
 
     def add(self, name, **kwargs):
         # cyclic dependency!
