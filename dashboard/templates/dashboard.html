@@ -178,27 +178,27 @@
             {% endif %}
             <td data-label="Source">
             {% if project.ttm_version %}
-              <a class="text-decoration-none" href="https://build.opensuse.org/package/show/{{ project.name }}/000product">{{ project.ttm_version }}</a>
+              <a class="text-decoration-none fw-semibold text-primary" href="https://build.opensuse.org/package/show/{{ project.name }}/000product">{{ project.ttm_version }}</a>
             {% else %}
               <span class="text-muted">&mdash;</span>
             {% endif %}
             </td>
             <td data-label="Testing">
             {% set ttm_testing = project.ttm_status.get('testing') %}
+            {% set ttm_published = project.ttm_status.get('published', None) %}
             {% if ttm_testing %}
               {% if project.openqa_version %}
-                <a class="text-decoration-none" href='https://openqa.opensuse.org/tests/overview?version={{ project.openqa_version }}&groupid={{ project.openqa_id }}'>{{ ttm_testing }}</a>
+                <a class="text-decoration-none {% if ttm_testing == project.ttm_version %}fw-semibold text-primary{% else %}text-body-secondary{% endif %}" href='https://openqa.opensuse.org/tests/overview?version={{ project.openqa_version }}&groupid={{ project.openqa_id }}'>{{ ttm_testing }}</a>
               {% else %}
-                {{ ttm_testing }}
+                <span class="{% if ttm_testing == project.ttm_version %}fw-semibold text-primary{% else %}text-body-secondary{% endif %}">{{ ttm_testing }}</span>
               {% endif %}
             {% else %}
               <span class="text-muted">&mdash;</span>
             {% endif %}
             </td>
             <td data-label="Published">
-            {% set ttm_published = project.ttm_status.get('published', None) %}
             {% if ttm_published %}
-              <a class="text-decoration-none" href="{{ project.download_url }}">{{ ttm_published }}</a>
+              <a class="text-decoration-none {% if ttm_published == project.ttm_version %}fw-semibold text-primary{% else %}text-body-secondary{% endif %}" href="{{ project.download_url }}">{{ ttm_published }}</a>
             {% else %}
               <span class="text-muted">&mdash;</span>
             {% endif %}
