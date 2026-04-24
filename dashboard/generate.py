@@ -85,10 +85,9 @@ LEAP_PROJECTS = [
 ]
 
 
-class Fetcher(object):
-    def __init__(self, apiurl, opts):
+class Fetcher:
+    def __init__(self, apiurl):
         self.projects = []
-        self.opts = opts
         self.apiurl = apiurl
         if apiurl.endswith('suse.de'):
             openqa_url = 'https://openqa.suse.de'
@@ -184,7 +183,7 @@ class Fetcher(object):
         return attribute_value_load(self.apiurl, project, 'ProductVersion')
 
 
-class Project(object):
+class Project:
     def __init__(self, fetcher, name, kwargs):
         self.fetcher = fetcher
         self.name = name
@@ -219,7 +218,7 @@ if __name__ == '__main__':
     osc.conf.config['debug'] = args.debug
     apiurl = osc.conf.config['apiurl']
 
-    fetcher = Fetcher(apiurl, args)
+    fetcher = Fetcher(apiurl)
 
     if 'Factory' in args.project:
         for config in FACTORY_PROJECTS:
