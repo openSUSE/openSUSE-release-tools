@@ -7,8 +7,9 @@ import json
 import os
 import sys
 import re
+from enum import IntEnum
 from pathlib import Path
-from typing import List, Set
+from typing import List, Set, Dict
 from cmdln import CmdlnOptionParser
 
 try:
@@ -30,6 +31,11 @@ MAINTAINERSHIP_FILE = "_maintainership.json"
 WHITELIST_FILE = "whitelist_maintainership.json"
 
 
+class MaintainershipFormat(IntEnum):
+    unversioned = 0
+    one_dot_o = 1
+
+
 class CheckerBugowner(ReviewBot.ReviewBot):
 
     def __init__(self, *args, **kwargs):
@@ -37,6 +43,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         self.request_default_return = True
         self.override_allow = False
         self.ldap = False
+        self.maintainership_format_version = MaintainershipFormat.one_dot_o
         self.maintained = {}
         self.whitelisted = {}
         self.ldap_cache = {"update_time": datetime.datetime.now(), "values": {}}
@@ -229,11 +236,33 @@ class CheckerBugowner(ReviewBot.ReviewBot):
                     f"Maintainership file '{MAINTAINERSHIP_FILE}' must contain a JSON dict, but {type(data)} was found."
                 )
 
-            # Convert list of package names to a set for fast lookups
             return data
 
+    def _detect_maintainership_format(self, data: Dict) -> Set[str]:
+        if {"header", "project", "packages"} == set(data.keys()):
+            header = data["header"]
+            document = header["document"]
+            if {"document", "version"} == set(header.keys()) and document == "obs-maintainers":
+                version = header["version"]
+                if version == "1.0":
+                    return MaintainershipFormat.one_dot_o
+                else:
+                    raise ValueError(f"Unsupported maintainership file '{MAINTAINERSHIP_FILE}' version {version}")
+            else:
+                raise ValueError(f"Unsupported maintainership file '{MAINTAINERSHIP_FILE}' format {document}!")
+        else:
+            return MaintainershipFormat.unversioned
+
     def _init_maintainership(self, repo):
-        self.maintained = self._load_maintainership_data(Path(repo.working_tree_dir, MAINTAINERSHIP_FILE))
+        maintainership_file_path = Path(repo.working_tree_dir, MAINTAINERSHIP_FILE)
+        maintainership_data = self._load_maintainership_data(maintainership_file_path)
+        self.maintainership_format_version = self._detect_maintainership_format(maintainership_data)
+        if self.maintainership_format_version == MaintainershipFormat.one_dot_o:
+            self.maintained = maintainership_data["packages"]
+            self.logger.info(f"Loaded {maintainership_file_path} with maintainership format version 1.0")
+        else:
+            self.maintained = maintainership_data
+            self.logger.info(f"Loaded {maintainership_file_path} with maintainership legacy unversioned format")
         self.whitelisted = self._load_whitelist_data(Path(repo.working_tree_dir, WHITELIST_FILE))
 
     def _gitea_validate(
@@ -361,54 +390,75 @@ class CheckerBugowner(ReviewBot.ReviewBot):
                     self._cache_set(self.email_cache, o, None)
         return [self._cache_get(self.email_cache, o) for o in owner]
 
-    def _gitea_package_maintainer(self, package: str):
+    def _gitea_users_active_on_ldap(self, users: List[str]):
+        # Get users emails
+        emails = self._gitea_email(users)
+        self.logger.debug(f"{users} -> {emails}")
+
+        try:
+            # Get users active status
+            users_attrs = self._ldap_active_user(emails)
+        except (ldap.SERVER_DOWN, ldap.UNAVAILABLE, ldap.TIMEOUT) as e:
+            self.logger.warning(f"LDAP server {LDAP_SERVER} is unreachable because of {e}")
+            return (users, "")
+
+        # Get users that were not found on LDAP.
+        not_found_users = []
+        for o, e, s in zip(users, emails, users_attrs):
+            if s is None:
+                if e is None:
+                    not_found_users.append(o)
+                else:
+                    not_found_users.append(e)
+
+        if not_found_users:
+            users = ', '.join(not_found_users)
+            self.logger.warning(f"The following users were not found on LDAP: {users}.")
+
+        # Get inactive users
+        inactive_users = [
+            o for o, s in zip(users, users_attrs)
+            if (s and "EMPLOYEESTATUS" in s.keys() and s["EMPLOYEESTATUS"][0] != b'Active')
+        ]
+
+        self.logger.debug(f"Inactive users: {inactive_users}")
+
+        if inactive_users:
+            users = [u for u in inactive_users if u]
+            ldap_status = f" The following users are **not active** on LDAP: {users}"
+        else:
+            ldap_status = ""
+
+        return (', '.join('`' + u + '`' for u in users), ldap_status)
+
+    def _gitea_package_maintainers(self, package: str):
         in_maintainership_json = package in self.maintained.keys()
         if in_maintainership_json:
-            owner = self.maintained[package]
-            if self.ldap:
-                # Get owner email
-                email = self._gitea_email(owner)
-                self.logger.debug(f"{owner} -> {email}")
+            if self.maintainership_format_version == MaintainershipFormat.one_dot_o:
+                users = self.maintained[package].get("users", False)
+                if not users:
+                    self.logger.info(f"No users found for {package}")
+            else:
+                users = self.maintained[package]
 
-                try:
-                    # Get owner active status
-                    owner_attrs = self._ldap_active_user(email)
-                except (ldap.SERVER_DOWN, ldap.UNAVAILABLE, ldap.TIMEOUT) as e:
-                    self.logger.warning(f"LDAP server {LDAP_SERVER} is unreachable because of {e}")
-                    return f"`{owner}`"
+            if self.ldap and users:
+                users, ldap_status = self._gitea_users_active_on_ldap(users)
+                users_message = [f"Gitea users: {users}.{ldap_status}"]
+            else:
+                users_message = []
 
-                # Get users that were not found on LDAP.
-                not_found_users = []
-                for o, e, s in zip(owner, email, owner_attrs):
-                    if s is None:
-                        if e is None:
-                            not_found_users.append(o)
-                        else:
-                            not_found_users.append(e)
-
-                if not_found_users:
-                    users = ', '.join(not_found_users)
-                    self.logger.warning(f"The following users were not found on LDAP: {users}.")
-
-                # Get inactive users
-                inactive_users = [
-                    o for o, s in zip(owner, owner_attrs)
-                    if (s and "EMPLOYEESTATUS" in s.keys() and s["EMPLOYEESTATUS"][0] != b'Active')
-                ]
-
-                self.logger.debug(f"Inactive users: {inactive_users}")
-
-                if inactive_users:
-                    users = ', '.join('`' + u + '`' for u in inactive_users if u)
-                    ldap_status = f" The following users are **not active** on LDAP: {users}"
+            groups_message = []
+            if self.maintainership_format_version == MaintainershipFormat.one_dot_o:
+                groups = self.maintained[package].get("groups", False)
+                if groups:
+                    groups = ', '.join('[`' + g + '`](https://build.suse.de/groups/' + g + ')' for g in groups)
+                    groups_message = [f"OBS groups: {groups}."]
                 else:
-                    ldap_status = ""
+                    self.logger.debug(f"No groups found for {package}")
 
-                return f"`{owner}`.{ldap_status}"
-
-            return f"`{owner}`"
+            return users_message + groups_message
         else:
-            return "`whitelisted`"
+            return ["`whitelisted`"]
         raise ValueError("Control should never reach here")
 
     def _gitea_check_source_submission(
@@ -469,10 +519,16 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
         if is_valid:
             if validated_packages:
-                package_maintainers = [self._gitea_package_maintainer(p) for p in validated_packages]
+                packages_maintainers = [self._gitea_package_maintainers(p) for p in validated_packages]
+
+                packages_maintainers_messages = []
+                for maintainers in packages_maintainers:
+                    packages_maintainers_messages.append("\n".join(
+                        f"   + {m}" for m in maintainers
+                    ))
 
                 validate_packages_message = "\n".join(
-                    f" - `{p}`: {m}" for p, m in zip(validated_packages, package_maintainers) if m
+                    f" - `{p}`:\n{m}" for p, m in zip(validated_packages, packages_maintainers_messages) if m
                 )
                 packages_message = f"The following packages were checked and are covered either in `{MAINTAINERSHIP_FILE}`" + \
                     f" or `{WHITELIST_FILE}`:\n\n" + validate_packages_message
