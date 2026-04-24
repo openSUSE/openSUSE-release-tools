@@ -1,17 +1,18 @@
 #!/usr/bin/python3
 
 import argparse
+import os
+from datetime import datetime, timezone
+from urllib.error import HTTPError
+
 import osc
 import yaml
-import os
-from osc.core import http_GET, makeurl, show_project_meta
-from osclib.core import attribute_value_load
+from jinja2 import Environment, FileSystemLoader
 from lxml import etree as ET
 from openqa_client.client import OpenQA_Client
-from urllib.error import HTTPError
-from datetime import datetime, timezone
+from osc.core import http_GET, makeurl, show_project_meta
+from osclib.core import attribute_value_load
 
-from jinja2 import Environment, FileSystemLoader
 
 OPENQA_STATUS_ORDER = ['passed', 'softfailed', 'failed', 'running', 'cancelled', 'scheduled',
                        'timeout_exceeded', 'parallel_failed', 'incomplete']
