@@ -14,6 +14,74 @@ from datetime import datetime, timezone
 from jinja2 import Environment, FileSystemLoader
 
 
+FACTORY_PROJECTS = [
+    {
+        'name': 'openSUSE:Factory',
+        'nick': 'Factory',
+        'download_url': 'https://download.opensuse.org/tumbleweed/iso/',
+        'openqa_group': 'openSUSE Tumbleweed',
+        'openqa_version': 'Tumbleweed',
+        'openqa_groupid': 1,
+    },
+    {'name': 'openSUSE:Factory:Live', 'nick': 'Live'},
+    {'name': 'openSUSE:Factory:Rings:0-Bootstrap', 'nick': 'Ring 0'},
+    {'name': 'openSUSE:Factory:Rings:1-MinimalX', 'nick': 'Ring 1'},
+    {
+        'name': 'openSUSE:Factory:ARM',
+        'nick': 'ARM',
+        'download_url': 'https://download.opensuse.org/ports/aarch64/tumbleweed/iso/',
+        'openqa_group': 'openSUSE Tumbleweed AArch64',
+        'openqa_version': 'Tumbleweed',
+        'openqa_groupid': 3,
+    },
+    {'name': 'openSUSE:Factory:ARM:Live', 'nick': 'ARM Live'},
+    {'name': 'openSUSE:Factory:ARM:Rings:0-Bootstrap', 'nick': 'ARM Ring 0'},
+    {'name': 'openSUSE:Factory:ARM:Rings:1-MinimalX', 'nick': 'ARM Ring 1'},
+    {
+        'name': 'openSUSE:Factory:LegacyX86',
+        'nick': 'Legacy X86',
+        'download_url': 'https://download.opensuse.org/ports/i586/tumbleweed/iso/',
+        'openqa_group': 'openSUSE Tumbleweed Legacy x86',
+        'openqa_version': 'Tumbleweed',
+        'openqa_groupid': 75,
+    },
+    {
+        'name': 'openSUSE:Factory:PowerPC',
+        'nick': 'Power',
+        'download_url': 'https://download.opensuse.org/ports/ppc/tumbleweed/iso/',
+        'openqa_group': 'openSUSE Tumbleweed PowerPC',
+        'openqa_version': 'Tumbleweed',
+        'openqa_groupid': 4,
+    },
+    {
+        'name': 'openSUSE:Factory:RISCV',
+        'nick': 'RISC-V',
+        'download_url': 'https://download.opensuse.org/ports/riscv/tumbleweed/iso/',
+        'openqa_group': 'openSUSE Tumbleweed RISC-V',
+        'openqa_version': 'Tumbleweed',
+        'openqa_groupid': 125,
+    },
+    {
+        'name': 'openSUSE:Factory:zSystems',
+        'nick': 'System Z',
+        'download_url': 'https://download.opensuse.org/ports/zsystems/tumbleweed/iso/',
+        'openqa_group': 'openSUSE Tumbleweed s390x',
+        'openqa_version': 'Tumbleweed',
+        'openqa_groupid': 34,
+    },
+]
+
+LEAP_PROJECTS = [
+    {
+        'name': 'openSUSE:Leap:15.6:Images',
+        'nick': 'Leap:15.6:Images',
+        'openqa_group': 'openSUSE Leap 15.6 Images',
+        'openqa_version': '15.6',
+        'openqa_groupid': 117,
+    },
+]
+
+
 class Fetcher(object):
     def __init__(self, apiurl, opts):
         self.projects = []
@@ -143,33 +211,12 @@ if __name__ == '__main__':
 
     fetcher = Fetcher(apiurl, args)
 
-    if ("Factory" in args.project):
-        fetcher.add('openSUSE:Factory', nick='Factory', download_url='https://download.opensuse.org/tumbleweed/iso/',
-                    openqa_group='openSUSE Tumbleweed', openqa_version='Tumbleweed', openqa_groupid=1)
-        fetcher.add('openSUSE:Factory:Live', nick='Live')
-        fetcher.add('openSUSE:Factory:Rings:0-Bootstrap', nick='Ring 0')
-        fetcher.add('openSUSE:Factory:Rings:1-MinimalX', nick='Ring 1')
-        fetcher.add('openSUSE:Factory:ARM', nick='ARM',
-                    download_url='http://download.opensuse.org/ports/aarch64/tumbleweed/iso/',
-                    openqa_group='openSUSE Tumbleweed AArch64', openqa_version='Tumbleweed', openqa_groupid=3)
-        fetcher.add('openSUSE:Factory:ARM:Live', nick='ARM Live')
-        fetcher.add('openSUSE:Factory:ARM:Rings:0-Bootstrap', nick='ARM Ring 0')
-        fetcher.add('openSUSE:Factory:ARM:Rings:1-MinimalX', nick='ARM Ring 1')
-        fetcher.add('openSUSE:Factory:LegacyX86', nick='Legacy X86',
-                    download_url='http://download.opensuse.org/ports/i586/tumbleweed/iso/',
-                    openqa_group='openSUSE Tumbleweed Legacy x86', openqa_version='Tumbleweed', openqa_groupid=75)
-        fetcher.add('openSUSE:Factory:PowerPC', nick='Power',
-                    download_url='http://download.opensuse.org/ports/ppc/tumbleweed/iso/',
-                    openqa_group='openSUSE Tumbleweed PowerPC', openqa_version='Tumbleweed', openqa_groupid=4)
-        fetcher.add('openSUSE:Factory:RISCV', nick='RISC-V',
-                    download_url='http://download.opensuse.org/ports/riscv/tumbleweed/iso/',
-                    openqa_group='openSUSE Tumbleweed RISC-V', openqa_version='Tumbleweed', openqa_groupid=125)
-        fetcher.add('openSUSE:Factory:zSystems', nick='System Z',
-                    download_url='http://download.opensuse.org/ports/zsystems/tumbleweed/iso/',
-                    openqa_group='openSUSE Tumbleweed s390x', openqa_version='Tumbleweed', openqa_groupid=34)
+    if 'Factory' in args.project:
+        for config in FACTORY_PROJECTS:
+            fetcher.add(**config)
     else:
-        fetcher.add('openSUSE:Leap:15.6:Images', nick='Leap:15.6:Images', openqa_group='openSUSE Leap 15.6 Images',
-                    openqa_version='15.6', openqa_groupid=117)
+        for config in LEAP_PROJECTS:
+            fetcher.add(**config)
 
     is_leap = not fetcher.projects[0].name.startswith("openSUSE:Factory")
 
