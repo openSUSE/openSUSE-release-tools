@@ -198,7 +198,7 @@ class Project:
         self.ttm_version = fetcher.fetch_product_version(name)
 
     def build_summary(self, repo):
-        return fetcher.build_summary(self.name, repo)
+        return self.fetcher.build_summary(self.name, repo)
 
     def openqa_summary(self):
         return self.fetcher.openqa_results(self.openqa_id, self.ttm_status.get('testing'))
