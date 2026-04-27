@@ -1,133 +1,245 @@
-<!doctype html>
-<html lang="en">
+{% macro repository_progress(project, repository) %}
+{% set progress = project.build_summary(repository) %}
+{% if progress['building'] >= 0 %}
+  {% if progress['building'] < 10000 %}
+    <span class="text-body">{{ progress['building'] / 100 }}% done</span>
+  {% else %}
+    <span class="text-success fw-semibold">done</span>
+  {% endif %}
+  {% if progress['failed'] > 0 %}
+, <a class="text-danger text-decoration-none" href="https://build.opensuse.org/project/monitor/{{ project.name }}?failed=1&defaults=0&repo_{{repository}}=1&{{project.all_archs}}">{{ progress['failed'] }} failed</a>
+  {% endif %}
+  {% if progress['broken'] > 0 %}
+, <a class="text-warning text-decoration-none" href="https://build.opensuse.org/project/monitor/{{ project.name }}?broken=1&defaults=0&repo_{{repository}}=1&{{project.all_archs}}">{{ progress['broken'] }} broken</a>
+  {% endif %}
+  {% if progress['unresolvable'] > 0 %}
+, <a class="text-info text-decoration-none" href="https://build.opensuse.org/project/monitor/{{ project.name }}?unresolvable=1&defaults=0&repo_{{repository}}=1&{{project.all_archs}}">{{ progress['unresolvable'] }} unresolvable</a>
+  {% endif %}
+{% else %}
+  <span class="text-muted">&mdash;</span>
+{% endif %}
+{% endmacro %}
 
+<!doctype html>
+<html lang="en" data-bs-theme="light">
 <head>
-  <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta http-equiv="refresh" content="60" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-  <style type="text/css">
-    .openqapassed { color: #4a2; }
-    .openqarunning { color: #59a; }
-    .openqafailed { color: #a10; }
-    .openqasoftfailed { color: #a60; }
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --oq-passed: #198754;
+      --oq-softfailed: #fd7e14;
+      --oq-failed: #dc3545;
+      --oq-running: #0dcaf0;
+      --oq-cancelled: #6c757d;
+      --oq-scheduled: #ffc107;
+      --oq-timeout: #d63384;
+      --oq-parallel: #6f42c1;
+      --oq-incomplete: #adb5bd;
+    }
+    [data-bs-theme="dark"] {
+      --oq-passed: #75b798;
+      --oq-softfailed: #fd9e58;
+      --oq-failed: #ea868f;
+      --oq-running: #58d9f2;
+      --oq-cancelled: #adb5bd;
+      --oq-scheduled: #ffda6a;
+      --oq-timeout: #e685b5;
+      --oq-parallel: #b694e0;
+      --oq-incomplete: #ced4da;
+    }
+    .oq-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.85rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.375rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .oq-passed { background: color-mix(in srgb, var(--oq-passed) 15%, transparent); color: var(--oq-passed); }
+    .oq-softfailed { background: color-mix(in srgb, var(--oq-softfailed) 15%, transparent); color: var(--oq-softfailed); }
+    .oq-failed { background: color-mix(in srgb, var(--oq-failed) 15%, transparent); color: var(--oq-failed); }
+    .oq-running { background: color-mix(in srgb, var(--oq-running) 15%, transparent); color: var(--oq-running); }
+    .oq-cancelled { background: color-mix(in srgb, var(--oq-cancelled) 15%, transparent); color: var(--oq-cancelled); }
+    .oq-scheduled { background: color-mix(in srgb, var(--oq-scheduled) 15%, transparent); color: var(--oq-scheduled); }
+    .oq-timeout_exceeded { background: color-mix(in srgb, var(--oq-timeout) 15%, transparent); color: var(--oq-timeout); }
+    .oq-parallel_failed { background: color-mix(in srgb, var(--oq-parallel) 15%, transparent); color: var(--oq-parallel); }
+    .oq-incomplete { background: color-mix(in srgb, var(--oq-incomplete) 15%, transparent); color: var(--oq-incomplete); }
+    .oq-user_cancelled { background: color-mix(in srgb, var(--oq-cancelled) 15%, transparent); color: var(--oq-cancelled); }
+    .table > :not(caption) > * > * {
+      vertical-align: middle;
+      padding-top: 0.65rem;
+      padding-bottom: 0.65rem;
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+    .table th {
+      white-space: nowrap;
+      font-size: 0.85rem;
+    }
+    .project-link {
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .oq-cell {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      align-items: center;
+    }
+    @media (max-width: 991.98px) {
+      .table-responsive-stack {
+        display: block;
+      }
+      .table-responsive-stack thead {
+        display: none;
+      }
+      .table-responsive-stack tbody,
+      .table-responsive-stack tr,
+      .table-responsive-stack td {
+        display: block;
+        width: 100%;
+      }
+      .table-responsive-stack tr {
+        margin-bottom: 0.75rem;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.5rem;
+        padding: 0.5rem;
+      }
+      .table-responsive-stack td::before {
+        content: attr(data-label);
+        display: inline-block;
+        font-weight: 600;
+        font-size: 1rem;
+        text-transform: none;
+        color: var(--bs-secondary-color);
+        margin-right: 0.5rem;
+        min-width: 80px;
+      }
+    }
   </style>
   <title>Dashboard for {{ projectname }}</title>
 </head>
-
 <body>
-  <div class="container">
-    <div class="row">
-      <div class="h1 col text-left">Dashboard for {{ projectname }}</div>
-      <div class="col-3 text-right">Last update: <time class="timeago" datetime="{{lastupdate}}">{{ lastupdate }}</time></div>
+  <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom sticky-top">
+    <div class="container-fluid">
+      <span class="navbar-brand mb-0 h1">Dashboard for {{ projectname }}</span>
+      <div class="d-flex align-items-center gap-3">
+        <small class="text-body d-inline">Last update: <time class="timeago" datetime="{{lastupdate}}">{{ lastupdate }}</time></small>
+        <button class="btn btn-outline-secondary btn-sm" id="themeToggle" title="Toggle theme">
+          <i class="bi bi-moon-fill" id="themeIcon"></i>
+        </button>
+      </div>
     </div>
-    <table class="table">
-      <thead>
-        <tr>
-          <th scope="col">Part</th>
-          <th scope="col">standard</th>
-          {% if is_leap %}
-          <th scope="col">ports</th>
-          <th scope="col">step</th>
-          {% endif %}
-          <th scope="col">product</th>
-          <th scope="col">images</th>
-          {% if not is_leap %}
-          <th scope="col">containerfile</th>
-          {% endif %}
-          <th scope="col">source</th>
-          <th scope="col">testing</th>
-          <th scope="col">published</th>
-          <th scope="col">openQA</th>
-        </tr>
-      </thead>
-      {% for project in projects %}
-      <tr>
-        <th scope="row"><a href="https://build.opensuse.org/project/show/{{ project.name }}">{{project.nick}}</a></th>
-        <td>
-          {% with repository = 'standard' %}
-            {% include "repository.html" %}
-          {% endwith %}
-        </td>
-        {% if is_leap %}
-        <td>
-          {% with repository = 'ports' %}
-            {% include "repository.html" %}
-          {% endwith %}
-        </td>
-        <td>
-          {% with repository = 'step' %}
-            {% include "repository.html" %}
-          {% endwith %}
-        </td>
-        {% endif %}
-        <td>
-          {% with repository = 'product' %}
-            {% include "repository.html" %}
-          {% endwith %}
-        </td>
-        <td>
-          {% with repository = 'images' %}
-            {% include "repository.html" %}
-          {% endwith %}
-        </td>
-        {% if not is_leap %}
-        <td>
-          {% with repository = 'containerfile' %}
-            {% include "repository.html" %}
-          {% endwith %}
-        </td>
-        {% endif %}
-        <td>
-        {% if project.ttm_version %}
-          <a href="https://build.opensuse.org/package/show/{{ project.name }}/000product">{{ project.ttm_version }}</a>
-        {% else %}
-          n.a.
-        {% endif %}
-        </td>
-        <td>
-        {% set ttm_testing = project.ttm_status.get('testing') %}
-        {% if ttm_testing %}
-          {% if project.openqa_version %}
-            <a href='https://openqa.opensuse.org/tests/overview?version={{ project.openqa_version }}&groupid={{ project.openqa_id }}'>{{ ttm_testing }}</a>
-          {% else %}
-            {{ ttm_testing }}
-          {% endif %}
-        {% else %}
-          n.a.
-        {% endif %}
-        </td>
-        <td>
-        {% set ttm_published = project.ttm_status.get('published', None) %}
-        {% if ttm_published %}
-          <a href="{{ project.download_url }}">{{ ttm_published }}</a>
+  </nav>
+
+  <div class="container-fluid py-3">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm table-responsive-stack align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Part</th>
+            <th>standard</th>
+            {% if is_leap %}
+            <th>ports</th>
+            <th>step</th>
+            {% endif %}
+            <th>product</th>
+            <th>images</th>
+            {% if not is_leap %}
+            <th>containerfile</th>
+            {% endif %}
+            <th>source</th>
+            <th>testing</th>
+            <th>published</th>
+            <th>openQA</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for project in projects %}
+          <tr>
+            <td data-label="Part">
+              <a class="project-link text-decoration-none" href="https://build.opensuse.org/project/show/{{ project.name }}">{{ project.nick }}</a>
+            </td>
+            <td data-label="Standard">{{ repository_progress(project, 'standard') }}</td>
+            {% if is_leap %}
+            <td data-label="Ports">{{ repository_progress(project, 'ports') }}</td>
+            <td data-label="Step">{{ repository_progress(project, 'step') }}</td>
+            {% endif %}
+            <td data-label="Product">{{ repository_progress(project, 'product') }}</td>
+            <td data-label="Images">{{ repository_progress(project, 'images') }}</td>
+            {% if not is_leap %}
+            <td data-label="Containerfile">{{ repository_progress(project, 'containerfile') }}</td>
+            {% endif %}
+            <td data-label="Source">
+            {% if project.ttm_version %}
+              <a class="text-decoration-none fw-semibold text-primary" href="https://build.opensuse.org/package/show/{{ project.name }}/000product">{{ project.ttm_version }}</a>
+            {% else %}
+              <span class="text-muted">&mdash;</span>
+            {% endif %}
+            </td>
+            <td data-label="Testing">
+            {% set ttm_testing = project.ttm_status.get('testing') %}
+            {% set ttm_published = project.ttm_status.get('published', None) %}
+            {% if ttm_testing %}
+              {% if project.openqa_version %}
+                <a class="text-decoration-none {% if ttm_testing == project.ttm_version %}fw-semibold text-primary{% else %}text-body-secondary{% endif %}" href='https://openqa.opensuse.org/tests/overview?version={{ project.openqa_version }}&groupid={{ project.openqa_id }}'>{{ ttm_testing }}</a>
               {% else %}
-            n.a.
-        {% endif %}
-        </td>
-        <td>
-        {% set openqa_summary = project.openqa_summary() %}
-        {% for state, count in openqa_summary.items() %}
-          <span class="openqa{{ state }}">
-            {{ state }}: {{ count|length }}
-          </span>
+                <span class="{% if ttm_testing == project.ttm_version %}fw-semibold text-primary{% else %}text-body-secondary{% endif %}">{{ ttm_testing }}</span>
+              {% endif %}
+            {% else %}
+              <span class="text-muted">&mdash;</span>
+            {% endif %}
+            </td>
+            <td data-label="Published">
+            {% if ttm_published %}
+              <a class="text-decoration-none {% if ttm_published == project.ttm_version %}fw-semibold text-primary{% else %}text-body-secondary{% endif %}" href="{{ project.download_url }}">{{ ttm_published }}</a>
+            {% else %}
+              <span class="text-muted">&mdash;</span>
+            {% endif %}
+            </td>
+            <td data-label="openQA">
+            {% set openqa_summary = project.openqa_summary() %}
+            <div class="oq-cell">
+            {% for state, count in openqa_summary.items() %}
+              <span class="oq-badge oq-{{ state }}">
+                {{ state }}: {{ count|length }}
+              </span>
+            {% endfor %}
+            </div>
+            </td>
+          </tr>
         {% endfor %}
-        </td>
-      </tr>
-      {% endfor %}
-    </table>
+        </tbody>
+      </table>
+    </div>
   </div>
-  <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
-  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-timeago/1.6.7/jquery.timeago.min.js" integrity="sha256-0+5OfvOxkLHqpLPPwy9pDjug8N3cwaqcmleaxnR5VS8=" crossorigin="anonymous"></script>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-timeago/1.6.7/jquery.timeago.min.js"></script>
   <script>
-    jQuery(document).ready(function() {
+    jQuery(function() {
       jQuery("time.timeago").timeago();
+    });
+    const html = document.documentElement;
+    const toggle = document.getElementById('themeToggle');
+    const icon = document.getElementById('themeIcon');
+    function setTheme(theme) {
+      html.setAttribute('data-bs-theme', theme);
+      icon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+      localStorage.setItem('theme', theme);
+    }
+    const saved = localStorage.getItem('theme');
+    if (saved) setTheme(saved);
+    toggle.addEventListener('click', () => {
+      setTheme(html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark');
     });
   </script>
 </body>
-
 </html>

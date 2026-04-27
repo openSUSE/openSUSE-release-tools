@@ -1,23 +1,95 @@
 #!/usr/bin/python3
 
 import argparse
+import os
+from datetime import datetime, timezone
+from urllib.error import HTTPError
+
 import osc
 import yaml
-import os
-from osc.core import http_GET, makeurl, show_project_meta
-from osclib.core import attribute_value_load
+from jinja2 import Environment, FileSystemLoader
 from lxml import etree as ET
 from openqa_client.client import OpenQA_Client
-from urllib.error import HTTPError
-from datetime import datetime, timezone
-
-from jinja2 import Environment, FileSystemLoader
+from osc.core import http_GET, makeurl, show_project_meta
+from osclib.core import attribute_value_load
 
 
-class Fetcher(object):
-    def __init__(self, apiurl, opts):
+OPENQA_STATUS_ORDER = ['passed', 'softfailed', 'failed', 'running', 'cancelled', 'scheduled',
+                       'timeout_exceeded', 'parallel_failed', 'incomplete']
+PROGRESS_SCALE = 10000
+
+
+FACTORY_PROJECTS = [
+    {
+        'name': 'openSUSE:Factory',
+        'nick': 'Factory',
+        'download_url': 'https://download.opensuse.org/tumbleweed/iso/',
+        'openqa_group': 'openSUSE Tumbleweed',
+        'openqa_version': 'Tumbleweed',
+        'openqa_groupid': 1,
+    },
+    {'name': 'openSUSE:Factory:Live', 'nick': 'Live'},
+    {'name': 'openSUSE:Factory:Rings:0-Bootstrap', 'nick': 'Ring 0'},
+    {'name': 'openSUSE:Factory:Rings:1-MinimalX', 'nick': 'Ring 1'},
+    {
+        'name': 'openSUSE:Factory:ARM',
+        'nick': 'ARM',
+        'download_url': 'https://download.opensuse.org/ports/aarch64/tumbleweed/iso/',
+        'openqa_group': 'openSUSE Tumbleweed AArch64',
+        'openqa_version': 'Tumbleweed',
+        'openqa_groupid': 3,
+    },
+    {'name': 'openSUSE:Factory:ARM:Live', 'nick': 'ARM Live'},
+    {'name': 'openSUSE:Factory:ARM:Rings:0-Bootstrap', 'nick': 'ARM Ring 0'},
+    {'name': 'openSUSE:Factory:ARM:Rings:1-MinimalX', 'nick': 'ARM Ring 1'},
+    {
+        'name': 'openSUSE:Factory:LegacyX86',
+        'nick': 'Legacy X86',
+        'download_url': 'https://download.opensuse.org/ports/i586/tumbleweed/iso/',
+        'openqa_group': 'openSUSE Tumbleweed Legacy x86',
+        'openqa_version': 'Tumbleweed',
+        'openqa_groupid': 75,
+    },
+    {
+        'name': 'openSUSE:Factory:PowerPC',
+        'nick': 'Power',
+        'download_url': 'https://download.opensuse.org/ports/ppc/tumbleweed/iso/',
+        'openqa_group': 'openSUSE Tumbleweed PowerPC',
+        'openqa_version': 'Tumbleweed',
+        'openqa_groupid': 4,
+    },
+    {
+        'name': 'openSUSE:Factory:RISCV',
+        'nick': 'RISC-V',
+        'download_url': 'https://download.opensuse.org/ports/riscv/tumbleweed/iso/',
+        'openqa_group': 'openSUSE Tumbleweed RISC-V',
+        'openqa_version': 'Tumbleweed',
+        'openqa_groupid': 125,
+    },
+    {
+        'name': 'openSUSE:Factory:zSystems',
+        'nick': 'System Z',
+        'download_url': 'https://download.opensuse.org/ports/zsystems/tumbleweed/iso/',
+        'openqa_group': 'openSUSE Tumbleweed s390x',
+        'openqa_version': 'Tumbleweed',
+        'openqa_groupid': 34,
+    },
+]
+
+LEAP_PROJECTS = [
+    {
+        'name': 'openSUSE:Leap:15.6:Images',
+        'nick': 'Leap:15.6:Images',
+        'openqa_group': 'openSUSE Leap 15.6 Images',
+        'openqa_version': '15.6',
+        'openqa_groupid': 117,
+    },
+]
+
+
+class Fetcher:
+    def __init__(self, apiurl):
         self.projects = []
-        self.opts = opts
         self.apiurl = apiurl
         if apiurl.endswith('suse.de'):
             openqa_url = 'https://openqa.suse.de'
@@ -39,7 +111,14 @@ class Fetcher(object):
                 if key == 'uploading' or key == 'assigned':
                     key = 'running'
             jobs.setdefault(key, []).append(job['name'])
-        return jobs
+        ordered = {}
+        for status in OPENQA_STATUS_ORDER:
+            if status in jobs:
+                ordered[status] = jobs[status]
+        for status in sorted(jobs.keys()):
+            if status not in ordered:
+                ordered[status] = jobs[status]
+        return ordered
 
     def add(self, name, **kwargs):
         # cyclic dependency!
@@ -60,7 +139,7 @@ class Fetcher(object):
         for result in root.findall('.//statuscount'):
             code = result.get('code')
             count = int(result.get('count'))
-            if code == 'excluded' or code == 'disabled' or code == 'locked':
+            if code in {'excluded', 'disabled', 'locked'}:
                 continue  # ignore
             if code == 'succeeded':
                 succeeded += count
@@ -68,10 +147,10 @@ class Fetcher(object):
             if code == 'broken':
                 broken += count
                 continue
-            if code == "failed":
+            if code == 'failed':
                 failed += count
                 continue
-            if code == "unresolvable":
+            if code == 'unresolvable':
                 unresolvable += count
                 continue
             building += count
@@ -81,7 +160,7 @@ class Fetcher(object):
             unresolvable = 0
         if building + failed + succeeded == 0:
             return {'building': -1}
-        return {'building': 10000 - int(building * 10000 / (building + failed + succeeded + broken)),
+        return {'building': PROGRESS_SCALE - int(building * PROGRESS_SCALE / (building + failed + succeeded + broken)),
                 'failed': failed,
                 'broken': broken,
                 'unresolvable': unresolvable}
@@ -99,14 +178,17 @@ class Fetcher(object):
     def fetch_ttm_status(self, project):
         text = attribute_value_load(self.apiurl, project, 'ToTestManagerStatus')
         if text:
-            return yaml.safe_load(text)
-        return dict()
+            try:
+                return yaml.safe_load(text)
+            except yaml.YAMLError:
+                return {}
+        return {}
 
     def fetch_product_version(self, project):
         return attribute_value_load(self.apiurl, project, 'ProductVersion')
 
 
-class Project(object):
+class Project:
     def __init__(self, fetcher, name, kwargs):
         self.fetcher = fetcher
         self.name = name
@@ -120,7 +202,7 @@ class Project(object):
         self.ttm_version = fetcher.fetch_product_version(name)
 
     def build_summary(self, repo):
-        return fetcher.build_summary(self.name, repo)
+        return self.fetcher.build_summary(self.name, repo)
 
     def openqa_summary(self):
         return self.fetcher.openqa_results(self.openqa_id, self.ttm_status.get('testing'))
@@ -141,35 +223,14 @@ if __name__ == '__main__':
     osc.conf.config['debug'] = args.debug
     apiurl = osc.conf.config['apiurl']
 
-    fetcher = Fetcher(apiurl, args)
+    fetcher = Fetcher(apiurl)
 
-    if ("Factory" in args.project):
-        fetcher.add('openSUSE:Factory', nick='Factory', download_url='https://download.opensuse.org/tumbleweed/iso/',
-                    openqa_group='openSUSE Tumbleweed', openqa_version='Tumbleweed', openqa_groupid=1)
-        fetcher.add('openSUSE:Factory:Live', nick='Live')
-        fetcher.add('openSUSE:Factory:Rings:0-Bootstrap', nick='Ring 0')
-        fetcher.add('openSUSE:Factory:Rings:1-MinimalX', nick='Ring 1')
-        fetcher.add('openSUSE:Factory:ARM', nick='ARM',
-                    download_url='http://download.opensuse.org/ports/aarch64/tumbleweed/iso/',
-                    openqa_group='openSUSE Tumbleweed AArch64', openqa_version='Tumbleweed', openqa_groupid=3)
-        fetcher.add('openSUSE:Factory:ARM:Live', nick='ARM Live')
-        fetcher.add('openSUSE:Factory:ARM:Rings:0-Bootstrap', nick='ARM Ring 0')
-        fetcher.add('openSUSE:Factory:ARM:Rings:1-MinimalX', nick='ARM Ring 1')
-        fetcher.add('openSUSE:Factory:LegacyX86', nick='Legacy X86',
-                    download_url='http://download.opensuse.org/ports/i586/tumbleweed/iso/',
-                    openqa_group='openSUSE Tumbleweed Legacy x86', openqa_version='Tumbleweed', openqa_groupid=75)
-        fetcher.add('openSUSE:Factory:PowerPC', nick='Power',
-                    download_url='http://download.opensuse.org/ports/ppc/tumbleweed/iso/',
-                    openqa_group='openSUSE Tumbleweed PowerPC', openqa_version='Tumbleweed', openqa_groupid=4)
-        fetcher.add('openSUSE:Factory:RISCV', nick='RISC-V',
-                    download_url='http://download.opensuse.org/ports/riscv/tumbleweed/iso/',
-                    openqa_group='openSUSE Tumbleweed RISC-V', openqa_version='Tumbleweed', openqa_groupid=125)
-        fetcher.add('openSUSE:Factory:zSystems', nick='System Z',
-                    download_url='http://download.opensuse.org/ports/zsystems/tumbleweed/iso/',
-                    openqa_group='openSUSE Tumbleweed s390x', openqa_version='Tumbleweed', openqa_groupid=34)
+    if 'Factory' in args.project:
+        for config in FACTORY_PROJECTS:
+            fetcher.add(**config)
     else:
-        fetcher.add('openSUSE:Leap:15.6:Images', nick='Leap:15.6:Images', openqa_group='openSUSE Leap 15.6 Images',
-                    openqa_version='15.6', openqa_groupid=117)
+        for config in LEAP_PROJECTS:
+            fetcher.add(**config)
 
     is_leap = not fetcher.projects[0].name.startswith("openSUSE:Factory")
 
