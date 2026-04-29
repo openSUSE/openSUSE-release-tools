@@ -15,7 +15,7 @@ pipelines:
     - Generate.Release.Package:
         approval: manual
         jobs:
-<% factory_stagings = %w(A B C D E F G H I J K L M N O Gcc7) -%>
+<% factory_stagings = %w(A B C D E F G H I J K L M N O Gcc7 Glibc) -%>
 <% factory_stagings.each do |letter| -%>
             "Staging.<%= letter %>":
               resources:
