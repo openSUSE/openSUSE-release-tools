@@ -127,6 +127,13 @@ pipelines:
                 - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
                     --staging openSUSE:Factory:Staging:Gcc7
                     --only-release-packages --force
+            "Staging.Glibc":
+              resources:
+                - repo-checker
+              tasks:
+                - script: ./pkglistgen.py -A https://api.opensuse.org update_and_solve
+                    --staging openSUSE:Factory:Staging:Glibc
+                    --only-release-packages --force
 
   "Factory.Staging.A":
     environment_variables:
@@ -1117,6 +1124,71 @@ pipelines:
         destination: repos
         whitelist:
           - openSUSE:Factory:Staging:Gcc7_-_standard.yaml
+      scripts:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+        auto_update: true
+        destination: scripts
+        whitelist:
+          - DO_NOT_TRIGGER
+    stages:
+    - Checks:
+        jobs:
+          Check.Build.Succeeds:
+            resources:
+              - staging-bot
+            tasks:
+              - script: |-
+                  export PYTHONPATH=scripts
+                  ./scripts/gocd/verify-repo-built-successful.py -A $STAGING_API -p $STAGING_PROJECT -r standard
+
+          Repo.Checker:
+            environment_variables:
+              OSC_CONFIG: /home/go/config/oscrc-repo-checker
+            resources:
+              - repo-checker
+            tasks:
+              - script: |-
+                  ./scripts/staging-installcheck.py -A $STAGING_API -p openSUSE:Factory -s $STAGING_PROJECT
+
+    - Update.000product:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=scripts
+              if ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --force; then
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
+
+    - Enable.images.repo:
+        resources:
+          - staging-bot
+        tasks:
+          - script: |-
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              export PYTHONPATH=$PWD/scripts
+              while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
+                sleep 60
+              done
+              ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n images:enabled -r standard -s success
+
+  "Factory.Staging.Glibc":
+    environment_variables:
+      STAGING_PROJECT: openSUSE:Factory:Staging:Glibc
+      STAGING_API: https://api.opensuse.org
+      OSC_CONFIG: /home/go/config/oscrc-staging-bot
+    group: Factory
+    lock_behavior: unlockWhenFinished
+    materials:
+      stagings:
+        git: git://botmaster.suse.de/opensuse-repos.git
+        auto_update: true
+        destination: repos
+        whitelist:
+          - openSUSE:Factory:Staging:Glibc_-_standard.yaml
       scripts:
         git: https://github.com/openSUSE/openSUSE-release-tools.git
         auto_update: true
