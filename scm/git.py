@@ -70,7 +70,7 @@ class Git(scm.base.SCMBase):
                 if revision_name is not None:
                     to_fetch = f"{revision}:{revision_name}"
                 else:
-                    to_fetch = f"{revision}:{revision}"
+                    to_fetch = f"{revision}"
                 repo.remote(remote).fetch([to_fetch])
 
         if revision_name is not None:
