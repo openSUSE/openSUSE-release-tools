@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>openSUSE:Factory FTBFS Report</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<style>
+  .stat-card {
+    transition: transform 0.15s ease;
+  }
+  .stat-card:hover {
+    transform: translateY(-2px);
+  }
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: var(--bs-body-bg);
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<nav class="navbar navbar-expand-lg border-bottom sticky-top bg-body">
+  <div class="container-fluid">
+    <div class="d-flex flex-column">
+       <h1 class="h5 mb-0 fw-bold">FTFBS report at {{ rebuild_pct }}% build</h1>
+
+      <p class="mb-0 text-body-secondary small">Packages failing to build in <code>{{ rebuild_project }}</code></p>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+      <div class="text-end d-none d-sm-block">
+        <span class="small text-body-secondary">Generated </span><span id="generatedAt" datetime="{{ generated_at_iso }}" title="{{ generated_at_utc }}"></span>
+      </div>
+      <button class="btn btn-outline-secondary btn-sm" id="themeToggle" title="Toggle theme">
+         <i class="bi bi-moon-fill" id="themeIcon"></i>
+       </button>
+
+    </div>
+  </div>
+</nav>
+
+<!-- Stats bar -->
+{% set factory_ok   = packages | selectattr('factory_status', 'eq', 'succeeded') | list | length %}
+{% set factory_fail = packages | selectattr('factory_status', 'in', ['failed','broken','unresolvable']) | list | length %}
+{% set with_sr      = packages | selectattr('open_requests') | list | length %}
+{% set no_devel     = packages | rejectattr('devel_project') | list | length %}
+
+{% set stats = [
+  (packages|length, "failing in Rebuild"),
+  (factory_ok, "OK in Factory"),
+  (factory_fail, "failing in Factory too"),
+  (with_sr, "have open SRs"),
+  (no_devel, "without devel project")
+] %}
+
+<div class="container-fluid py-3">
+  <div class="row g-2">
+    {% for val, label in stats %}
+    <div class="col-auto">
+      <div class="stat-card card border-info border-opacity-50 bg-body">
+        <div class="card-body py-2 px-3 d-flex align-items-center gap-2">
+          <span class="badge bg-info rounded-circle" style="width:8px;height:8px;padding:0"></span>
+          <span class="small">{{ val }} {{ label }}</span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="container-fluid pb-3">
+  <div class="row g-2 align-items-center">
+    <div class="col-md-4">
+      <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input type="text" class="form-control" id="searchBox" placeholder="Filter packages…" oninput="applySearch()">
+      </div>
+    </div>
+    <div class="col-auto ms-auto">
+      <div class="btn-group" role="group">
+        <button class="btn btn-outline-secondary btn-sm" onclick="applySort('name')">Name</button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="applySort('date_desc')">Newest</button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="applySort('date_asc')">Oldest</button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="applySort('factory')">Factory</button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="applySort('devel')">Devel</button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="applySort('sr')">SRs</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="container-fluid pb-4">
+    <div class="table-responsive">
+
+    <table class="table table-striped table-hover table-bordered align-middle mb-0" id="pkgTable">
+      <thead class="table-light">
+        <tr>
+          <th>Package name</th>
+          <th>Last successful build in oS:F:Rebuild</th>
+          <th>Build Status oS:F:Rebuild</th>
+          <th>Build Status oS:Factory</th>
+          <th>Devel Project</th>
+          <th>Open Requests</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+      {% for pkg in packages %}
+      <tr
+        data-pkg="{{ pkg.package }}"
+        data-factory="{{ pkg.factory_status }}"
+        data-devel="{{ pkg.devel_project }}"
+        data-sr="{{ pkg.open_requests | length }}"
+        data-date="{{ pkg.last_build.timestamp() if pkg.last_build else 0 }}"
+      >
+        <!-- Package -->
+         <td class="font-monospace fw-semibold">
+           <a href="https://build.opensuse.org/package/show/{{ rebuild_project }}/{{ pkg.package }}"
+              target="_blank" rel="noopener" class="text-decoration-none">{{ pkg.package }}</a>
+         </td>
+
+
+        <!-- Last build date -->
+         <td class="text-nowrap small text-body-secondary relative-time">
+           {% if pkg.last_build_ts %}
+             <span class="relative-time-label" datetime="{{ pkg.last_build.isoformat() }}" title="{{ pkg.last_build.strftime('%Y-%m-%d %H:%M') }} UTC"></span>
+           {% else %}
+             <span class="text-body-secondary">—</span>
+           {% endif %}
+         </td>
+
+
+        <!-- Build status in Rebuild -->
+        <td>
+          {% for res in pkg.build_results %}
+            {% if res.code == 'failed' or res.code == 'broken' %}
+              {% set badge_cls = 'bg-danger' %}
+            {% elif res.code == 'succeeded' %}
+              {% set badge_cls = 'bg-success' %}
+            {% elif res.code == 'building' %}
+              {% set badge_cls = 'bg-primary' %}
+            {% elif res.code == 'unresolvable' %}
+              {% set badge_cls = 'bg-warning text-dark' %}
+            {% elif res.code == 'disabled' %}
+              {% set badge_cls = 'bg-secondary opacity-75' %}
+            {% else %}
+              {% set badge_cls = 'bg-secondary' %}
+            {% endif %}
+            <a href="https://build.opensuse.org/package/show/{{ rebuild_project }}/{{ pkg.package }}" target="_blank" rel="noopener" class="text-decoration-none">
+              <span class="badge {{ badge_cls }}">{{ res.code }}</span>
+            </a>
+            {% if res.detail %}
+              <br/><small class="text-body-secondary text-truncate d-inline-block" style="max-width:360px" data-bs-toggle="tooltip" title="{{ res.detail }}">{{ res.detail }}</small>
+            {% endif %}
+          {% endfor %}
+        </td>
+
+        <!-- Factory status -->
+        <td>
+          {% set fs = pkg.factory_status %}
+          {% if fs == 'failed' or fs == 'broken' %}
+            {% set fbadge = 'bg-danger' %}
+          {% elif fs == 'succeeded' %}
+            {% set fbadge = 'bg-success' %}
+          {% elif fs == 'building' %}
+            {% set fbadge = 'bg-primary' %}
+          {% elif fs == 'unresolvable' %}
+            {% set fbadge = 'bg-warning text-dark' %}
+          {% elif fs == 'disabled' %}
+            {% set fbadge = 'bg-secondary opacity-75' %}
+          {% else %}
+            {% set fbadge = 'bg-secondary' %}
+          {% endif %}
+          <a href="https://build.opensuse.org/package/show/{{ factory_project }}/{{ pkg.package }}" target="_blank" rel="noopener" class="text-decoration-none">
+            <span class="badge {{ fbadge }}">{{ fs }}</span>
+          </a>
+          {% if pkg.factory_detail %}
+            <br/><small class="text-body-secondary text-truncate d-inline-block" style="max-width:360px" data-bs-toggle="tooltip" title="{{ pkg.factory_detail }}">{{ pkg.factory_detail }}</small>
+          {% endif %}
+        </td>
+
+        <!-- Devel project -->
+         <td class="text-success">
+           {% if pkg.devel_project %}
+             <a href="https://build.opensuse.org/project/show/{{ pkg.devel_project }}"
+                target="_blank" rel="noopener" class="text-success text-decoration-none">{{ pkg.devel_project }}</a>
+             <br/><small><a href="https://build.opensuse.org/package/show/{{ pkg.devel_project }}/{{ pkg.devel_package }}"
+                target="_blank" rel="noopener" class="text-success text-decoration-none">{{ pkg.devel_package }}</a></small>
+           {% else %}
+             <span class="text-body-secondary">—</span>
+           {% endif %}
+         </td>
+
+
+        <!-- Open Submit Requests -->
+         <td>
+           {% if pkg.open_requests %}
+             <ul class="list-unstyled mb-0">
+             {% for sr in pkg.open_requests %}
+               <li class="d-flex align-items-center gap-2 mb-1" style="flex-wrap: wrap;">
+                 <span class="fw-semibold">
+                   <a href="https://build.opensuse.org/request/show/{{ sr.id }}"
+                      target="_blank" rel="noopener" class="text-decoration-none">#{{ sr.id }}</a>
+                 </span>
+                 <span class="badge {% if sr.type == 'delete' %}bg-danger{% elif sr.type == 'submit' %}bg-success{% else %}bg-secondary{% endif %}">{{ sr.type }}</span>
+                 <span class="small text-body-secondary">→ {{ sr.target_project }}</span>
+               </li>
+             {% endfor %}
+             </ul>
+           {% else %}
+             <span class="text-body-secondary">—</span>
+           {% endif %}
+         </td>
+
+      </tr>
+      {% else %}
+      <tr class="empty-row">
+        <td colspan="6" class="text-center py-5 text-body-secondary">
+          <i class="bi bi-check-circle display-4 d-block mb-2"></i>
+          No failing packages found — great news!
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/timeago.js@4.0.2/dist/timeago.min.js"></script>
+<script>
+  // ── Theme toggle ──────────────────────────────────────────────────
+  const html = document.documentElement;
+  const toggle = document.getElementById('themeToggle');
+  const icon = document.getElementById('themeIcon');
+  function setTheme(theme) {
+    html.setAttribute('data-bs-theme', theme);
+    icon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+    localStorage.setItem('theme', theme);
+  }
+  const saved = localStorage.getItem('theme');
+  if (saved) setTheme(saved);
+  toggle.addEventListener('click', () => {
+    setTheme(html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark');
+  });
+
+  // ── Search & sort ────────────────────────────────────────────────
+
+  function applySearch() {
+    const q = document.getElementById('searchBox').value.toLowerCase();
+    document.querySelectorAll('#tableBody tr[data-pkg]').forEach(row => {
+      const pkg = row.dataset.pkg.toLowerCase();
+       row.classList.toggle('d-none', !pkg.includes(q));
+
+    });
+  }
+
+  function applySort(val) {
+    const tbody = document.getElementById('tableBody');
+    const rows  = Array.from(tbody.querySelectorAll('tr[data-pkg]'));
+
+    document.querySelectorAll('.btn-group .btn').forEach(btn => {
+      btn.classList.toggle('btn-primary', btn.getAttribute('onclick').includes(`'${val}'`));
+      btn.classList.toggle('btn-outline-secondary', !btn.getAttribute('onclick').includes(`'${val}'`));
+    });
+
+    rows.sort((a, b) => {
+      if (val === 'name')      return a.dataset.pkg.localeCompare(b.dataset.pkg);
+      if (val === 'date_desc') return parseFloat(b.dataset.date) - parseFloat(a.dataset.date);
+      if (val === 'date_asc')  return parseFloat(a.dataset.date) - parseFloat(b.dataset.date);
+      if (val === 'factory')   return a.dataset.factory.localeCompare(b.dataset.factory);
+      if (val === 'devel')     return a.dataset.devel.localeCompare(b.dataset.devel);
+      if (val === 'sr')        return parseInt(b.dataset.sr || '0') - parseInt(a.dataset.sr || '0');
+      return 0;
+    });
+
+    rows.forEach(r => tbody.appendChild(r));
+  }
+
+  // ── Relative time formatting ─────────────────────────────────────
+
+  function updateRelativeTimes() {
+    timeago.render(document.querySelectorAll('.relative-time-label, #generatedAt'));
+  }
+
+  updateRelativeTimes();
+  applySort('date_asc');
+  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+  setInterval(updateRelativeTimes, 60000);
+
+</script>
+</body>
+</html>
