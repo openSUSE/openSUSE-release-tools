@@ -27,7 +27,7 @@
 <nav class="navbar navbar-expand-lg border-bottom sticky-top bg-body">
   <div class="container-fluid">
     <div class="d-flex flex-column">
-       <h1 class="h5 mb-0 fw-bold">FTFBS report at {{ rebuild_pct }}% build</h1>
+      <h1 class="h5 mb-0 fw-bold">FTFBS report at {{ rebuild_pct }}% build</h1>
 
       <p class="mb-0 text-body-secondary small">Packages failing to build in <code>{{ rebuild_project }}</code></p>
     </div>
@@ -36,8 +36,8 @@
         <span class="small text-body-secondary">Generated </span><span id="generatedAt" datetime="{{ generated_at_iso }}" title="{{ generated_at_utc }}"></span>
       </div>
       <button class="btn btn-outline-secondary btn-sm" id="themeToggle" title="Toggle theme">
-         <i class="bi bi-moon-fill" id="themeIcon"></i>
-       </button>
+        <i class="bi bi-moon-fill" id="themeIcon"></i>
+      </button>
 
     </div>
   </div>
@@ -119,20 +119,20 @@
         data-date="{{ pkg.last_build.timestamp() if pkg.last_build else 0 }}"
       >
         <!-- Package -->
-         <td class="font-monospace fw-semibold">
-           <a href="https://build.opensuse.org/package/show/{{ rebuild_project }}/{{ pkg.package }}"
+        <td class="font-monospace fw-semibold">
+          <a href="https://build.opensuse.org/package/show/{{ rebuild_project }}/{{ pkg.package }}"
               target="_blank" rel="noopener" class="text-decoration-none">{{ pkg.package }}</a>
-         </td>
+        </td>
 
 
         <!-- Last build date -->
-         <td class="text-nowrap small text-body-secondary relative-time">
-           {% if pkg.last_build_ts %}
-             <span class="relative-time-label" datetime="{{ pkg.last_build.isoformat() }}" title="{{ pkg.last_build.strftime('%Y-%m-%d %H:%M') }} UTC"></span>
-           {% else %}
-             <span class="text-body-secondary">—</span>
-           {% endif %}
-         </td>
+        <td class="text-nowrap small text-body-secondary relative-time">
+          {% if pkg.last_build_ts %}
+            <span class="relative-time-label" datetime="{{ pkg.last_build.isoformat() }}" title="{{ pkg.last_build.strftime('%Y-%m-%d %H:%M') }} UTC"></span>
+          {% else %}
+            <span class="text-body-secondary">—</span>
+          {% endif %}
+        </td>
 
 
         <!-- Build status in Rebuild -->
@@ -185,37 +185,37 @@
         </td>
 
         <!-- Devel project -->
-         <td class="text-success">
-           {% if pkg.devel_project %}
-             <a href="https://build.opensuse.org/project/show/{{ pkg.devel_project }}"
+        <td class="text-success">
+          {% if pkg.devel_project %}
+            <a href="https://build.opensuse.org/project/show/{{ pkg.devel_project }}"
                 target="_blank" rel="noopener" class="text-success text-decoration-none">{{ pkg.devel_project }}</a>
-             <br/><small><a href="https://build.opensuse.org/package/show/{{ pkg.devel_project }}/{{ pkg.devel_package }}"
+            <br/><small><a href="https://build.opensuse.org/package/show/{{ pkg.devel_project }}/{{ pkg.devel_package }}"
                 target="_blank" rel="noopener" class="text-success text-decoration-none">{{ pkg.devel_package }}</a></small>
-           {% else %}
-             <span class="text-body-secondary">—</span>
-           {% endif %}
-         </td>
+          {% else %}
+            <span class="text-body-secondary">—</span>
+          {% endif %}
+        </td>
 
 
         <!-- Open Submit Requests -->
-         <td>
-           {% if pkg.open_requests %}
-             <ul class="list-unstyled mb-0">
-             {% for sr in pkg.open_requests %}
-               <li class="d-flex align-items-center gap-2 mb-1" style="flex-wrap: wrap;">
-                 <span class="fw-semibold">
-                   <a href="https://build.opensuse.org/request/show/{{ sr.id }}"
+        <td>
+          {% if pkg.open_requests %}
+            <ul class="list-unstyled mb-0">
+            {% for sr in pkg.open_requests %}
+              <li class="d-flex align-items-center gap-2 mb-1" style="flex-wrap: wrap;">
+                <span class="fw-semibold">
+                  <a href="https://build.opensuse.org/request/show/{{ sr.id }}"
                       target="_blank" rel="noopener" class="text-decoration-none">#{{ sr.id }}</a>
-                 </span>
-                 <span class="badge {% if sr.type == 'delete' %}bg-danger{% elif sr.type == 'submit' %}bg-success{% else %}bg-secondary{% endif %}">{{ sr.type }}</span>
-                 <span class="small text-body-secondary">→ {{ sr.target_project }}</span>
-               </li>
-             {% endfor %}
-             </ul>
-           {% else %}
-             <span class="text-body-secondary">—</span>
-           {% endif %}
-         </td>
+                </span>
+                <span class="badge {% if sr.type == 'delete' %}bg-danger{% elif sr.type == 'submit' %}bg-success{% else %}bg-secondary{% endif %}">{{ sr.type }}</span>
+                <span class="small text-body-secondary">→ {{ sr.target_project }}</span>
+              </li>
+            {% endfor %}
+            </ul>
+          {% else %}
+            <span class="text-body-secondary">—</span>
+          {% endif %}
+        </td>
 
       </tr>
       {% else %}
@@ -255,7 +255,7 @@
     const q = document.getElementById('searchBox').value.toLowerCase();
     document.querySelectorAll('#tableBody tr[data-pkg]').forEach(row => {
       const pkg = row.dataset.pkg.toLowerCase();
-       row.classList.toggle('d-none', !pkg.includes(q));
+      row.classList.toggle('d-none', !pkg.includes(q));
 
     });
   }
