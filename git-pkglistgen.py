@@ -37,7 +37,7 @@ STAGING_TYPE_MARKERS = "QA-SLES-Basic QA-SLES-Reduced QA-SLES-Full"
 slugify_regex = re.compile("[^a-z0-9_]+")
 
 StagingProject = namedtuple(
-    "StagingProject", ["target", "name", "origin", "label"]
+    "StagingProject", ["target", "codebase_project", "name", "origin", "label"]
 )
 
 
@@ -213,6 +213,7 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
         for project in staging_configuration.get("QA", []):
             yield StagingProject(
                 target=f"{base_project}:{request_id}:{project['Name']}",
+                codebase_project=f"{base_project}:{request_id}",
                 origin=project["Origin"],
                 name=project["Name"],
                 label=project.get("Label"),
