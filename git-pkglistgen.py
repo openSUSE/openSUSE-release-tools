@@ -601,6 +601,6 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
 
 if __name__ == "__main__":
     app = CommandLineInterface()
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
 
     sys.exit(app.main())
