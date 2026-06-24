@@ -36,28 +36,114 @@ STAGING_TYPE_MARKERS = "QA-SLES-Basic QA-SLES-Reduced QA-SLES-Full"
 
 slugify_regex = re.compile("[^a-z0-9_]+")
 
-StagingProject = namedtuple("StagingProject", ["target", "name", "origin", "label"])
+StagingProject = namedtuple(
+    "StagingProject", ["target", "name", "origin", "label"]
+)
 
 
 def slugify(x):
     return slugify_regex.sub("-", x.lower())
 
 
-class GitRepository(object):
 
-    def __init__(self, origin_remote):
 
-        self.origin_remote = origin_remote
+class GitObject(object):
 
+    def __init__(self):
         # This gets cleaned up on exit
         self.temporary_directory = tempfile.TemporaryDirectory(suffix="pkglistgen")
 
         self.git_checkout = os.path.join(self.temporary_directory.name, "git")
 
+    def __get_ref(self, pointer):
+        if (
+            subprocess.run(
+                ["git", "rev-parse", "--verify", f"refs/heads/{pointer}"],
+                cwd=self.git_checkout,
+            ).returncode
+            > 0
+        ):
+            # commit/tag
+            return pointer
+        else:
+            # branch
+            return f"refs/heads/{pointer}"
+
+    def add(self, content: list):
+        subprocess.check_call(
+            ["git", "add"] + content,
+            cwd=self.git_checkout,
+        )
+
+    def commit(self, message):
+        subprocess.check_call(
+            [
+                "git",
+                "commit",
+                "-m",
+                message,
+            ],
+            cwd=self.git_checkout,
+        )
+
+    def push_to_branch(self, source_pointer, target_remote, target_branch, force=False):
+        subprocess.check_call(
+            [
+                "git",
+                "push",
+                "--force" if force else "--no-force",
+                target_remote,
+                f"{self.__get_ref(source_pointer)}:refs/heads/{target_branch}",
+            ],
+            cwd=self.git_checkout,
+        )
+
+    def push(self):
+        subprocess.check_call(
+            ["git", "push"],
+            cwd=self.git_checkout,
+        )
+
+    def reset_to_ref(self, ref):
+        subprocess.check_call(
+            ["git", "reset", "--hard", ref],
+            cwd=self.git_checkout,
+        )
+
+
+class GitWorktree(GitObject):
+
+    @classmethod
+    def from_repository(cls, repository, branch_name):
+        obj = cls()
+        subprocess.check_call(
+            ["git", "worktree", "add", obj.git_checkout, branch_name],
+            cwd=repository.git_checkout,
+        )
+
+        return obj
+
+
+class GitRepository(GitObject):
+
+    def __init__(self, origin_remote, mirror=False):
+
+        super().__init__()
+
+        self.origin_remote = origin_remote
+
+        self.mirror = mirror
+
     def fetch(self):
         if not os.path.exists(self.git_checkout):
             subprocess.check_call(
-                ["git", "clone", "--mirror", self.origin_remote, self.git_checkout]
+                [
+                    "git",
+                    "clone",
+                    "--mirror" if self.mirror else "--no-mirror",
+                    self.origin_remote,
+                    self.git_checkout,
+                ]
             )
 
         # Fetch
@@ -65,30 +151,13 @@ class GitRepository(object):
             ["git", "fetch", self.origin_remote], cwd=self.git_checkout
         )
 
-    def push_to_branch(self, source_pointer, target_remote, target_branch):
-
-        if (
-            subprocess.run(
-                ["git", "rev-parse", "--verify", f"refs/heads/{source_pointer}"],
-                cwd=self.git_checkout,
-            ).returncode
-            > 0
-        ):
-            # commit/tag
-            source_ref = source_pointer
-        else:
-            # branch
-            source_ref = f"refs/heads/{source_pointer}"
-
-        subprocess.check_call(
-            [
-                "git",
-                "push",
-                target_remote,
-                f"{source_ref}:refs/heads/{target_branch}",
-            ],
-            cwd=self.git_checkout,
-        )
+    @contextmanager
+    def transient_worktree(self, branch_name):
+        worktree = GitWorktree.from_repository(self, branch_name)
+        try:
+            yield worktree
+        finally:
+            pass
 
 
 class GitRepositories(object):
@@ -96,11 +165,20 @@ class GitRepositories(object):
     def __init__(self):
         self.mapping = {}
 
+    def register_repository(self, remote):
+        return GitRepository(remote)
+
     def __getitem__(self, origin_remote):
         if origin_remote not in self.mapping:
-            self.mapping[origin_remote] = GitRepository(origin_remote)
+            self.mapping[origin_remote] = self.register_repository(origin_remote)
 
         return self.mapping[origin_remote]
+
+
+class GitMirrors(GitRepositories):
+
+    def register_repository(self, remote):
+        return GitRepository(remote, mirror=True)
 
 
 class GitPkgListGenBot(ReviewBot.ReviewBot):
