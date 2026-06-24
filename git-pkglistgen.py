@@ -13,6 +13,8 @@ import subprocess
 
 import tempfile
 
+from argparse import Namespace
+
 from urllib.parse import urljoin, urldefrag
 import urllib.error
 
@@ -27,8 +29,18 @@ from pkglistgen.tool import PkgListGen, MismatchedRepoException
 
 from collections import namedtuple
 
+from contextlib import contextmanager
+
+try:
+    from package_monkey.subcommands import PackageMonkey, subcommandRegistry
+
+    is_package_monkey_available = True
+except:
+    print("Package Monkey not found")
+    is_package_monkey_available = False
+
 DEFAULT_AUTOGITS_REVIEWER = "autogits_obs_staging_bot"
-DEFAULT_ENGINE = "product_composer"
+DEFAULT_ENGINE = "package_monkey"  # "product_composer"
 DEFAULT_ENABLE_REPOSITORIES = "product images"
 
 STAGING_PROGRESS_MARKER = "staging/In Progress"
@@ -45,6 +57,76 @@ def slugify(x):
     return slugify_regex.sub("-", x.lower())
 
 
+class MonkeyContext(PackageMonkey if is_package_monkey_available else object):
+    """
+    A Context Manager to execute Package Monkey commands.
+
+    The following assumptions are made:
+    - Only a single thread can access the context
+    - The cache directory is shared with every context, and also
+      between bot runs
+    - The state directory is per-context and gets cleaned-up on
+      context exit
+    """
+
+    DEFAULTS = {
+        "codebase": "slfo",
+        "verbose": True,
+        "quiet": False,
+    }
+
+    def __init__(self, user_name, **context_opts):
+
+        if not is_package_monkey_available:
+            raise Exception(
+                "Created a MonkeyContext without package-monkey being available"
+            )
+
+        super().__init__(user_name)
+
+        # Use a different cache directory to differentiate with the standalone
+        # tool.
+        # This cache directory is *shared* between all the contextes
+        # TODO: add user_name in the mix
+        self.cache_directory = os.path.expanduser(
+            "~/.cache/git-pkglistgen-package_monkey"
+        )
+
+        # Generate a per-context state directory.
+        # Gets cleaned up on exit
+        self.temporary_directory = tempfile.TemporaryDirectory(suffix="package_monkey")
+
+        self.context_opts = {**self.DEFAULTS, **context_opts}
+        self.context_opts["statedir"] = self.temporary_directory.name
+        self.context_opts["cache"] = self.cache_directory
+
+    def __run_command(self, cmd, *extra_args, **extra_kwargs):
+
+        # self.initializeLogging(cmd)
+
+        args = self.args.parse_args(args=[cmd.NAME, *extra_args])
+        vars(args).update({**self.context_opts, **extra_kwargs})
+        application = cmd.createApplication(args)
+
+        try:
+            return application.run()
+        except SystemExit as e:
+            if e.code > 0:
+                raise Exception(f"package-monkey {cmd} call failed with exit code {e.code}")
+
+    def __getattr__(self, attr):
+        cmd = self.findSubcommand(attr, subcommandRegistry.commands)
+        if cmd:
+            return lambda *args, **kwargs: self.__run_command(cmd, *args, **kwargs)
+
+        return super().__getattr__(attr)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        # Clean the tempdir
+        del self.temporary_directory
 
 
 class GitObject(object):
@@ -197,6 +279,7 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
         self.staging_origin_cache = {}
 
         self.cloned_repositories = GitRepositories()
+        self.mirrored_repositories = GitMirrors()
 
         # This is heavily dependent on the GITEA platform
         if self.platform.name != "GITEA":
@@ -327,7 +410,11 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
         staging_branch = slugify(
             f"qa_{request._owner}_{request._repo}_pr{request._pr_id}"
         )
-        engine = Engine[target_config.get("pkglistgen-engine", DEFAULT_ENGINE)]
+
+        configured_engine = target_config.get("pkglistgen-engine", DEFAULT_ENGINE)
+        if configured_engine != "package_monkey":
+            pkglistgen_engine = Engine[configured_engine]
+
         enable_repositories = target_config.get(
             "pkglistgen-enable-repositories", DEFAULT_ENABLE_REPOSITORIES
         ).split(" ")
@@ -390,9 +477,9 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
                 # Should do the initial push
                 url, fragment = urldefrag(git_url_element.text)
                 self.logger.info(f"Creating branch {staging_branch}")
-                self.cloned_repositories[url].fetch()
-                self.cloned_repositories[url].push_to_branch(
-                    fragment, staging_repo_url, staging_branch
+                self.mirrored_repositories[url].fetch()
+                self.mirrored_repositories[url].push_to_branch(
+                    fragment, staging_repo_url, staging_branch, force=True
                 )
 
                 git_url_element.text = target_git_url
@@ -402,25 +489,64 @@ class GitPkgListGenBot(ReviewBot.ReviewBot):
                 # We will get back to it later
                 return None, None
 
-            self.tool.reset()
-            self.tool.dry_run = self.dryrun
             try:
-                self.tool.update_and_solve_target(
-                    api,
-                    main_project,
-                    target_config,
-                    main_repo,
-                    git_url=git_url_element.text,
-                    project=qa_project.target,
-                    scope="target",
-                    engine=engine,
-                    force=True,
-                    no_checkout=False,
-                    only_release_packages=False,
-                    only_update_weakremovers=False,
-                    stop_after_solve=False,
-                    custom_cache_tag="git-pkglistgen",
-                )
+                if configured_engine == "package_monkey":
+                    # Download model
+                    model_url = "https://src.suse.de/sle-prjmgr/SLFO.git"
+                    self.cloned_repositories[model_url].fetch()
+                    self.cloned_repositories[model_url].reset_to_ref(
+                        "remotes/origin/main"
+                    )
+
+                    with MonkeyContext(
+                        "user_name",
+                        codebase="slfo",
+                        extra_build_project=[
+                            qa_project.codebase_project,
+                            qa_project.target,
+                        ],
+                        model_path=self.cloned_repositories[model_url].git_checkout,
+                    ) as monkey:
+                        monkey.download()
+                        monkey.prepare(ignore_errors=True)
+                        monkey.classify()
+
+                        staging_repo = self.mirrored_repositories[staging_repo_url]
+                        staging_repo.fetch()
+                        with staging_repo.transient_worktree(
+                            staging_branch
+                        ) as worktree:
+                            monkey.compose(build_path=worktree.git_checkout)
+                            monkey.publish(
+                                os.path.join(
+                                    worktree.git_checkout, "000productcompose"
+                                ),
+                                scope="compose",
+                            )
+
+                            # package-monkey only outputs productcompose files
+                            worktree.add(["000productcompose/default.productcompose"])
+                            worktree.commit("Package list update by package-monkey")
+                            worktree.push()
+                else:
+                    self.tool.reset()
+                    self.tool.dry_run = self.dryrun
+                    self.tool.update_and_solve_target(
+                        api,
+                        main_project,
+                        target_config,
+                        main_repo,
+                        git_url=git_url_element.text,
+                        project=qa_project.target,
+                        scope="target",
+                        engine=pkglistgen_engine,
+                        force=True,
+                        no_checkout=False,
+                        only_release_packages=False,
+                        only_update_weakremovers=False,
+                        stop_after_solve=False,
+                        custom_cache_tag="git-pkglistgen",
+                    )
             except MismatchedRepoException:
                 # Repo still building, just exit now as presumably eventual
                 # other projects are also affected
