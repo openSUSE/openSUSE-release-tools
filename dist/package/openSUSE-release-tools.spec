@@ -449,7 +449,6 @@ exit 0
 %{_bindir}/osrt-bugowner
 %{_bindir}/osrt-build-fail-reminder
 %{_bindir}/osrt-checknewer
-%{_bindir}/osrt-check_bugowner
 %{_bindir}/osrt-check_tags_in_requests
 %{_bindir}/osrt-compare_pkglist
 %{_bindir}/osrt-container_cleaner
@@ -476,7 +475,10 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/metrics.py
 %exclude %{_datadir}/%{source_dir}/metrics_release.py
 %exclude %{_datadir}/%{source_dir}/origin-manager.py
-%exclude %{_bindir}/osrt-staging-report
+%exclude %{_datadir}/%{source_dir}/staging-report.py
+%exclude %{_datadir}/%{source_dir}/git-installcheck.py
+%exclude %{_datadir}/%{source_dir}/staging-installcheck.py
+%exclude %{_datadir}/%{source_dir}/staging-report.py
 %exclude %{_datadir}/%{source_dir}/staginginstallchecker
 %exclude %{_datadir}/%{source_dir}/pkglistgen
 %exclude %{_datadir}/%{source_dir}/pkglistgen.py
@@ -620,6 +622,9 @@ exit 0
 %{_bindir}/osrt-findfileconflicts
 %{_bindir}/osrt-maintenance-installcheck
 %{_bindir}/osrt-write_repo_susetags_file
+%{_datadir}/%{source_dir}/maintenance-installcheck.py
+%{_datadir}/%{source_dir}/git-installcheck.py
+%{_datadir}/%{source_dir}/staging-installcheck.py
 %{_datadir}/%{source_dir}/staginginstallchecker
 %{_datadir}/%{source_dir}/project-installcheck.py
 %{_datadir}/%{source_dir}/findfileconflicts
@@ -630,6 +635,7 @@ exit 0
 %{_bindir}/osrt-staging-report
 %{_bindir}/osrt-suppkg_rebuild
 %{_datadir}/%{source_dir}/devel-project.py
+%{_datadir}/%{source_dir}/staging-report.py
 %{_datadir}/%{source_dir}/suppkg_rebuild.py
 
 %files pkglistgen
