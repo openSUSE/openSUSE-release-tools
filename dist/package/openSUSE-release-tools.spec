@@ -462,6 +462,7 @@ exit 0
 %{_bindir}/osrt-git-openqa-maintenance
 %{_bindir}/osrt-repo2fileprovides
 %{_bindir}/osrt-requestfinder
+%{_bindir}/osrt-sle_check
 %{_bindir}/osrt-totest-manager
 %{_datadir}/%{source_dir}
 %exclude %{_datadir}/%{source_dir}/abichecker
