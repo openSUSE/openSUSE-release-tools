@@ -10,6 +10,7 @@ import sle_check
 from sle_check import (
     added_binaries_from_diff,
     build_accepted_message,
+    build_binary_source_match,
     build_declined_message,
     build_person_match,
     build_source_map,
@@ -20,9 +21,12 @@ from sle_check import (
     find_orphan_sources,
     find_orphans,
     is_orphan,
+    merge_fallback_sources,
     normalize_maintainership,
     parse_added_binaries,
     parse_persons,
+    parse_published_sources,
+    query_published_sources,
     resolve_sources,
 )
 
@@ -48,6 +52,17 @@ PERSONS_XML = """<collection>
   <person><login>alice</login><state>confirmed</state></person>
   <person><login>bob</login><state>locked</state></person>
   <person><state>confirmed</state></person>
+</collection>"""
+
+PUBLISHED_XML = """<collection>
+  <binary name="crash-kmp-rt" project="SUSE:SLFO:Main" package="crash"/>
+  <binary name="python313-libmodulemd" project="SUSE:SLFO:Main" package="libmodulemd"/>
+  <binary name="graphviz-gd" project="SUSE:SLFO:Main" package="graphviz:qt6"/>
+  <binary name="crash-kmp-rt" project="SUSE:SLFO:Main:Staging:V" package="crash-staging"/>
+  <binary name="dual" project="SUSE:SLFO:Main" package="src-a"/>
+  <binary name="dual" project="SUSE:SLFO:Main" package="src-b"/>
+  <binary project="SUSE:SLFO:Main" package="no-name"/>
+  <binary name="no-package" project="SUSE:SLFO:Main"/>
 </collection>"""
 
 MULTI_FILE_DIFF = (
@@ -228,6 +243,147 @@ class PersonTests(unittest.TestCase):
         self.assertEqual(r.not_found, ["carol"])
 
 
+class BuildBinarySourceMatchTests(unittest.TestCase):
+    def test_ors_names_and_ands_project(self):
+        self.assertEqual(
+            build_binary_source_match(["a", "b"], "SUSE:SLFO:Main"),
+            "(@name='a' or @name='b') and @project='SUSE:SLFO:Main'",
+        )
+
+    def test_single_name(self):
+        self.assertEqual(
+            build_binary_source_match(["crash-kmp-rt"], "SUSE:SLFO:Main"),
+            "(@name='crash-kmp-rt') and @project='SUSE:SLFO:Main'",
+        )
+
+
+class ParsePublishedSourcesTests(unittest.TestCase):
+    def setUp(self):
+        self.m = parse_published_sources(
+            ET.fromstring(PUBLISHED_XML), "SUSE:SLFO:Main"
+        )
+
+    def test_maps_binary_to_source(self):
+        self.assertEqual(self.m["crash-kmp-rt"], ["crash"])
+        self.assertEqual(self.m["python313-libmodulemd"], ["libmodulemd"])
+
+    def test_strips_flavor(self):
+        self.assertEqual(self.m["graphviz-gd"], ["graphviz"])
+
+    def test_excludes_other_project_exact_match(self):
+        # crash-kmp-rt in SUSE:SLFO:Main:Staging:V must not leak in.
+        self.assertEqual(self.m["crash-kmp-rt"], ["crash"])
+
+    def test_groups_multiple_sources_sorted(self):
+        self.assertEqual(self.m["dual"], ["src-a", "src-b"])
+
+    def test_skips_rows_missing_attrs(self):
+        # Row with no @package (name "no-package") is dropped.
+        self.assertNotIn("no-package", self.m)
+        # Row with no @name is dropped (no key, and its package never appears).
+        self.assertNotIn(None, self.m)
+        self.assertNotIn("no-name", [s for sources in self.m.values() for s in sources])
+
+
+class MergeFallbackSourcesTests(unittest.TestCase):
+    def test_folds_resolved_and_reports_still_failed(self):
+        sources, still_failed = merge_fallback_sources(
+            ["libguestfs"],
+            ["crash-kmp-rt", "python313-libmodulemd", "brand-new"],
+            {"crash-kmp-rt": ["crash"], "python313-libmodulemd": ["libmodulemd"]},
+        )
+        self.assertEqual(sources, ["crash", "libguestfs", "libmodulemd"])
+        self.assertEqual(still_failed, ["brand-new"])
+
+    def test_dedups_against_existing_sources(self):
+        sources, still_failed = merge_fallback_sources(
+            ["crash"], ["crash-kmp-rt"], {"crash-kmp-rt": ["crash"]}
+        )
+        self.assertEqual(sources, ["crash"])
+        self.assertEqual(still_failed, [])
+
+    def test_multiple_sources_per_binary(self):
+        sources, still_failed = merge_fallback_sources(
+            [], ["dual"], {"dual": ["src-a", "src-b"]}
+        )
+        self.assertEqual(sources, ["src-a", "src-b"])
+        self.assertEqual(still_failed, [])
+
+    def test_empty_resolved_leaves_all_failed(self):
+        sources, still_failed = merge_fallback_sources(["x"], ["a", "b"], {})
+        self.assertEqual(sources, ["x"])
+        self.assertEqual(still_failed, ["a", "b"])
+
+
+class QueryPublishedSourcesTests(unittest.TestCase):
+    @staticmethod
+    def _fake_xml_parse(_response):
+        return ET.ElementTree(ET.fromstring(PUBLISHED_XML))
+
+    def test_batches_by_batch_size(self):
+        with (
+            mock.patch.object(sle_check, "http_GET") as http_get,
+            mock.patch.object(
+                sle_check, "xml_parse", side_effect=self._fake_xml_parse
+            ),
+            mock.patch.object(sle_check, "makeurl", return_value="http://url"),
+        ):
+            result = query_published_sources(
+                "http://api", ["a", "b", "c"], "SUSE:SLFO:Main", batch_size=1
+            )
+        self.assertEqual(http_get.call_count, 3)
+        # Merged across batches, resolved from the fixture.
+        self.assertEqual(result["crash-kmp-rt"], ["crash"])
+
+    def test_unsafe_name_never_reaches_query(self):
+        captured = []
+
+        def fake_makeurl(_apiurl, _path, query):
+            captured.append(query["match"])
+            return "http://url"
+
+        with (
+            mock.patch.object(sle_check, "http_GET"),
+            mock.patch.object(
+                sle_check, "xml_parse", side_effect=self._fake_xml_parse
+            ),
+            mock.patch.object(sle_check, "makeurl", side_effect=fake_makeurl),
+        ):
+            query_published_sources(
+                "http://api",
+                ["crash-kmp-rt", "evil' or '1'='1"],
+                "SUSE:SLFO:Main",
+            )
+        joined = " ".join(captured)
+        self.assertIn("crash-kmp-rt", joined)
+        self.assertNotIn("evil", joined)
+
+    def test_trailing_newline_name_never_reaches_query(self):
+        # Python '$' matches before a trailing '\n'; the safety barrier must not rely on that.
+        with (
+            mock.patch.object(sle_check, "http_GET") as http_get,
+            mock.patch.object(sle_check, "xml_parse"),
+            mock.patch.object(sle_check, "makeurl"),
+        ):
+            result = query_published_sources(
+                "http://api", ["crash\n"], "SUSE:SLFO:Main"
+            )
+        http_get.assert_not_called()
+        self.assertEqual(result, {})
+
+    def test_all_unsafe_makes_no_request(self):
+        with (
+            mock.patch.object(sle_check, "http_GET") as http_get,
+            mock.patch.object(sle_check, "xml_parse"),
+            mock.patch.object(sle_check, "makeurl"),
+        ):
+            result = query_published_sources(
+                "http://api", ["bad'name", ""], "SUSE:SLFO:Main"
+            )
+        http_get.assert_not_called()
+        self.assertEqual(result, {})
+
+
 class FindOrphanSourcesTests(unittest.TestCase):
     def test_orphans_and_failed(self):
         db = {"libguestfs": {"users": ["a"], "groups": []}}
@@ -237,6 +393,54 @@ class FindOrphanSourcesTests(unittest.TestCase):
         self.assertEqual(result.orphans, ["systemd"])
         self.assertEqual(result.failed, ["nobin"])
         self.assertEqual(result.checked, 2)
+
+    def test_fallback_resolves_dynamic_binary(self):
+        db = {"libguestfs": {"users": ["a"], "groups": []}}
+        seen = {}
+
+        def resolver(names):
+            seen["names"] = list(names)
+            return {"crash-kmp-rt": ["crash"]}
+
+        result = find_orphan_sources(
+            ["libguestfs-appliance", "crash-kmp-rt", "brand-new"],
+            ET.fromstring(SOURCEINFO_XML),
+            db,
+            fallback_resolver=resolver,
+        )
+        # Resolver is asked only for the binaries view=info could not resolve.
+        self.assertEqual(sorted(seen["names"]), ["brand-new", "crash-kmp-rt"])
+        # crash-kmp-rt now resolves to orphan source "crash".
+        self.assertEqual(result.orphans, ["crash"])
+        # brand-new remains genuinely unresolved.
+        self.assertEqual(result.failed, ["brand-new"])
+        self.assertEqual(result.checked, 2)
+
+    def test_fallback_exception_propagates(self):
+        # Fail-closed: a fallback error must surface (to check_source_submission's handler),
+        # never be swallowed into a pass that lets an orphan through this gating bot.
+        def resolver(names):
+            raise urllib.error.HTTPError("u", 500, "err", {}, None)
+
+        with self.assertRaises(urllib.error.HTTPError):
+            find_orphan_sources(
+                ["brand-new"],
+                ET.fromstring(SOURCEINFO_XML),
+                {},
+                fallback_resolver=resolver,
+            )
+
+    def test_fallback_not_called_when_all_resolved(self):
+        db = {"libguestfs": {"users": ["a"], "groups": []}, "systemd": {"users": ["a"], "groups": []}}
+        called = []
+        result = find_orphan_sources(
+            ["libguestfs-appliance", "udev"],
+            ET.fromstring(SOURCEINFO_XML),
+            db,
+            fallback_resolver=lambda names: called.append(names) or {},
+        )
+        self.assertEqual(called, [])
+        self.assertEqual(result.failed, [])
 
 
 class CheckUserValidityTests(unittest.TestCase):
@@ -332,6 +536,43 @@ class RunCheckTests(unittest.TestCase):
         self.assertIn("systemd", bot.review_messages["declined"])
         self.assertIn("graphviz", bot.review_messages["declined"])
         self.assertIn("carol", bot.review_messages["declined"])
+
+    def test_decline_via_published_fallback(self):
+        # crash-kmp-rt is a build-time KMP name absent from the view=info map; only the
+        # published-binary fallback resolves it, to orphan source "crash".
+        diff = (
+            "diff --git a/000productcompose/default.productcompose"
+            " b/000productcompose/default.productcompose\n"
+            "--- a/000productcompose/default.productcompose\n"
+            "+++ b/000productcompose/default.productcompose\n"
+            "@@\n"
+            "+    - crash-kmp-rt\n"
+        )
+        with (
+            mock.patch.object(sle_check, "fetch_maintainership", return_value={}),
+            mock.patch.object(
+                sle_check,
+                "check_user_validity",
+                return_value=sle_check.UserCheckResult([], [], []),
+            ),
+            mock.patch.object(sle_check, "fetch_pr_diff", return_value=diff),
+            mock.patch.object(
+                sle_check,
+                "fetch_source_info",
+                return_value=ET.fromstring(SOURCEINFO_XML),
+            ),
+            mock.patch.object(
+                sle_check,
+                "query_published_sources",
+                return_value={"crash-kmp-rt": ["crash"]},
+            ) as qps,
+        ):
+            bot = _make_bot()
+            result, message = bot.run_check("o", "p", "HEAD", "to", "tp")
+        self.assertFalse(result)
+        self.assertIsNone(message)
+        self.assertIn("crash", bot.review_messages["declined"])
+        qps.assert_called_once_with(bot.apiurl, ["crash-kmp-rt"], sle_check.SOURCE_PROJECT)
 
     def test_accept_clean_untouched(self):
         with (

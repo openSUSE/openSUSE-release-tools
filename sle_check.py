@@ -32,9 +32,13 @@ MAINTAINERSHIP_REPO = "SLFO"
 MAINTAINERSHIP_REF = "slfo-main"
 MAINTAINERSHIP_FILE = "_maintainership.json"
 PERSON_BATCH_SIZE = 50
+PUBLISHED_BATCH_SIZE = 50
 
 # A maintainer login safe to embed in an XPath string literal.
 _LOGIN_RE = re.compile(r"^[A-Za-z0-9_.@-]+$")
+# A binary name safe to embed in an XPath string literal (published-binary fallback query).
+# \Z (not $) so a trailing newline is rejected — the barrier must not rely on upstream stripping.
+_BINARY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]*\Z")
 # An added productcompose package line "+    - name" (name stops at whitespace or '#').
 _ADDED_BINARY_RE = re.compile(r"^\+\s+-\s+([A-Za-z0-9][^\s#]*)", re.MULTILINE)
 
@@ -101,6 +105,23 @@ def resolve_sources(binaries, source_map):
     return sorted(sources), failed
 
 
+def merge_fallback_sources(sources, failed, resolved):
+    """Fold a fallback ``{binary -> [source]}`` map into already-resolved sources.
+
+    Returns ``(sorted_sources, still_failed)`` where ``still_failed`` lists the failed binaries
+    that the fallback did not resolve. ``resolved`` may map one binary to several sources.
+    """
+    merged = set(sources)
+    still_failed = []
+    for binary in failed:
+        pkgs = resolved.get(binary)
+        if pkgs:
+            merged.update(pkgs)
+        else:
+            still_failed.append(binary)
+    return sorted(merged), still_failed
+
+
 def normalize_maintainership(data):
     """Return a {package -> {"users": [...], "groups": [...]}} map.
 
@@ -159,6 +180,38 @@ def build_person_match(users):
     return "(" + " or ".join(f"@login='{u}'" for u in users) + ")"
 
 
+def build_binary_source_match(names, project):
+    """Return an OBS /search/published/binary/id XPath match for a batch of binary names.
+
+    Assumes ``names`` are pre-filtered safe for embedding in an XPath string literal.
+    """
+    return (
+        "(" + " or ".join(f"@name='{n}'" for n in names) + ")"
+        + f" and @project='{project}'"
+    )
+
+
+def parse_published_sources(root, project):
+    """Return {binary -> sorted[source pkgs]} from a /search/published/binary/id response.
+
+    Only ``<binary>`` rows whose ``project`` attr exactly equals ``project`` are kept (so nested
+    projects like SUSE:SLFO:Main:Staging:V are excluded); multibuild ``:flavor`` is stripped from
+    the ``package`` attr; rows missing ``name`` or ``package`` are skipped. A binary may map to
+    more than one source.
+    """
+    grouped = {}
+    for binary in root.iter("binary"):
+        if binary.get("project") != project:
+            continue
+        name = binary.get("name")
+        pkg = binary.get("package")
+        if not name or not pkg:
+            continue
+        pkg = pkg.split(":", 1)[0]
+        grouped.setdefault(name, set()).add(pkg)
+    return {name: sorted(pkgs) for name, pkgs in grouped.items()}
+
+
 def parse_persons(root):
     """Return {login: state} from an OBS /search/person response (no-login records skipped)."""
     return {
@@ -183,10 +236,19 @@ def classify_users(users, found):
     return UserCheckResult(confirmed, invalid, not_found)
 
 
-def find_orphan_sources(binaries, source_info_root, db):
-    """Resolve added binaries to sources and return the orphans among them."""
+def find_orphan_sources(binaries, source_info_root, db, fallback_resolver=None):
+    """Resolve added binaries to sources and return the orphans among them.
+
+    Binaries the static ``view=info`` map cannot resolve are, when ``fallback_resolver`` is given,
+    passed to it (a ``list[str] -> {binary: [source]}`` callable) so dynamically-named binaries
+    (KMPs, livepatches, python-flavor subpackages) still get orphan-checked. Only genuinely
+    unresolvable binaries remain in ``failed``.
+    """
     source_map = build_source_map(source_info_root)
     sources, failed = resolve_sources(binaries, source_map)
+    if failed and fallback_resolver:
+        resolved = fallback_resolver(failed)
+        sources, failed = merge_fallback_sources(sources, failed, resolved)
     return OrphanResult(find_orphans(sources, db), failed, len(sources))
 
 
@@ -254,6 +316,27 @@ def query_persons(apiurl, users):
     """Return {login: state} for a batch of logins via OBS /search/person."""
     url = makeurl(apiurl, ["search", "person"], {"match": build_person_match(users)})
     return parse_persons(xml_parse(http_GET(url)).getroot())
+
+
+def query_published_sources(apiurl, names, project, batch_size=PUBLISHED_BATCH_SIZE):
+    """Resolve binary names to their source packages via the published-binary index.
+
+    Names unsafe to embed in an XPath string literal are dropped (they stay unresolved). Safe
+    names are queried in batches, filtered server-side to ``project``; results are merged into one
+    ``{binary -> [sources]}`` dict.
+    """
+    safe = [name for name in names if _BINARY_RE.match(name)]
+    resolved = {}
+    for offset in range(0, len(safe), batch_size):
+        batch = safe[offset:offset + batch_size]
+        url = makeurl(
+            apiurl,
+            ["search", "published", "binary", "id"],
+            {"match": build_binary_source_match(batch, project)},
+        )
+        root = xml_parse(http_GET(url)).getroot()
+        resolved.update(parse_published_sources(root, project))
+    return resolved
 
 
 def check_user_validity(db, apiurl, batch_size=PERSON_BATCH_SIZE):
@@ -374,7 +457,12 @@ class SleCheckBot(ReviewBot.ReviewBot):
         )
         if binaries:
             orphans = find_orphan_sources(
-                binaries, fetch_source_info(self.apiurl, SOURCE_PROJECT), db
+                binaries,
+                fetch_source_info(self.apiurl, SOURCE_PROJECT),
+                db,
+                fallback_resolver=lambda names: query_published_sources(
+                    self.apiurl, names, SOURCE_PROJECT
+                ),
             )
         else:
             orphans = OrphanResult([], [], 0)
