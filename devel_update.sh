@@ -7,6 +7,7 @@
 #      set <prj> <pkg>
 #      rm  <prj> <pkg>
 #      sync
+#      syncnewpackages
 #
 #  DEVEL_PACKAGES env should point to the devel_packages clone from
 #  repo above, otherwise will look in CWD
@@ -43,6 +44,25 @@ function rmdevel {
     mv "$DEVEL_PACKAGES".$$ "$DEVEL_PACKAGES"
 }
 
+function syncnewpackages {
+    # check for existing packages
+    echo Get existing packages..
+    declare -A packages
+    while IFS="=" read -r key value; do
+        [[ -z "$key" || "$key" =~ ^# ]] && continue
+        packages["$key"]=1
+    done < <(osc ls openSUSE:Factory 2> /dev/null | grep -v :)
+
+    echo Check for new packages in submit requests..
+    osc api '/request?view=collection&project=openSUSE%3AFactory&states=new,review' | \
+      xmlstarlet sel -t -m "//request/action[not(source/@project = 'openXML:Factory')]" -v "source/@project" -o " " -v "target/@package" -n | while read project target; do
+        [ "$project" == "openSUSE:Factory" ] && continue
+        [ -z "$target" ] && continue
+        [ -n "${packages[$target]}" ] && continue
+        setdevel $project $target
+    done
+}
+
 if [ -z "$DEVEL_PACKAGES" ]; then
     DEVEL_PACKAGES=./devel_packages
 fi
@@ -64,6 +84,9 @@ case "$1" in
     rm)
         shift
         rmdevel "$@"
+        ;;
+    syncnewpackages)
+        syncnewpackages "$@"
         ;;
     sync)
         warning=0
@@ -122,6 +145,6 @@ case "$1" in
 
         ;;
     *)
-        echo " devel_update (get,set,rm,sync) ...."
+        echo " devel_update (get,set,rm,sync,syncnewpackages) ...."
 
 esac

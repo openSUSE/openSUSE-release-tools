@@ -52,7 +52,7 @@ def change_extension(path, original, final):
 def multibuild_from_glob(destination, pathname):
     root = ET.Element('multibuild')
     for name in sorted(glob.glob(os.path.join(destination, pathname))):
-        package = ET.SubElement(root, 'package')
+        package = ET.SubElement(root, 'flavor')
         package.text = os.path.splitext(os.path.basename(name))[0]
 
     with open(os.path.join(destination, '_multibuild'), 'w+b') as f:
