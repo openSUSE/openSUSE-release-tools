@@ -28,7 +28,7 @@ function setdevel {
         exit 10
     fi
 
-    cat <(awk "{ if ( \$1 != \"$pkg\" ) print }" "$DEVEL_PACKAGES") <(echo "$pkg" "$prj") | sort -d > "$DEVEL_PACKAGES".$$
+    cat <(awk "{ if ( \$1 != \"$pkg\" ) print }" "$DEVEL_PACKAGES") <(echo "$pkg" "$prj") | LANG=POSIX sort -d > "$DEVEL_PACKAGES".$$
     mv "$DEVEL_PACKAGES".$$ "$DEVEL_PACKAGES"
 }
 
