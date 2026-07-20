@@ -243,7 +243,32 @@ def target_files(repo_dir, key):
     files = list()
     for suffix in ['xz', 'zst']:
         files += glob.glob(os.path.join(repo_dir, f'{key}_*.packages.{suffix}'))
-    return files
+
+    def file_sort_key(filepath):
+        basename = os.path.basename(filepath)
+        filename = basename[len(key) + 1:]
+        for sfx in ['.packages.xz', '.packages.zst']:
+            if filename.endswith(sfx):
+                filename = filename[:-len(sfx)]
+                break
+
+        is_compacted = False
+        if filename.endswith('_and_before'):
+            filename = filename[:-len('_and_before')]
+            is_compacted = True
+
+        parts = []
+        for part in re.split(r'([^0-9]+)', filename):
+            if not part:
+                continue
+            if part.isdigit():
+                parts.append((0, int(part)))
+            else:
+                parts.append((1, part))
+
+        return (not is_compacted, parts)
+
+    return sorted(files, key=file_sort_key)
 
 
 def update_project(apiurl, project, fixate=None):
