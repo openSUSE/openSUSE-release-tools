@@ -3,32 +3,13 @@ import json
 import logging
 import os
 import os.path
-from osc import cmdln
-from osc import core
-from osc import oscerr
-from osc.core import get_request_list
-from osclib.cache import Cache
-from osclib.cache_manager import CacheManager
-from osclib.core import entity_exists
-from osclib.core import package_kind
-from osclib.core import package_list
-from osclib.core import package_list_kind_filtered
-from osclib.core import project_attribute_list
-from osclib.core import project_locked
-from osclib.origin import config_load
-from osclib.origin import config_origin_list
-from osclib.origin import origin_find
-from osclib.origin import origin_history
-from osclib.origin import origin_potentials
-from osclib.origin import origin_revision_state
-from osclib.origin import origin_updatable
-from osclib.origin import origin_updatable_initial
-from osclib.origin import origin_update
-from osclib.util import mail_send
 from shutil import copyfile
 import sys
 import time
 import yaml
+
+from osc import cmdln
+
 
 OSRT_ORIGIN_LOOKUP_TTL = 60 * 60 * 24 * 7
 
@@ -69,6 +50,10 @@ def do_origin(self, subcmd, opts, *args):
         osc origin report [--diff] [--force-refresh] [--mail]
         osc origin update [--listen] [--listen-seconds] [PACKAGE...]
     """
+    from osclib.cache import Cache  # pylint: disable=import-outside-toplevel
+    from osclib.origin import config_load  # pylint: disable=import-outside-toplevel
+    from osc import core  # pylint: disable=import-outside-toplevel
+    from osc import oscerr  # pylint: disable=import-outside-toplevel
 
     if len(args) == 0:
         raise oscerr.WrongArgs('A command must be indicated.')
@@ -100,6 +85,9 @@ def do_origin(self, subcmd, opts, *args):
 
 
 def osrt_origin_config(apiurl, opts, *args):
+    from osclib.origin import config_load  # pylint: disable=import-outside-toplevel
+    from osclib.origin import config_origin_list  # pylint: disable=import-outside-toplevel
+
     config = config_load(apiurl, opts.project)
 
     if opts.origins_only:
@@ -110,6 +98,9 @@ def osrt_origin_config(apiurl, opts, *args):
 
 
 def osrt_origin_cron(apiurl, opts, *args):
+    from osclib.core import project_attribute_list  # pylint: disable=import-outside-toplevel
+    from osclib.core import project_locked  # pylint: disable=import-outside-toplevel
+
     projects = project_attribute_list(apiurl, 'OSRT:OriginConfig')
     for project in projects:
         # Preserve cache for locked projects, but create if missing.
@@ -139,6 +130,9 @@ def osrt_origin_dump(format, data):
 
 
 def osrt_origin_history(apiurl, opts, *packages):
+    from osclib.origin import config_load  # pylint: disable=import-outside-toplevel
+    from osclib.origin import origin_history  # pylint: disable=import-outside-toplevel
+
     config = config_load(apiurl, opts.project)
     history = origin_history(apiurl, opts.project, packages[0], config['review-user'])
 
@@ -153,6 +147,8 @@ def osrt_origin_history(apiurl, opts, *packages):
 
 
 def osrt_origin_lookup_file(project, previous=False):
+    from osclib.cache import CacheManager  # pylint: disable=import-outside-toplevel
+
     parts = [project, 'yaml']
     if previous:
         parts.insert(1, 'previous')
@@ -162,6 +158,11 @@ def osrt_origin_lookup_file(project, previous=False):
 
 
 def osrt_origin_lookup(apiurl, project, force_refresh=False, previous=False, quiet=False):
+    from osclib.core import package_list_kind_filtered  # pylint: disable=import-outside-toplevel
+    from osclib.core import project_locked  # pylint: disable=import-outside-toplevel
+    from osclib.origin import origin_find  # pylint: disable=import-outside-toplevel
+    from osclib.origin import origin_revision_state  # pylint: disable=import-outside-toplevel
+
     locked = project_locked(apiurl, project)
     if locked:
         force_refresh = False
@@ -213,6 +214,8 @@ def osrt_origin_max_key(dictionary, minimum):
 
 
 def osrt_origin_list(apiurl, opts, *args):
+    from osc.core import get_request_list  # pylint: disable=import-outside-toplevel
+
     lookup = osrt_origin_lookup(apiurl, opts.project, opts.force_refresh, quiet=opts.format != 'plain')
 
     if opts.format != 'plain':
@@ -246,11 +249,15 @@ def osrt_origin_list(apiurl, opts, *args):
 
 
 def osrt_origin_package(apiurl, opts, *packages):
+    from osclib.origin import origin_find  # pylint: disable=import-outside-toplevel
+
     origin_info = origin_find(apiurl, opts.project, packages[0])
     print(origin_info)
 
 
 def osrt_origin_potentials(apiurl, opts, *packages):
+    from osclib.origin import origin_potentials  # pylint: disable=import-outside-toplevel
+
     potentials = origin_potentials(apiurl, opts.project, packages[0])
 
     if opts.format != 'plain':
@@ -269,6 +276,8 @@ def osrt_origin_potentials(apiurl, opts, *packages):
 
 
 def osrt_origin_projects(apiurl, opts, *args):
+    from osclib.core import project_attribute_list  # pylint: disable=import-outside-toplevel
+
     projects = list(project_attribute_list(apiurl, 'OSRT:OriginConfig'))
 
     if osrt_origin_dump(opts.format, projects):
@@ -308,6 +317,8 @@ def osrt_origin_report_diff(lookup, lookup_previous):
 
 
 def osrt_origin_report(apiurl, opts, *args):
+    from osclib.util import mail_send  # pylint: disable=import-outside-toplevel
+
     lookup = osrt_origin_lookup(apiurl, opts.project, opts.force_refresh)
     origin_count = osrt_origin_report_count(lookup)
 
@@ -358,6 +369,9 @@ def osrt_origin_report(apiurl, opts, *args):
 
 
 def osrt_origin_update(apiurl, opts, *packages):
+    from osclib.origin import origin_update  # pylint: disable=import-outside-toplevel
+    from osclib.origin import origin_updatable  # pylint: disable=import-outside-toplevel
+
     if not opts.project:
         for project in origin_updatable(apiurl):
             opts.project = project
@@ -377,6 +391,12 @@ def osrt_origin_update(apiurl, opts, *packages):
 
 
 def osrt_origin_update_packages(apiurl, project):
+    from osclib.core import entity_exists  # pylint: disable=import-outside-toplevel
+    from osclib.core import package_kind  # pylint: disable=import-outside-toplevel
+    from osclib.core import package_list  # pylint: disable=import-outside-toplevel
+    from osclib.core import package_list_kind_filtered  # pylint: disable=import-outside-toplevel
+    from osclib.origin import origin_updatable_initial  # pylint: disable=import-outside-toplevel
+
     packages = set(package_list_kind_filtered(apiurl, project))
 
     # Include packages from origins with initial update enabled to allow for
