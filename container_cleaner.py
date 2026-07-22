@@ -86,7 +86,7 @@ class ContainerCleaner(ToolBase.ToolBase):
             for srccontainer in buckets[package]:
                 contributes = False
                 for arch in srccontainerarchs[srccontainer]:
-                    if archs_found[arch] < 5:
+                    if archs_found[arch] < 30:
                         archs_found[arch] += 1
                         contributes = True
 
