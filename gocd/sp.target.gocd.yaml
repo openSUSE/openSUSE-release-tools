@@ -6,6 +6,7 @@ pipelines:
     materials:
       repos:
         git: git://botmaster.suse.de/suse-repos.git
+        shallow_clone: true
         auto_update: true
         whitelist:
           - SUSE:SLE-15-SP7:Update:QR_-_images.yaml
@@ -54,6 +55,7 @@ pipelines:
     materials:
       repos:
         git: git://botmaster.suse.de/suse-repos.git
+        shallow_clone: true
         auto_update: true
         whitelist:
           - SUSE:SLE-15-SP7:Update:QR_-_images.yaml

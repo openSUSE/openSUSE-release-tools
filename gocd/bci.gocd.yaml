@@ -70,6 +70,7 @@ pipelines:
     materials:
       repos:
         git: git://botmaster.suse.de/suse-repos.git
+        shallow_clone: true
         auto_update: true
         destination: repos
         whitelist:

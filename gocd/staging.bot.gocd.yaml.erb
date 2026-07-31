@@ -13,6 +13,7 @@ pipelines:
         destination: scripts
       repos:
         git: git://botmaster.suse.de/opensuse-repos.git
+        shallow_clone: true
         auto_update: true
         whitelist:
           - openSUSE:<%= project %>:Staging:adi*.yaml

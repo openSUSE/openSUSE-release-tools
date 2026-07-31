@@ -6,6 +6,7 @@ pipelines:
     materials:
       repos:
         git: git://botmaster.suse.de/suse-repos.git
+        shallow_clone: true
         auto_update: true
         whitelist:
           - SUSE:SLFO:Products:SLES:16.1_-_images.yaml
@@ -59,6 +60,7 @@ pipelines:
     materials:
       repos:
         git: git://botmaster.suse.de/suse-repos.git
+        shallow_clone: true
         auto_update: true
         whitelist:
           - SUSE:SLFO:Products:SLES:16.1_-_images.yaml
@@ -105,6 +107,7 @@ pipelines:
     materials:
       repos:
         git: git://botmaster.suse.de/suse-repos.git
+        shallow_clone: true
         auto_update: true
         whitelist:
           - SUSE:SLFO:Products:SLES:16.0_-_images.yaml
@@ -158,6 +161,7 @@ pipelines:
     materials:
       repos:
         git: git://botmaster.suse.de/suse-repos.git
+        shallow_clone: true
         auto_update: true
         whitelist:
           - SUSE:SLFO:Products:SLES:16.0_-_images.yaml
