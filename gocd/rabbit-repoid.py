@@ -68,6 +68,9 @@ class Listener(PubSubConsumer):
         return ids
 
     def is_part_of_namespaces(self, project):
+        if ":PullRequest:" in project:
+            return False
+
         for namespace in self.namespaces:
             if project.startswith(namespace):
                 return True
@@ -80,7 +83,8 @@ class Listener(PubSubConsumer):
                 state = state.replace('.yaml', '')
                 # split
                 project, repository = state.split('_-_')
-                self.repositories_to_check.append([project, repository])
+                if self.is_part_of_namespaces(project):
+                    self.repositories_to_check.append([project, repository])
         self.check_some_repos()
         super(Listener, self).start_consuming()
 
