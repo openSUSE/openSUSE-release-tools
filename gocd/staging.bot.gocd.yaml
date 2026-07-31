@@ -11,6 +11,7 @@ pipelines:
         destination: scripts
       repos:
         git: git://botmaster.suse.de/opensuse-repos.git
+        shallow_clone: true
         auto_update: true
         whitelist:
           - openSUSE:Factory:Staging:adi*.yaml
@@ -68,6 +69,7 @@ pipelines:
         destination: scripts
       repos:
         git: git://botmaster.suse.de/opensuse-repos.git
+        shallow_clone: true
         auto_update: true
         whitelist:
           - openSUSE:Factory:NonFree:Staging:adi*.yaml

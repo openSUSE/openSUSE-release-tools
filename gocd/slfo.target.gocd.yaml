@@ -6,6 +6,7 @@ pipelines:
     materials:
       repos:
         git: git://botmaster.suse.de/suse-repos.git
+        shallow_clone: true
         auto_update: true
         whitelist:
           - SUSE:SLFO:Main:Build_-_standard.yaml
@@ -51,6 +52,7 @@ pipelines:
     materials:
       repos:
         git: git://botmaster.suse.de/suse-repos.git
+        shallow_clone: true
         auto_update: true
         whitelist:
           - SUSE:SLFO:1.1:Build_-_standard.yaml

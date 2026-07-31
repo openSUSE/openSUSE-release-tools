@@ -134,6 +134,7 @@ pipelines:
         destination: scripts
       repos:
         git: git://botmaster.suse.de/opensuse-repos.git
+        shallow_clone: true
         branch: master
         destination: repos
       notifications:
@@ -166,6 +167,7 @@ pipelines:
         destination: scripts
       repos:
         git: git://botmaster.suse.de/suse-repos.git
+        shallow_clone: true
         branch: master
         destination: repos
       notifications:

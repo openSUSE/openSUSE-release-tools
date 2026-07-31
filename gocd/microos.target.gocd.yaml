@@ -6,6 +6,7 @@ pipelines:
     materials:
       repos:
         git: git://botmaster.suse.de/suse-repos.git
+        shallow_clone: true
         auto_update: true
         whitelist:
           - SUSE:ALP:Products:Marble:6.0_-_images.yaml
@@ -72,6 +73,7 @@ pipelines:
     materials:
       repos:
         git: git://botmaster.suse.de/suse-repos.git
+        shallow_clone: true
         auto_update: true
         whitelist:
           - SUSE:SLFO:Products:SL-Micro:6.1_-_images.yaml
@@ -120,6 +122,7 @@ pipelines:
     materials:
       repos:
         git: git://botmaster.suse.de/suse-repos.git
+        shallow_clone: true
         auto_update: true
         whitelist:
           - SUSE:SLFO:Products:SL-Micro:6.1_-_images.yaml
@@ -159,6 +162,7 @@ pipelines:
     materials:
       repos:
         git: git://botmaster.suse.de/suse-repos.git
+        shallow_clone: true
         auto_update: true
         whitelist:
           - SUSE:SLFO:Products:SL-Micro:6.2_-_images.yaml
@@ -207,6 +211,7 @@ pipelines:
     materials:
       repos:
         git: git://botmaster.suse.de/suse-repos.git
+        shallow_clone: true
         auto_update: true
         whitelist:
           - SUSE:SLFO:Products:SL-Micro:6.2_-_images.yaml
@@ -246,6 +251,7 @@ pipelines:
     materials:
       repos:
         git: git://botmaster.suse.de/suse-repos.git
+        shallow_clone: true
         auto_update: true
         whitelist:
           - SUSE:SLFO:Products:SLCS:6.0_-_images.yaml
