@@ -55,6 +55,9 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
     @cmdln.option('--only-release-packages', action='store_true', help='Generate 000release-packages only')
     @cmdln.option('--only-update-weakremovers', action='store_true', help='Update weakremovers.inc file only')
     @cmdln.option('--custom-cache-tag', help='add custom tag to cache dir to avoid issues when running in parallel')
+    @cmdln.option('--proceed-on-dirty', default=False, action='store_true', help='Package lists are best generated when the target project '
+                  'is done building and is clean. Toggling this option allows the script to keep computing even if the target project is '
+                  'still building or is dirty.')
     def do_update_and_solve(self, subcmd, opts):
         """${cmd_name}: update and solve for given scope
 
@@ -112,7 +115,8 @@ class CommandLineInterface(ToolBase.CommandLineInterface):
                                                          only_release_packages=opts.only_release_packages,
                                                          only_update_weakremovers=opts.only_update_weakremovers,
                                                          stop_after_solve=opts.stop_after_solve,
-                                                         custom_cache_tag=opts.custom_cache_tag)
+                                                         custom_cache_tag=opts.custom_cache_tag,
+                                                         exit_on_dirty=not opts.proceed_on_dirty)
             except MismatchedRepoException:
                 logging.error("Failed to create weakremovers.inc due to mismatch in repos - project most likey started building again!")
                 # for stagings we have to be strict on the exit value
