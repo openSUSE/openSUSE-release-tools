@@ -125,7 +125,6 @@ VCS implementations used by scripts in %{name}.
 Summary:        Check bugowner review bot
 Group:          Development/Tools/Other
 Requires:       osclib = %{version}
-Requires:       python3-ldap
 Requires:       %{name} = %{version}
 Requires:       %{name}-plat = %{version}
 Requires:       %{name}-scm = %{version}

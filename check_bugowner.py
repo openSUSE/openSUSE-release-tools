@@ -13,12 +13,6 @@ from pathlib import Path
 from typing import List, Set, Dict
 from cmdln import CmdlnOptionParser
 
-try:
-    import ldap
-    LDAP_SERVER = os.environ.get("OSRT_BUGOWNER_LDAP_SERVER", None)
-except (ImportError, ModuleNotFoundError):
-    print("WARNING: Couldn't import ldap module, LDAP functionality will be disabled.", file=sys.stderr)
-    LDAP_SERVER = None
 import requests
 from urllib.error import HTTPError
 
@@ -30,6 +24,10 @@ from plat.gitea import User
 http_GET = osc.core.http_GET
 MAINTAINERSHIP_FILE = "_maintainership.json"
 WHITELIST_FILE = "whitelist_maintainership.json"
+
+# SUSEID AID API used to check whether a maintainer is still
+# an active SUSE employee. When unset, the lookup is disabled.
+SUSEID_API_URL = os.environ.get("OSRT_BUGOWNER_SUSEID_API_URL")
 
 
 class MaintainershipFormat(IntEnum):
@@ -43,11 +41,11 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         ReviewBot.ReviewBot.__init__(self, *args, **kwargs)
         self.request_default_return = True
         self.override_allow = False
-        self.ldap = False
         self.maintainership_format_version = MaintainershipFormat.one_dot_o
         self.maintained = {}
         self.whitelisted = {}
-        self.ldap_cache = {"update_time": datetime.datetime.now(), "values": {}}
+        self.check_active = False
+        self.active_cache = {"update_time": datetime.datetime.now(), "values": {}}
         self.email_cache = {"update_time": datetime.datetime.now(), "values": {}}
 
     @staticmethod
@@ -338,51 +336,46 @@ class CheckerBugowner(ReviewBot.ReviewBot):
 
         return repo, validated_packages, orphan_packages, warnings
 
-    def _ldap_active_user(self, email):
-        if not LDAP_SERVER:
-            self.logger.debug("LDAP feature disabled.")
-            return []
+    def _suseid_active_user(self, email):
+        token = os.environ.get("OSRT_BUGOWNER_SUSEID_API_TOKEN")
+        if not SUSEID_API_URL or not token:
+            self.logger.debug(
+                "SUSEID feature disabled (set OSRT_BUGOWNER_SUSEID_API_URL and OSRT_BUGOWNER_SUSEID_API_TOKEN to enable)."
+            )
+            return [None for e in email]
 
-        self.logger.debug(f"Querying {LDAP_SERVER}...")
-        instance = ldap.initialize(f"ldap://{LDAP_SERVER}")
+        self.logger.debug(f"Querying {SUSEID_API_URL}...")
+        headers = {
+            "Accept": "application/json",
+            "Authorization": f"Bearer {token}",
+        }
+        timeout = int(os.environ.get("OSRT_BUGOWNER_SUSEID_API_TIMEOUT", "30"))
 
         active_statuses = []
         for e in email:
             if e:
-                if e not in self._cache(self.ldap_cache).keys():
-                    self.logger.debug(f"LDAP cache miss for {e}")
-                    result = instance.search_st(
-                        "OU=User accounts,DC=corp,DC=suse,DC=com",
-                        ldap.SCOPE_SUBTREE,
-                        filterstr=f"(mail={e})",
-                        # We only need to know whether or not the submitter
-                        # has an active account.
-                        attrlist=["EMPLOYEESTATUS"],
-                        timeout=int(os.environ.get("OSRT_BUGOWNER_LDAP_TIMEOUT", "30"))
+                if e not in self._cache(self.active_cache).keys():
+                    self.logger.debug(f"SUSEID cache miss for {e}")
+                    result = requests.get(
+                        f"{SUSEID_API_URL}/api/v3/core/users/",
+                        params={"email": e},
+                        headers=headers,
+                        timeout=timeout,
                     )
-
-                    try:
-                        active_list = result[0]
-                        self.logger.debug(f"Got {len(result)} results.")
-                    except IndexError:
-                        # In case the search fails:
-                        self.logger.debug(f"LDAP search failed with {result}")
-                        self._cache_set(self.ldap_cache, e, None)
-                        active_statuses.append(None)
-                        continue
-
-                    if active_list:
-                        name, attrs = active_list
-                        self.logger.debug(f"Found LDAP user {name}")
-                        self._cache_set(self.ldap_cache, e, attrs)
+                    result.raise_for_status()
+                    users = result.json().get("results", [])
+                    self.logger.debug(f"Got {len(users)} results.")
+                    if users:
+                        user = users[0]
+                        self.logger.debug(f"Found SUSEID user {user.get('username')}")
+                        self._cache_set(self.active_cache, e, user)
                     else:
-                        self._cache_set(self.ldap_cache, e, None)
+                        # No account matching the email was found.
+                        self._cache_set(self.active_cache, e, None)
                 else:
-                    self.logger.debug(f"LDAP cache hit for {e}")
+                    self.logger.debug(f"SUSEID cache hit for {e}")
 
-                active_statuses.append(self._cache_get(self.ldap_cache, e))
-
-        instance.unbind()
+                active_statuses.append(self._cache_get(self.active_cache, e))
 
         return active_statuses
 
@@ -395,19 +388,19 @@ class CheckerBugowner(ReviewBot.ReviewBot):
                     self._cache_set(self.email_cache, o, None)
         return [self._cache_get(self.email_cache, o) for o in owner]
 
-    def _gitea_users_active_on_ldap(self, users: List[str]):
+    def _gitea_users_active(self, users: List[str]):
         # Get users emails
         emails = self._gitea_email(users)
         self.logger.debug(f"{users} -> {emails}")
 
         try:
             # Get users active status
-            users_attrs = self._ldap_active_user(emails)
-        except (ldap.SERVER_DOWN, ldap.UNAVAILABLE, ldap.TIMEOUT) as e:
-            self.logger.warning(f"LDAP server {LDAP_SERVER} is unreachable because of {e}")
+            users_attrs = self._suseid_active_user(emails)
+        except requests.exceptions.RequestException as e:
+            self.logger.warning(f"SUSEID API {SUSEID_API_URL} is unreachable because of {e}")
             return (users, "")
 
-        # Get users that were not found on LDAP.
+        # Get users that were not found on the SUSEID API.
         not_found_users = []
         for o, e, s in zip(users, emails, users_attrs):
             if s is None:
@@ -417,23 +410,23 @@ class CheckerBugowner(ReviewBot.ReviewBot):
                     not_found_users.append(e)
 
         if not_found_users:
-            self.logger.warning(f"The following users were not found on LDAP: {', '.join(not_found_users)}.")
+            self.logger.warning(f"The following users were not found on the SUSEID API: {', '.join(not_found_users)}.")
 
         # Get inactive users
         inactive_users = [
             o for o, s in zip(users, users_attrs)
-            if (s and "EMPLOYEESTATUS" in s.keys() and s["EMPLOYEESTATUS"][0] != b'Active')
+            if (s is not None and not s.get("is_active", False))
         ]
 
         self.logger.debug(f"Inactive users: {inactive_users}")
 
         if inactive_users:
             users = [u for u in inactive_users if u]
-            ldap_status = f" The following users are **not active** on LDAP: {users}"
+            active_status = f" The following users are **no longer active** SUSE employees: {users}"
         else:
-            ldap_status = ""
+            active_status = ""
 
-        return (', '.join('`' + u + '`' for u in users), ldap_status)
+        return (', '.join('`' + u + '`' for u in users), active_status)
 
     def _gitea_package_maintainers(self, package: str):
         in_maintainership_json = package in self.maintained.keys()
@@ -445,9 +438,9 @@ class CheckerBugowner(ReviewBot.ReviewBot):
             else:
                 users = self.maintained[package]
 
-            if self.ldap and users:
-                users, ldap_status = self._gitea_users_active_on_ldap(users)
-                users_message = [f"Gitea users: {users}.{ldap_status}"]
+            if self.check_active and users:
+                users, active_status = self._gitea_users_active(users)
+                users_message = [f"Gitea users: {users}.{active_status}"]
             else:
                 users_message = []
 
@@ -494,7 +487,7 @@ class CheckerBugowner(ReviewBot.ReviewBot):
         base_revision: str,
     ) -> bool:
         # If the caches are more than a day old, clear them
-        self._cache_clear(self.ldap_cache)
+        self._cache_clear(self.active_cache)
         self._cache_clear(self.email_cache)
 
         # Get the target branch if set
@@ -574,10 +567,10 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
         parser = ReviewBot.CommandLineInterface.get_optparser(self)
 
         parser.add_option(
-            "--ldap",
+            "--check-active",
             action="store_true",
             default=False,
-            help="Query SUSE's LDAP server to check whether a maintainer is still an active employee",
+            help="Query the SUSEID API (id.suse.com) to check whether a maintainer is still an active employee",
         )
 
         return parser
@@ -585,7 +578,7 @@ class CommandLineInterface(ReviewBot.CommandLineInterface):
     def setup_checker(self):
         bot = ReviewBot.CommandLineInterface.setup_checker(self)
 
-        bot.ldap = self.options.ldap
+        bot.check_active = self.options.check_active
 
         return bot
 
