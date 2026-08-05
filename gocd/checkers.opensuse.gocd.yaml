@@ -58,6 +58,7 @@ pipelines:
           type: manual
         jobs:
           Run:
+            timeout: 30
             resources:
             - staging-bot
             tasks:
@@ -79,6 +80,7 @@ pipelines:
           type: manual
         jobs:
           Run:
+            timeout: 120
             resources:
             - staging-bot
             tasks:

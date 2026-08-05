@@ -27,6 +27,13 @@ import ReviewBot
 
 http_GET = osc.core.http_GET
 
+# (connect, read) timeout for every legaldb call, so an unreachable address
+# fails in seconds instead of blocking until the kernel gives up on the SYN.
+LEGALDB_TIMEOUT = (10, 60)
+
+# Upper bound for retried_GET, so a persistently failing server cannot spin forever.
+MAX_GET_RETRIES = 5
+
 
 class LegalAuto(ReviewBot.ReviewBot):
 
@@ -35,6 +42,9 @@ class LegalAuto(ReviewBot.ReviewBot):
 
         self.legaldb = None
         self.legaldb_headers = {}
+        # A session pools connections, so the TCP handshake is paid once per host
+        # rather than once per request.
+        self.legaldb_session = REQ.Session()
         self.apinick = None
         self.message = None
         if self.ibs:
@@ -45,14 +55,14 @@ class LegalAuto(ReviewBot.ReviewBot):
         self.request_default_return = True
 
     def retried_GET(self, url):
-        try:
-            return http_GET(url)
-        except HTTPError as e:
-            if 500 <= e.code <= 599:
+        for attempt in range(MAX_GET_RETRIES):
+            try:
+                return http_GET(url)
+            except HTTPError as e:
+                if not (500 <= e.code <= 599) or attempt == MAX_GET_RETRIES - 1:
+                    raise e
                 self.logger.debug(f'Retrying {url}')
                 time.sleep(1)
-                return self.retried_GET(url)
-            raise e
 
     def request_priority(self):
         prio = self.request.priority or 'moderate'
@@ -75,13 +85,13 @@ class LegalAuto(ReviewBot.ReviewBot):
             params['rev'] = src_rev
         url = osc.core.makeurl(self.legaldb, ['packages'], params)
 
-        package = REQ.post(url, headers=self.legaldb_headers).json()
+        package = self.legaldb_session.post(url, headers=self.legaldb_headers, timeout=LEGALDB_TIMEOUT).json()
         if 'saved' not in package:
             return None
         package = package['saved']
         url = osc.core.makeurl(self.legaldb, ['requests'], {'external_link': self.request_nick(),
                                                             'package': package['id']})
-        REQ.post(url, headers=self.legaldb_headers)
+        self.legaldb_session.post(url, headers=self.legaldb_headers, timeout=LEGALDB_TIMEOUT)
         return [package['id']]
 
     def valid_for_opensuse(self, target_project, report):
@@ -118,17 +128,17 @@ class LegalAuto(ReviewBot.ReviewBot):
         self.message = None
         for pack in to_review:
             url = osc.core.makeurl(self.legaldb, ['package', str(pack)])
-            report = REQ.get(url, headers=self.legaldb_headers).json()
+            report = self.legaldb_session.get(url, headers=self.legaldb_headers, timeout=LEGALDB_TIMEOUT).json()
             if report.get('priority', 0) != self.request_priority():
                 self.logger.debug(f'Update priority {self.request_priority()}')
                 url = osc.core.makeurl(
                     self.legaldb, ['package', str(pack)], {'priority': self.request_priority()})
-                REQ.patch(url, headers=self.legaldb_headers)
+                self.legaldb_session.patch(url, headers=self.legaldb_headers, timeout=LEGALDB_TIMEOUT)
             state = report.get('state', 'BROKEN')
             if state == 'obsolete':
                 url = osc.core.makeurl(self.legaldb, ['packages', 'import', str(pack)], {
                                        'result': 'reopened in obs', 'state': 'new'})
-                REQ.post(url, headers=self.legaldb_headers)
+                self.legaldb_session.post(url, headers=self.legaldb_headers, timeout=LEGALDB_TIMEOUT)
                 # reopen
                 return None
             if state == 'new' and self.valid_for_opensuse(target_project, report):
@@ -137,7 +147,7 @@ class LegalAuto(ReviewBot.ReviewBot):
                 url = osc.core.makeurl(
                     self.legaldb, ['package', str(pack)], {'priority': 1})
                 if not self.dryrun:
-                    REQ.patch(url, headers=self.legaldb_headers)
+                    self.legaldb_session.patch(url, headers=self.legaldb_headers, timeout=LEGALDB_TIMEOUT)
                 continue
             if state not in ['acceptable_by_lawyer', 'acceptable', 'correct', 'unacceptable']:
                 return None
@@ -173,7 +183,7 @@ class LegalAuto(ReviewBot.ReviewBot):
 
     def prepare_review(self):
         url = osc.core.makeurl(self.legaldb, ['requests'])
-        req = REQ.get(url, headers=self.legaldb_headers)
+        req = self.legaldb_session.get(url, headers=self.legaldb_headers, timeout=LEGALDB_TIMEOUT)
         req = req.json()
         self.open_reviews = {}
         requests = []
@@ -197,7 +207,7 @@ class LegalAuto(ReviewBot.ReviewBot):
     def delete_from_db(self, id):
         url = osc.core.makeurl(
             self.legaldb, ['requests'], {'external_link': self.request_nick(id)})
-        REQ.delete(url, headers=self.legaldb_headers)
+        self.legaldb_session.delete(url, headers=self.legaldb_headers, timeout=LEGALDB_TIMEOUT)
 
     # overload as we need to get of the bot_request
     def _set_review(self, req, state):
@@ -225,7 +235,8 @@ class LegalAuto(ReviewBot.ReviewBot):
         with open(yaml_path, 'w') as file:
             yaml.dump(self.pkg_cache, file)
         url = osc.core.makeurl(self.legaldb, ['products', project])
-        REQ.patch(url, headers=self.legaldb_headers, data={'id': self.packages})
+        self.legaldb_session.patch(url, headers=self.legaldb_headers, data={'id': self.packages},
+                                   timeout=LEGALDB_TIMEOUT)
 
     def _query_sources_for_product_import(self, project):
         url = osc.core.makeurl(
@@ -278,7 +289,7 @@ class LegalAuto(ReviewBot.ReviewBot):
         url = osc.core.makeurl(self.legaldb, ['packages'], params)
 
         try:
-            obj = REQ.post(url, headers=self.legaldb_headers).json()
+            obj = self.legaldb_session.post(url, headers=self.legaldb_headers, timeout=LEGALDB_TIMEOUT).json()
         except HTTPError:
             return None
         if 'saved' not in obj:
@@ -290,7 +301,7 @@ class LegalAuto(ReviewBot.ReviewBot):
             url = osc.core.makeurl(self.legaldb, ['packages', 'import', str(legaldb_id)], {
                                    'result': f'Reopened for {tproject}', 'state': 'new',
                                    'external_link': tproject, 'priority': 1})
-            package = REQ.post(url, headers=self.legaldb_headers).json()
+            package = self.legaldb_session.post(url, headers=self.legaldb_headers, timeout=LEGALDB_TIMEOUT).json()
 
         return obj['saved']['id']
 
