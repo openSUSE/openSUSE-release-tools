@@ -23,6 +23,7 @@ pipelines:
               - script: |
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s target --only-release-packages --force
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s target
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s target --engine=product_composer
           openSUSE_Factory_ring1:
             resources:
             - repo-checker
@@ -30,6 +31,7 @@ pipelines:
               - script: |
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s ring1 --only-release-packages --force
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s ring1
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory -s ring1 --engine=product_composer
           openSUSE_Factory_ARM_target:
             resources:
             - repo-checker
@@ -37,6 +39,7 @@ pipelines:
               - script: |
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM -s target --only-release-packages --force
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM -s target
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM -s target --engine=product_composer
           openSUSE_Factory_ARM_ring1:
             resources:
             - repo-checker
@@ -44,6 +47,7 @@ pipelines:
               - script: |
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM -s ring1 --only-release-packages --force
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM -s ring1
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:ARM -s ring1 --engine=product_composer
           openSUSE_Factory_LegacyX86_target:
             resources:
             - repo-checker
@@ -51,6 +55,7 @@ pipelines:
               - script: |
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:LegacyX86 -s target --only-release-packages --force
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:LegacyX86 -s target
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:LegacyX86 -s target --engine=product_composer
           openSUSE_Factory_PowerPC:
             resources:
             - repo-checker
@@ -58,6 +63,7 @@ pipelines:
               - script: |
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:PowerPC -s target --only-release-packages --force
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:PowerPC -s target
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:PowerPC -s target --engine=product_composer
           openSUSE_Factory_zSystems:
             resources:
             - repo-checker
@@ -65,6 +71,7 @@ pipelines:
               - script: |
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:zSystems -s target --only-release-packages --force
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:zSystems -s target
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:zSystems -s target --engine=product_composer
           openSUSE_Factory_RISCV:
             resources:
             - repo-checker
@@ -72,6 +79,7 @@ pipelines:
               - script: |
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:RISCV -s target --only-release-packages --force
                   python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:RISCV -s target
+                  python3 -u ./pkglistgen.py -d -A https://api.opensuse.org update_and_solve -p openSUSE:Factory:RISCV -s target --engine=product_composer
   Update.Repos.Factory:
     group: Factory
     lock_behavior: unlockWhenFinished
