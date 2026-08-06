@@ -1,0 +1,27 @@
+# this is config file for [qem-bot](https://github.com/openSUSE/qem-bot/)
+# allowing to trigger testing and approval of PRs from src.opensuse.org for Leap 16.0
+trigger_config:
+  Leap:
+    distri: 'opensuse'
+    flavor: 'staged-Updates'
+    project: 'openSUSE/Leap'
+    branch: 'leap-16.0'
+    repo_template: '{repo_prefix}/openSUSE:/Leap:/{version}:/PullRequest:/{pr_id}/standard'
+    settings:
+      OS_TEST_TEMPLATE: 'openSUSE:/Leap:/{version}:/PullRequest:/@INCIDENTNR@/standard'
+  PackageHub:
+    distri: 'opensuse'
+    flavor: 'staged-Updates'
+    project: 'products/PackageHub'
+    branch: 'leap-16.0'
+    repo_template: '{repo_prefix}/openSUSE:/Backports:/SLE-{version}:/PullRequest:/{pr_id}/standard'
+    settings:
+      OS_TEST_TEMPLATE: 'openSUSE:/Backports:/SLE-{version}:/PullRequest:/@INCIDENTNR@/standard'
+  LeapNonFree:
+    distri: 'opensuse'
+    flavor: 'staged-Updates'
+    project: 'openSUSE/LeapNonFree'
+    branch: 'leap-16.0-nonfree'
+    repo_template: '{repo_prefix}/openSUSE:/Leap:/{version}:/NonFree:/PullRequest:/{pr_id}/standard'
+    settings:
+      OS_TEST_TEMPLATE: 'openSUSE:/Leap:/{version}:/NonFree:/PullRequest:/@INCIDENTNR@/standard'
