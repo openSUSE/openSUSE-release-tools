@@ -14,8 +14,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+
 from osc import cmdln
-import osc.core
 
 
 @cmdln.option('--push', action='store_true',
@@ -32,6 +32,8 @@ def do_pcheck(self, subcmd, opts, project):
     -m          Specify submit message (defaut: "Scripted push of project <prj>")
 
     """
+    import osc.core  # pylint: disable=import-outside-toplevel
+
     apiurl = self.get_api_url()
     sinfos = osc.core.get_project_sourceinfo(apiurl, project, True)
     todo = {}
@@ -99,6 +101,8 @@ class oscapi:
         self.apiurl = apiurl
 
     def sr_for_package(self, project, package):
+        import osc.core  # pylint: disable=import-outside-toplevel
+
         query = "(state/@name='new' or state/@name='review') and " \
                 "(action/source/@project='{project}' or submit/source/@project='{project}') and " \
                 "(action/source/@package='{package}' or submit/source/@package='Packafe')".format(project=project, package=package)
@@ -109,6 +113,8 @@ class oscapi:
         return 0
 
     def create(self, project, package, target, message):
+        import osc.core  # pylint: disable=import-outside-toplevel
+
         currev = osc.core.get_source_rev(self.apiurl, project, package)['rev']
         print(f"Creating a request from {project}/{package}")
         query = {'cmd': 'create'}
