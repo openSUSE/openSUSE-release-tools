@@ -429,13 +429,13 @@ def do_staging(self, subcmd, opts, *args):
                 print(Fore.YELLOW + prj)
                 FreezeCommand(api).perform(prj, copy_bootstrap=opts.bootstrap)
         elif cmd == 'frozenage':
-            projects = api.get_staging_projects_short() if len(args) == 1 else args[1:]
+            projects = api.get_staging_projects() if len(args) == 1 else args[1:]
+            projects = [prj for prj in projects if not api.is_adi_project(prj)]
             for prj in projects:
                 prj = api.prj_from_letter(prj)
-                print('{} last frozen {}{:.1f} days ago'.format(
-                    Fore.YELLOW + prj + Fore.RESET,
-                    Fore.GREEN if api.prj_frozen_enough(prj) else Fore.RED,
-                    api.days_since_last_freeze(prj)))
+                print(f'{Fore.YELLOW}{prj:<30}{Fore.RESET} '
+                      f'last frozen {Fore.GREEN if api.prj_frozen_enough(prj) else Fore.RED}'
+                      f'{api.days_since_last_freeze(prj):.1f} days ago')
         elif cmd == 'accept':
             cmd = AcceptCommand(api)
             cmd.accept_all(args[1:], opts.force, not opts.no_cleanup)
