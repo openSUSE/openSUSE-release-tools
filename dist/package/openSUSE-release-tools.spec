@@ -19,7 +19,7 @@
 %global __provides_exclude ^perl.*
 %define source_dir openSUSE-release-tools
 %define announcer_filename factory-package-news
-%define services osrt-slsa.target osrt-check-bugowner-gitea@.service osrt-git-installcheck@.service osrt-relpkggen@.timer osrt-relpkggen@.service osrt-pkglistgen@.timer osrt-pkglistgen@.service
+%define services osrt-slsa.target osrt-check-bugowner-gitea@.service osrt-git-installcheck@.service osrt-legal-auto@.service osrt-legal-auto-import@.service osrt-relpkggen@.timer osrt-relpkggen@.service osrt-pkglistgen@.timer osrt-pkglistgen@.service
 Name:           openSUSE-release-tools
 Version:        0
 Release:        0
@@ -547,12 +547,17 @@ exit 0
 %{_sysconfdir}/openSUSE-release-tools/ibsapi
 %{_sysconfdir}/openSUSE-release-tools/osrt-check-bugowner-gitea.env.in
 %{_sysconfdir}/openSUSE-release-tools/osrt-git-installcheck.env.in
+%{_sysconfdir}/openSUSE-release-tools/osrt-legal-auto.env.in
 %{_sysusersdir}/%{name}.conf
 %{_sysusersdir}/%{name}-staging.conf
 %{_unitdir}/osrt-check-bugowner-gitea@.service
 %{_unitdir}/osrt-check-bugowner-gitea@.timer
 %{_unitdir}/osrt-git-installcheck@.service
 %{_unitdir}/osrt-git-installcheck@.timer
+%{_unitdir}/osrt-legal-auto@.service
+%{_unitdir}/osrt-legal-auto@.timer
+%{_unitdir}/osrt-legal-auto-import@.service
+%{_unitdir}/osrt-legal-auto-import@.timer
 %{_unitdir}/osrt-pkglistgen@.service
 %{_unitdir}/osrt-pkglistgen@.timer
 %{_unitdir}/osrt-relpkggen@.service
