@@ -200,6 +200,13 @@ class FreezeCommand(object):
                 a = ET.SubElement(r, 'arch')
                 a.text = 'local'
 
+            # The 'product' repo needs to build against 'images' and 'bootstrap-copy'
+            # images is used for agama-baseiso (baseiso-containment of agama installer)
+            # bootstrap-copy is used for Ring0 packages to be available for the product
+            if repository == "product":
+                ET.SubElement(r, 'path', {'project': self.prj, 'repository': 'images'})
+                ET.SubElement(r, 'path', {'project': self.prj, 'repository': 'bootstrap_copy'})
+
             a = ET.SubElement(r, 'arch')
             a.text = 'x86_64'
 
