@@ -9,3 +9,4 @@ osc
 .venv
 .vscode
 .idea
+/t/tmp
