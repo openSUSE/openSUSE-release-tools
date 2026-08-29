@@ -105,7 +105,7 @@ class Project(object):
             openqa_infos[job['id']] = {'url': self.listener.test_url(job)}
             openqa_infos[job['id']]['state'] = self.map_openqa_result(job)
             openqa_infos[job['id']]['build'] = job['settings']['BUILD']
-            openqa_infos[job['id']]['name'] = f"{job['settings']['FLAVOR']}-{job['settings']['TEST']}@{job['settings']['MACHINE']}"
+            openqa_infos[job['id']]['name'] = f"{job['settings']['VERSION']}-{job['settings']['FLAVOR']}-{job['settings']['TEST']}@{job['settings']['MACHINE']}"
 
     def compare_simple_builds(build1, build2):
         """Simple build number comparison"""
