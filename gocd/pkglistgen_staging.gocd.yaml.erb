@@ -80,12 +80,26 @@ pipelines:
                 exit 1
               fi
 
+    - Update.000productcompose:
+        resources:
+          - repo-checker
+        tasks:
+          - script: |-
+              export PYTHONPATH=scripts
+              if ./scripts/pkglistgen.py --debug -A $STAGING_API update_and_solve --staging $STAGING_PROJECT --engine=product_composer --force; then
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s success
+              else
+                ./scripts/gocd/report-status.py -A $STAGING_API -p $STAGING_PROJECT -n packagelists -r standard -s failure
+                exit 1
+              fi
+
     - Enable.images.repo:
         resources:
           - staging-bot
         tasks:
           - script: |-
               osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=images&flag=build"
+              osc -A $STAGING_API api -X POST "/source/$STAGING_PROJECT?cmd=remove_flag&repository=product&flag=build"
               export PYTHONPATH=$PWD/scripts
               while osc -A $STAGING_API api "/build/$STAGING_PROJECT/_result?view=summary&repository=images" | grep 'dirty=.true.'; do
                 sleep 60
