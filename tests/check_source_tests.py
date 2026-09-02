@@ -386,7 +386,7 @@ class TestCheckSource(OBSLocal.TestCase):
 
     @pytest.mark.usefixtures("default_config")
     def test_existing_source_urls(self):
-        """Accepts invalid source URLs if previously present"""
+        """Refuses invalid source URLs even if previously present"""
         self._setup_devel_project(devel_files='blowfish-with-urls', target_files='blowfish-with-existing-url')
 
         req_id = self.wf.create_submit_request(self.devel_package.project,
@@ -397,7 +397,10 @@ class TestCheckSource(OBSLocal.TestCase):
         self.review_bot.set_request_ids([req_id])
         self.review_bot.check_requests()
 
-        self.assertReview(req_id, by_user=(self.bot_user, 'accepted'))
+        # not declined but not accepted either
+        review = self.assertReview(req_id, by_user=(self.bot_user, 'new'))
+        self.assertIn("Source URLs are not valid. Try `osc service runall download_files`.", review.comment)
+        self.assertIn("ERROR: Failed to download \"https://example.com/blowfish-1.tar.gz\"", review.comment)
 
     @pytest.mark.usefixtures("default_config")
     def test_two_patches_in_one_line(self):

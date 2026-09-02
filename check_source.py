@@ -702,26 +702,7 @@ class CheckSource(ReviewBot.ReviewBot):
 
         return True
 
-    def _snipe_out_existing_urls(self, old, directory, specs):
-        if not os.path.isdir(old):
-            return
-        oldsources = self._mentioned_sources(old, specs)
-        for spec in specs:
-            specfn = os.path.join(directory, spec)
-            nspecfn = specfn + '.new'
-            wf = open(nspecfn, 'w')
-            with open(specfn) as rf:
-                for line in rf:
-                    m = re.match(r'(Source[0-9]*\s*):\s*(.*)$', line)
-                    if m and m.group(2) in oldsources:
-                        wf.write(m.group(1) + ":" + os.path.basename(m.group(2)) + "\n")
-                        continue
-                    wf.write(line)
-            wf.close()
-            os.rename(nspecfn, specfn)
-
     def check_urls(self, old, directory, specs):
-        self._snipe_out_existing_urls(old, directory, specs)
         oldcwd = os.getcwd()
         with tempfile.TemporaryDirectory() as tmpdir:
             os.chdir(directory)
