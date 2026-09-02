@@ -501,6 +501,7 @@ exit 0
 %exclude %{_datadir}/%{source_dir}/suppkg_rebuild.py
 %exclude %{_datadir}/%{source_dir}/skippkg-finder.py
 %exclude %{_datadir}/%{source_dir}/slfo-packagelist-uploader.py
+%exclude %{_datadir}/%{source_dir}/obsrsync.py
 %exclude %{_datadir}/%{source_dir}/osclib
 %exclude %{_datadir}/%{source_dir}/osc-cycle.py
 %exclude %{_datadir}/%{source_dir}/osc-origin.py
