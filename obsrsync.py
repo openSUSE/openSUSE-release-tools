@@ -6,6 +6,9 @@ import json
 import logging
 import os
 import random
+import requests
+
+import configparser
 
 import osc
 from osc.core import http_GET, makeurl
@@ -16,6 +19,73 @@ from urllib.error import HTTPError
 
 from openqa_client.client import OpenQA_Client
 from openqa_client.exceptions import RequestError
+
+from urllib.parse import urlparse, urlunparse
+
+
+class Configurable_OpenQA_Client(OpenQA_Client):
+    def __init__(
+        self, server: str = "", scheme: str = "", retries: int = 5, wait: int = 10
+    ) -> None:
+        self.retries = retries
+        self.wait = wait
+        # Read in config files.
+        openqa_config = os.environ.get("OPENQA_CONFIG")
+        config = configparser.ConfigParser()
+        if openqa_config and os.path.exists(openqa_config):
+            config.read(openqa_config)
+        else:
+            paths = ("/etc/openqa", f"{os.path.expanduser('~')}/.config/openqa")
+            config.read(f"{path}/client.conf" for path in paths)
+
+        # If server not specified, default to the first one in the
+        # configuration file. If no configuration file, default to
+        # localhost. NOTE: this is different from the perl client, it
+        # *always* defaults to localhost.
+        if not server:
+            try:
+                server = config.sections()[0]
+            except (configparser.MissingSectionHeaderError, IndexError):
+                server = "localhost"
+
+        if server.startswith("http"):
+            # Handle entries like [http://foo] or [https://foo]. The,
+            # perl client does NOT handle these, so you shouldn't use
+            # them. This client started out supporting this, though,
+            # so it should continue to.
+            if not scheme:
+                scheme = urlparse(server).scheme
+            server = urlparse(server).netloc
+
+        if not scheme:
+            if server in ("localhost", "127.0.0.1", "::1"):
+                # Default to non-TLS for localhost; cert is unlikely to
+                # be valid for 'localhost' and there's no MITM...
+                scheme = "http"
+            else:
+                scheme = "https"
+
+        self.baseurl = urlunparse((scheme, server, "", "", "", ""))
+
+        # Get the API secrets from the config file.
+        try:
+            apikey = config.get(server, "key")
+            self.apisecret = config.get(server, "secret")
+        except configparser.Error:
+            try:
+                apikey = config.get(self.baseurl, "key")
+                self.apisecret = config.get(self.baseurl, "secret")
+            except configparser.Error:
+                raise Exception(f"No API key for {server}: only GET requests will be allowed")
+
+        # Create a Requests session and ensure some standard headers
+        # will be used for all requests run through the session.
+        self.session: requests.Session = requests.Session()
+        headers = {}
+        headers["Accept"] = "json"
+        if apikey:
+            headers["X-API-Key"] = apikey
+        self.session.headers.update(headers)
 
 
 class Listener(PubSubConsumer):
@@ -28,7 +98,7 @@ class Listener(PubSubConsumer):
         self.namespaces = namespaces
         self.state_dir = state_dir
         self.dry_run = dry_run
-        self.openqa = OpenQA_Client(server=openqa_url)
+        self.openqa = Configurable_OpenQA_Client(server=openqa_url)
 
         self.repositories_to_check = []
         self.repositories_to_monitor = set()
