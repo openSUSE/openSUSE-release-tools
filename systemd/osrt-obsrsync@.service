@@ -1,0 +1,20 @@
+[Unit]
+PartOf=osrt-slsa.target
+Description=service for osrt-obsrsync running for %i
+After=network-online.target
+StartLimitBurst=3
+StartLimitIntervalSec=60
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5
+User=osrt-slsa
+SyslogIdentifier=osrt-slsa
+EnvironmentFile=/etc/default/osrt-obsrsync.env.%i
+WorkingDirectory=/var/lib/osrt-slsa/obsrsync
+ExecStartPre=/bin/bash -xc '/usr/bin/systemctl is-active --quiet osrt-obsrsync@%i.service && exit 1 || exit 0'
+ExecStart=/usr/bin/osrt-obsrsync -A "${API_URL}" --openqa "${OPENQA_URL}" --state-dir /var/lib/osrt-slsa/obsrsync/%i ${OSRT_NAMESPACES} 
+
+[Install]
+WantedBy=osrt-slsa.target

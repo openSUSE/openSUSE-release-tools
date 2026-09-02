@@ -121,6 +121,20 @@ Requires:       python3-GitPython
 %description scm
 VCS implementations used by scripts in %{name}.
 
+%package openqa-trigger-bots
+Summary:        openQA trigger bots
+Group:          Development/Tools/Other
+Requires:       osclib = %{version}
+Requires:       %{name} = %{version}
+Requires:       python3-pika
+Requires:       python3-openqa_client
+Requires:       python3-lxml
+BuildArch:      noarch
+
+%description openqa-trigger-bots
+Bots to trigger images syncing in openQA, and to get
+back feedback.
+
 %package check-bugowner
 Summary:        Check bugowner review bot
 Group:          Development/Tools/Other
@@ -289,6 +303,7 @@ Requires:       %{name} = %{version}
 Requires:       openSUSE-release-tools-check-bugowner
 Requires:       openSUSE-release-tools-pkglistgen
 Requires:       openSUSE-release-tools-repo-checker
+Requires:       openSUSE-release-tools-openqa-trigger-bots
 %sysusers_requires
 Recommends:     logrotate
 BuildArch:      noarch
@@ -522,6 +537,10 @@ exit 0
 %{_bindir}/osrt-check_bugowner
 %{_datadir}/%{source_dir}/check_bugowner.py
 
+%files openqa-trigger-bots
+%{_bindir}/osrt-obsrsync
+%{_datadir}/%{source_dir}/obsrsync.py
+
 %files check-source
 %{_bindir}/osrt-check_source
 %if 0%{?suse_version} > 1500
@@ -548,12 +567,14 @@ exit 0
 %{_sysconfdir}/openSUSE-release-tools/ibsapi
 %{_sysconfdir}/openSUSE-release-tools/osrt-check-bugowner-gitea.env.in
 %{_sysconfdir}/openSUSE-release-tools/osrt-git-installcheck.env.in
+%{_sysconfdir}/openSUSE-release-tools/osrt-obsrsync.env.in
 %{_sysusersdir}/%{name}.conf
 %{_sysusersdir}/%{name}-staging.conf
 %{_unitdir}/osrt-check-bugowner-gitea@.service
 %{_unitdir}/osrt-check-bugowner-gitea@.timer
 %{_unitdir}/osrt-git-installcheck@.service
 %{_unitdir}/osrt-git-installcheck@.timer
+%{_unitdir}/osrt-obsrsync@.service
 %{_unitdir}/osrt-pkglistgen@.service
 %{_unitdir}/osrt-pkglistgen@.timer
 %{_unitdir}/osrt-relpkggen@.service
@@ -565,6 +586,7 @@ exit 0
 %dir %attr(750,osrt-slsa,osrt-slsa) %{_sharedstatedir}/osrt-slsa
 %dir %attr(750,osrt-slsa,osrt-slsa) %{_sharedstatedir}/osrt-slsa/pkglistgen
 %dir %attr(750,osrt-slsa,osrt-slsa) %{_sharedstatedir}/osrt-slsa/relpkggen
+%dir %attr(750,osrt-slsa,osrt-slsa) %{_sharedstatedir}/osrt-slsa/obsrsync
 %dir %attr(750,osrt-staging,osrt-staging) %{_sharedstatedir}/osrt-staging
 %dir %attr(750,osrt-staging,osrt-staging) %{_sharedstatedir}/osrt-staging/check-bugowner
 %dir %attr(750,osrt-staging,osrt-staging) %{_sharedstatedir}/osrt-staging/git-installcheck
