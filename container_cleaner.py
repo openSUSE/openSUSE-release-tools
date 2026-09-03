@@ -8,7 +8,7 @@ import logging
 import ToolBase
 import sys
 import re
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from lxml import etree as xml
 
 
@@ -27,85 +27,70 @@ class ContainerCleaner(ToolBase.ToolBase):
         return xml.parse(self.retried_GET(url))
 
     def findSourcepkgsToDelete(self, project):
-        # Get a list of all images
-        srccontainers = self.getDirEntries(["source", project])
+        # Get a set of all srccontainers in the project
+        srccontainers = set(self.getDirEntries(["source", project]))
 
-        # Sort the released packages into buckets for each origin package:
-        # {"opensuse-tumbleweed-image": ["opensuse-tumbleweed-image.20190402134201", ...]}
-        buckets = defaultdict(list)
-        regex_maintenance_release = re.compile(R"^(.+)\.[0-9]+$")
-        for srccontainer in srccontainers:
-            # Get the right bucket
-            match = regex_maintenance_release.match(srccontainer)
-            if match:
-                # Maintenance release
-                package = match.group(1)
-            else:
-                # Not renamed
-                package = srccontainer
-
-            if srccontainer not in buckets[package]:
-                buckets[package] += [srccontainer]
-
-        for package in buckets:
-            # Sort each bucket: Newest provider first
-            buckets[package].sort(reverse=True)
-            logging.debug("Found %d providers of %s", len(buckets[package]), package)
-
-        # Get a hash for sourcecontainer -> arch with binaries
-        # {"opensuse-tumbleweed-image.20190309164844": ["aarch64", "armv7l", "armv6l"],
-        # "kubic-pause-image.20190306124139": ["x86_64", "i586"], ... }
-        srccontainerarchs = defaultdict(list)
-
+        # List of all binaries in the project
         resultlist = self.getBinaryList(project)
 
-        regex_srccontainer = re.compile(R"^([^:]+)(:[^:]+)?$")
+        # The bot keeps five releases of each image alive. "Same image" is defined by
+        # having the same package name, flavor and architecture.
+        ImageKey = namedtuple("ProvidedImage", ["pkgname", "flavor", "arch"])
+
+        # A released image. maint_release kept as first tuple member to act for sorting.
+        ReleasedImage = namedtuple("ReleasedImage", ["maint_release", "buildcontainer", "srccontainer"])
+
+        # Sort the released packages into buckets for each image it provides:
+        # {ImageKey("opensuse-tumbleweed-image", "docker", "x86_64"):
+        #    [ReleasedImage(20190402134201, "container-image.20190402134201:docker", "container-image.20190402134201"), ...]}
+        buckets = defaultdict(list)
+
+        # Split a buildcontainer name like "sourcepkg.01234:flavor" into its parts
+        regex_buildcontainer = re.compile(R"^([^:]+)\.([0-9]+)(:[^:]+)?$")
+
         for arch_result in resultlist.xpath("result"):
             arch = arch_result.get("arch")
 
             for binarylist in arch_result.xpath("binarylist"):
                 buildcontainer = binarylist.get("package")
-                if len(binarylist.xpath("binary")) > 0:
-                    match = regex_srccontainer.match(buildcontainer)
-                    if not match:
-                        raise Exception(f"Could not map {buildcontainer} to source container")
+                if len(binarylist.xpath("binary")) == 0:
+                    continue
 
-                    srccontainer = match.group(1)
-                    if srccontainer not in srccontainers:
-                        raise Exception(f"Mapped {buildcontainer} to wrong source container ({srccontainer})")
+                match = regex_buildcontainer.match(buildcontainer)
+                if not match:
+                    raise Exception(f"Could not parse {buildcontainer} as build container")
 
-                    logging.debug("%s provides binaries for %s", srccontainer, arch)
-                    srccontainerarchs[srccontainer] += [arch]
+                pkgname, maint_release, flavor = match.group(1, 2, 3)
+                srccontainer = f"{pkgname}.{maint_release}"
+                if srccontainer not in srccontainers:
+                    raise Exception(f"Mapped {buildcontainer} to wrong source container ({srccontainer})")
+
+                imgbucket = ImageKey(pkgname, flavor, arch)
+                logging.debug("%s provides binaries for %s through %s", buildcontainer, imgbucket, srccontainer)
+                buckets[imgbucket] += [ReleasedImage(maint_release, buildcontainer, srccontainer)]
+
+        # The list of srccontainers referenced by released images
+        seen_srccontainers = set([img.srccontainer for pkg in buckets for img in buckets[pkg]])
+        srccontainers_not_seen = set(srccontainers) - seen_srccontainers
+        if srccontainers_not_seen:
+            logging.warning(f"The following srccontainers have no binaries and will not be touched: {srccontainers_not_seen}")
+        else:
+            logging.debug("All srccontainers have binaries!")
 
         # Now go through each bucket and find out what doesn't contribute to the newest five
-        can_delete = []
+        srccontainers_referenced = set()
         for package in buckets:
-            # {"x86_64": 1, "aarch64": 2, ...}
-            archs_found = defaultdict(lambda: 0)
+            # Sort each bucket: Newest provider first
+            buckets[package].sort(reverse=True)
+            logging.debug("Found %d providers of %s", len(buckets[package]), package)
 
-            for srccontainer in buckets[package]:
-                contributes = False
-                for arch in srccontainerarchs[srccontainer]:
-                    if archs_found[arch] < 5:
-                        archs_found[arch] += 1
-                        contributes = True
+            for released_image in buckets[package][:5]:
+                logging.debug(f"\t{released_image} needed")
+                srccontainers_referenced.add(released_image.srccontainer)
+            for released_image in buckets[package][5:]:
+                logging.debug(f"\t{released_image} no longer needed")
 
-                if len(srccontainerarchs[srccontainer]) == 0:
-                    logging.warning("%s has no binaries (any flavor/any arch) - skipping", srccontainer)
-                elif contributes:
-                    logging.debug("%s contributes to %s", srccontainer, package)
-                else:
-                    logging.info("%s does not contribute", srccontainer)
-                    if len([count for count in archs_found.values() if count > 0]) == 0:
-                        # If there are A, B, C and D, with only C and D providing binaries,
-                        # A and B aren't deleted because they have newer sources. This is
-                        # to avoid deleting something due to unforeseen circumstances, e.g.
-                        # OBS didn't copy the binaries yet.
-                        logging.warning("No newer provider found either, ignoring")
-                    else:
-                        can_delete += [srccontainer]
-
-        return can_delete
+        return seen_srccontainers - srccontainers_referenced
 
     def run(self, project):
         packages = self.findSourcepkgsToDelete(project)
