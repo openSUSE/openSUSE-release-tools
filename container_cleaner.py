@@ -97,9 +97,8 @@ class ContainerCleaner(ToolBase.ToolBase):
 
         for package in packages:
             url = self.makeurl(["source", project, package])
-            if self.dryrun:
-                logging.info("DELETE %s", url)
-            else:
+            logging.info("DELETE %s", url)
+            if not self.dryrun:
                 osc.core.http_DELETE(url)
 
 
