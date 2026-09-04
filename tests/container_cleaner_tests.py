@@ -6,6 +6,7 @@ from lxml import etree as xml
 
 class MockedContainerCleaner(ContainerCleaner):
     def __init__(self, container_arch_map):
+        super().__init__()
         self.container_arch_map = container_arch_map
 
     def getDirEntries(self, path):
@@ -43,7 +44,7 @@ class MockedContainerCleaner(ContainerCleaner):
 class TestContainerCleaner(unittest.TestCase):
     def doTest(self, container_arch_map, to_be_deleted_exp):
         cleaner = MockedContainerCleaner(container_arch_map)
-        to_be_deleted = cleaner.findSourcepkgsToDelete("mock:prj")
+        to_be_deleted = list(cleaner.findSourcepkgsToDelete("mock:prj"))
         to_be_deleted.sort()
         self.assertEqual(to_be_deleted, to_be_deleted_exp)
 
@@ -57,7 +58,7 @@ class TestContainerCleaner(unittest.TestCase):
 
     def test_nothingToDo(self):
         """Non-empty project, still do nothing"""
-        container_arch_map = {"c": ["i586", "x86_64"],
+        container_arch_map = {"c.00": ["i586", "x86_64"],
                               "c.01": ["i586"],
                               "c.02": ["x86_64"],
                               "c.04": ["i586", "x86_64"],
@@ -73,7 +74,7 @@ class TestContainerCleaner(unittest.TestCase):
 
     def test_multiplePackages(self):
         """Multiple packages in one project"""
-        container_arch_map = {"c": ["i586", "x86_64"],
+        container_arch_map = {"c.00": ["i586", "x86_64"],
                               "c.01": ["i586"],
                               "c.02": ["x86_64"],
                               "c.03": [],
@@ -94,15 +95,14 @@ class TestContainerCleaner(unittest.TestCase):
                               "e.56": ["i586"],
                               "e.57": ["i586"]}
 
-        to_be_deleted_exp = ["c", "c.01", "c.02", "c.04",
+        to_be_deleted_exp = ["c.00", "c.01", "c.02", "c.04",
                              "e.51"]
 
         return self.doTest(container_arch_map, to_be_deleted_exp)
 
     def test_multibuild(self):
-        """Packages using _multbuild.
-        There is no special handling for _multibuild - It's enough if any flavor has binaries."""
-        container_arch_map = {"c:docker": ["i586", "x86_64"],
+        """_multibuild flavors are treated like separate binaries"""
+        container_arch_map = {"c.00:docker": ["i586", "x86_64"],
                               "c.01:docker": ["i586"],
                               "c.02:lxc": ["x86_64"],
                               "c.03:docker": [],
@@ -114,7 +114,8 @@ class TestContainerCleaner(unittest.TestCase):
                               "c.09:docker": ["i586", "x86_64"],
                               "c.10:docker": ["i586", "x86_64"],
                               "c.11:docker": [],
-                              "d.42:lxc": [], "d.43": [],
+                              "d.42:lxc": [],
+                              "d.43": [],
                               "e.51": ["i586"],
                               "e.52": ["aarch64"],
                               "e.53": ["i586"],
@@ -123,7 +124,45 @@ class TestContainerCleaner(unittest.TestCase):
                               "e.56": ["i586"],
                               "e.57": ["i586"]}
 
-        to_be_deleted_exp = ["c", "c.01", "c.02", "c.04",
-                             "e.51"]
+        to_be_deleted_exp = ["c.00", "c.01"]
 
         return self.doTest(container_arch_map, to_be_deleted_exp)
+
+    def test_multibuild_independent(self):
+        """_multibuild flavors are treated like separate binaries"""
+        container_arch_map = {"f.0:a": ["x86_64"],
+                              "f.0:b": ["x86_64"],
+                              "f.1:b": ["x86_64"],
+                              "f.2:b": ["x86_64"],
+                              "f.3:b": ["x86_64"],
+                              "f.4:b": ["x86_64"],
+                              "f.5:b": ["x86_64"],
+                              "f.6:b": ["x86_64"]}
+
+        # f.0 is needed for f.0:a, keep it
+        to_be_deleted_exp = ["f.1"]
+
+        self.doTest(container_arch_map, to_be_deleted_exp)
+
+    def test_multibuild_manyflavors(self):
+        """Packages using _multbuild with many flavors
+        Ensure that every flavors is accounted for separately."""
+        container_arch_map = {}
+
+        # Generate five releases of a container with six flavors each.
+        # The flavors are released separately, so each flavor gets a new maintenance release
+        # number, i.e. c.00:fl0 and c.01:fl1 have binaries,
+        # while c.00:fl1-fl6, c.01:fl0 and c.01:fl2-6 do not.
+        relcounter = 0
+        for release in range(0, 4):
+            for flavor in range(0, 6):
+                relcounter = 6 * release + flavor
+                for allflavor in range(0, 6):
+                    container_arch_map[f"c.{relcounter}:fl{allflavor}"] = []
+
+                container_arch_map[f"c.{relcounter}:fl{flavor}"] = ["x86_64"]
+
+        # For each c:flX release, there are five binaries, thus nothing should get deleted.
+        to_be_deleted_exp = []
+
+        self.doTest(container_arch_map, to_be_deleted_exp)
