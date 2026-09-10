@@ -51,6 +51,14 @@ FACTORY_PROJECTS = [
         'openqa_groupid': 75,
     },
     {
+        'name': 'openSUSE:Factory:LegacyARM',
+        'nick': 'Legacy ARM',
+        'download_url': 'https://download.opensuse.org/ports/armv7hl/tumbleweed/iso/',
+        'openqa_group': 'openSUSE Tumbleweed Legacy ARM',
+        'openqa_version': 'Tumbleweed',
+        'openqa_groupid': 143,
+    },
+    {
         'name': 'openSUSE:Factory:PowerPC',
         'nick': 'Power',
         'download_url': 'https://download.opensuse.org/ports/ppc/tumbleweed/iso/',
@@ -73,6 +81,14 @@ FACTORY_PROJECTS = [
         'openqa_group': 'openSUSE Tumbleweed s390x',
         'openqa_version': 'Tumbleweed',
         'openqa_groupid': 34,
+    },
+    {
+        'name': 'devel:ARM:Factory:ARMv9',
+        'nick': 'ARMv9',
+        'download_url': 'https://download.opensuse.org/repositories/devel:/ARM:/Factory:/ARMv9:/ToTest/images/iso/',
+        'openqa_group': 'Devel Tumbleweed ARMv9',
+        'openqa_version': 'Tumbleweed',
+        'openqa_groupid': 137,
     },
 ]
 
