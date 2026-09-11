@@ -281,6 +281,11 @@ class AcceptCommand(object):
             if self.api.item_exists(project):
                 self.update_version_attribute(project, curr_version)
 
+        # Also update devel:ARM:Factory:ARMv9
+        project = 'devel:ARM:Factory:ARMv9'
+        if self.api.item_exists(project):
+            self.update_version_attribute(project, curr_version)
+
     def sync_buildfailures(self):
         """
         Trigger rebuild of packages that failed build in either
