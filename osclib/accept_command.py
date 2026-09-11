@@ -275,7 +275,7 @@ class AcceptCommand(object):
 
         self.update_version_attribute(project, curr_version)
 
-        ports_prjs = ['ARM', 'LegacyX86', 'PowerPC', 'RISCV', 'zSystems']
+        ports_prjs = ['ARM', 'LegacyX86', 'LegacyARM', 'PowerPC', 'RISCV', 'zSystems']
         for ports in ports_prjs:
             project = self.api.project + ':' + ports
             if self.api.item_exists(project):
