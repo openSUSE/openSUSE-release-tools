@@ -696,6 +696,8 @@ class CheckSource(ReviewBot.ReviewBot):
             for line in res.stdout.decode('utf-8').split("\n"):
                 # pimp up some warnings
                 if re.search(r'Attention.*not mentioned', line):
+                    if re.search(r'Attention, "\.obs" is not mentioned', line):
+                        continue
                     line = re.sub(r'\(W\) ', '', line)
                     self.review_messages['declined'] = line
                     return False
