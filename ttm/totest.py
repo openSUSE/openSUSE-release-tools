@@ -159,8 +159,13 @@ class ToTest(object):
 
     def parse_products(self, products, factory):
         parsed = []
+        seen = set()
         for package in products:
             for key, value in package.items():
+                if key in seen:
+                    raise Exception(f'Duplicate product {key}')
+
+                seen.add(key)
                 parsed.append(factory(self, key, value))
 
         return parsed
