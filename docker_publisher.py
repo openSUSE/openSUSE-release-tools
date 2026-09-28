@@ -389,36 +389,23 @@ def run():
             },
             'publisher': DockerImagePublisherRegistry(drc_tw, "latest"),
         },
-        'leap-15.6': {
-            'fetchers': {
-                'x86_64': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:15.6/containers/x86_64/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
-                'aarch64': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:15.6/containers/aarch64/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
-                'armv7l': None,
-                'ppc64le': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:15.6/containers/ppc64le/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
-                's390x': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:15.6/containers/s390x/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
-            },
-            'publisher': DockerImagePublisherRegistry(drc_leap, "15.6"),
-        },
         'leap-16.0': {
             'fetchers': {
                 'x86_64': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:16.0/containers/x86_64/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
                 'aarch64': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:16.0/containers/aarch64/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
-                'armv7l': None,  # Let's finally drop it from opensuse/leap:latest
                 'ppc64le': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:16.0/containers/ppc64le/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
                 's390x': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:16.0/containers/s390x/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
             },
             'publisher': DockerImagePublisherRegistry(drc_leap, "latest", ["16", "16.0"]),
         },
-        # Like Leap 15.6, but using the 15.5 image for armv7l
-        'leap-15': {
+        'leap-16.1': {
             'fetchers': {
-                'x86_64': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:15.6/containers/x86_64/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
-                'aarch64': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:15.6/containers/aarch64/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
-                'armv7l': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:15.5/containers_armv7/armv7l/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
-                'ppc64le': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:15.6/containers/ppc64le/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
-                's390x': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:15.6/containers/s390x/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
+                'x86_64': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:16.1/containers/x86_64/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
+                'aarch64': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:16.1/containers/aarch64/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
+                'ppc64le': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:16.1/containers/ppc64le/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
+                's390x': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:16.1/containers/s390x/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
             },
-            'publisher': DockerImagePublisherRegistry(drc_leap, "15"),
+            'publisher': DockerImagePublisherRegistry(drc_leap, "16.1"),
         },
     }
 
