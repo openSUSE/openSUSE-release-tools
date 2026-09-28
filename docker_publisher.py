@@ -393,7 +393,6 @@ def run():
             'fetchers': {
                 'x86_64': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:16.0/containers/x86_64/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
                 'aarch64': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:16.0/containers/aarch64/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
-                'armv7l': None,  # Let's finally drop it from opensuse/leap:latest
                 'ppc64le': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:16.0/containers/ppc64le/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
                 's390x': DockerImageFetcherOBS(url="https://build.opensuse.org/public/build/openSUSE:Containers:Leap:16.0/containers/s390x/opensuse-leap-image:docker", maintenance_release=True),  # noqa: E501
             },
