@@ -117,6 +117,14 @@ LEAP_PROJECTS = [
         'openqa_version': '16.1',
         'openqa_groupid': 139,
     },
+    {
+        'name': 'openSUSE:Leap:16.1:Images',
+        'nick': 'Leap 16.1 Images',
+        'download_url': 'https://download.opensuse.org/distribution/leap/16.1/appliances',
+        'openqa_group': 'openSUSE Leap 16.1 Images',
+        'openqa_version': '16.1',
+        'openqa_groupid': 141,
+    },
 ]
 
 
