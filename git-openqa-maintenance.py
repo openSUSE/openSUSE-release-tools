@@ -293,6 +293,7 @@ def prepare_update_settings(project, obs_project, os_test_template, bs_repo_url,
     # this could also be: obs_project.split(':')[-1]
     # start with a colon so it looks cool behind 'Build' :/
     settings["BUILD"] = f":{build_project}:{pr}:{staged_update_name}"
+    settings["SRC_PACKAGE"] = staged_update_name
     settings["INCIDENT_REPO"] = bs_repo_url
     # so tests can do zypper in -t patch $INCIDENT_PATCH
     patch_id = obs_project.replace(":", "_")
@@ -549,7 +550,7 @@ def prepare_openqa_job_params(args, obs_project, data, settings):
         "GITEA_SHA": data["head"]["sha"],
         "GITEA_STATUSES_URL": statuses_url,
         "GITEA_PR_URL": data["html_url"],
-        "webhook_id": "gitea:pr:" + str(data["number"]),
+        "SUBMISSION_ID": "gitea:pr:" + str(data["number"]),
         "VERSION": _extract_version_from_branch(data["base"]["label"]),
         "DISTRI": "opensuse",  # there must be a better way than to hardcode
         "FLAVOR": "staged-Updates",
