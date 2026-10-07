@@ -50,10 +50,10 @@ class BCIRepoPublisher(ToolBase.ToolBase):
         raise RuntimeError(f"Failed to get srcmd5 of {project}/{package}")
 
     def mtime_of_product(self, project, package, repo, arch):
-        """Get the build time stamp of the given product, based on _buildenv."""
+        """Get the build time stamp of the given product, based on _statistics."""
         url = makeurl(self.apiurl, ['build', project, repo, arch, package])
         root = ET.parse(http_GET(url)).getroot()
-        mtime = root.xpath('/binarylist/binary[@filename = "_buildenv"]/@mtime')
+        mtime = root.xpath('/binarylist/binary[@filename = "_statistics"]/@mtime')
         return mtime[0]
 
     def openqa_jobs_for_product(self, arch, version, build):
