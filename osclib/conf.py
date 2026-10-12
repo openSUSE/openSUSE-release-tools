@@ -56,9 +56,13 @@ DEFAULT = {
         'mail-maintainer': 'Dirk Mueller <dmueller@suse.com>',
         'mail-noreply': 'noreply@opensuse.org',
     },
-    r'openSUSE:(?P<project>.*:NonFree)$': {
+    r'openSUSE:(?P<project>Factory:NonFree)$': {
         'staging': 'openSUSE:%(project)s:Staging',
         'staging-group': 'factory-staging',
+        'staging-archs': 'i586 x86_64',
+        'lock': 'openSUSE:%(project)s:Staging',
+        'lock-ns': 'openSUSE',
+        'main-repo': 'standard',
         'onlyadi': 'True',
         'review-team': 'opensuse-review-team',
     },

@@ -44,16 +44,15 @@ class TestConfig(unittest.TestCase):
         # A list of projects that should match each of the DEFAULT patterns.
         projects = (
             'openSUSE:Factory',
+            'openSUSE:Factory:NonFree',
             'openSUSE:Factory:ARM',
             'openSUSE:Jump:15.2',
             'openSUSE:Leap:15.2',
             'openSUSE:Leap:15.2:ARM',
-            'openSUSE:Leap:15.2:NonFree',
             'openSUSE:Leap:15.2:Update',
             'openSUSE:Leap:15.3',
             'openSUSE:Leap:15.3:ARM',
             'openSUSE:Leap:15.3:ARM:Images',
-            'openSUSE:Leap:15.3:NonFree',
             'openSUSE:Leap:15.3:Update',
             'openSUSE:Backports:SLE-15',
             'openSUSE:Backports:SLE-15:Update',
