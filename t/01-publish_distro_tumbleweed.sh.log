@@ -1,0 +1,24 @@
+generating /srv/www-local/snapshot-changes/tumbleweed/2023/Changes.20230101.txt
+curl -sf https://openqa.opensuse.org/snapshot-changes/opensuse/tumbleweed/diff/20230101 -o /srv/www-local/snapshot-changes/tumbleweed/2023/Changes.20230101.txt
+cp -v /srv/www-local/snapshot-changes/tumbleweed/2023/Changes.20230101.txt t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso
+ln -sf . t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/Changes
+ln -sf openSUSE-Tumbleweed-DVD-x86_64-Snapshot20230101-Media.iso t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-DVD-x86_64-Current.iso
+ln -sf openSUSE-Tumbleweed-DVD-x86_64-Snapshot20230101-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-DVD-x86_64-Current.iso.sha256
+ln -sf openSUSE-Tumbleweed-NET-x86_64-Snapshot20230101-Media.iso t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-NET-x86_64-Current.iso
+ln -sf openSUSE-Tumbleweed-NET-x86_64-Snapshot20230101-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-NET-x86_64-Current.iso.sha256
+ln -sf openSUSE-Tumbleweed-GNOME-Live-x86_64-Snapshot20230101-Media.iso t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-GNOME-Live-x86_64-Current.iso
+ln -sf openSUSE-Tumbleweed-GNOME-Live-x86_64-Snapshot20230101-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-GNOME-Live-x86_64-Current.iso.sha256
+ln -sf openSUSE-Tumbleweed-KDE-Live-x86_64-Snapshot20230101-Media.iso t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-KDE-Live-x86_64-Current.iso
+ln -sf openSUSE-Tumbleweed-KDE-Live-x86_64-Snapshot20230101-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-KDE-Live-x86_64-Current.iso.sha256
+ln -sf openSUSE-Tumbleweed-Rescue-CD-x86_64-Snapshot20230101-Media.iso t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-Rescue-CD-x86_64-Current.iso
+ln -sf openSUSE-Tumbleweed-Rescue-CD-x86_64-Snapshot20230101-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-Rescue-CD-x86_64-Current.iso.sha256
+tee t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/.current.txt
+========== iso --delete-after ===========
+rsync -avvhiH t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso --link-dest=t/tmp/ftp-stage/pub/opensuse//tumbleweed t/tmp/ftp/pub/opensuse//tumbleweed --delete-after
+========== repo ===========
+rsync -avvhiH t/tmp/ftp-stage/pub/opensuse//tumbleweed/repo --link-dest=t/tmp/ftp-stage/pub/opensuse//tumbleweed t/tmp/ftp/pub/opensuse//tumbleweed
+========== repo --delete -n ===========
+rsync -avvhiH t/tmp/ftp-stage/pub/opensuse//tumbleweed/repo --link-dest=t/tmp/ftp-stage/pub/opensuse//tumbleweed t/tmp/ftp/pub/opensuse//tumbleweed --delete -n
+rsync -avhiH t/tmp/ftp-stage/pub/opensuse/source//tumbleweed/ --link-dest=t/tmp/ftp-stage/pub/opensuse/source//tumbleweed t/tmp/ftp/pub/opensuse/source//tumbleweed --delete-after
+rsync -avhiH t/tmp/ftp-stage/pub/opensuse/debug//tumbleweed/ --link-dest=t/tmp/ftp-stage/pub/opensuse/debug//tumbleweed t/tmp/ftp/pub/opensuse/debug//tumbleweed --delete-after
+curl -X POST -F version=20230101 https://openqa.opensuse.org/snapshot-changes/opensuse/tumbleweed/current

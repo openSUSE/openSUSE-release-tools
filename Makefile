@@ -39,4 +39,7 @@ package-clean:
 	rm -f dist/package/$(package_name).changes
 	rm -f dist/package/$(package_name).tar.xz
 
+test-publish:
+	( for t in t/*.sh; do bash -x $$t > $$t.log 2> $$t.debug && continue; echo FAIL: $$t; exit 1; done && echo ALL PASS )
+
 .PHONY: all install

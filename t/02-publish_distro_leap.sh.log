@@ -1,0 +1,26 @@
+ln -sf openSUSE-Leap-15.5-DVD-x86_64-Build111.11-Media.iso t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-x86_64-Current.iso
+ln -sf openSUSE-Leap-15.5-DVD-x86_64-Build111.11-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-x86_64-Current.iso.sha256
+ln -sf openSUSE-Leap-15.5-NET-x86_64-Build111.11-Media.iso t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-x86_64-Current.iso
+ln -sf openSUSE-Leap-15.5-NET-x86_64-Build111.11-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-x86_64-Current.iso.sha256
+ln -sf openSUSE-Leap-15.5-DVD-aarch64-Build111.11-Media.iso t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-aarch64-Current.iso
+ln -sf openSUSE-Leap-15.5-DVD-aarch64-Build111.11-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-aarch64-Current.iso.sha256
+ln -sf openSUSE-Leap-15.5-NET-aarch64-Build111.11-Media.iso t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-aarch64-Current.iso
+ln -sf openSUSE-Leap-15.5-NET-aarch64-Build111.11-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-aarch64-Current.iso.sha256
+ln -sf openSUSE-Leap-15.5-DVD-ppc64le-Build111.11-Media.iso t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-ppc64le-Current.iso
+ln -sf openSUSE-Leap-15.5-DVD-ppc64le-Build111.11-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-ppc64le-Current.iso.sha256
+ln -sf openSUSE-Leap-15.5-NET-ppc64le-Build111.11-Media.iso t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-ppc64le-Current.iso
+ln -sf openSUSE-Leap-15.5-NET-ppc64le-Build111.11-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-ppc64le-Current.iso.sha256
+ln -sf openSUSE-Leap-15.5-DVD-s390x-Build111.11-Media.iso t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-s390x-Current.iso
+ln -sf openSUSE-Leap-15.5-DVD-s390x-Build111.11-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-s390x-Current.iso.sha256
+ln -sf openSUSE-Leap-15.5-NET-s390x-Build111.11-Media.iso t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-s390x-Current.iso
+ln -sf openSUSE-Leap-15.5-NET-s390x-Build111.11-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/openSUSE-Leap-15.5-NET-s390x-Current.iso.sha256
+tee t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso/.current.txt
+========== iso --delete-after ===========
+rsync -avvhiH t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/iso --link-dest=t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5 t/tmp/ftp/pub/opensuse//distribution/leap/15.5 --delete-after
+========== repo ===========
+rsync -avvhiH t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/repo --link-dest=t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5 t/tmp/ftp/pub/opensuse//distribution/leap/15.5
+========== repo --delete -n ===========
+rsync -avvhiH t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5/repo --link-dest=t/tmp/ftp-stage/pub/opensuse//distribution/leap/15.5 t/tmp/ftp/pub/opensuse//distribution/leap/15.5 --delete -n
+rsync -avhiH t/tmp/ftp-stage/pub/opensuse/source//distribution/leap/15.5/ --link-dest=t/tmp/ftp-stage/pub/opensuse/source//distribution/leap/15.5 t/tmp/ftp/pub/opensuse/source//distribution/leap/15.5 --delete-after
+rsync -avhiH t/tmp/ftp-stage/pub/opensuse/debug//distribution/leap/15.5/ --link-dest=t/tmp/ftp-stage/pub/opensuse/debug//distribution/leap/15.5 t/tmp/ftp/pub/opensuse/debug//distribution/leap/15.5 --delete-after
+curl -X POST -F version=111.11 https://openqa.opensuse.org/snapshot-changes/opensuse/15.5/current
