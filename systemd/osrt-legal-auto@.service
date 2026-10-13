@@ -1,0 +1,12 @@
+[Unit]
+Description=service for osrt_legal-auto running as %i
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=osrt-staging
+EnvironmentFile=/etc/default/osrt-legal-auto-%i.env
+WorkingDirectory=/var/lib/osrt-staging/legal-auto
+ExecStartPre=/bin/bash -xc '/usr/bin/systemctl is-active --quiet osrt-legal-auto@%i.service && exit 1 || exit 0'
+ExecStart=/bin/bash -xc '[ -z ${LEGAL_AUTO_REVIEW_GROUP+x} ] || /usr/bin/legal-auto -A "${LEGAL_AUTO_OBS_API}" --debug --legaldb "${LEGAL_AUTO_CAVIL_URL}" --group="${LEGAL_AUTO_REVIEW_GROUP}" review'
+ExecStart=/bin/bash -xc '[ -z ${LEGAL_AUTO_REVIEW_USER+x} ] || /usr/bin/legal-auto -A "${LEGAL_AUTO_OBS_API}" --debug --legaldb "${LEGAL_AUTO_CAVIL_URL}" --user="${LEGAL_AUTO_REVIEW_USER}" review'
