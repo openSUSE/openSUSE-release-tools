@@ -18,11 +18,12 @@ from osclib.PubSubConsumer import PubSubConsumer
 
 
 class Listener(PubSubConsumer):
-    def __init__(self, apiurl, amqp_prefix, namespaces):
+    def __init__(self, apiurl, amqp_prefix, namespaces, exclude=None):
         super(Listener, self).__init__(amqp_prefix, logging.getLogger(__name__))
         self.apiurl = apiurl
         self.amqp_prefix = amqp_prefix
         self.namespaces = namespaces
+        self.exclude = exclude or []
         # repos to check on startup
         self.repositories_to_check = []
         # repos to check periodically that in flux
@@ -68,7 +69,7 @@ class Listener(PubSubConsumer):
         return ids
 
     def is_part_of_namespaces(self, project):
-        if ":PullRequest:" in project:
+        if ":PullRequest:" in project or project in self.exclude:
             return False
 
         for namespace in self.namespaces:
@@ -148,6 +149,8 @@ if __name__ == '__main__':
     parser.add_argument('--apiurl', '-A', type=str, help='API URL of OBS')
     parser.add_argument('-d', '--debug', action='store_true', default=False,
                         help='enable debug information')
+    parser.add_argument('--exclude', action='append', default=[],
+                        help='projects to exclude (can be specified multiple times)')
     parser.add_argument('namespaces', nargs='*', help='namespaces to wait for')
 
     args = parser.parse_args()
@@ -164,7 +167,7 @@ if __name__ == '__main__':
 
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
 
-    listener = Listener(apiurl, amqp_prefix, args.namespaces)
+    listener = Listener(apiurl, amqp_prefix, args.namespaces, exclude=args.exclude)
 
     try:
         listener.run(10800)
