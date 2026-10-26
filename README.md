@@ -62,7 +62,7 @@ It can also be useful to work against a development copy of `osc` either to util
 
 Using [Docker Compose](https://docs.docker.com/compose/), a containerized OBS can be started via one command. The default credentials are `Admin` and `opensuse` on [0.0.0.0:3000](http://0.0.0.0:3000). You can change the port by setting the environment variable `OSRT_EXPOSED_OBS_PORT`.
 
-    docker-compose -f dist/ci/docker-compose.yml up api
+    docker compose -f dist/ci/docker-compose.yml up api
 
 To make things easier, you can add an alias to refer to this instance (do not forget to adjust the port if you are using a different one):
 
@@ -91,16 +91,16 @@ This repository includes all the needed files to set up and run the Continuous I
     sed -i -e "s,../..:,$PWD:," dist/ci/docker-compose.yml
 
     # Run the linter
-    docker-compose -f dist/ci/docker-compose.yml run flaker
+    docker compose -f dist/ci/docker-compose.yml run flaker
 
     # Run the test full suite (it may take some time)...
-    docker-compose -f dist/ci/docker-compose.yml run test
+    docker compose -f dist/ci/docker-compose.yml run test
 
     # .. or just run a single test (i.e., the 'tests/util_tests.py')
-    docker-compose -f dist/ci/docker-compose.yml run test run_as_tester pytest tests/util_tests.py
+    docker compose -f dist/ci/docker-compose.yml run test run_as_tester pytest tests/util_tests.py
 
     # We are finished. Now you can shut the containers down.
-    docker-compose -f dist/ci/docker-compose.yml down
+    docker compose -f dist/ci/docker-compose.yml down
 
 The [docker-compose.yml](dist/ci/docker-compose.yml) mentions two container images that are built in the [openSUSE:Tools:Images](https://build.opensuse.org/project/show/openSUSE:Tools:Images) project:
 
@@ -115,15 +115,15 @@ As mentioned before, the main repository uses GitHub Actions to automatically ru
 This section lists a few tricks to debug problems in the CI. You will use your local setup so, as a first step, you need to be able to run the tests as described in the previous section.
 To see the logs from all the containers, the following command can be executed:
 
-  docker-compose -f dist/ci/docker-compose.yml logs -f --tail=10
+  docker compose -f dist/ci/docker-compose.yml logs -f --tail=10
 
 You can run commands in any container by using the docker-compose `exec` command. For instance, you can connect to a container through a shell with the following command (in this case, it will connect to the container behind the `api` service):
 
-  docker-compose -f dist/ci/docker-compose.yml exec api sh
+  docker compose -f dist/ci/docker-compose.yml exec api sh
 
 Or you could check the API logs by issuing the following command:
 
-  docker-compose -f dist/ci/docker-compose.yml exec api sh -c 'tail -f /srv/www/obs/api/log/*.log'
+  docker compose -f dist/ci/docker-compose.yml exec api sh -c 'tail -f /srv/www/obs/api/log/*.log'
 
 To debug problems in the test suite or in the code, place a `breakpoint()` call and you will get access to Python's debugger.
 

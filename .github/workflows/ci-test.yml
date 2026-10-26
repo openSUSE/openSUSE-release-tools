@@ -30,7 +30,7 @@ jobs:
         sudo apt-get install -y docker-compose
 
     - name: Run tests
-      run: docker-compose -f dist/ci/docker-compose.yml run test
+      run: docker compose -f dist/ci/docker-compose.yml run test
       env:
         # Specifies how many jobs you would like to run in parallel,
         # used for partitioning
@@ -40,7 +40,7 @@ jobs:
 
     - name: Stop containers
       if: always()
-      run: docker-compose -f dist/ci/docker-compose.yml down
+      run: docker compose -f dist/ci/docker-compose.yml down
 
   smoke-test:
     runs-on: ubuntu-latest
@@ -120,9 +120,9 @@ jobs:
       run: sed -i -e "s,../..:,$PWD:," dist/ci/docker-compose.yml
 
     - name: Run Flaker
-      run: docker-compose -f dist/ci/docker-compose.yml run flaker
+      run: docker compose -f dist/ci/docker-compose.yml run flaker
 
     - name: Stop containers
       if: always()
-      run: docker-compose -f dist/ci/docker-compose.yml down
+      run: docker compose -f dist/ci/docker-compose.yml down
 
