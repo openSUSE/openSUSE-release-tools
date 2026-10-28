@@ -175,6 +175,7 @@ class Review:
         "APPROVED": "accepted",
         "REQUEST_CHANGES": "declined",
         "REQUEST_REVIEW": "new",
+        "COMMENT": "new",
     }
 
     def __init__(self, **kwargs):
@@ -182,7 +183,8 @@ class Review:
 
     def __getattr__(self, attribute):
         if attribute == "state":
-            return self.states_mapping[self._review_data.get("state", "REQUEST_REVIEW")]
+            state = self._review_data.get("state", "REQUEST_REVIEW")
+            return self.states_mapping.get(state, "new")
 
         return self._review_data.get(attribute, None)
 
