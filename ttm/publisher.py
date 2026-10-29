@@ -246,10 +246,20 @@ class ToTestPublisher(ToTestManager):
         """Return the openqa jobs of a given snapshot and filter out the
         cloned jobs
 
+        Lookup is  either by groupid or group alias, depending on what is configured in the project.
         """
 
+        jobs_lookup = {'build': snapshot, 'latest': 1}
+
+        if self.project.openqa_group_id:
+            jobs_lookup['groupid'] = self.project.openqa_group_id
+        elif self.project.openqa_group:
+            jobs_lookup['group'] = self.project.openqa_group
+        else:
+            raise Exception(f"No openQA group or groupid configured for project {self.project.name}")
+
         url = makeurl(self.project.openqa_server,
-                      ['api', 'v1', 'jobs'], {'group': self.project.openqa_group, 'build': snapshot, 'latest': 1})
+                      ['api', 'v1', 'jobs'], jobs_lookup)
         f = self.api.retried_GET(url)
         jobs = []
         for job in json.load(f)['jobs']:
