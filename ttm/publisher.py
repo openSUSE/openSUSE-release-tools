@@ -236,7 +236,7 @@ class ToTestPublisher(ToTestManager):
             return
 
         self.update_status('published', current_snapshot)
-        group_id = self.openqa_group_id()
+        group_id = self.get_openqa_group_id()
         if not group_id:
             return
 
@@ -277,13 +277,20 @@ class ToTestPublisher(ToTestManager):
         data = {'text': f'tag:{snapshot}:{status_flag}:{status_flag}'}
         self.openqa.openqa_request('POST', f'groups/{group_id}/comments', data=data)
 
-    def openqa_group_id(self):
+    def get_openqa_group_id(self):
+        if self.project.openqa_group_id:
+            url = makeurl(self.project.openqa_server,
+                          ['api', 'v1', 'job_groups', f"{self.project.openqa_group_id}"])
+            f = self.api.retried_GET(url)
+            if f.status == 200:
+                return self.project.openqa_group_id
+
         url = makeurl(self.project.openqa_server,
                       ['api', 'v1', 'job_groups'])
         f = self.api.retried_GET(url)
         job_groups = json.load(f)
         for jg in job_groups:
-            if jg['name'] == self.project.openqa_group:
+            if jg['name'] == self.project.openqa_group or jg['id'] == self.project.openqa_group_id:
                 return jg['id']
 
         self.logger.debug('No openQA group id found for status comment update, ignoring')
