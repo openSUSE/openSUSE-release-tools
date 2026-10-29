@@ -143,7 +143,7 @@ pipelines:
           - staging-bot
         tasks:
           - script: ./origin-manager.py -A https://api.opensuse.org --debug review
-  openSUSE.QA.Leap16.Maint:
+  openSUSE.QA.Leap16.0.Maint:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
     environment_variables:
@@ -164,6 +164,65 @@ pipelines:
           - script: ./git-openqa-maintenance.py --openqa-host https://openqa.opensuse.org --project openSUSE/Leap --branch leap-16.0
           - script: ./git-openqa-maintenance.py --openqa-host https://openqa.opensuse.org --project products/PackageHub --branch leap-16.0
           - script: ./git-openqa-maintenance.py --openqa-host https://openqa.opensuse.org --project openSUSE/LeapNonFree --branch leap-16.0-nonfree
+  openSUSE.QA.Leap16.1.Maint:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-openqa-maintenance
+      GITEA_TOKEN_FILE: /home/go/config/openqa-maintenance-botmaster-token
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    timer:
+      spec: 0 */10 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+          - staging-bot
+        tasks:
+          - script: ./git-openqa-maintenance.py --openqa-host https://openqa.opensuse.org --project openSUSE/Leap --branch leap-16.1
+          - script: ./git-openqa-maintenance.py --openqa-host https://openqa.opensuse.org --project products/PackageHub --branch leap-16.1
+          - script: ./git-openqa-maintenance.py --openqa-host https://openqa.opensuse.org --project openSUSE/LeapNonFree --branch leap-16.1-nonfree
+  openSUSE.QA.PackageHub16.0.Maint:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-openqa-maintenance
+      GITEA_TOKEN_FILE: /home/go/config/openqa-maintenance-botmaster-token
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    timer:
+      spec: 0 */10 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+          - staging-bot
+        tasks:
+          - script: ./git-openqa-maintenance.py --openqa-host https://openqa.suse.de --project products/PackageHub --branch leap-16.0
+  openSUSE.QA.PackageHub16.1.Maint:
+    group: openSUSE.Checkers
+    lock_behavior: unlockWhenFinished
+    environment_variables:
+      OSC_CONFIG: /home/go/config/oscrc-openqa-maintenance
+      GITEA_TOKEN_FILE: /home/go/config/openqa-maintenance-botmaster-token
+    materials:
+      script:
+        git: https://github.com/openSUSE/openSUSE-release-tools.git
+    timer:
+      spec: 0 */10 * ? * *
+      only_on_changes: false
+    stages:
+    - Run:
+        approval: manual
+        resources:
+          - staging-bot
+        tasks:
+          - script: ./git-openqa-maintenance.py --openqa-host https://openqa.suse.de --project products/PackageHub --branch leap-16.1
   openSUSE.Devel.Reminder:
     group: openSUSE.Checkers
     lock_behavior: unlockWhenFinished
