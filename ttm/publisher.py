@@ -32,6 +32,7 @@ class ToTestPublisher(ToTestManager):
         self.openqa = OpenQA_Client(server=self.project.openqa_server)
         self.load_issues_to_ignore()
         self.seen_issues_updated = False
+        self.set_openqa_group_id()
 
     def ignore_issue(self, ref, build_nr):
         if self.issues_to_ignore.get(ref) != build_nr:
@@ -236,30 +237,14 @@ class ToTestPublisher(ToTestManager):
             return
 
         self.update_status('published', current_snapshot)
-        group_id = self.get_openqa_group_id()
-        if not group_id:
-            return
-
-        self.add_published_tag(group_id, current_snapshot)
+        self.add_published_tag(current_snapshot)
 
     def find_openqa_results(self, snapshot):
-        """Return the openqa jobs of a given snapshot and filter out the
-        cloned jobs
-
-        Lookup is  either by groupid or group alias, depending on what is configured in the project.
+        """Return the openqa jobs of a given snapshot and filter out the cloned jobs
         """
 
-        jobs_lookup = {'build': snapshot, 'latest': 1}
-
-        if self.project.openqa_group_id:
-            jobs_lookup['groupid'] = self.project.openqa_group_id
-        elif self.project.openqa_group:
-            jobs_lookup['group'] = self.project.openqa_group
-        else:
-            raise Exception(f"No openQA group or groupid configured for project {self.project.name}")
-
-        url = makeurl(self.project.openqa_server,
-                      ['api', 'v1', 'jobs'], jobs_lookup)
+        jobs_lookup = {'build': snapshot, 'latest': 1, 'groupid': self.project.openqa_group_id}
+        url = makeurl(self.project.openqa_server, ['api', 'v1', 'jobs'], jobs_lookup)
         f = self.api.retried_GET(url)
         jobs = []
         for job in json.load(f)['jobs']:
@@ -269,31 +254,43 @@ class ToTestPublisher(ToTestManager):
             jobs.append(job)
         return jobs
 
-    def add_published_tag(self, group_id, snapshot):
+    def add_published_tag(self, snapshot):
         if self.dryrun:
             return
 
         status_flag = 'published'
         data = {'text': f'tag:{snapshot}:{status_flag}:{status_flag}'}
-        self.openqa.openqa_request('POST', f'groups/{group_id}/comments', data=data)
+        self.openqa.openqa_request('POST', f'groups/{self.project.openqa_group_id}/comments', data=data)
 
-    def get_openqa_group_id(self):
-        if self.project.openqa_group_id:
-            url = makeurl(self.project.openqa_server,
-                          ['api', 'v1', 'job_groups', f"{self.project.openqa_group_id}"])
+    def set_openqa_group_id(self):
+
+        def _validate_group_by_name(self):
+            url = makeurl(self.project.openqa_server, ['api', 'v1', 'job_groups'])
             f = self.api.retried_GET(url)
-            if f.status == 200:
-                return self.project.openqa_group_id
+            job_groups = json.load(f)
+            for jg in job_groups:
+                if jg['name'] == self.project.openqa_group or jg['id'] == self.project.openqa_group_id:
+                    return jg['id']
+            return None
 
-        url = makeurl(self.project.openqa_server,
-                      ['api', 'v1', 'job_groups'])
-        f = self.api.retried_GET(url)
-        job_groups = json.load(f)
-        for jg in job_groups:
-            if jg['name'] == self.project.openqa_group or jg['id'] == self.project.openqa_group_id:
-                return jg['id']
+        def _validate_group_by_id(self):
+            url = makeurl(self.project.openqa_server, ['api', 'v1', 'job_groups', f"{self.project.openqa_group_id}"])
+            f = self.api.retried_GET(url)
+            return f.status == 200
 
-        self.logger.debug('No openQA group id found for status comment update, ignoring')
+        validates = False
+
+        if not self.project.openqa_group_id and self.project.openqa_group:
+            self.logger.warning("[DEPRECATED] openqa_group is set in OSRT:ToTestManagerConfig for this project use openqa_group_id instead")
+            validates = _validate_group_by_name(self)
+            if validates:
+                self.project.openqa_group_id = validates
+                self.logger.warning(f"[DEPRECATED] openqa_group maps to openqa_group_id: '{self.project.openqa_group_id}'.")
+        else:
+            validates = _validate_group_by_id(self)
+
+        if not validates:
+            self.logger.error('No openQA group id found for status comment update, ignoring')
 
     def load_issues_to_ignore(self):
         text = self.api.attribute_value_load('IgnoredIssues')
