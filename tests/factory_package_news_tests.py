@@ -334,6 +334,63 @@ class TestFactoryPackageNews(unittest.TestCase):
         self.assertIn("zstdsrc-1.0-1.src.rpm", changelogs)
         self.assertEqual(changelogs["zstdsrc-1.0-1.src.rpm"]["changelogtext"], ["Zstd changelog"])
 
+    def test_web_diff_with_from_param(self):
+        # Load factory-package-news-web
+        web_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), '..', 'factory-package-news', 'factory-package-news-web.py')
+        )
+        spec_web = importlib.util.spec_from_file_location("factory_package_news_web", web_path)
+        fpn_web = importlib.util.module_from_spec(spec_web)
+        spec_web.loader.exec_module(fpn_web)
+
+        # Create snapshots directory structure inside test_dir
+        base_dir = self.test_dir
+        snapshots_dir = os.path.join(base_dir, "snapshot-changes", "opensuse", "Tumbleweed")
+        os.makedirs(snapshots_dir)
+
+        # Create synthetic repo v1 and v2
+        repo_v1 = os.path.join(self.test_dir, "repo_v1")
+        self._create_synthetic_repo(repo_v1, pkg_version="1.0", changelog_entries=[(1700000000, "- Initial release")])
+        repo_v2 = os.path.join(self.test_dir, "repo_v2")
+        self._create_synthetic_repo(
+            repo_v2, pkg_version="2.0", changelog_entries=[(1700000000, "- Initial release"), (1710000000, "- Update to 2.0")])
+
+        app_fpn = fpn.ChangeLogger()
+
+        class Opts:
+            dir = snapshots_dir
+            arch = "x86_64"
+            snapshot = "20261020"
+
+        app_fpn.do_save("save", Opts(), repo_v1)
+        Opts.snapshot = "20261027"
+        app_fpn.do_save("save", Opts(), repo_v2)
+
+        # Set 'current' symlink pointing to 20261020
+        os.symlink("20261020", os.path.join(snapshots_dir, "current"))
+
+        # Point web service to our temp base_dir
+        fpn_web.BASE_DIR = base_dir
+        client = fpn_web.app.test_client()
+
+        # 1. Default without ?from= compares against current (20261020)
+        resp = client.get('/snapshot-changes/opensuse/Tumbleweed/diff/20261027')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn(b"mysrc (1.0 -> 2.0)", resp.data)
+
+        # 2. Explicit ?from=20261020
+        resp = client.get('/snapshot-changes/opensuse/Tumbleweed/diff/20261027?from=20261020')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn(b"mysrc (1.0 -> 2.0)", resp.data)
+
+        # 3. Invalid version string -> 400
+        resp = client.get('/snapshot-changes/opensuse/Tumbleweed/diff/20261027?from=bad_version!')
+        self.assertEqual(resp.status_code, 400)
+
+        # 4. Non-existent from version -> 404
+        resp = client.get('/snapshot-changes/opensuse/Tumbleweed/diff/20261027?from=20261001')
+        self.assertEqual(resp.status_code, 404)
+
 
 if __name__ == '__main__':
     unittest.main()

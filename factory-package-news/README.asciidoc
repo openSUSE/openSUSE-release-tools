@@ -23,7 +23,9 @@ factory-package-news-web.py
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Simple web service to generate diffs between specified snapshots and
-to set the last announced snapshot version.
+to set the last announced snapshot version. Supports overriding the
+baseline snapshot via optional `?from=<version>` query parameter (e.g.
+`/diff/<version>?from=<previous_version>`), defaulting to `current`.
 
 announcer.py
 ~~~~~~~~~~~~
