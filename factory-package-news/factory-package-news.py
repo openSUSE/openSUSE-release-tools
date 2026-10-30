@@ -27,6 +27,32 @@ def utf8str(content):
     return str(content, 'utf-8') if isinstance(content, bytes) else content
 
 
+def normalize_kernel_srpm(srpm):
+    # dirty hack to reduce kernel spam
+    m = SRPM_RE.match(srpm)
+    if m and m.group('name') in (
+        'kernel-64kb',
+        'kernel-debug',
+        'kernel-default',
+        'kernel-desktop',
+        'kernel-docs',
+        'kernel-ec2',
+        'kernel-lpae',
+        'kernel-obs-build',
+        'kernel-obs-qa-xen',
+        'kernel-obs-qa',
+        'kernel-pae',
+        'kernel-pv',
+        'kernel-syms',
+        'kernel-vanilla',
+        'kernel-xen',
+    ):
+        new_srpm = f"kernel-source-{m.group('version')}-{m.group('release')}.src.rpm"
+        print(f"{srpm} -> {new_srpm}")
+        return new_srpm
+    return srpm
+
+
 class ChangeLogger(cmdln.Cmdln):
     def __init__(self, *args, **kwargs):
         cmdln.Cmdln.__init__(self, args, kwargs)
@@ -68,28 +94,8 @@ class ChangeLogger(cmdln.Cmdln):
                 evr[tag] = utf8str(h[tag])
             pkgdata[binrpm] = evr
 
-            # dirty hack to reduce kernel spam
-            m = SRPM_RE.match(srpm)
-            if m and m.group('name') in (
-                'kernel-64kb',
-                'kernel-debug',
-                'kernel-default',
-                'kernel-desktop',
-                'kernel-docs',
-                'kernel-ec2',
-                'kernel-lpae',
-                'kernel-obs-build',
-                'kernel-obs-qa-xen',
-                'kernel-obs-qa',
-                'kernel-pae',
-                'kernel-pv',
-                'kernel-syms',
-                'kernel-vanilla',
-                'kernel-xen',
-            ):
-                srpm = f"kernel-source-{m.group('version')}-{m.group('release')}.src.rpm"
-                pkgdata[binrpm]['sourcerpm'] = srpm
-                print(f"{utf8str(h['sourcerpm'])} -> {srpm}")
+            srpm = normalize_kernel_srpm(srpm)
+            pkgdata[binrpm]['sourcerpm'] = srpm
 
             if srpm in changelogs:
                 changelogs[srpm]['packages'].append(binrpm)
