@@ -28,10 +28,17 @@ class ToTestPublisher(ToTestManager):
         ToTestManager.__init__(self, tool)
 
     def setup(self, project):
+        """Setup the ToTestPublisher with the given project.
+
+        When openQA is enabled but is missing a setting it will throw an exception.
+        """
         super(ToTestPublisher, self).setup(project)
-        self.openqa = OpenQA_Client(server=self.project.openqa_server)
         self.load_issues_to_ignore()
         self.seen_issues_updated = False
+        self.openqa = OpenQA_Client(server=self.project.openqa_server)
+        if not (self.project.openqa_server and (self.project.openqa_group_id or self.project.openqa_group)):
+            raise Exception('OSRT:ToTestManagerConfig: openQA configuration is incomplete')
+
         self.set_openqa_group_id()
 
     def ignore_issue(self, ref, build_nr):
