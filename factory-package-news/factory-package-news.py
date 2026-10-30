@@ -1,17 +1,24 @@
 #!/usr/bin/python3
 
-from pprint import pprint
-import io
-import os
-import sys
-import logging
-import rpm
-import pickle
 import cmdln
+import gzip
+import io
+import logging
+import os
+import pickle
+from pprint import pprint
+import pyzstd
 import re
+import rpm
+import sys
+import xml.etree.ElementTree as ET
 
 SRPM_RE = re.compile(
     r'(?P<name>.+)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<suffix>(?:no)?src\.rpm)$')
+
+COMMON_NS = 'http://linux.duke.edu/metadata/common'
+OTHER_NS = 'http://linux.duke.edu/metadata/other'
+RPM_NS = 'http://linux.duke.edu/metadata/rpm'
 
 data_version = 3
 
@@ -53,6 +60,15 @@ def normalize_kernel_srpm(srpm):
     return srpm
 
 
+def open_compressed(path):
+    """Open repodata file with transparent decompression (.zst or .gz)."""
+    if path.endswith('.zst'):
+        return pyzstd.ZstdFile(path, 'rb')
+    elif path.endswith('.gz'):
+        return gzip.open(path, 'rb')
+    return open(path, 'rb')
+
+
 class ChangeLogger(cmdln.Cmdln):
     def __init__(self, *args, **kwargs):
         cmdln.Cmdln.__init__(self, args, kwargs)
@@ -80,7 +96,74 @@ class ChangeLogger(cmdln.Cmdln):
             h = None
         return h
 
-    def readChangeLogs(self, args):
+    def read_repomd(self, repo_dir, arch=None):
+        repomd_path = os.path.join(repo_dir, 'repodata', 'repomd.xml')
+        with open_compressed(repomd_path) as stream:
+            tree = ET.parse(stream)
+
+        pri_href = tree.find("./{*}data[@type='primary']/{*}location").attrib['href']
+        oth_href = tree.find("./{*}data[@type='other']/{*}location").attrib['href']
+
+        pkgdata = dict()
+        pkgid_to_srpm = dict()
+        srpm_to_packages = dict()
+
+        with open_compressed(os.path.join(repo_dir, pri_href)) as pri_stream:
+            context = ET.iterparse(pri_stream, events=('start', 'end'))
+            _, root = next(iter(context))
+            for event, elem in context:
+                if event == 'end' and elem.tag == f'{{{COMMON_NS}}}package':
+                    name = elem.findtext(f'{{{COMMON_NS}}}name')
+                    pkg_arch = elem.findtext(f'{{{COMMON_NS}}}arch')
+                    ver_elem = elem.find(f'{{{COMMON_NS}}}version')
+                    srpm = elem.findtext(f'.//{{{RPM_NS}}}sourcerpm') or elem.findtext('.//{*}sourcerpm')
+                    pkgid = elem.findtext(f"./{{{COMMON_NS}}}checksum[@pkgid='YES']")
+
+                    if pkg_arch not in ('src', 'nosrc') and name and srpm:
+                        if arch is None or pkg_arch in (arch, 'noarch'):
+                            srpm = normalize_kernel_srpm(srpm)
+                            pkgdata[name] = {
+                                'name': name,
+                                'version': ver_elem.attrib.get('ver', '') if ver_elem is not None else '',
+                                'release': ver_elem.attrib.get('rel', '') if ver_elem is not None else '',
+                                'sourcerpm': srpm,
+                            }
+                            if pkgid:
+                                pkgid_to_srpm[pkgid] = srpm
+                            srpm_to_packages.setdefault(srpm, set()).add(name)
+                    root.clear()
+
+        changelogs = dict()
+        with open_compressed(os.path.join(repo_dir, oth_href)) as oth_stream:
+            context = ET.iterparse(oth_stream, events=('start', 'end'))
+            _, root = next(iter(context))
+            for event, elem in context:
+                if event == 'end' and elem.tag == f'{{{OTHER_NS}}}package':
+                    pkgid = elem.attrib.get('pkgid')
+                    srpm = pkgid_to_srpm.get(pkgid)
+                    # None for packages of other architectures or src packages filtered during primary.xml parsing
+                    if not srpm:
+                        root.clear()
+                        continue
+                    if srpm not in changelogs:
+                        entries = [
+                            (int(c.attrib.get('date', 0)), utf8str(c.text or ''))
+                            for c in elem.findall(f'{{{OTHER_NS}}}changelog')
+                        ]
+                        entries.sort(key=lambda x: x[0], reverse=True)
+                        changelogs[srpm] = {
+                            'packages': set(srpm_to_packages.get(srpm, ())),
+                            'changelogtime': [d for d, _ in entries],
+                            'changelogtext': [t for _, t in entries],
+                        }
+                    root.clear()
+
+        for srpm, pkgs in srpm_to_packages.items():
+            changelogs.setdefault(srpm, {'packages': set(pkgs), 'changelogtime': [], 'changelogtext': []})['packages'] = set(pkgs)
+
+        return pkgdata, changelogs
+
+    def readChangeLogs(self, args, arch=None):
 
         pkgdata = dict()
         changelogs = dict()
@@ -98,9 +181,9 @@ class ChangeLogger(cmdln.Cmdln):
             pkgdata[binrpm]['sourcerpm'] = srpm
 
             if srpm in changelogs:
-                changelogs[srpm]['packages'].append(binrpm)
+                changelogs[srpm]['packages'].add(binrpm)
             else:
-                data = {'packages': [binrpm]}
+                data = {'packages': {binrpm}}
                 data['changelogtime'] = h['changelogtime']
                 data['changelogtext'] = h['changelogtext']
                 for (t, txt) in enumerate(data['changelogtext']):
@@ -144,17 +227,20 @@ class ChangeLogger(cmdln.Cmdln):
                 os.close(fd)
 
             elif os.path.isdir(arg):
-                for root, dirs, files in os.walk(arg):
-                    for pkg in [os.path.join(root, file) for file in files]:
-                        if not pkg.endswith('.rpm'):
-                            continue
-                        h = self.readRpmHeader(pkg)
-                        _getdata(h)
+                r_pkgdata, r_changelogs = self.read_repomd(arg, arch=arch)
+                pkgdata.update(r_pkgdata)
+                for srpm, data in r_changelogs.items():
+                    if srpm in changelogs:
+                        changelogs[srpm]['packages'].update(data['packages'])
+                    else:
+                        changelogs[srpm] = data
             else:
                 raise Exception(f"don't know what to do with {arg}")
 
         return pkgdata, changelogs
 
+    @cmdln.option("--arch", action="store", type='string', dest='arch', default=None,
+                  help="target architecture (optional, e.g. x86_64, aarch64)")
     @cmdln.option("--snapshot", action="store", type='string', help="snapshot number")
     @cmdln.option("--dir", action="store", type='string', dest='dir', help="data directory")
     def do_save(self, subcmd, opts, *dirs):
@@ -172,15 +258,17 @@ class ChangeLogger(cmdln.Cmdln):
             raise Exception("missing snapshot option")
 
         with open(os.path.join(opts.dir, opts.snapshot), 'wb') as f:
-            pickle.dump([data_version, self.readChangeLogs(dirs)], f)
+            pickle.dump([data_version, self.readChangeLogs(dirs, arch=opts.arch)], f)
 
+    @cmdln.option("--arch", action="store", type='string', dest='arch', default=None,
+                  help="target architecture (optional, e.g. x86_64, aarch64)")
     def do_dump(self, subcmd, opts, *dirs):
         """${cmd_name}: pprint the package changelog information
 
         ${cmd_usage}
         ${cmd_option_list}
         """
-        pprint(self.readChangeLogs(dirs))
+        pprint(self.readChangeLogs(dirs, arch=opts.arch))
 
     def do_inspect(self, subcmd, opts, filename, package):
         """${cmd_name}: pprint the package changelog information

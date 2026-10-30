@@ -14,6 +14,9 @@ done
 
 cd /code
 
+zypper -n --gpg-auto-import-keys refresh
+rpm -q python3-pyzstd >/dev/null 2>&1 || zypper -n in -y python3-pyzstd
+
 ci_node=$1
 
 for file in tests/*_tests.py; do
