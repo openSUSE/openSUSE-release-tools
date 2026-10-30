@@ -9,6 +9,7 @@ cmdln
 git+https://github.com/openSUSE/osc
 influxdb-client
 requests
+zstandard
 
 # Dependencies for testing
 httpretty

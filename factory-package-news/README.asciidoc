@@ -14,9 +14,9 @@ factory-package-news.py
 
 The main tool
 
-- extract changelog information from rpm packages contained in iso
-  images (command 'save'). The information is stored as pickle file
-  in the specified directory.
+- extract changelog information from RPM repository metadata (repomd.xml),
+  ISO images, or directory trees of RPM packages (command 'save'). The
+  information is stored as pickle file in the specified directory.
 - create diff between previously saved pickle files (command 'diff')
 
 factory-package-news-web.py
