@@ -165,8 +165,8 @@ class ChangeLogger(cmdln.Cmdln):
         if not opts.snapshot:
             raise Exception("missing snapshot option")
 
-        f = open(os.path.join(opts.dir, opts.snapshot), 'wb')
-        pickle.dump([data_version, self.readChangeLogs(dirs)], f)
+        with open(os.path.join(opts.dir, opts.snapshot), 'wb') as f:
+            pickle.dump([data_version, self.readChangeLogs(dirs)], f)
 
     def do_dump(self, subcmd, opts, *dirs):
         """${cmd_name}: pprint the package changelog information
@@ -182,9 +182,9 @@ class ChangeLogger(cmdln.Cmdln):
         ${cmd_usage}
         ${cmd_option_list}
         """
-        f = open(filename, 'rb')
-        (v, (pkgs, changelogs)) = pickle.load(
-            f, encoding='utf-8', errors='backslashreplace')
+        with open(filename, 'rb') as f:
+            (v, (pkgs, changelogs)) = pickle.load(
+                f, encoding='utf-8', errors='backslashreplace')
         pprint(pkgs[package])
         pprint(changelogs[pkgs[package]['sourcerpm']])
 
@@ -209,14 +209,14 @@ class ChangeLogger(cmdln.Cmdln):
         if not os.path.isdir(opts.dir):
             raise Exception(f"{opts.dir} must be a directory")
 
-        f = open(os.path.join(opts.dir, version1), 'rb')
-        (v, (v1pkgs, v1changelogs)) = pickle.load(f,
-                                                  encoding='utf-8', errors='backslashreplace')
+        with open(os.path.join(opts.dir, version1), 'rb') as f:
+            (v, (v1pkgs, v1changelogs)) = pickle.load(f,
+                                                      encoding='utf-8', errors='backslashreplace')
         if v != data_version:
             raise Exception(f"not matching version {v} in {version1}")
-        f = open(os.path.join(opts.dir, version2), 'rb')
-        (v, (v2pkgs, v2changelogs)) = pickle.load(f,
-                                                  encoding='utf-8', errors='backslashreplace')
+        with open(os.path.join(opts.dir, version2), 'rb') as f:
+            (v, (v2pkgs, v2changelogs)) = pickle.load(f,
+                                                      encoding='utf-8', errors='backslashreplace')
         if v != data_version:
             raise Exception(f"not matching version {v} in {version2}")
 
