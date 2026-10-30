@@ -15,6 +15,7 @@ import xml.etree.ElementTree as ET
 
 SRPM_RE = re.compile(
     r'(?P<name>.+)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<suffix>(?:no)?src\.rpm)$')
+TEXLIVE_SPECS_RE = re.compile(r'^texlive-specs-[a-z]$')
 
 COMMON_NS = 'http://linux.duke.edu/metadata/common'
 OTHER_NS = 'http://linux.duke.edu/metadata/other'
@@ -34,10 +35,15 @@ def utf8str(content):
     return str(content, 'utf-8') if isinstance(content, bytes) else content
 
 
-def normalize_kernel_srpm(srpm):
-    # dirty hack to reduce kernel spam
+def normalize_srpm(srpm):
     m = SRPM_RE.match(srpm)
-    if m and m.group('name') in (
+    if not m:
+        return srpm
+
+    name = m.group('name')
+
+    # dirty hack to reduce kernel spam
+    if name in (
         'kernel-64kb',
         'kernel-debug',
         'kernel-default',
@@ -57,6 +63,13 @@ def normalize_kernel_srpm(srpm):
         new_srpm = f"kernel-source-{m.group('version')}-{m.group('release')}.src.rpm"
         print(f"{srpm} -> {new_srpm}")
         return new_srpm
+
+    # dirty hack to reduce texlive spam (texlive-specs-a .. texlive-specs-z)
+    if TEXLIVE_SPECS_RE.match(name):
+        new_srpm = f"texlive-specs-{m.group('version')}-1.src.rpm"
+        print(f"{srpm} -> {new_srpm}")
+        return new_srpm
+
     return srpm
 
 
@@ -121,7 +134,7 @@ class ChangeLogger(cmdln.Cmdln):
 
                     if pkg_arch not in ('src', 'nosrc') and name and srpm:
                         if arch is None or pkg_arch in (arch, 'noarch'):
-                            srpm = normalize_kernel_srpm(srpm)
+                            srpm = normalize_srpm(srpm)
                             pkgdata[name] = {
                                 'name': name,
                                 'version': ver_elem.attrib.get('ver', '') if ver_elem is not None else '',
@@ -177,7 +190,7 @@ class ChangeLogger(cmdln.Cmdln):
                 evr[tag] = utf8str(h[tag])
             pkgdata[binrpm] = evr
 
-            srpm = normalize_kernel_srpm(srpm)
+            srpm = normalize_srpm(srpm)
             pkgdata[binrpm]['sourcerpm'] = srpm
 
             if srpm in changelogs:
@@ -353,7 +366,11 @@ class ChangeLogger(cmdln.Cmdln):
             else:
                 print(f"  {name}")
             if len(pkgs) > 1:
-                details += f"Subpackages: {' '.join([p for p in pkgs if p != name])}\n"
+                subpkgs = [p for p in pkgs if p != name]
+                if len(subpkgs) > 25:
+                    details += f"Subpackages (showing 25 of {len(subpkgs)}): {' '.join(subpkgs[:25])} ...\n"
+                else:
+                    details += f"Subpackages: {' '.join(subpkgs)}\n"
 
             changedetails = ""
             for (i2, t2) in enumerate(v2changelogs[srpm]['changelogtime']):
