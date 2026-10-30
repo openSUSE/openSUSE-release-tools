@@ -29,17 +29,24 @@ class TestFactoryPackageNews(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.test_dir, ignore_errors=True)
 
-    def test_normalize_kernel_srpm(self):
+    def test_normalize_srpm(self):
         # Kernel package should be rewritten to kernel-source
         srpm = "kernel-default-6.14.0-1.1.src.rpm"
-        self.assertEqual(fpn.normalize_kernel_srpm(srpm), "kernel-source-6.14.0-1.1.src.rpm")
+        self.assertEqual(fpn.normalize_srpm(srpm), "kernel-source-6.14.0-1.1.src.rpm")
 
         srpm_debug = "kernel-debug-6.14.0-1.1.src.rpm"
-        self.assertEqual(fpn.normalize_kernel_srpm(srpm_debug), "kernel-source-6.14.0-1.1.src.rpm")
+        self.assertEqual(fpn.normalize_srpm(srpm_debug), "kernel-source-6.14.0-1.1.src.rpm")
 
-        # Non-kernel package should stay unchanged
+        # texlive-specs packages should be normalized to texlive-specs-<version>-1.src.rpm
+        srpm_tex_a = "texlive-specs-a-2026-61.3.src.rpm"
+        self.assertEqual(fpn.normalize_srpm(srpm_tex_a), "texlive-specs-2026-1.src.rpm")
+
+        srpm_tex_z = "texlive-specs-z-2026-59.4.src.rpm"
+        self.assertEqual(fpn.normalize_srpm(srpm_tex_z), "texlive-specs-2026-1.src.rpm")
+
+        # Non-kernel / non-texlive package should stay unchanged
         srpm_normal = "bash-5.2.26-1.1.src.rpm"
-        self.assertEqual(fpn.normalize_kernel_srpm(srpm_normal), "bash-5.2.26-1.1.src.rpm")
+        self.assertEqual(fpn.normalize_srpm(srpm_normal), "bash-5.2.26-1.1.src.rpm")
 
     def test_open_compressed_plain_and_gzip(self):
         # Plain text
@@ -279,6 +286,43 @@ class TestFactoryPackageNews(unittest.TestCase):
         self.assertIn("Version update (1.0 -> 2.0)", diff_output)
         self.assertIn("- Update to version 2.0", diff_output)
         self.assertNotIn("- Initial release", diff_output)
+
+    def test_do_diff_subpackages_capping(self):
+        data_dir = os.path.join(self.test_dir, "cap_snapshots")
+        os.makedirs(data_dir)
+
+        # Create two snapshots with 30 subpackages
+        v1_pkgs = {}
+        v2_pkgs = {}
+        pkg_names = [f"pkg-{i}" for i in range(30)]
+        for p in pkg_names:
+            v1_pkgs[p] = {'name': p, 'version': '1.0', 'release': '1.1', 'sourcerpm': 'bigsrc-1.0-1.1.src.rpm'}
+            v2_pkgs[p] = {'name': p, 'version': '2.0', 'release': '1.1', 'sourcerpm': 'bigsrc-2.0-1.1.src.rpm'}
+
+        v1_cls = {'bigsrc-1.0-1.1.src.rpm': {'packages': pkg_names, 'changelogtime': [1700000000], 'changelogtext': ['- v1']}}
+        v2_cls = {
+            'bigsrc-2.0-1.1.src.rpm': {'packages': pkg_names, 'changelogtime': [1710000000, 1700000000], 'changelogtext': ['- v2', '- v1']}
+        }
+
+        with open(os.path.join(data_dir, "v1"), "wb") as f:
+            pickle.dump([fpn.data_version, (v1_pkgs, v1_cls)], f)
+        with open(os.path.join(data_dir, "v2"), "wb") as f:
+            pickle.dump([fpn.data_version, (v2_pkgs, v2_cls)], f)
+
+        app = fpn.ChangeLogger()
+        old_stdout = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            class DiffOpts:
+                dir = data_dir
+
+            app.do_diff("diff", DiffOpts(), "v1", "v2")
+            diff_output = sys.stdout.getvalue()
+        finally:
+            sys.stdout = old_stdout
+
+        self.assertIn("Subpackages (showing 25 of 30):", diff_output)
+        self.assertIn("...", diff_output)
 
     def test_read_repomd_zstd(self):
         repo_dir = os.path.join(self.test_dir, "repo_zst")
