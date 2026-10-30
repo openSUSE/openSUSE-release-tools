@@ -28,10 +28,18 @@ class ToTestPublisher(ToTestManager):
         ToTestManager.__init__(self, tool)
 
     def setup(self, project):
+        """Setup the ToTestPublisher with the given project.
+
+        When openQA is enabled but is missing a setting it will throw an exception.
+        """
         super(ToTestPublisher, self).setup(project)
-        self.openqa = OpenQA_Client(server=self.project.openqa_server)
         self.load_issues_to_ignore()
         self.seen_issues_updated = False
+        self.openqa = OpenQA_Client(server=self.project.openqa_server)
+        if not (self.project.openqa_server and (self.project.openqa_group_id or self.project.openqa_group)):
+            raise Exception('OSRT:ToTestManagerConfig: openQA configuration is incomplete')
+
+        self.set_openqa_group_id()
 
     def ignore_issue(self, ref, build_nr):
         if self.issues_to_ignore.get(ref) != build_nr:
@@ -236,20 +244,14 @@ class ToTestPublisher(ToTestManager):
             return
 
         self.update_status('published', current_snapshot)
-        group_id = self.openqa_group_id()
-        if not group_id:
-            return
-
-        self.add_published_tag(group_id, current_snapshot)
+        self.add_published_tag(current_snapshot)
 
     def find_openqa_results(self, snapshot):
-        """Return the openqa jobs of a given snapshot and filter out the
-        cloned jobs
-
+        """Return the openqa jobs of a given snapshot and filter out the cloned jobs
         """
 
-        url = makeurl(self.project.openqa_server,
-                      ['api', 'v1', 'jobs'], {'group': self.project.openqa_group, 'build': snapshot, 'latest': 1})
+        jobs_lookup = {'build': snapshot, 'latest': 1, 'groupid': self.project.openqa_group_id}
+        url = makeurl(self.project.openqa_server, ['api', 'v1', 'jobs'], jobs_lookup)
         f = self.api.retried_GET(url)
         jobs = []
         for job in json.load(f)['jobs']:
@@ -259,24 +261,39 @@ class ToTestPublisher(ToTestManager):
             jobs.append(job)
         return jobs
 
-    def add_published_tag(self, group_id, snapshot):
+    def add_published_tag(self, snapshot):
         if self.dryrun:
             return
 
         status_flag = 'published'
         data = {'text': f'tag:{snapshot}:{status_flag}:{status_flag}'}
-        self.openqa.openqa_request('POST', f'groups/{group_id}/comments', data=data)
+        self.openqa.openqa_request('POST', f'groups/{self.project.openqa_group_id}/comments', data=data)
 
-    def openqa_group_id(self):
-        url = makeurl(self.project.openqa_server,
-                      ['api', 'v1', 'job_groups'])
-        f = self.api.retried_GET(url)
-        job_groups = json.load(f)
-        for jg in job_groups:
-            if jg['name'] == self.project.openqa_group:
-                return jg['id']
+    def set_openqa_group_id(self):
+        """Ensures the group_id is set and exists in the openQA instance, throws otherwise"""
 
-        self.logger.debug('No openQA group id found for status comment update, ignoring')
+        def _get_group_id_by_name():
+            url = makeurl(self.project.openqa_server, ['api', 'v1', 'job_groups'])
+            f = self.api.retried_GET(url)
+            job_groups = json.load(f)
+            for jg in job_groups:
+                if jg['name'] == self.project.openqa_group:
+                    return jg['id']
+
+            # Kill the run if the group doesn't exist
+            raise Exception('OSRT:ToTestManagerConfig: configured openQA job group was not found')
+
+        def _validate_group_by_id():
+            url = makeurl(self.project.openqa_server, ['api', 'v1', 'job_groups', f"{self.project.openqa_group_id}"])
+            f = self.api.retried_GET(url)
+            return f.status == 200  # Let the HTTP exception kill the run if the group_id is invalid
+
+        if not self.project.openqa_group_id and self.project.openqa_group:
+            self.project.openqa_group_id = _get_group_id_by_name()
+            self.logger.warning("[DEPRECATED] openqa_group in OSRT:ToTestManagerConfig must be changed to"
+                                + f" openqa_group_id: '{self.project.openqa_group_id}'.")
+        else:
+            _validate_group_by_id()
 
     def load_issues_to_ignore(self):
         text = self.api.attribute_value_load('IgnoredIssues')
