@@ -1,11 +1,11 @@
 #! /bin/sh
 
-/usr/lib/mysql/mysql-systemd-helper install
+/usr/libexec/mysql/mysql-systemd-helper install
 sed -e 's,127.0.0.1,0.0.0.0,' -i /etc/my.cnf
 sed -e 's,server-id,skip-grant-tables,' -i /etc/my.cnf
 
-/usr/lib/mysql/mysql-systemd-helper start &
-/usr/lib/mysql/mysql-systemd-helper wait
+/usr/libexec/mysql/mysql-systemd-helper start &
+/usr/libexec/mysql/mysql-systemd-helper wait
 
 #/usr/bin/mysqladmin -u root password 'opensuse'
 
