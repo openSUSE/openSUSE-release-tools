@@ -2,4 +2,5 @@ production:
   source_host: srcserver
   source_port: 5352
   memcached_host: cache
+  force_ssl: false
 

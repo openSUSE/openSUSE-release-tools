@@ -1,7 +1,7 @@
 #!BuildTag: osrt_miniobs
-FROM opensuse/leap:15.6
+FROM opensuse/leap:16.0
 
-RUN zypper ar http://download.opensuse.org/repositories/OBS:/Server:/Unstable/15.6/ 'O:S:U'; \
+RUN zypper ar http://download.opensuse.org/repositories/OBS:/Server:/Unstable/16.0/ 'O:S:U'; \
     zypper --gpg-auto-import-keys refresh
 
 RUN zypper install -y obs-api obs-worker obs-server \
@@ -19,4 +19,6 @@ COPY database.yml /srv/www/obs/api/config/database.yml
 
 COPY BSConfig.pm.patch /tmp
 RUN patch /usr/lib/obs/server/BSConfig.pm /tmp/BSConfig.pm.patch
+
+ENV MARIADB_TLS_DISABLE_PEER_VERIFICATION=1
 
