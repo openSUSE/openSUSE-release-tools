@@ -1,10 +1,10 @@
 #!BuildTag: osrt_miniobs
-FROM opensuse/leap:15.6
+FROM opensuse/leap:16.0
 
-RUN zypper ar http://download.opensuse.org/repositories/OBS:/Server:/Unstable/15.6/ 'O:S:U'; \
+RUN zypper ar http://download.opensuse.org/repositories/OBS:/Server:/Unstable/16.0/ 'O:S:U'; \
     zypper --gpg-auto-import-keys refresh
 
-RUN zypper install -y obs-api obs-worker obs-server \
+RUN zypper install -y ruby4.0 -ruby3.4 obs-api obs-worker obs-server \
     ca-certificates patch vim vim-data psmisc timezone \
     glibc-locale aaa_base aaa_base-extras netcat net-tools \
     obs-service-recompress obs-service-format_spec_file
