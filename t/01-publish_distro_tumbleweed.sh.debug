@@ -1,0 +1,280 @@
++ set -e
++ work=t/tmp
++ rm -rf t/tmp
++ mkdir t/tmp
++ cd t/tmp
++ mkdir ftp-stage
++ mkdir -p ftp/pub/opensuse/tumbleweed/iso
++ mkdir -p ftp/pub/opensuse/tumbleweed/repo/oss
++ mkdir -p ftp/pub/opensuse/tumbleweed/repo/non-oss
++ cp -r ftp/pub ftp-stage/
++ for arch in x86_64
++ for flavor in DVD NET GNOME-Live KDE-Live Rescue-CD
++ touch ftp-stage/pub/opensuse/tumbleweed/iso/openSUSE-Tumbleweed-DVD-x86_64-Snapshot20230101-Media.iso
++ touch ftp-stage/pub/opensuse/tumbleweed/iso/openSUSE-Tumbleweed-DVD-x86_64-Snapshot20230101-Media.iso.sha256
++ for flavor in DVD NET GNOME-Live KDE-Live Rescue-CD
++ touch ftp-stage/pub/opensuse/tumbleweed/iso/openSUSE-Tumbleweed-NET-x86_64-Snapshot20230101-Media.iso
++ touch ftp-stage/pub/opensuse/tumbleweed/iso/openSUSE-Tumbleweed-NET-x86_64-Snapshot20230101-Media.iso.sha256
++ for flavor in DVD NET GNOME-Live KDE-Live Rescue-CD
++ touch ftp-stage/pub/opensuse/tumbleweed/iso/openSUSE-Tumbleweed-GNOME-Live-x86_64-Snapshot20230101-Media.iso
++ touch ftp-stage/pub/opensuse/tumbleweed/iso/openSUSE-Tumbleweed-GNOME-Live-x86_64-Snapshot20230101-Media.iso.sha256
++ for flavor in DVD NET GNOME-Live KDE-Live Rescue-CD
++ touch ftp-stage/pub/opensuse/tumbleweed/iso/openSUSE-Tumbleweed-KDE-Live-x86_64-Snapshot20230101-Media.iso
++ touch ftp-stage/pub/opensuse/tumbleweed/iso/openSUSE-Tumbleweed-KDE-Live-x86_64-Snapshot20230101-Media.iso.sha256
++ for flavor in DVD NET GNOME-Live KDE-Live Rescue-CD
++ touch ftp-stage/pub/opensuse/tumbleweed/iso/openSUSE-Tumbleweed-Rescue-CD-x86_64-Snapshot20230101-Media.iso
++ touch ftp-stage/pub/opensuse/tumbleweed/iso/openSUSE-Tumbleweed-Rescue-CD-x86_64-Snapshot20230101-Media.iso.sha256
++ PUBLISH_DISTRO_BASE=t/tmp/
++ PUBLISH_DISTRO_DATE=20230101
++ . ./publish_distro --dry --force publish_distro_conf/publish_tumbleweed.config
+++ PUBLISH_DELAY=2
+++ force=
+++ date=20230101
+++ dryrun=
+++ do_cleanup=
+++ changes=
+++ diff_url_base=https://openqa.opensuse.org/snapshot-changes/opensuse
+++ changes_dir_base=/srv/www-local/snapshot-changes
+++ repos=("oss" "non-oss")
+++ extra_repos=("source" "debug")
+++ isodir=iso
+++ (( 3 ))
+++ '[' --dry == --force ']'
+++ '[' --dry == --dry ']'
+++ dryrun=echo
+++ shift
+++ (( 2 ))
+++ '[' --force == --force ']'
+++ force=1
+++ shift
+++ (( 1 ))
+++ '[' publish_distro_conf/publish_tumbleweed.config == --force ']'
+++ '[' publish_distro_conf/publish_tumbleweed.config == --dry ']'
+++ '[' publish_distro_conf/publish_tumbleweed.config == --cleanup ']'
+++ '[' publish_distro_conf/publish_tumbleweed.config == --now ']'
+++ newargs+=("$1")
+++ shift
+++ (( 0 ))
+++ set -- publish_distro_conf/publish_tumbleweed.config
+++ set -ue
+++ . publish_distro_conf/publish_tumbleweed.config
+++++ date -d 20230101 +%Y/%m/%d/%H%M
++++ logfile_base=/home/an/publish_logs/tumbleweed/2023/01/01/0000
++++ synclog=/home/an/publish_logs/tumbleweed/2023/01/01/0000.log
++++ deletelog=/home/an/publish_logs/tumbleweed/2023/01/01/0000-deletes.log
++++ path=/tumbleweed
++++ flavors=(DVD-x86_64 NET-x86_64 GNOME-Live-x86_64 KDE-Live-x86_64 Rescue-CD-x86_64)
+++ shift
+++ base=t/tmp/
+++ stage=t/tmp/ftp-stage/pub/opensuse//tumbleweed
+++ dest=t/tmp/ftp/pub/opensuse//tumbleweed
+++ '[' '!' -e t/tmp/ftp-stage/pub/opensuse//tumbleweed -o '!' -e t/tmp/ftp/pub/opensuse//tumbleweed ']'
+++ '[' -n '' ']'
+++ test echo == echo
+++ deletelog=/dev/stderr
+++ synclog=/dev/stderr
+++ version=
+++ do_sync_isos=1
+++ changes_done=0
+++ for flavor in "${flavors[@]}"
+++ get_version
+++ '[' -z '' ']'
++++ echo t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-DVD-x86_64-Snapshot20230101-Media.iso
+++ version=t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-DVD-x86_64-Snapshot20230101-Media.iso
+++ version=20230101-Media.iso
+++ version=20230101
+++ '[' -z 20230101 ']'
+++ get_iso
+++ iso=openSUSE-Tumbleweed-DVD-x86_64-Snapshot20230101-Media.iso
+++ get_diff_url
+++ url=https://openqa.opensuse.org/snapshot-changes/opensuse/tumbleweed/diff/20230101
+++ get_changes_filename
++++ date +%Y
+++ local year=2023
+++ changes=/srv/www-local/snapshot-changes/tumbleweed/2023/Changes.20230101.txt
+++ '[' -z 1 -a -e t/tmp/ftp/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-DVD-x86_64-Snapshot20230101-Media.iso ']'
+++ '[' -n /srv/www-local/snapshot-changes/tumbleweed/2023/Changes.20230101.txt ']'
+++ '[' 0 == 0 ']'
+++ changes_done=1
+++ '[' -d t/tmp/ftp-stage/pub/opensuse//tumbleweed//srv/www-local/snapshot-changes/tumbleweed/2023/Changes.20230101.txt ']'
+++ '[' '!' -s /srv/www-local/snapshot-changes/tumbleweed/2023/Changes.20230101.txt ']'
+++ echo 'generating /srv/www-local/snapshot-changes/tumbleweed/2023/Changes.20230101.txt'
+++ tee -a /dev/stderr
+++ echo curl -sf https://openqa.opensuse.org/snapshot-changes/opensuse/tumbleweed/diff/20230101 -o /srv/www-local/snapshot-changes/tumbleweed/2023/Changes.20230101.txt
+++ '[' '!' -e t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso//srv/www-local/snapshot-changes/tumbleweed/2023/Changes.20230101.txt ']'
+++ echo cp -v /srv/www-local/snapshot-changes/tumbleweed/2023/Changes.20230101.txt t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso
+++ tee -a /dev/stderr
+++ '[' -e t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/Changes ']'
+++ echo ln -sf . t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/Changes
+++ tee -a /dev/stderr
+++ '[' '!' -e t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-DVD-x86_64-Snapshot20230101-Media.iso ']'
+++ get_iso_link
+++ link=t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-DVD-x86_64-Current.iso
++++ readlink t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-DVD-x86_64-Current.iso
+++ '[' '' '!=' openSUSE-Tumbleweed-DVD-x86_64-Snapshot20230101-Media.iso ']'
+++ echo ln -sf openSUSE-Tumbleweed-DVD-x86_64-Snapshot20230101-Media.iso t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-DVD-x86_64-Current.iso
+++ echo ln -sf openSUSE-Tumbleweed-DVD-x86_64-Snapshot20230101-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-DVD-x86_64-Current.iso.sha256
+++ '[' -z 1 ']'
+++ for flavor in "${flavors[@]}"
+++ get_version
+++ '[' -z 20230101 ']'
+++ get_iso
+++ iso=openSUSE-Tumbleweed-NET-x86_64-Snapshot20230101-Media.iso
+++ get_diff_url
+++ url=https://openqa.opensuse.org/snapshot-changes/opensuse/tumbleweed/diff/20230101
+++ get_changes_filename
++++ date +%Y
+++ local year=2023
+++ changes=/srv/www-local/snapshot-changes/tumbleweed/2023/Changes.20230101.txt
+++ '[' -z 1 -a -e t/tmp/ftp/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-NET-x86_64-Snapshot20230101-Media.iso ']'
+++ '[' -n /srv/www-local/snapshot-changes/tumbleweed/2023/Changes.20230101.txt ']'
+++ '[' 0 == 1 ']'
+++ '[' '!' -e t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-NET-x86_64-Snapshot20230101-Media.iso ']'
+++ get_iso_link
+++ link=t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-NET-x86_64-Current.iso
++++ readlink t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-NET-x86_64-Current.iso
+++ '[' '' '!=' openSUSE-Tumbleweed-NET-x86_64-Snapshot20230101-Media.iso ']'
+++ echo ln -sf openSUSE-Tumbleweed-NET-x86_64-Snapshot20230101-Media.iso t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-NET-x86_64-Current.iso
+++ echo ln -sf openSUSE-Tumbleweed-NET-x86_64-Snapshot20230101-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-NET-x86_64-Current.iso.sha256
+++ '[' -z 1 ']'
+++ for flavor in "${flavors[@]}"
+++ get_version
+++ '[' -z 20230101 ']'
+++ get_iso
+++ iso=openSUSE-Tumbleweed-GNOME-Live-x86_64-Snapshot20230101-Media.iso
+++ get_diff_url
+++ url=https://openqa.opensuse.org/snapshot-changes/opensuse/tumbleweed/diff/20230101
+++ get_changes_filename
++++ date +%Y
+++ local year=2023
+++ changes=/srv/www-local/snapshot-changes/tumbleweed/2023/Changes.20230101.txt
+++ '[' -z 1 -a -e t/tmp/ftp/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-GNOME-Live-x86_64-Snapshot20230101-Media.iso ']'
+++ '[' -n /srv/www-local/snapshot-changes/tumbleweed/2023/Changes.20230101.txt ']'
+++ '[' 0 == 1 ']'
+++ '[' '!' -e t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-GNOME-Live-x86_64-Snapshot20230101-Media.iso ']'
+++ get_iso_link
+++ link=t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-GNOME-Live-x86_64-Current.iso
++++ readlink t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-GNOME-Live-x86_64-Current.iso
+++ '[' '' '!=' openSUSE-Tumbleweed-GNOME-Live-x86_64-Snapshot20230101-Media.iso ']'
+++ echo ln -sf openSUSE-Tumbleweed-GNOME-Live-x86_64-Snapshot20230101-Media.iso t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-GNOME-Live-x86_64-Current.iso
+++ echo ln -sf openSUSE-Tumbleweed-GNOME-Live-x86_64-Snapshot20230101-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-GNOME-Live-x86_64-Current.iso.sha256
+++ '[' -z 1 ']'
+++ for flavor in "${flavors[@]}"
+++ get_version
+++ '[' -z 20230101 ']'
+++ get_iso
+++ iso=openSUSE-Tumbleweed-KDE-Live-x86_64-Snapshot20230101-Media.iso
+++ get_diff_url
+++ url=https://openqa.opensuse.org/snapshot-changes/opensuse/tumbleweed/diff/20230101
+++ get_changes_filename
++++ date +%Y
+++ local year=2023
+++ changes=/srv/www-local/snapshot-changes/tumbleweed/2023/Changes.20230101.txt
+++ '[' -z 1 -a -e t/tmp/ftp/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-KDE-Live-x86_64-Snapshot20230101-Media.iso ']'
+++ '[' -n /srv/www-local/snapshot-changes/tumbleweed/2023/Changes.20230101.txt ']'
+++ '[' 0 == 1 ']'
+++ '[' '!' -e t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-KDE-Live-x86_64-Snapshot20230101-Media.iso ']'
+++ get_iso_link
+++ link=t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-KDE-Live-x86_64-Current.iso
++++ readlink t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-KDE-Live-x86_64-Current.iso
+++ '[' '' '!=' openSUSE-Tumbleweed-KDE-Live-x86_64-Snapshot20230101-Media.iso ']'
+++ echo ln -sf openSUSE-Tumbleweed-KDE-Live-x86_64-Snapshot20230101-Media.iso t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-KDE-Live-x86_64-Current.iso
+++ echo ln -sf openSUSE-Tumbleweed-KDE-Live-x86_64-Snapshot20230101-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-KDE-Live-x86_64-Current.iso.sha256
+++ '[' -z 1 ']'
+++ for flavor in "${flavors[@]}"
+++ get_version
+++ '[' -z 20230101 ']'
+++ get_iso
+++ iso=openSUSE-Tumbleweed-Rescue-CD-x86_64-Snapshot20230101-Media.iso
+++ get_diff_url
+++ url=https://openqa.opensuse.org/snapshot-changes/opensuse/tumbleweed/diff/20230101
+++ get_changes_filename
++++ date +%Y
+++ local year=2023
+++ changes=/srv/www-local/snapshot-changes/tumbleweed/2023/Changes.20230101.txt
+++ '[' -z 1 -a -e t/tmp/ftp/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-Rescue-CD-x86_64-Snapshot20230101-Media.iso ']'
+++ '[' -n /srv/www-local/snapshot-changes/tumbleweed/2023/Changes.20230101.txt ']'
+++ '[' 0 == 1 ']'
+++ '[' '!' -e t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-Rescue-CD-x86_64-Snapshot20230101-Media.iso ']'
+++ get_iso_link
+++ link=t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-Rescue-CD-x86_64-Current.iso
++++ readlink t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-Rescue-CD-x86_64-Current.iso
+++ '[' '' '!=' openSUSE-Tumbleweed-Rescue-CD-x86_64-Snapshot20230101-Media.iso ']'
+++ echo ln -sf openSUSE-Tumbleweed-Rescue-CD-x86_64-Snapshot20230101-Media.iso t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-Rescue-CD-x86_64-Current.iso
+++ echo ln -sf openSUSE-Tumbleweed-Rescue-CD-x86_64-Snapshot20230101-Media.iso.sha256 t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/openSUSE-Tumbleweed-Rescue-CD-x86_64-Current.iso.sha256
+++ '[' -z 1 ']'
+++ for r in "${repos[@]/#//repo/}"
+++ for i in /suse/setup /boot
+++ d=t/tmp/ftp-stage/pub/opensuse//tumbleweed/repo/oss/suse/setup
+++ '[' -d t/tmp/ftp-stage/pub/opensuse//tumbleweed/repo/oss/suse/setup ']'
+++ continue
+++ for i in /suse/setup /boot
+++ d=t/tmp/ftp-stage/pub/opensuse//tumbleweed/repo/oss/boot
+++ '[' -d t/tmp/ftp-stage/pub/opensuse//tumbleweed/repo/oss/boot ']'
+++ continue
+++ for r in "${repos[@]/#//repo/}"
+++ for i in /suse/setup /boot
+++ d=t/tmp/ftp-stage/pub/opensuse//tumbleweed/repo/non-oss/suse/setup
+++ '[' -d t/tmp/ftp-stage/pub/opensuse//tumbleweed/repo/non-oss/suse/setup ']'
+++ continue
+++ for i in /suse/setup /boot
+++ d=t/tmp/ftp-stage/pub/opensuse//tumbleweed/repo/non-oss/boot
+++ '[' -d t/tmp/ftp-stage/pub/opensuse//tumbleweed/repo/non-oss/boot ']'
+++ continue
+++ '[' 1 = 0 ']'
+++ TODO=()
+++ TODO+=(iso)
+++ echo 'current 20230101'
+++ echo tee t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso/.current.txt
+++ '[' -n oss ']'
+++ TODO+=(repo)
+++ TODO+=(DELETE_repo)
+++ for i in "${TODO[@]}"
+++ case $i in
+++ log=/dev/stderr
+++ dry_delete=--delete-after
+++ i=iso
+++ echo ========== iso --delete-after ===========
+++ echo rsync -avvhiH t/tmp/ftp-stage/pub/opensuse//tumbleweed/iso --link-dest=t/tmp/ftp-stage/pub/opensuse//tumbleweed t/tmp/ftp/pub/opensuse//tumbleweed --delete-after
+++ LC_ALL=C
+++ grep -v '^\.[fdL]      '
+++ LC_ALL=C
+++ grep -v '^\(sending\|delta\)'
+++ tee -a /dev/stderr
+++ for i in "${TODO[@]}"
+++ case $i in
+++ log=/dev/stderr
+++ dry_delete=
+++ echo ========== repo ===========
+++ echo rsync -avvhiH t/tmp/ftp-stage/pub/opensuse//tumbleweed/repo --link-dest=t/tmp/ftp-stage/pub/opensuse//tumbleweed t/tmp/ftp/pub/opensuse//tumbleweed
+++ LC_ALL=C
+++ grep -v '^\.[fdL]      '
+++ LC_ALL=C
+++ grep -v '^\(sending\|delta\)'
+++ tee -a /dev/stderr
+++ for i in "${TODO[@]}"
+++ case $i in
+++ i=repo
+++ log=/dev/stderr
+++ dry_delete='--delete -n'
+++ echo ========== repo --delete -n ===========
+++ echo rsync -avvhiH t/tmp/ftp-stage/pub/opensuse//tumbleweed/repo --link-dest=t/tmp/ftp-stage/pub/opensuse//tumbleweed t/tmp/ftp/pub/opensuse//tumbleweed --delete -n
+++ LC_ALL=C
+++ grep -v '^\.[fdL]      '
+++ LC_ALL=C
+++ grep -v '^\(sending\|delta\)'
+++ tee -a /dev/stderr
+++ for r in "${extra_repos[@]}"
+++ stage=t/tmp/ftp-stage/pub/opensuse/source//tumbleweed
+++ dest=t/tmp/ftp/pub/opensuse/source//tumbleweed
+++ echo rsync -avhiH t/tmp/ftp-stage/pub/opensuse/source//tumbleweed/ --link-dest=t/tmp/ftp-stage/pub/opensuse/source//tumbleweed t/tmp/ftp/pub/opensuse/source//tumbleweed --delete-after
+++ tee -a /dev/stderr
+++ for r in "${extra_repos[@]}"
+++ stage=t/tmp/ftp-stage/pub/opensuse/debug//tumbleweed
+++ dest=t/tmp/ftp/pub/opensuse/debug//tumbleweed
+++ echo rsync -avhiH t/tmp/ftp-stage/pub/opensuse/debug//tumbleweed/ --link-dest=t/tmp/ftp-stage/pub/opensuse/debug//tumbleweed t/tmp/ftp/pub/opensuse/debug//tumbleweed --delete-after
+++ tee -a /dev/stderr
+++ get_mark_published_url
+++ url=https://openqa.opensuse.org/snapshot-changes/opensuse/tumbleweed/current
+++ '[' -n https://openqa.opensuse.org/snapshot-changes/opensuse/tumbleweed/current ']'
+++ echo curl -X POST -F version=20230101 https://openqa.opensuse.org/snapshot-changes/opensuse/tumbleweed/current
