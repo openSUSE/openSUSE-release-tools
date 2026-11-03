@@ -68,7 +68,8 @@ Configure the attribute for ttm so it knows what to release:
 -------------------------------------------------------------------------------
 $ cat <<EOF > myattribute
 jobs_num: 2
-openqa_group: My Product 66.6
+# openqa_group: My Product 66.6 has an id of 666. openqa_group is deprecated
+openqa_group_id: 666
 openqa_server: https://openqa.opensuse.org
 product_repo: images
 product_arch: x86_64

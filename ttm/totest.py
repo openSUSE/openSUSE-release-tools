@@ -138,6 +138,7 @@ class ToTest(object):
         self.take_source_from_product = False
         self.arch = 'x86_64'
         self.openqa_group = None
+        self.openqa_group_id = None
         self.openqa_server = None
         self.jobs_num = 42
         self.test_subproject = 'ToTest'

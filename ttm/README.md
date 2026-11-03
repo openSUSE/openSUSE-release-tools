@@ -25,8 +25,9 @@ take_source_from_product: False
 arch: x86_64
 
 # openQA settings
-openqa_server: None # URL to the openQA server, e.g. "https://openqa.opensuse.org"
-openqa_group: None # Name of the job group in openQA, e.g. "openSUSE Tumbleweed"
+openqa_server: None # URL to the openQA server, e.g: https://openqa.opensuse.org
+openqa_group: None # [Deprecated] Name of the job group in openQA, e.g: openSUSE Tumbleweed
+openqa_group_id: None # id of the job group in openQA, e.g.: 1
 jobs_num: 42 # Minimum number of openQA jobs before publishing is possible
 
 # Global defaults for products
