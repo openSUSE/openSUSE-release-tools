@@ -70,14 +70,18 @@ def current(dirpath):
 @app.route('/<path:dirpath>/diff/<version>')
 def diff(dirpath, version):
     _dir = get_dir(dirpath)
-    fn = os.path.join(_dir, 'current')
-    if not os.path.exists(fn):
-        return "current version doesn't exist", 404
+    from_version = request.args.get('from', 'current')
+    if from_version != 'current' and not digits_re.match(from_version):
+        return "malformed from version", 400
+    if not digits_re.match(version):
+        return "malformed version", 400
+    if not os.path.exists(os.path.join(_dir, from_version)):
+        return f"{from_version} version doesn't exist", 404
     if not os.path.exists(os.path.join(_dir, version)):
         return "invalid version", 400
     import subprocess
     cmd = [os.path.dirname(os.path.abspath(__file__)) + '/factory-package-news.py',
-           'diff', '--dir', _dir, "current", version]
+           'diff', '--dir', _dir, from_version, version]
     app.logger.debug(cmd)
     response = make_response(subprocess.check_output(cmd))
     response.content_type = "text/plain"

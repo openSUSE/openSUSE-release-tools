@@ -97,6 +97,7 @@ ABI review bot for checking OBS requests.
 %package announcer
 Summary:        Release announcer
 Group:          Development/Tools/Other
+Requires:       python3-zstandard
 BuildArch:      noarch
 # TODO Update requirements.
 

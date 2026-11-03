@@ -14,6 +14,8 @@ done
 
 cd /code
 
+rpm -q python3-zstandard >/dev/null 2>&1 || zypper -n in -y python3-zstandard
+
 ci_node=$1
 
 for file in tests/*_tests.py; do
