@@ -37,6 +37,16 @@ class TestFactoryPackageNews(unittest.TestCase):
         srpm_debug = "kernel-debug-6.14.0-1.1.src.rpm"
         self.assertEqual(fpn.normalize_srpm(srpm_debug), "kernel-source-6.14.0-1.1.src.rpm")
 
+        srpm_kvm = "kernel-kvmsmall-7.3.3-1.1.nosrc.rpm"
+        self.assertEqual(fpn.normalize_srpm(srpm_kvm), "kernel-source-7.3.3-1.1.src.rpm")
+
+        # Longterm kernel packages should be rewritten to kernel-source-longterm
+        srpm_lt = "kernel-longterm-6.18.62-1.1.nosrc.rpm"
+        self.assertEqual(fpn.normalize_srpm(srpm_lt), "kernel-source-longterm-6.18.62-1.1.src.rpm")
+
+        srpm_lt_syms = "kernel-syms-longterm-6.18.62-1.1.src.rpm"
+        self.assertEqual(fpn.normalize_srpm(srpm_lt_syms), "kernel-source-longterm-6.18.62-1.1.src.rpm")
+
         # texlive-specs packages should be normalized to texlive-specs-<version>-1.src.rpm
         srpm_tex_a = "texlive-specs-a-2026-61.3.src.rpm"
         self.assertEqual(fpn.normalize_srpm(srpm_tex_a), "texlive-specs-2026-1.src.rpm")
