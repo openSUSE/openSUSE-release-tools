@@ -44,7 +44,26 @@ class TestFactoryPackageNews(unittest.TestCase):
         srpm_tex_z = "texlive-specs-z-2026-59.4.src.rpm"
         self.assertEqual(fpn.normalize_srpm(srpm_tex_z), "texlive-specs-2026-1.src.rpm")
 
-        # Non-kernel / non-texlive package should stay unchanged
+        # cross-gcc packages should normalize to gcc<version>
+        srpm_cross_gcc = "cross-aarch64-gcc13-13.5.0+git10516-3.1.src.rpm"
+        self.assertEqual(fpn.normalize_srpm(srpm_cross_gcc), "gcc13-13.5.0+git10516-3.1.src.rpm")
+
+        srpm_cross_boot = "cross-arm-none-gcc15-bootstrap-15.3.0+git11272-4.1.src.rpm"
+        self.assertEqual(fpn.normalize_srpm(srpm_cross_boot), "gcc15-15.3.0+git11272-4.1.src.rpm")
+
+        # cross-binutils packages should normalize to binutils
+        srpm_cross_binutils = "cross-aarch64-binutils-2.47-3.1.src.rpm"
+        self.assertEqual(fpn.normalize_srpm(srpm_cross_binutils), "binutils-2.47-3.1.src.rpm")
+
+        # glibc-cross packages should normalize to glibc
+        srpm_glibc_cross = "glibc-cross-aarch64-src-2.44-3.1.src.rpm"
+        self.assertEqual(fpn.normalize_srpm(srpm_glibc_cross), "glibc-2.44-3.1.src.rpm")
+
+        # cross-newlib-devel packages should normalize to cross-newlib-devel
+        srpm_cross_newlib = "cross-arm-none-newlib-devel-4.6.0.20260123-1.4.src.rpm"
+        self.assertEqual(fpn.normalize_srpm(srpm_cross_newlib), "cross-newlib-devel-4.6.0.20260123-1.4.src.rpm")
+
+        # Non-kernel / non-texlive / non-cross package should stay unchanged
         srpm_normal = "bash-5.2.26-1.1.src.rpm"
         self.assertEqual(fpn.normalize_srpm(srpm_normal), "bash-5.2.26-1.1.src.rpm")
 
