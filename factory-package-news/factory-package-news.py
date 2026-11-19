@@ -21,6 +21,25 @@ CROSS_BINUTILS_RE = re.compile(r'^cross-.+-binutils$')
 GLIBC_CROSS_RE = re.compile(r'^glibc-cross-.+-src$')
 CROSS_NEWLIB_RE = re.compile(r'^cross-.+-newlib-devel$')
 
+KERNEL_VARIANTS = (
+    'kernel-64kb',
+    'kernel-debug',
+    'kernel-default',
+    'kernel-desktop',
+    'kernel-docs',
+    'kernel-ec2',
+    'kernel-kvmsmall',
+    'kernel-lpae',
+    'kernel-obs-build',
+    'kernel-obs-qa-xen',
+    'kernel-obs-qa',
+    'kernel-pae',
+    'kernel-pv',
+    'kernel-syms',
+    'kernel-vanilla',
+    'kernel-xen',
+)
+
 COMMON_NS = 'http://linux.duke.edu/metadata/common'
 OTHER_NS = 'http://linux.duke.edu/metadata/other'
 RPM_NS = 'http://linux.duke.edu/metadata/rpm'
@@ -47,23 +66,12 @@ def normalize_srpm(srpm):
     name = m.group('name')
 
     # dirty hack to reduce kernel spam
-    if name in (
-        'kernel-64kb',
-        'kernel-debug',
-        'kernel-default',
-        'kernel-desktop',
-        'kernel-docs',
-        'kernel-ec2',
-        'kernel-lpae',
-        'kernel-obs-build',
-        'kernel-obs-qa-xen',
-        'kernel-obs-qa',
-        'kernel-pae',
-        'kernel-pv',
-        'kernel-syms',
-        'kernel-vanilla',
-        'kernel-xen',
-    ):
+    if name.startswith('kernel-') and name.endswith('-longterm') and name != 'kernel-source-longterm':
+        new_srpm = f"kernel-source-longterm-{m.group('version')}-{m.group('release')}.src.rpm"
+        print(f"{srpm} -> {new_srpm}")
+        return new_srpm
+
+    if name in KERNEL_VARIANTS:
         new_srpm = f"kernel-source-{m.group('version')}-{m.group('release')}.src.rpm"
         print(f"{srpm} -> {new_srpm}")
         return new_srpm
