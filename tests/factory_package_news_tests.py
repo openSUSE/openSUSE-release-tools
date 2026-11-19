@@ -333,6 +333,42 @@ class TestFactoryPackageNews(unittest.TestCase):
         self.assertIn("Subpackages (showing 25 of 30):", diff_output)
         self.assertIn("...", diff_output)
 
+    def test_do_diff_changelog_capping(self):
+        data_dir = os.path.join(self.test_dir, "cap_changelog_snapshots")
+        os.makedirs(data_dir)
+
+        v1_pkgs = {'longpkg': {'name': 'longpkg', 'version': '1.0', 'release': '1.1', 'sourcerpm': 'longsrc-1.0-1.1.src.rpm'}}
+        v2_pkgs = {'longpkg': {'name': 'longpkg', 'version': '2.0', 'release': '1.1', 'sourcerpm': 'longsrc-2.0-1.1.src.rpm'}}
+
+        long_changelog = "\n".join([f"- Change line {i}" for i in range(50)])
+        v1_cls = {'longsrc-1.0-1.1.src.rpm': {'packages': ['longpkg'], 'changelogtime': [1700000000], 'changelogtext': ['- v1']}}
+        v2_cls = {
+            'longsrc-2.0-1.1.src.rpm': {
+                'packages': ['longpkg'],
+                'changelogtime': [1710000000, 1700000000],
+                'changelogtext': [long_changelog, '- v1'],
+            }
+        }
+
+        with open(os.path.join(data_dir, "v1"), "wb") as f:
+            pickle.dump([fpn.data_version, (v1_pkgs, v1_cls)], f)
+        with open(os.path.join(data_dir, "v2"), "wb") as f:
+            pickle.dump([fpn.data_version, (v2_pkgs, v2_cls)], f)
+
+        app = fpn.ChangeLogger()
+        old_stdout = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            class DiffOpts:
+                dir = data_dir
+
+            app.do_diff("diff", DiffOpts(), "v1", "v2")
+            diff_output = sys.stdout.getvalue()
+        finally:
+            sys.stdout = old_stdout
+
+        self.assertIn("... changelog too long, skipping", diff_output)
+
     def test_read_repomd_zstd(self):
         repo_dir = os.path.join(self.test_dir, "repo_zst")
         repodata_dir = os.path.join(repo_dir, "repodata")
