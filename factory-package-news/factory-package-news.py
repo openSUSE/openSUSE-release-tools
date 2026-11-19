@@ -16,6 +16,10 @@ import xml.etree.ElementTree as ET
 SRPM_RE = re.compile(
     r'(?P<name>.+)-(?P<version>[^-]+)-(?P<release>[^-]+)\.(?P<suffix>(?:no)?src\.rpm)$')
 TEXLIVE_SPECS_RE = re.compile(r'^texlive-specs-[a-z]$')
+CROSS_GCC_RE = re.compile(r'^cross-.+-gcc(?P<ver>\d+)(?:-bootstrap)?$')
+CROSS_BINUTILS_RE = re.compile(r'^cross-.+-binutils$')
+GLIBC_CROSS_RE = re.compile(r'^glibc-cross-.+-src$')
+CROSS_NEWLIB_RE = re.compile(r'^cross-.+-newlib-devel$')
 
 COMMON_NS = 'http://linux.duke.edu/metadata/common'
 OTHER_NS = 'http://linux.duke.edu/metadata/other'
@@ -67,6 +71,28 @@ def normalize_srpm(srpm):
     # dirty hack to reduce texlive spam (texlive-specs-a .. texlive-specs-z)
     if TEXLIVE_SPECS_RE.match(name):
         new_srpm = f"texlive-specs-{m.group('version')}-1.src.rpm"
+        print(f"{srpm} -> {new_srpm}")
+        return new_srpm
+
+    # dirty hack to reduce cross toolchain spam
+    m_cross_gcc = CROSS_GCC_RE.match(name)
+    if m_cross_gcc:
+        new_srpm = f"gcc{m_cross_gcc.group('ver')}-{m.group('version')}-{m.group('release')}.src.rpm"
+        print(f"{srpm} -> {new_srpm}")
+        return new_srpm
+
+    if CROSS_BINUTILS_RE.match(name):
+        new_srpm = f"binutils-{m.group('version')}-{m.group('release')}.src.rpm"
+        print(f"{srpm} -> {new_srpm}")
+        return new_srpm
+
+    if GLIBC_CROSS_RE.match(name):
+        new_srpm = f"glibc-{m.group('version')}-{m.group('release')}.src.rpm"
+        print(f"{srpm} -> {new_srpm}")
+        return new_srpm
+
+    if CROSS_NEWLIB_RE.match(name):
+        new_srpm = f"cross-newlib-devel-{m.group('version')}-{m.group('release')}.src.rpm"
         print(f"{srpm} -> {new_srpm}")
         return new_srpm
 
