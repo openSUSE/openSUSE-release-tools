@@ -46,7 +46,7 @@ RPM_NS = 'http://linux.duke.edu/metadata/rpm'
 
 data_version = 3
 
-changelog_max_lines = 100  # maximum number of changelog lines per package
+changelog_max_lines = 30  # maximum number of changelog lines per package
 
 
 # rpm's python bindings changed in version 4.15 [0] so that they actually return
