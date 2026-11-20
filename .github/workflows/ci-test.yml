@@ -49,7 +49,7 @@ jobs:
       matrix:
         image:
           - registry.opensuse.org/opensuse/tumbleweed:latest
-          - registry.opensuse.org/opensuse/leap:15.6
+          - registry.opensuse.org/opensuse/leap:16.0
 
     container: ${{ matrix.image }}
     steps:
@@ -66,11 +66,11 @@ jobs:
         run: zypper -n ar https://download.opensuse.org/repositories/openSUSE:/Tools/openSUSE_Tumbleweed/openSUSE:Tools.repo
 
       - name: add the openSUSE:Tools repository for Leap
-        if: ${{ contains(matrix.image, '15.6') }}
-        run: zypper -n ar https://download.opensuse.org/repositories/openSUSE:/Tools/15.6/openSUSE:Tools.repo
+        if: ${{ contains(matrix.image, '16.0') }}
+        run: zypper -n ar https://download.opensuse.org/repositories/openSUSE:/Tools/16.0/openSUSE:Tools.repo
 
       - name: skip scripts that require python 3.11
-        if: ${{ contains(matrix.image, '15.6') }}
+        if: ${{ contains(matrix.image, '16.0') }}
         run: |
           # we don't have a influxdb-client for 3.6 anymore
           rm -v metrics.py
