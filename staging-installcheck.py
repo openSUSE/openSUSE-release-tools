@@ -82,7 +82,7 @@ class OBSInstallChecker(InstallChecker):
         if not os.environ.get('GO_SERVER_URL'):
             # placeholder :)
             return 'http://stephan.kulow.org/'
-        report_url = os.environ.get('GO_SERVER_URL').replace(':8154', '')
+        report_url = os.environ.get('GO_SERVER_URL').replace(':8153', '')
         return report_url + '/tab/build/detail/{}/{}/{}/{}/{}#tab-console'.format(os.environ.get('GO_PIPELINE_NAME'),
                                                                                   os.environ.get('GO_PIPELINE_COUNTER'),
                                                                                   os.environ.get('GO_STAGE_NAME'),
