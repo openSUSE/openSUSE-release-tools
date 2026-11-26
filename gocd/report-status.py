@@ -53,7 +53,7 @@ def report_pipeline(args, architecture, is_last):
         if state == 'failure':
             state = 'success'
         name = name + ':' + architecture
-    report_url = os.environ.get('GO_SERVER_URL').replace(':8154', '')
+    report_url = os.environ.get('GO_SERVER_URL').replace(':8153', '')
     report_url = report_url.replace(':8153', '')
     report_url = report_url + '/tab/build/detail/{}/{}/{}/{}/{}#tab-console'.format(
         os.environ.get('GO_PIPELINE_NAME'), os.environ.get('GO_PIPELINE_COUNTER'),
