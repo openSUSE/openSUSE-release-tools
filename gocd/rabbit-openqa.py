@@ -20,6 +20,8 @@ from osclib.PubSubConsumer import PubSubConsumer
 
 
 class Project(object):
+    IMAGE_REPOSITORIES = ('images', 'product')
+
     def __init__(self, name):
         self.name = name
         Config(apiurl, name)
@@ -85,6 +87,12 @@ class Project(object):
         # Filter out isos which couldn't be mapped
         return [iso for iso in iso_set if iso]
 
+    def gather_all_isos(self, name):
+        iso_set = set()
+        for repository in self.IMAGE_REPOSITORIES:
+            iso_set.update(self.gather_isos(name, repository))
+        return list(iso_set)
+
     def gather_buildid(self, name, repository):
         url = self.api.makeurl(['published', name, repository], {'view': 'status'})
         f = self.api.retried_GET(url)
@@ -93,7 +101,7 @@ class Project(object):
             return id.text
 
     def initial_staging_state(self, name):
-        return {'isos': self.gather_isos(name, 'images'),
+        return {'isos': self.gather_all_isos(name),
                 'id': self.gather_buildid(name, 'images')}
 
     def fetch_openqa_jobs(self, staging, iso, openqa_infos):
@@ -189,12 +197,15 @@ class Project(object):
                 self.logger.error('failed to post status to ' + url)
 
     def update_staging_buildid(self, project, repository, buildid):
-        self.staging_projects[project]['id'] = buildid
-        self.staging_projects[project]['isos'] = self.gather_isos(project, repository)
+        if repository == 'images':
+            self.staging_projects[project]['id'] = buildid
+        elif not self.staging_projects[project].get('id'):
+            self.staging_projects[project]['id'] = self.gather_buildid(project, 'images')
+        self.staging_projects[project]['isos'] = self.gather_all_isos(project)
         self.update_staging_status(project)
 
     def check_published_repo(self, project, repository, buildid):
-        if repository != 'images':
+        if repository not in self.IMAGE_REPOSITORIES:
             return
         for p in self.staging_projects:
             if project == p:
